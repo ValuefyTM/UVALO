@@ -27,7 +27,8 @@ Versiunile `next` / `@opennextjs/cloudflare` / `wrangler` sunt fixate: Next 16.4
   (creează baza de date dacă lipsește, aplică migrările D1, construiește, copiază datele, publică).
 - Variabile: `TOOLS_SUPERADMINS` (emailuri separate prin virgulă), `RESEND_API_KEY` (secret),
   `TOOLS_EMAIL_FROM` (ex. `VALUEFY Tools <tools@valuefy.ro>`),
-  `GOOGLE_MAPS_KEY` (secret, opțional: hărțile Google și căutarea adreselor în localizator; fără ea rămân Esri / OpenStreetMap).
+  `GOOGLE_MAPS_KEY` (secret, opțional: hărțile Google și căutarea adreselor în localizator, doar pentru firmele al căror plan
+  are modulul `google_maps`; ceilalți rămân pe Esri / OpenStreetMap, chiar dacă cheia e pusă).
   În Google Cloud cheia are activate **Map Tiles API** și **Geocoding API**; restricție recomandată: doar aceste două API-uri.
 - Domeniu: `tools.valuefy.ro` (Custom domain pe worker).
 

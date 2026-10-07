@@ -1,6 +1,6 @@
 import { locatorAccess, locatorAsset } from "@/lib/locator";
 import { track } from "@/lib/track";
-import { gmapsConfig } from "@/lib/gmaps";
+import { gmapsConfig, hasGoogle } from "@/lib/gmaps";
 
 // /localizare — cadastral locator (cadastral plans, Timiș), for people whose firm has the module.
 export const dynamic = "force-dynamic";
@@ -26,8 +26,8 @@ export async function GET(req: Request) {
   }
   const page = await locatorAsset("index.html", req);
   if (!page) return new Response("Pagina nu este disponibilă momentan.", { status: 503, headers: PRIVATE });
-  const [gm] = await Promise.all([gmapsConfig(), track(a.db, a.c, "localizare", "page")]);
-  // Google maps (when the key is set in Cloudflare); the page falls back to the free maps without it.
+  const [gm] = await Promise.all([hasGoogle(a.c) ? gmapsConfig() : null, track(a.db, a.c, "localizare", "page")]);
+  // Google maps only for paid plans with the key set in Cloudflare; otherwise the free maps.
   const GM = gm ? `<script>window.VF_GMAPS=${JSON.stringify(gm).replace(/</g, "\\u003c")}</script>` : "";
   const html = (await page.text())
     .replace("</head>", `${PWA_HEAD}${GM}</head>`)

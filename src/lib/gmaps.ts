@@ -1,5 +1,6 @@
-// Server-only: Google Maps for the cadastral locator. The key lives in the worker's variables (GOOGLE_MAPS_KEY);
-// without it the locator keeps the free maps (Esri satellite, OpenStreetMap).
+// Server-only: Google Maps for the cadastral locator. The key lives in the worker's variables (GOOGLE_MAPS_KEY).
+// Google is only for firms whose plan lists the "google_maps" module (paid plans, later); everyone else, and every
+// firm while no plan has it, keeps the free maps (Esri satellite, OpenStreetMap) even when the key is set.
 // Map Tiles API: a session per map type, valid about two weeks, kept in the worker's memory and renewed a day early.
 
 type Session = { session: string; expiry: number };
@@ -12,6 +13,9 @@ const TYPES = {
 } as const;
 
 const cache = new Map<string, Session>();
+
+/** Whether this person's firm pays for Google maps (module "google_maps" in its plan). */
+export const hasGoogle = (c: { org: { modules: string } | null }) => !!c.org?.modules.split(",").map((m) => m.trim()).includes("google_maps");
 const key = () => process.env.GOOGLE_MAPS_KEY?.trim() || "";
 // Calls from the worker carry the site as referrer, for keys restricted to tools.valuefy.ro.
 const REFERER = { Referer: "https://tools.valuefy.ro/" };
