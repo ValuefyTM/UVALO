@@ -284,7 +284,15 @@ if(GM){
   },400)};
   map.on('moveend',gCopy).on('baselayerchange',e=>{if(e.layer._gs){gLayer=e.layer;gCopy()}}); gCopy();
 }else{
-  sat=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:21,maxNativeZoom:19,attribution:'Imagini © Esri, Maxar, Earthstar Geographics'}).addTo(map);
+  sat=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:21,maxNativeZoom:19,crossOrigin:'anonymous',attribution:'Imagini © Esri, Maxar, Earthstar Geographics'}).addTo(map);
+  // Unde Esri nu are imagini la zoom mare trimite plăci gri „Map data not yet available”: coborâm zoom-ul imaginilor
+  // (mărite) până la nivelul care există; revine la maxim când harta se mută în altă zonă.
+  const isBlank=img=>{try{const c=document.createElement('canvas');c.width=c.height=32;const g=c.getContext('2d',{willReadFrequently:true});g.drawImage(img,0,0,32,32);
+    const d=g.getImageData(0,0,32,32).data;let n=0;for(let i=0;i<d.length;i+=4)if(Math.max(d[i],d[i+1],d[i+2])-Math.min(d[i],d[i+1],d[i+2])<=3)n++;let l=0;for(let i=0;i<d.length;i+=4)l+=d[i];l/=d.length/4;return n/(d.length/4)>.97&&l>150&&l<240}catch(e){return false}};
+  let lowAt=null;
+  sat.on('tileload',e=>{const z=e.coords.z;if(z!==sat.options.maxNativeZoom||z<=14||!isBlank(e.tile))return;
+    sat.options.maxNativeZoom=z-1;lowAt=map.getCenter();sat.redraw()});
+  map.on('moveend',()=>{if(lowAt&&map.getCenter().distanceTo(lowAt)>3000){lowAt=null;sat.options.maxNativeZoom=19;sat.redraw()}});
   roads=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}',{maxZoom:21,maxNativeZoom:19,opacity:.85}).addTo(map);
   osm=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:21,maxNativeZoom:19,attribution:'© OpenStreetMap'});
   base={'Satelit':sat,'Hartă':osm};

@@ -32,6 +32,19 @@
     const t = setTimeout(() => res(null), 9000);
     i.onload = () => { clearTimeout(t); res(i); }; i.onerror = () => { clearTimeout(t); res(null); }; i.src = src;
   });
+  /** Esri's "Map data not yet available" tile: almost every pixel gray (no colour). Unreadable (no CORS) → not blank. */
+  const blankTile = (img) => {
+    try {
+      const c = document.createElement("canvas"); c.width = c.height = 32;
+      const g = c.getContext("2d", { willReadFrequently: true }); g.drawImage(img, 0, 0, 32, 32);
+      const d = g.getImageData(0, 0, 32, 32).data; let gray = 0;
+      for (let i = 0; i < d.length; i += 4) if (Math.max(d[i], d[i + 1], d[i + 2]) - Math.min(d[i], d[i + 1], d[i + 2]) <= 3) gray++;
+      let lum = 0; for (let i = 0; i < d.length; i += 4) lum += d[i];
+      lum /= d.length / 4;
+      return gray / (d.length / 4) > 0.97 && lum > 150 && lum < 240; // fundalul gri-deschis al plăcii Esri
+    } catch { return false; }
+  };
+  window.vfBlankTile = blankTile; // folosit și de harta din pagină
   const save = (blob, name) => {
     const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name; document.body.append(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 4000);
@@ -109,13 +122,20 @@
     x.fillStyle = NAVY; x.fillRect(0, 0, W, H);
 
     // Satelit (Google sau Esri): plăcile se încarcă cu CORS; dacă nu se pot folosi, harta rămâne doar cu planul cadastral.
-    const tz = Math.min(z, GM ? 20 : 19), f = 2 ** (z - tz), size = TS * f;
-    const tiles = [];
-    for (let tx = Math.floor(ox / size); tx <= Math.floor((ox + W) / size); tx++)
-      for (let ty = Math.floor(oy / size); ty <= Math.floor((oy + H) / size); ty++)
-        tiles.push(loadImg(tileUrl(tz, tx, ty), true).then((img) => ({ img, tx, ty })));
+    // Unde Esri nu are imagini la zoom mare, trimite o placă gri „Map data not yet available”: o recunoaștem și
+    // coborâm nivel cu nivel până la zoom-ul cu imagini; plăcile bune de la nivelurile mai detaliate se pun deasupra.
+    const top = Math.min(z, GM ? 20 : 19), levels = [];
+    for (let tz = top; tz >= Math.max(top - 5, 10); tz--) {
+      const size = TS * 2 ** (z - tz), list = [];
+      for (let tx = Math.floor(ox / size); tx <= Math.floor((ox + W) / size); tx++)
+        for (let ty = Math.floor(oy / size); ty <= Math.floor((oy + H) / size); ty++)
+          list.push(loadImg(tileUrl(tz, tx, ty), true).then((img) => ({ img: img && !blankTile(img) ? img : null, tx, ty })));
+      const got = await Promise.all(list);
+      levels.push({ size, got });
+      if (got.every((t) => t.img)) break;
+    }
     let imagery = 0;
-    for (const t of await Promise.all(tiles)) if (t.img) { x.drawImage(t.img, t.tx * size - ox, t.ty * size - oy, size, size); imagery++; }
+    for (const { size, got } of levels.reverse()) for (const t of got) if (t.img) { x.drawImage(t.img, t.tx * size - ox, t.ty * size - oy, size, size); imagery++; }
     try { x.getImageData(0, 0, 1, 1); } catch { x.fillStyle = NAVY; x.fillRect(0, 0, W, H); imagery = 0; }
     if (imagery) { x.fillStyle = "rgba(0,0,0,.18)"; x.fillRect(0, 0, W, H); }
 

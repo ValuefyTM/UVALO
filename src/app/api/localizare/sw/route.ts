@@ -4,7 +4,7 @@
  * or none. Fresh data is fetched whenever there is signal. A 401 (password needed) is never kept.
  */
 const SW = `
-const V = "vf-loc-v1", TILES = "vf-loc-tiles-v1", MAX_TILES = 4000;
+const V = "vf-loc-v1", TILES = "vf-loc-tiles-v2", MAX_TILES = 4000;
 const PAGE = "/localizare";
 
 self.addEventListener("install", (e) => { self.skipWaiting(); });
