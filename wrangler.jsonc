@@ -1,0 +1,25 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	// tools.valuefy.ro — VALUEFY Tools (SaaS for valuers).
+	"name": "tools",
+	"main": ".open-next/worker.js",
+	"compatibility_date": "2026-09-25",
+	"compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+	// Keep the variables set in the Cloudflare dashboard (RESEND_API_KEY, TOOLS_EMAIL_FROM, TOOLS_SUPERADMINS) on every deploy.
+	"keep_vars": true,
+	"assets": {
+		"directory": ".open-next/assets",
+		"binding": "ASSETS",
+		// Module data (scripts/copy-localizare.mjs): only the worker reads it, for signed-in users with a subscription.
+		"run_worker_first": ["/_localizare/*"]
+	},
+	"d1_databases": [
+		{
+			// Its own database, separate from the website and the CRM. Created automatically on the first deploy.
+			"binding": "DB",
+			"database_name": "valuefy-tools-db",
+			"migrations_dir": "migrations"
+		}
+	],
+	"observability": { "enabled": true }
+}
