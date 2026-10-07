@@ -84,9 +84,9 @@ export async function requestSignIn(db: D1Database, rawEmail: string) {
     html: layout({
       eyebrow: "VALUEFY Tools",
       title: "Codul tău de autentificare",
-      body: `<p style="margin:0 0 8px;font-size:15px;line-height:1.6;color:#4A4A66">Introdu codul de mai jos în pagina de autentificare:</p>
+      body: `<p style="margin:0 0 8px;font-size:15px;line-height:1.6;color:#4A4A4A">Introdu codul de mai jos în pagina de autentificare:</p>
 <p style="margin:16px 0;font-size:34px;font-weight:bold;letter-spacing:8px;font-family:ui-monospace,Menlo,monospace">${code}</p>
-<p style="margin:0;font-size:14px;line-height:1.6;color:#4A4A66">Sau intră direct apăsând butonul.</p>`,
+<p style="margin:0;font-size:14px;line-height:1.6;color:#4A4A4A">Sau intră direct apăsând butonul.</p>`,
       button: { label: "Intră în cont →", url: link },
       foot: `Codul și linkul sunt valabile ${CODE_MINUTES} minute și pot fi folosite o singură dată. Dacă nu ai cerut tu autentificarea, ignoră acest email.`,
     }),
@@ -210,8 +210,8 @@ async function sendInviteEmail(db: D1Database, u: User, orgId: string | null, to
     html: layout({
       eyebrow: "VALUEFY Tools",
       title: `${hello} Ai fost invitat(ă) în VALUEFY Tools.`,
-      body: `<p style="margin:0 0 10px;font-size:15px;line-height:1.65;color:#4A4A66">${esc(by?.name || "VALUEFY")} te-a invitat ${where}. Găsești acolo instrumentele VALUEFY pentru evaluatori: localizare cadastrală ANCPI (număr cadastral, topo, adresă, locația ta pe parcelă) și, în curând, analize de piață.</p>
-<p style="margin:0;font-size:15px;line-height:1.65;color:#4A4A66">Nu ai nevoie de parolă: te autentifici cu un cod primit pe email.</p>`,
+      body: `<p style="margin:0 0 10px;font-size:15px;line-height:1.65;color:#4A4A4A">${esc(by?.name || "VALUEFY")} te-a invitat ${where}. Găsești acolo instrumentele VALUEFY pentru evaluatori: localizare cadastrală ANCPI (număr cadastral, topo, adresă, locația ta pe parcelă) și, în curând, analize de piață.</p>
+<p style="margin:0;font-size:15px;line-height:1.65;color:#4A4A4A">Nu ai nevoie de parolă: te autentifici cu un cod primit pe email.</p>`,
       button: { label: active ? "Intră în VALUEFY Tools →" : "Activează contul →", url: link },
       foot: active ? "Dacă nu te aștepți la acest email, îl poți ignora." : `Invitația este valabilă ${INVITE_DAYS} zile. Dacă nu te aștepți la acest email, îl poți ignora.`,
     }),

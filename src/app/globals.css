@@ -285,7 +285,7 @@ a.rChip:hover { border-color: var(--acc); }
 .rChip small { color: var(--on-navy-2); font-weight: 500; }
 .rChip .av { width: 24px; height: 24px; border-radius: 50%; background: rgba(255, 255, 255, 0.15); display: flex; align-items: center; justify-content: center; font-size: 9.5px; font-weight: 800; }
 .rChip .av.gold { background: var(--acc); color: var(--ink); }
-.rChip .av.navy { background: #2c3e7a; color: #fff; }
+.rChip .av.navy { background: #2a2a2a; color: #fff; }
 .rMeta { color: var(--on-navy-2); }
 .rMeta u { color: #fff; text-underline-offset: 3px; }
 a.rMeta:hover u { color: var(--acc-light); }

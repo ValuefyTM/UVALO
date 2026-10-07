@@ -180,7 +180,7 @@
       x.fillStyle = NAVY; x.fillRect(0, 0, PW, y + 74);
       if (logo) { x.fillStyle = "#fff"; x.beginPath(); x.roundRect ? x.roundRect(M, y + 4, 230, 56, 12) : x.rect(M, y + 4, 230, 56); x.fill(); x.drawImage(logo, M + 14, y + 13, 202, (202 * logo.height) / logo.width); }
       x.fillStyle = GOLD; x.font = `bold 16px ${FONT}`; x.textAlign = "right"; x.fillText("FIȘĂ DE LOCALIZARE CADASTRALĂ", PW - M, y + 28);
-      x.fillStyle = "#C9CAE0"; x.font = `15px ${FONT}`; x.fillText(`generată ${today()} · valuefy.ro`, PW - M, y + 54); x.textAlign = "left";
+      x.fillStyle = "#CFCFCF"; x.font = `15px ${FONT}`; x.fillText(`generată ${today()} · valuefy.ro`, PW - M, y + 54); x.textAlign = "left";
     } });
     out.push({ h: 104, draw: (y) => {
       x.fillStyle = "#9A5F00"; x.font = `bold 15px ${FONT}`; x.fillText(d.kind.toUpperCase() + " · " + U.name.toUpperCase(), M, y + 18);
