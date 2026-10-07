@@ -53,3 +53,15 @@ Planurile vin ca DWG de la BCPI (straturi `ImobileE3`, `ImobileE3_IE`, `Construc
    două comune) și rulează `OUTDIR=out python3 tools/dwg/convert.py <Nume>`;
 3. copiază `out/<cheie>.json` în `localizare-data/` și adaugă intrările din `out/uats-<Nume>.json` în lista `UATS`
    din `localizare-data/index.html`; push → deploy.
+
+## API: centrul parcelei după numărul cadastral
+
+`/api/localizare/centroid` dă coordonatele GPS ale centrului unei parcele din planurile localizatorului (Timiș), pentru
+amplasarea proprietăților pe hartă în CRM. Centrele se calculează la build (`scripts/copy-localizare.mjs`, aceeași
+conversie Stereo 70 → WGS84 ca pagina localizatorului) în `/_localizare/c/<uat>.json`.
+
+- `GET ?nr=259154-C1-U20&city=Timișoara` → `{ nr: "259154", uat, lat, lng, match }` sau `{ nr, error }`. La unități
+  individuale („…-C1-U20”) se folosește rădăcina (primele 6 cifre).
+- `POST { items: [{ id, nr, city }] }` (max. 200) → `{ results: [...] }`.
+- Acces: `Authorization: Bearer <LOCATOR_API_TOKEN>` (variabilă secretă în Cloudflare, aceeași valoare în CRM) sau
+  un utilizator autentificat cu acces la localizator.
