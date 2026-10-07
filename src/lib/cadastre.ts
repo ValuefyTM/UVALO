@@ -30,12 +30,13 @@ async function uats(req: Request) {
   uatList ??= locatorAsset("c/index.json", req).then((r) => (r ? (r.json() as Promise<Uat[]>) : [])).catch(() => []);
   return uatList;
 }
+/** Parcel centres of one UAT; the last 10 UATs stay in memory (all 59 would not fit in a worker). */
 function centres(key: string, req: Request) {
   let p = cache.get(key);
-  if (!p) {
-    p = locatorAsset(`c/${key}.json`, req).then((r) => (r ? r.json().then((d) => (d as { p: Record<string, [number, number]> }).p) : null)).catch(() => null);
-    cache.set(key, p);
-  }
+  if (p) { cache.delete(key); cache.set(key, p); return p; }
+  p = locatorAsset(`c/${key}.json`, req).then((r) => (r ? r.json().then((d) => (d as { p: Record<string, [number, number]> }).p) : null)).catch(() => null);
+  cache.set(key, p);
+  while (cache.size > 10) cache.delete(cache.keys().next().value!);
   return p;
 }
 
