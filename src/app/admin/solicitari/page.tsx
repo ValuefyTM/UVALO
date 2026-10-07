@@ -15,7 +15,7 @@ export default async function Requests() {
     db.prepare(`SELECT o.id, o.name, o.seats, (SELECT COUNT(*) FROM memberships m WHERE m.org_id = o.id AND m.status = 'active') AS used FROM orgs o
       WHERE o.status = 'active' AND o.seats > 1 ORDER BY o.name`).all<{ id: string; name: string; seats: number; used: number }>(),
   ]);
-  const until = new Date(Date.now() + 30 * 864e5).toISOString().slice(0, 10);
+  const until = ""; // platform free for now: approved accounts have no end date (can still be set per request)
   return (
     <AdminShell c={c} active="solicitari" pending={pending} title="Solicitări de cont" subtitle="Evaluatori care au cerut cont cu legitimația ANEVAR">
       {open.length === 0 ? <div className="card"><p className="hint">Nicio solicitare în așteptare.</p></div> : open.map((r) => (

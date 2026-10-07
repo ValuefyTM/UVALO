@@ -17,7 +17,7 @@ export default async function Firm() {
   ]);
   const block = orgBlock(org);
   return (
-    <AppShell c={c} active="firma" title={org.name} subtitle={`Abonament ${org.plan_name} · ${org.seats} ${org.seats === 1 ? "loc" : "locuri"}${org.valid_until ? ` · până la ${fmtDate(org.valid_until)}` : ""}`}>
+    <AppShell c={c} active="firma" title={org.name} subtitle={`${org.seats} ${org.seats === 1 ? "loc" : "locuri"} în echipă`}>
       {block && <div className="note">{block}</div>}
       <MembersPanel
         members={m.map((x) => ({ user_id: x.user_id, email: x.email, name: x.name, status: x.status, role: x.role, last_seen: x.last_seen_at ? fmtDate(x.last_seen_at, true) : "—", events_30: x.events_30, searches_30: x.searches_30, exports_30: x.exports_30, me: x.user_id === c.user.id }))}

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { fmtDate, page } from "@/lib/guard";
+import { firstName, page } from "@/lib/guard";
 import { MODULES } from "@/lib/access";
 import { AppShell } from "@/components/AppShell";
 import { CollabArt, LocatorArt, MarketArt } from "@/components/Art";
@@ -9,13 +9,14 @@ export const metadata: Metadata = { title: "VALUEFY Tools" };
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const { c } = await page();
-  const first = c.user.name ? c.user.name.split(" ")[0] : "";
+  const { db, c } = await page();
+  const first = await firstName(db, c.user.name, c.user.anevar_no);
   const org = c.org;
+  // Only the firm's name, and only when it is not just the person's own name (individual accounts).
+  const sub = org && org.name.trim().toLowerCase() !== c.user.name.trim().toLowerCase() ? org.name : c.super ? "Administrator VALUEFY" : undefined;
   return (
-    <AppShell c={c} active="home" title={`Bună${first ? `, ${first}` : ""}!`} subtitle={org ? `${org.name} · abonament ${org.plan_name}` : c.super ? "Administrator VALUEFY" : undefined}>
+    <AppShell c={c} active="home" title={`Bună${first ? `, ${first}` : ""}!`} subtitle={sub}>
       {c.block && !c.super && <div className="note">{c.block} Scrie-ne la <a className="rowLink" href="mailto:office@valuefy.ro">office@valuefy.ro</a> ca să reactivăm accesul.</div>}
-      {org && !c.block && org.valid_until && <p className="hint">Acces activ până la {fmtDate(org.valid_until)} · {org.seats} {org.seats === 1 ? "loc" : "locuri"}</p>}
       <div className="tools">
         {MODULES.map((m) => {
           const on = c.modules.includes(m.key);
@@ -40,7 +41,8 @@ export default async function Home() {
           <MarketArt />
           <span className="eyebrow">În curând</span>
           <h2>Analize de piață</h2>
-          <p>Prețuri de ofertă și tranzacții pe zone, comparabile și tendințe, direct pentru rapoartele de evaluare.</p>
+          <p>Date despre tranzacții, prețuri de ofertă și indici de piață pe zone, comparabile și tendințe, direct pentru rapoartele de evaluare.</p>
+          <div className="toolTags"><span>Tranzacții</span><span>Prețuri de ofertă</span><span>Indici de piață</span><span>Comparabile</span><span>Tendințe</span></div>
         </div>
         <div className="mobileOnly"><Referral variant="card" /></div>
       </div>

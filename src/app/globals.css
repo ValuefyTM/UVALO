@@ -619,3 +619,5 @@ a.rMeta:hover u { color: var(--acc-light); }
 .announceText p { margin: 0; font-size: 14px; line-height: 1.6; color: var(--muted); }
 .announceText ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; font-size: 14px; line-height: 1.55; }
 @media (max-width: 760px) { .announce { grid-template-columns: 1fr; } .announce .toolArt { min-height: 0; height: 140px; } }
+.toolTags { display: flex; flex-wrap: wrap; gap: 6px; }
+.toolTags span { font-size: 11.5px; font-weight: 700; padding: 4px 10px; border-radius: 999px; background: var(--acc-soft); color: var(--acc-text); }

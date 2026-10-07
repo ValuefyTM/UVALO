@@ -31,3 +31,21 @@ export const fmtDate = (iso: string | null | undefined, withTime = false) =>
 
 export const initials = (name: string, email: string) =>
   (name.trim() ? name.trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join("") : email[0]).toUpperCase();
+
+/**
+ * First name for the greeting. The ANEVAR list writes "Surname Given names": for valuers from the list (card number,
+ * or the name found in the list) the first name is the second word. For other names, the word that is more often a
+ * surname in the list is taken as the surname ("Stan Bogdan" → Bogdan, "Bogdan Stan" → Bogdan); otherwise the first word.
+ */
+export async function firstName(db: D1Database, name: string, legit: string | null) {
+  const w = name.trim().split(/\s+/).filter(Boolean);
+  if (w.length < 2) return w[0] ?? "";
+  if (legit) return w[1];
+  const r = await db.prepare(`SELECT
+      EXISTS (SELECT 1 FROM anevar_members WHERE name = ?1 COLLATE NOCASE OR name LIKE ?1 || ' %') AS listed,
+      (SELECT COUNT(*) FROM anevar_members WHERE name LIKE ?2 || ' %') AS a,
+      (SELECT COUNT(*) FROM anevar_members WHERE name LIKE ?3 || ' %') AS b`)
+    .bind(w.join(" "), w[0], w[w.length - 1]).first<{ listed: number; a: number; b: number }>();
+  if (r?.listed || (r && r.a > r.b)) return w[1];
+  return w[0];
+}
