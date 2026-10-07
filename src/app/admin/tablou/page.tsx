@@ -30,7 +30,7 @@ export default async function Tablou({ searchParams }: { searchParams: Promise<T
   return (
     <AdminShell c={c} active="tablou" pending={pending} title="Tablou ANEVAR" subtitle={`Membri titulari${date ? ` · tabloul la ${fmtDate(date)}` : ""} · cine are cont și cine se autentifică`}
       actions={<a className="btn btnGhost btnSm" href={`/api/admin/tablou${qs({ page: "" })}`}>Descarcă CSV</a>}>
-      <form className="card filters" method="get">
+      <form className="card tabFilters" method="get">
         <label className="field grow">Caută<input className="input" name="q" defaultValue={f.q ?? ""} placeholder="Nume sau nr. legitimație" /></label>
         <label className="field">Județ
           <select className="select" name="judet" defaultValue={f.judet ?? ""}>
@@ -52,9 +52,11 @@ export default async function Tablou({ searchParams }: { searchParams: Promise<T
             <option value="">Nume</option><option value="judet">Județ</option><option value="login">Ultima activitate</option><option value="legit">Nr. legitimație</option>
           </select>
         </label>
-        <label className="check" style={{ alignSelf: "center" }}><input type="checkbox" name="vechi" value="1" defaultChecked={f.vechi === "1"} />Și cei care nu mai apar în tablou</label>
-        <button type="submit" className="btn btnNavy">Filtrează</button>
-        {Object.values(f).some(Boolean) && <a className="btn btnGhost" href="/admin/tablou">Resetează</a>}
+        <div className="tfFoot">
+          <label className="check"><input type="checkbox" name="vechi" value="1" defaultChecked={f.vechi === "1"} />Și cei care nu mai apar în tablou</label>
+          {Object.values(f).some(Boolean) && <a className="btn btnGhost" href="/admin/tablou">Resetează</a>}
+          <button type="submit" className="btn btnNavy">Filtrează</button>
+        </div>
       </form>
 
       <div className="kpis">
