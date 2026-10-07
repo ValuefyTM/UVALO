@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { fmtDate, page } from "@/lib/guard";
 import { MODULES } from "@/lib/access";
 import { AppShell } from "@/components/AppShell";
-import { CollabArt, LocatorArt } from "@/components/Art";
+import { CollabArt, LocatorArt, MarketArt } from "@/components/Art";
 import { Referral } from "@/components/Referral";
 
 export const metadata: Metadata = { title: "VALUEFY Tools" };
@@ -36,7 +36,8 @@ export default async function Home() {
             </div>
           );
         })}
-        <div className="tool off">
+        <div className="tool withArt off">
+          <MarketArt />
           <span className="eyebrow">În curând</span>
           <h2>Analize de piață</h2>
           <p>Prețuri de ofertă și tranzacții pe zone, comparabile și tendințe, direct pentru rapoartele de evaluare.</p>

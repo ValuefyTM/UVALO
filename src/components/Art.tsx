@@ -73,3 +73,43 @@ export function CollabArt() {
     </svg>
   );
 }
+
+/** Illustration of the market analysis card: price trend over a zone map, comparables as price tags. */
+export function MarketArt() {
+  const trend: [number, number][] = [[18, 112], [58, 104], [98, 108], [138, 88], [178, 92], [218, 70], [258, 62], [302, 44]];
+  const line = trend.map(([x, y], i) => `${i ? "L" : "M"}${x} ${y}`).join(" ");
+  const bars = [52, 66, 58, 80, 74, 92, 100, 118];
+  return (
+    <svg className="toolArt" viewBox="0 0 320 150" role="img" aria-label="Tendința prețurilor pe zonă" preserveAspectRatio="xMidYMid slice">
+      <defs>
+        <linearGradient id="maBg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#fbf3e2" /><stop offset="1" stopColor="#f3e6c9" /></linearGradient>
+        <linearGradient id="maArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#f2a93b" stopOpacity="0.45" /><stop offset="1" stopColor="#f2a93b" stopOpacity="0" /></linearGradient>
+      </defs>
+      <rect width="320" height="150" fill="url(#maBg)" />
+      {/* zone map in the background */}
+      <g fill="none" stroke="#e3cf9f" strokeWidth="1">
+        <path d="M0 30 C60 20 90 50 150 36 S260 10 320 26" /><path d="M0 74 C70 64 120 90 190 70 S280 52 320 60" />
+        <path d="M70 0 C80 50 60 100 84 150" /><path d="M200 0 C190 60 220 100 206 150" />
+      </g>
+      {/* grid */}
+      <g stroke="rgba(17,17,17,0.08)" strokeWidth="1">{[40, 70, 100, 130].map((y) => <line key={y} x1="0" x2="320" y1={y} y2={y} />)}</g>
+      {/* volume bars */}
+      <g fill="rgba(17,17,17,0.12)">{bars.map((h, i) => <rect key={i} x={10 + i * 40} y={150 - h * 0.28} width="16" height={h * 0.28} rx="2" />)}</g>
+      {/* price trend */}
+      <path d={`${line} L302 150 L18 150 Z`} fill="url(#maArea)" />
+      <path d={line} fill="none" stroke="#111" strokeWidth="2.4" strokeLinejoin="round" strokeLinecap="round" />
+      {trend.map(([x, y], i) => <circle key={i} cx={x} cy={y} r={i === trend.length - 1 ? 5 : 3} fill={i === trend.length - 1 ? "#f2a93b" : "#fff"} stroke="#111" strokeWidth="1.6" />)}
+      {/* comparables */}
+      <g fontFamily="ui-monospace, Menlo, monospace" fontWeight="700" fontSize="8">
+        <g transform="translate(36 30)"><rect x="-4" y="-11" width="62" height="16" rx="8" fill="#fff" stroke="#e0c58f" /><text x="4" y="0" fill="#111">1.480 €/mp</text></g>
+        <g transform="translate(150 54)"><rect x="-4" y="-11" width="62" height="16" rx="8" fill="#fff" stroke="#e0c58f" /><text x="4" y="0" fill="#111">1.620 €/mp</text></g>
+      </g>
+      {/* headline value */}
+      <g transform="translate(222 14)">
+        <rect width="88" height="34" rx="10" fill="#111" />
+        <text x="10" y="14" fontFamily="Verdana, sans-serif" fontSize="7" fontWeight="700" fill="#f2c27a">MEDIANA ZONEI</text>
+        <text x="10" y="27" fontFamily="ui-monospace, Menlo, monospace" fontSize="10" fontWeight="700" fill="#fff">1.750 €/mp ▲</text>
+      </g>
+    </svg>
+  );
+}
