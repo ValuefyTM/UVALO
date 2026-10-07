@@ -17,6 +17,20 @@ const PWA_SCRIPT = `<script>if("serviceWorker" in navigator)addEventListener("lo
 // Back to the VALUEFY Tools home, in the page header.
 const BACK = `<script>(function(){var h=document.querySelector("header");if(!h)return;var a=document.createElement("a");a.href="/";a.className="vfBack";a.textContent="← VALUEFY Tools";h.appendChild(a)})()</script>`;
 
+// First opening: the data is informative, from unofficial cadastral sources; it must be acknowledged once (kept on the account).
+const NOTICE = `<div id="vfNotice" role="dialog" aria-modal="true" aria-labelledby="vfNoticeT" style="position:fixed;inset:0;z-index:5000;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:16px;font-family:Verdana,Geneva,sans-serif">
+<div style="width:min(520px,100%);max-height:calc(100vh - 32px);overflow:auto;background:#fff;color:#111;border-radius:22px;padding:26px 24px 22px;box-shadow:0 30px 80px -20px rgba(0,0,0,.6);display:flex;flex-direction:column;gap:12px">
+<span style="width:48px;height:48px;border-radius:14px;background:#fdf1dc;color:#9a5f00;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:800" aria-hidden="true">!</span>
+<h2 id="vfNoticeT" style="margin:0;font:700 20px/1.3 Verdana,Geneva,sans-serif;letter-spacing:-.02em;text-transform:none;color:#111">Înainte să folosești localizatorul</h2>
+<p style="margin:0;font-size:14px;line-height:1.6">Datele afișate au <b>caracter informativ</b> și provin din <b>surse cadastrale neoficiale</b>. Nu înlocuiesc extrasul de carte funciară, documentația cadastrală sau alte documente oficiale emise de OCPI / ANCPI.</p>
+<p style="margin:0;font-size:14px;line-height:1.6">Pot exista diferențe față de evidențele oficiale sau de situația din teren: contururi, suprafețe, numere cadastrale, coordonate.</p>
+<p style="margin:0;font-size:14px;line-height:1.6;color:#4a4a4a">Platforma VALUEFY Tools <b style="color:#111">nu este responsabilă pentru eventualele diferențe</b> și nici pentru deciziile luate pe baza acestor informații. Verifică întotdeauna datele în documentele oficiale.</p>
+<button type="button" id="vfNoticeOk" style="margin-top:6px;height:50px;border:0;border-radius:999px;background:#111;color:#fff;font:700 15px Verdana,Geneva,sans-serif;cursor:pointer">Am luat la cunoștință</button>
+</div></div>
+<script>(function(){var d=document.getElementById("vfNotice"),b=document.getElementById("vfNoticeOk");document.documentElement.style.overflow="hidden";b.focus();
+document.addEventListener("keydown",function(e){if(e.key==="Escape"&&document.getElementById("vfNotice"))e.preventDefault()},true);
+b.onclick=function(){b.disabled=true;b.textContent="Se salvează…";fetch("/api/localizare/ack",{method:"POST"}).catch(function(){}).finally(function(){d.remove();document.documentElement.style.overflow=""})}})()</script>`;
+
 export async function GET(req: Request) {
   const a = await locatorAccess();
   if ("status" in a) {
@@ -26,12 +40,16 @@ export async function GET(req: Request) {
   }
   const page = await locatorAsset("index.html", req);
   if (!page) return new Response("Pagina nu este disponibilă momentan.", { status: 503, headers: PRIVATE });
-  const [gm] = await Promise.all([hasGoogle(a.c) ? gmapsConfig() : null, track(a.db, a.c, "localizare", "page")]);
+  const [gm, ack] = await Promise.all([
+    hasGoogle(a.c) ? gmapsConfig() : null,
+    a.db.prepare("SELECT loc_ack_at FROM users WHERE id = ?").bind(a.c.user.id).first<{ loc_ack_at: string | null }>(),
+    track(a.db, a.c, "localizare", "page"),
+  ]);
   // Google maps only for paid plans with the key set in Cloudflare; otherwise the free maps.
   const GM = gm ? `<script>window.VF_GMAPS=${JSON.stringify(gm).replace(/</g, "\\u003c")}</script>` : "";
   const html = (await page.text())
     .replace("</head>", `${PWA_HEAD}${GM}</head>`)
-    .replace("</body>", `${BACK}<script src="/api/localizare/script" defer></script><script src="/api/localizare/track-js" defer></script>${PWA_SCRIPT}</body>`);
+    .replace("</body>", `${ack?.loc_ack_at ? "" : NOTICE}${BACK}<script src="/api/localizare/script" defer></script><script src="/api/localizare/track-js" defer></script>${PWA_SCRIPT}</body>`);
   return new Response(html, { headers: { "Content-Type": "text/html; charset=utf-8", ...PRIVATE } });
 }
 
