@@ -16,7 +16,7 @@ const inMinutes = (m: number) => new Date(Date.now() + m * 60_000).toISOString()
 
 export type User = {
   id: string; email: string; name: string; phone: string | null; status: "invited" | "active" | "disabled"; is_superadmin: number;
-  anevar_no: string | null; county: string | null; specs: string | null; has_avatar: number; terms_at: string | null; created_at: string; activated_at: string | null; last_login_at: string | null; last_seen_at: string | null;
+  anevar_no: string | null; county: string | null; specs: string | null; has_avatar: number; is_office: number; terms_at: string | null; created_at: string; activated_at: string | null; last_login_at: string | null; last_seen_at: string | null;
   notes: string | null;
 };
 
@@ -26,7 +26,7 @@ export async function audit(db: D1Database, actor: string | null, action: string
 }
 
 // The picture is not loaded with the account (it is served by /api/avatar/<id>).
-const USER_COLS = `id, email, name, phone, status, is_superadmin, anevar_no, county, specs, avatar IS NOT NULL AS has_avatar, terms_at, created_at, activated_at,
+const USER_COLS = `id, email, name, phone, status, is_superadmin, anevar_no, county, specs, avatar IS NOT NULL AS has_avatar, is_office, terms_at, created_at, activated_at,
   last_login_at, last_seen_at, notes`;
 export const getUser = (db: D1Database, id: string) => db.prepare(`SELECT ${USER_COLS} FROM users WHERE id = ?`).bind(id).first<User>();
 export const findUser = (db: D1Database, email: string) => db.prepare(`SELECT ${USER_COLS} FROM users WHERE email = ?`).bind(normEmail(email)).first<User>();

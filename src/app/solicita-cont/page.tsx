@@ -1,9 +1,16 @@
 import type { Metadata } from "next";
 import { RequestForm } from "./RequestForm";
+import { getDb } from "@/lib/db";
+import { referralByToken } from "@/lib/referrals";
 
 export const metadata: Metadata = { title: "Solicită cont | VALUEFY Tools" };
+export const dynamic = "force-dynamic";
 
-export default function RequestAccount() {
+export default async function RequestAccount({ searchParams }: { searchParams: Promise<{ r?: string }> }) {
+  // Opened from a colleague's recommendation: we say who recommended and keep the link with the request.
+  const { r } = await searchParams;
+  const db = r ? await getDb() : null;
+  const ref = db ? await referralByToken(db, r) : null;
   return (
     <div className="authPage">
       <aside className="authSide">
@@ -25,7 +32,8 @@ export default function RequestAccount() {
       <main className="authMain">
         <div className="authBox">
           <h1>Solicită cont</h1>
-          <RequestForm />
+          {ref && <div className="note"><b>{ref.by_name}</b> ți-a recomandat VALUEFY Tools.</div>}
+          <RequestForm r={ref ? r : undefined} email={ref?.email} />
           <p className="hint">Ai deja cont? <a className="rowLink" href="/login">Intră în cont</a></p>
         </div>
       </main>

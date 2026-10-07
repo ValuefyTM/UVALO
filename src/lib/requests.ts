@@ -7,6 +7,7 @@ import { esc, layout, sendEmail } from "./email";
 import { origin } from "./site";
 import { seatsUsed } from "./access";
 import { getOrg } from "./orgs";
+import { referralByToken } from "./referrals";
 
 export type Member = { legit: string; name: string; county: string | null; specs: string | null; in_current: number; tablou_date: string | null };
 
@@ -66,8 +67,10 @@ export async function createRequest(db: D1Database, b: Record<string, unknown>) 
   const { ip, ua } = await ipUa();
   const id = uuid();
   const legit = cleanLegit(b.legit);
-  await db.prepare("INSERT INTO account_requests (id, legit, name, email, phone, company, message, ip, user_agent) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)")
-    .bind(id, legit, l.name, email, s("phone", 40) || null, s("company") || null, s("message", 1000) || null, ip, ua).run();
+  // Came from a colleague's recommendation (link in the email)?
+  const ref = await referralByToken(db, typeof b.r === "string" ? b.r : null);
+  await db.prepare("INSERT INTO account_requests (id, legit, name, email, phone, company, message, ip, user_agent, referral_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+    .bind(id, legit, l.name, email, s("phone", 40) || null, s("company") || null, s("message", 1000) || null, ip, ua, ref?.id ?? null).run();
   await db.prepare("INSERT INTO events (module, action, target, meta) VALUES ('public', 'request', ?, ?)").bind(legit, JSON.stringify({ email })).run();
 
   const base = await origin();
@@ -102,11 +105,14 @@ export async function createRequest(db: D1Database, b: Record<string, unknown>) 
 export type RequestRow = {
   id: string; legit: string; name: string; email: string; phone: string | null; company: string | null; message: string | null; status: string;
   created_at: string; decided_at: string | null; decision_note: string | null; decided_by_name: string | null; county: string | null; specs: string | null; in_current: number | null;
+  ref_by: string | null;
 };
 
 export async function listRequests(db: D1Database, status: "pending" | "done") {
   const { results } = await db
-    .prepare(`SELECT r.*, m.county, m.specs, m.in_current, COALESCE(NULLIF(u.name, ''), u.email) AS decided_by_name FROM account_requests r
+    .prepare(`SELECT r.*, m.county, m.specs, m.in_current, COALESCE(NULLIF(u.name, ''), u.email) AS decided_by_name,
+      (SELECT COALESCE(NULLIF(b.name, ''), b.email) FROM referrals f JOIN users b ON b.id = f.by_user WHERE f.id = r.referral_id OR (r.referral_id IS NULL AND f.email = r.email) ORDER BY f.created_at DESC LIMIT 1) AS ref_by
+      FROM account_requests r
       LEFT JOIN anevar_members m ON m.legit = r.legit LEFT JOIN users u ON u.id = r.decided_by
       WHERE ${status === "pending" ? "r.status = 'pending'" : "r.status <> 'pending'"} ORDER BY r.created_at ${status === "pending" ? "ASC" : "DESC"} LIMIT 300`)
     .all<RequestRow>();

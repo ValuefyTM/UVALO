@@ -103,3 +103,34 @@ export function AccountPanel(p: { id: string; name: string; email: string; legit
     </div>
   );
 }
+
+/** "Lucrez ca birou de evaluare": turns on "Firma mea" (colleagues, seats, team activity). */
+export function OfficeToggle(p: { on: boolean; can: boolean; org: string | null }) {
+  const [on, setOn] = useState(p.on);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  const flip = async (v: boolean) => {
+    setBusy(true); setErr("");
+    const r = await fetch("/api/account/office", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ on: v }) }).catch(() => null);
+    setBusy(false);
+    if (!r?.ok) return setErr("Nu am putut salva. Încearcă din nou.");
+    setOn(v); setTimeout(() => location.reload(), 500);
+  };
+  return (
+    <section className="card">
+      <div className="cardHead"><h2>Birou de evaluare</h2>{on && p.can && <a className="btn btnGhost btnSm" href="/firma">Firma mea →</a>}</div>
+      {p.can ? (
+        <>
+          <label className="switchRow">
+            <input type="checkbox" role="switch" checked={on} disabled={busy} onChange={(e) => flip(e.target.checked)} />
+            <span className="switch" aria-hidden="true" />
+            <span><b>Lucrez ca birou de evaluare</b><small>Activează „Firma mea”{p.org ? ` (${p.org})` : ""}: colegii din birou, locurile din abonament și activitatea echipei.</small></span>
+          </label>
+          {err && <div role="alert" className="error">{err}</div>}
+        </>
+      ) : (
+        <p className="hint">{p.org ? `Faci parte din echipa ${p.org}. Colegii și abonamentul sunt administrate de titularul contului firmei.` : "Contul tău nu face parte încă dintr-o firmă."}</p>
+      )}
+    </section>
+  );
+}

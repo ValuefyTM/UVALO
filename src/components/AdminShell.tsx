@@ -2,13 +2,13 @@ import type { Ctx } from "@/lib/access";
 import { initials } from "@/lib/guard";
 import { LogoutButton } from "./ClientBits";
 
-export type AdminKey = "panou" | "solicitari" | "tablou" | "utilizatori" | "firme" | "activitate";
+export type AdminKey = "panou" | "solicitari" | "recomandari" | "tablou" | "utilizatori" | "firme" | "activitate";
 
 /** VALUEFY administration portal: its own menu, separate from the tools the valuers use. */
 export function AdminShell(props: { c: Ctx; active: AdminKey; pending?: number; title: string; subtitle?: string; actions?: React.ReactNode; children: React.ReactNode }) {
   const { c } = props;
   const nav: [AdminKey, string, string][] = [
-    ["panou", "Panou", "/admin"], ["solicitari", "Solicitări de cont", "/admin/solicitari"], ["tablou", "Tablou ANEVAR", "/admin/tablou"],
+    ["panou", "Panou", "/admin"], ["solicitari", "Solicitări de cont", "/admin/solicitari"], ["recomandari", "Recomandări", "/admin/recomandari"], ["tablou", "Tablou ANEVAR", "/admin/tablou"],
     ["utilizatori", "Utilizatori", "/admin/utilizatori"], ["firme", "Firme și abonamente", "/admin/firme"], ["activitate", "Activitate", "/admin/activitate"],
   ];
   return (

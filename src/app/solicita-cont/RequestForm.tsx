@@ -4,10 +4,10 @@ import { useState } from "react";
 
 type Found = { status: string; name?: string; county?: string | null; specs?: string | null };
 
-export function RequestForm() {
+export function RequestForm({ r: refToken, email }: { r?: string; email?: string }) {
   const [legit, setLegit] = useState("");
   const [found, setFound] = useState<Found | null>(null);
-  const [f, setF] = useState({ email: "", phone: "", company: "", confirm: false });
+  const [f, setF] = useState({ email: email ?? "", phone: "", company: "", confirm: false });
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState("");
@@ -33,7 +33,7 @@ export function RequestForm() {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email.trim())) return setMsg("Introdu o adresă de email validă.");
     if (!f.confirm) return setMsg(`Confirmă că ești ${found?.name}.`);
     setBusy(true); setMsg("");
-    const r = await fetch("/api/request", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ legit: legit.replace(/\D/g, ""), ...f }) });
+    const r = await fetch("/api/request", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ legit: legit.replace(/\D/g, ""), ...f, r: refToken }) });
     const d = (await r.json().catch(() => ({}))) as { error?: string; name?: string };
     setBusy(false);
     if (!r.ok) return setMsg(d.error || "Nu am putut trimite solicitarea.");

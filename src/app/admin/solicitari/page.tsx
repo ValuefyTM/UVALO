@@ -26,6 +26,7 @@ export default async function Requests() {
             {r.specs && <div className="specs">{r.specs.split(",").map((s) => <span key={s} className="spec" title={SPEC_LABEL[s]}>{s}</span>)}</div>}
             <span>{r.email}{r.phone ? ` · ${r.phone}` : ""}{r.company ? ` · ${r.company}` : ""}</span>
             {r.message && <p className="prose" style={{ margin: 0 }}>{r.message}</p>}
+            {r.ref_by && <span className="pill pillWarn" style={{ alignSelf: "flex-start" }}>Recomandat de {r.ref_by}</span>}
             <span className="muted" style={{ fontSize: 12 }}>Trimisă {fmtDate(r.created_at, true)}</span>
           </div>
           <RequestActions id={r.id} name={r.name} plans={plans} firms={firms} until={until} />

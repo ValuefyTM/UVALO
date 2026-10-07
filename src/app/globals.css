@@ -567,3 +567,58 @@ a.rMeta:hover u { color: var(--acc-light); }
 .reqCard { display: grid; grid-template-columns: 1fr auto; gap: 14px; align-items: start; padding: 16px; border: 1px solid var(--line); border-radius: 16px; background: #fff; }
 @media (max-width: 760px) { .reqCard { grid-template-columns: 1fr; } }
 .stepNum { width: 28px; height: 28px; border-radius: 50%; background: var(--navy); color: #fff; font-size: 13px; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; }
+
+/* ---------- Profile card, account button, recommendation sticker ---------- */
+.meLink { color: #fff; transition: background 0.2s, border-color 0.2s; }
+.meLink:hover, .meLink[aria-current="page"] { background: rgba(255, 255, 255, 0.1); border-color: rgba(242, 169, 59, 0.55); }
+.meGear { margin-left: auto; color: var(--on-navy-2); display: flex; flex-shrink: 0; }
+.meLink:hover .meGear { color: var(--acc-light); }
+.meRow { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.meBtn { height: 36px; border-radius: 10px; background: var(--acc); color: var(--ink); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+.meBtn:hover { background: var(--acc-ink); }
+.refSticker { position: relative; display: flex; gap: 10px; align-items: center; text-align: left; padding: 12px; border-radius: 14px; border: 1px dashed rgba(242, 169, 59, 0.6); background: linear-gradient(135deg, rgba(242, 169, 59, 0.2), rgba(242, 169, 59, 0.06)); color: #fff; cursor: pointer; font: inherit; transition: border-color 0.2s, transform 0.2s; }
+.refSticker:hover { border-style: solid; border-color: var(--acc); transform: translateY(-1px); }
+.refSticker b { display: block; font-size: 12.5px; }
+.refSticker small { display: block; font-size: 11px; color: var(--on-navy); line-height: 1.4; margin-top: 2px; }
+.refIcon { width: 34px; height: 34px; border-radius: 10px; background: var(--acc); color: var(--ink); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.refCard { text-align: left; font: inherit; cursor: pointer; background: var(--acc-soft); border-color: #f5d9a6; width: 100%; }
+.mobileOnly { display: none; }
+@media (max-width: 979px) { .mobileOnly { display: block; } }
+
+/* ---------- Modal ---------- */
+.modal { border: 0; padding: 0; background: transparent; max-width: min(480px, calc(100vw - 24px)); width: 100%; color: var(--ink); }
+.modal::backdrop { background: rgba(0, 0, 0, 0.55); backdrop-filter: blur(2px); }
+.modalBox { position: relative; background: #fff; border-radius: 22px; padding: 26px 24px 22px; box-shadow: 0 30px 80px -20px rgba(0, 0, 0, 0.5); animation: vfIn 0.25s ease-out; }
+.modalBox h2 { margin: 0; font-size: 20px; letter-spacing: -0.02em; }
+.modalBox p { margin: 0; font-size: 14px; line-height: 1.6; }
+.modalForm, .refDone { display: flex; flex-direction: column; gap: 12px; }
+.modalForm textarea { height: auto; padding: 10px 12px; resize: vertical; font: inherit; }
+.modalX { position: absolute; top: 12px; right: 12px; width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--line); background: #fff; font-size: 20px; line-height: 1; cursor: pointer; color: var(--muted); }
+.modalX:hover { color: var(--ink); border-color: var(--ink); }
+.modalActions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; margin-top: 4px; }
+.refDone { align-items: flex-start; }
+.refHeart { width: 52px; height: 52px; border-radius: 16px; background: var(--acc-soft); color: var(--acc); display: flex; align-items: center; justify-content: center; }
+
+/* ---------- Switch (Birou de evaluare) ---------- */
+.switchRow { display: flex; gap: 14px; align-items: flex-start; cursor: pointer; }
+.switchRow input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.switch { position: relative; width: 44px; height: 26px; border-radius: 999px; background: #d6d1c4; flex-shrink: 0; transition: background 0.2s; margin-top: 2px; }
+.switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3); transition: transform 0.2s; }
+.switchRow input:checked + .switch { background: var(--navy); }
+.switchRow input:checked + .switch::after { transform: translateX(18px); }
+.switchRow input:focus-visible + .switch { outline: 2px solid var(--acc); outline-offset: 2px; }
+.switchRow input:disabled + .switch { opacity: 0.6; }
+.switchRow b { display: block; font-size: 14px; }
+.switchRow small { display: block; font-size: 13px; color: var(--muted); line-height: 1.5; margin-top: 2px; }
+
+/* ---------- Home: illustrated cards, announcement ---------- */
+.tool.withArt { padding-top: 0; overflow: hidden; }
+.tool .toolArt { display: block; width: calc(100% + 44px); margin: 0 -22px 4px; height: 150px; }
+.tool.withArt:hover .toolArt { filter: brightness(1.08); }
+.announce { margin-top: 18px; display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.4fr); background: #fff; border: 1px solid var(--line); border-radius: 22px; overflow: hidden; }
+.announce .toolArt { width: 100%; height: 100%; min-height: 220px; display: block; }
+.announceText { padding: 24px 26px; display: flex; flex-direction: column; gap: 10px; }
+.announceText h2 { margin: 0; font-size: 20px; letter-spacing: -0.02em; }
+.announceText p { margin: 0; font-size: 14px; line-height: 1.6; color: var(--muted); }
+.announceText ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; font-size: 14px; line-height: 1.55; }
+@media (max-width: 760px) { .announce { grid-template-columns: 1fr; } .announce .toolArt { min-height: 0; height: 140px; } }

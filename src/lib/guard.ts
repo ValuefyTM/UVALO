@@ -22,6 +22,7 @@ export async function superPage() {
 export async function orgAdminPage() {
   const r = await page();
   if (!r.c.org || !canManageOrg(r.c)) redirect("/");
+  if (!r.c.user.is_office) redirect("/cont"); // "Firma mea" is turned on from the account ("Lucrez ca birou")
   return r;
 }
 
