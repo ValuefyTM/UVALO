@@ -19,7 +19,7 @@ export function AdminShell(props: { c: Ctx; active: AdminKey; pending?: number; 
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/valuefy-logo.png" alt="VALUEFY" />
           </span>
-          <span className="brandLabel">Tools · Admin</span>
+          <span className="brandLabel">Admin</span>
         </div>
         <nav className="nav" aria-label="Administrare">
           {nav.map(([k, l, h]) => (
