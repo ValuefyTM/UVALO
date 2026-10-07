@@ -20,7 +20,7 @@ export default async function Login({ searchParams }: { searchParams: Promise<{ 
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <span className="eyebrow" style={{ position: "relative", color: "var(--acc-light)" }}>VALUEFY TOOLS</span>
           <h2>Instrumente pentru evaluatori, într-un singur cont.</h2>
-          <p>Localizare cadastrală ANCPI pe teren și la birou. În curând: analize de piață.</p>
+          <p>Localizator cadastral, pe teren și la birou. În curând: analize de piață.</p>
         </div>
         <p style={{ fontSize: 12 }}>Pentru membrii titulari ANEVAR</p>
       </aside>

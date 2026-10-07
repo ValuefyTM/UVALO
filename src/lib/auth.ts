@@ -206,11 +206,11 @@ async function sendInviteEmail(db: D1Database, u: User, orgId: string | null, to
   return sendEmail({
     to: u.email,
     subject: org ? `Invitație în VALUEFY Tools — ${org.name}` : "Invitație în VALUEFY Tools",
-    text: `${hello}\n${by?.name || "VALUEFY"} te-a invitat în VALUEFY Tools${org ? `, în contul firmei ${org.name}` : ""}: instrumente pentru evaluatori (localizare cadastrală ANCPI și altele).\n${active ? "Intră cu adresa ta" : "Activează contul"}: ${link}`,
+    text: `${hello}\n${by?.name || "VALUEFY"} te-a invitat în VALUEFY Tools${org ? `, în contul firmei ${org.name}` : ""}: instrumente pentru evaluatori (localizator cadastral și altele).\n${active ? "Intră cu adresa ta" : "Activează contul"}: ${link}`,
     html: layout({
       eyebrow: "VALUEFY Tools",
       title: `${hello} Ai fost invitat(ă) în VALUEFY Tools.`,
-      body: `<p style="margin:0 0 10px;font-size:15px;line-height:1.65;color:#4A4A4A">${esc(by?.name || "VALUEFY")} te-a invitat ${where}. Găsești acolo instrumentele VALUEFY pentru evaluatori: localizare cadastrală ANCPI (număr cadastral, topo, adresă, locația ta pe parcelă) și, în curând, analize de piață.</p>
+      body: `<p style="margin:0 0 10px;font-size:15px;line-height:1.65;color:#4A4A4A">${esc(by?.name || "VALUEFY")} te-a invitat ${where}. Găsești acolo instrumentele VALUEFY pentru evaluatori: localizatorul cadastral (număr cadastral, topo, adresă, locația ta pe parcelă) și, în curând, analize de piață.</p>
 <p style="margin:0;font-size:15px;line-height:1.65;color:#4A4A4A">Nu ai nevoie de parolă: te autentifici cu un cod primit pe email.</p>`,
       button: { label: active ? "Intră în VALUEFY Tools →" : "Activează contul →", url: link },
       foot: active ? "Dacă nu te aștepți la acest email, îl poți ignora." : `Invitația este valabilă ${INVITE_DAYS} zile. Dacă nu te aștepți la acest email, îl poți ignora.`,

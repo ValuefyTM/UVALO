@@ -5,7 +5,7 @@
 	"main": ".open-next/worker.js",
 	"compatibility_date": "2026-09-25",
 	"compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
-	// Keep the variables set in the Cloudflare dashboard (RESEND_API_KEY, TOOLS_EMAIL_FROM, TOOLS_SUPERADMINS) on every deploy.
+	// Keep the variables set in the Cloudflare dashboard (RESEND_API_KEY, TOOLS_EMAIL_FROM, TOOLS_SUPERADMINS, GOOGLE_MAPS_KEY) on every deploy.
 	"keep_vars": true,
 	"assets": {
 		"directory": ".open-next/assets",

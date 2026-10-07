@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "VALUEFY Tools",
-  description: "Instrumente pentru evaluatori: localizare cadastrală ANCPI și altele.",
+  description: "Instrumente pentru evaluatori: localizator cadastral și altele.",
   robots: { index: false, follow: false },
 };
 

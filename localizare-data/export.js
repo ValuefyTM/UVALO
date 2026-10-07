@@ -11,6 +11,10 @@
     pdf: "https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js",
     docx: "https://cdn.jsdelivr.net/npm/docx@9.5.1/dist/index.iife.js",
   };
+  // Google satellite when the page has the key (tools.valuefy.ro), otherwise Esri World Imagery.
+  const GM = window.VF_GMAPS || null;
+  const tileUrl = (z, x, y) => GM ? `https://tile.googleapis.com/v1/2dtiles/${z}/${x}/${y}?session=${GM.sat}&key=${GM.key}` : `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${z}/${y}/${x}`;
+  const CREDIT = GM ? "Imagini © Google" : "Imagini © Esri, Maxar, Earthstar Geographics";
   const DISCLAIMER = "Informații orientative, extrase din planul cadastral (BCPI Timiș). Nu înlocuiesc extrasul de carte funciară sau documentația cadastrală.";
 
   /* ---------- utilitare ---------- */
@@ -104,12 +108,12 @@
     const x = c.getContext("2d");
     x.fillStyle = NAVY; x.fillRect(0, 0, W, H);
 
-    // Satelit (Esri World Imagery): plăcile se încarcă cu CORS; dacă nu se pot folosi, harta rămâne doar cu planul cadastral.
-    const tz = Math.min(z, 19), f = 2 ** (z - tz), size = TS * f;
+    // Satelit (Google sau Esri): plăcile se încarcă cu CORS; dacă nu se pot folosi, harta rămâne doar cu planul cadastral.
+    const tz = Math.min(z, GM ? 20 : 19), f = 2 ** (z - tz), size = TS * f;
     const tiles = [];
     for (let tx = Math.floor(ox / size); tx <= Math.floor((ox + W) / size); tx++)
       for (let ty = Math.floor(oy / size); ty <= Math.floor((oy + H) / size); ty++)
-        tiles.push(loadImg(`https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${tz}/${ty}/${tx}`, true).then((img) => ({ img, tx, ty })));
+        tiles.push(loadImg(tileUrl(tz, tx, ty), true).then((img) => ({ img, tx, ty })));
     let imagery = 0;
     for (const t of await Promise.all(tiles)) if (t.img) { x.drawImage(t.img, t.tx * size - ox, t.ty * size - oy, size, size); imagery++; }
     try { x.getImageData(0, 0, 1, 1); } catch { x.fillStyle = NAVY; x.fillRect(0, 0, W, H); imagery = 0; }
@@ -157,7 +161,7 @@
     x.fillStyle = "rgba(255,255,255,.92)"; x.fillRect(16, H - 60, len + 32, 44);
     x.fillStyle = NAVY; x.fillRect(32, H - 28, len, 6); x.font = `bold 17px ${FONT}`; x.textAlign = "left"; x.textBaseline = "alphabetic";
     x.fillText(`${nice >= 1000 ? nice / 1000 + " km" : nice + " m"}`, 32, H - 36);
-    const attr = imagery ? "Imagini © Esri, Maxar, Earthstar Geographics · Plan cadastral BCPI Timiș" : "Plan cadastral BCPI Timiș (imaginea satelit nu a putut fi încărcată)";
+    const attr = imagery ? `${CREDIT} · Plan cadastral BCPI Timiș` : "Plan cadastral BCPI Timiș (imaginea satelit nu a putut fi încărcată)";
     x.font = `15px ${FONT}`; const aw = x.measureText(attr).width;
     x.fillStyle = "rgba(255,255,255,.85)"; x.fillRect(W - aw - 24, H - 30, aw + 24, 30); x.fillStyle = MUTED; x.fillText(attr, W - aw - 12, H - 10);
     return { canvas: c, imagery: !!imagery };
@@ -174,13 +178,14 @@
   }
 
   /** Blocks of the sheet; each knows its height and draws itself at y. */
-  function blocks(d, map, logo, x) {
+  function blocks(d, map, x) {
     const W = PW - 2 * M, out = [];
     out.push({ h: 104, draw: (y) => {
       x.fillStyle = NAVY; x.fillRect(0, 0, PW, y + 74);
-      if (logo) { x.fillStyle = "#fff"; x.beginPath(); x.roundRect ? x.roundRect(M, y + 4, 230, 56, 12) : x.rect(M, y + 4, 230, 56); x.fill(); x.drawImage(logo, M + 14, y + 13, 202, (202 * logo.height) / logo.width); }
-      x.fillStyle = GOLD; x.font = `bold 16px ${FONT}`; x.textAlign = "right"; x.fillText("FIȘĂ DE LOCALIZARE CADASTRALĂ", PW - M, y + 28);
-      x.fillStyle = "#CFCFCF"; x.font = `15px ${FONT}`; x.fillText(`generată ${today()} · valuefy.ro`, PW - M, y + 54); x.textAlign = "left";
+      // Fără siglă: fișa poate fi anexată de orice evaluator.
+      const ty = Math.round((y + 74) / 2) + 8; // centrat pe banda neagră
+      x.fillStyle = GOLD; x.font = `bold 22px ${FONT}`; x.fillText("FIȘĂ DE LOCALIZARE CADASTRALĂ", M, ty);
+      x.fillStyle = "#CFCFCF"; x.font = `15px ${FONT}`; x.textAlign = "right"; x.fillText(`generată ${today()}`, PW - M, ty); x.textAlign = "left";
     } });
     out.push({ h: 104, draw: (y) => {
       x.fillStyle = "#9A5F00"; x.font = `bold 15px ${FONT}`; x.fillText(d.kind.toUpperCase() + " · " + U.name.toUpperCase(), M, y + 18);
@@ -235,9 +240,9 @@
   /** Pages of the sheet: `pageH` = A4 height for the PDF, or null for one long PNG. */
   async function render(o, pageH) {
     const d = sheetData(o);
-    const [{ canvas: map, imagery }, logo] = await Promise.all([mapCanvas(o, 1500, 860), loadImg("/valuefy-logo.png", false)]);
+    const { canvas: map, imagery } = await mapCanvas(o, 1500, 860);
     const measure = document.createElement("canvas").getContext("2d");
-    const list = blocks(d, map, logo, measure);
+    const list = blocks(d, map, measure);
     const foot = 76, top = M, bottom = (h) => h - foot;
     // Paginare: blocurile întregi trec pe pagina următoare; rândurile tabelului reiau capul de tabel.
     const pages = [[]]; let y = top;
@@ -253,7 +258,7 @@
     return { d, imagery, canvases: pages.map((items, i) => {
       const c = document.createElement("canvas"); c.width = PW; c.height = H;
       const x = c.getContext("2d"); x.fillStyle = "#fff"; x.fillRect(0, 0, PW, H); x.textBaseline = "alphabetic";
-      const real = blocks(d, map, logo, x);
+      const real = blocks(d, map, x);
       items.forEach(({ b, y }) => real[list.indexOf(b)].draw(y));
       drawFooter(x, i + 1, pages.length, H);
       return c;
@@ -272,7 +277,7 @@
     const r = await render(o, PH);
     const pdf = new window.jspdf.jsPDF({ orientation: "p", unit: "mm", format: "a4", compress: true });
     r.canvases.forEach((c, i) => { if (i) pdf.addPage(); pdf.addImage(c.toDataURL("image/jpeg", 0.9), "JPEG", 0, 0, 210, 297); });
-    pdf.setProperties({ title: `${r.d.title} · ${U.name}`, subject: "Fișă de localizare cadastrală", author: "VALUEFY" });
+    pdf.setProperties({ title: `${r.d.title} · ${U.name}`, subject: "Fișă de localizare cadastrală" });
     save(pdf.output("blob"), r.d.file + ".pdf");
     return r;
   }
@@ -281,10 +286,8 @@
     await loadScript(LIBS.docx);
     const D = window.docx;
     const d = sheetData(o);
-    const [{ canvas: map, imagery }, logoImg] = await Promise.all([mapCanvas(o, 1500, 860), loadImg("/valuefy-logo.png", false)]);
+    const { canvas: map, imagery } = await mapCanvas(o, 1500, 860);
     const png = async (c) => new Uint8Array(await (await toBlob(c)).arrayBuffer());
-    let logo = null;
-    if (logoImg) { const c = document.createElement("canvas"); c.width = logoImg.width; c.height = logoImg.height; c.getContext("2d").drawImage(logoImg, 0, 0); logo = await png(c); }
     const T = (text, o2 = {}) => new D.TextRun({ text, font: "Verdana", size: 20, color: "111111", ...o2 });
     const P_ = (runs, o2 = {}) => new D.Paragraph({ children: Array.isArray(runs) ? runs : [runs], spacing: { after: 120 }, ...o2 });
     const H_ = (text) => P_(T(text.toUpperCase(), { bold: true, size: 18, color: "9A5F00" }), { spacing: { before: 240, after: 100 } });
@@ -292,26 +295,25 @@
     const borders = { top: border, bottom: border, left: border, right: border, insideHorizontal: border, insideVertical: border };
     const cell = (text, o2 = {}) => new D.TableCell({ children: [P_(T(text, { size: o2.size || 18, bold: o2.bold, color: o2.color, font: o2.font }), { spacing: { after: 0 } })], shading: o2.fill ? { type: D.ShadingType.CLEAR, fill: o2.fill, color: "auto" } : undefined, margins: { top: 60, bottom: 60, left: 100, right: 100 } });
     const facts = new D.Table({ width: { size: 100, type: D.WidthType.PERCENTAGE }, borders,
-      rows: [new D.TableRow({ children: d.facts.map(([k]) => cell(k, { fill: "FBF8F2", color: "4A4A66" })) }), new D.TableRow({ children: d.facts.map(([, v]) => cell(v, { bold: true, size: 22 })) })] });
+      rows: [new D.TableRow({ children: d.facts.map(([k]) => cell(k, { fill: "FBF8F2", color: "4A4A4A" })) }), new D.TableRow({ children: d.facts.map(([, v]) => cell(v, { bold: true, size: 22 })) })] });
     const coords = new D.Table({ width: { size: 100, type: D.WidthType.PERCENTAGE }, borders,
       rows: [new D.TableRow({ tableHeader: true, children: d.cols.map(([t]) => cell(t, { bold: true, color: "FFFFFF", fill: "111111" })) })]
         .concat(d.rows.map((r, i) => new D.TableRow({ children: r.map((v) => cell(v, { font: "Consolas", fill: i % 2 ? "FBF8F2" : undefined })) }))) });
     const children = [];
-    if (logo) children.push(P_(new D.ImageRun({ type: "png", data: logo, transformation: { width: 150, height: Math.round((150 * logoImg.height) / logoImg.width) } })));
     children.push(
       P_(T(`FIȘĂ DE LOCALIZARE CADASTRALĂ · ${d.kind.toUpperCase()} · ${U.name.toUpperCase()}`, { bold: true, size: 16, color: "9A5F00" }), { spacing: { after: 60 } }),
       P_(T(d.title, { bold: true, size: 40 }), { spacing: { after: 60 } }),
-      P_(T(`${d.subtitle} · generată ${today()}`, { color: "4A4A66" })),
+      P_(T(`${d.subtitle} · generată ${today()}`, { color: "4A4A4A" })),
       P_(new D.ImageRun({ type: "png", data: await png(map), transformation: { width: 620, height: 355 } })),
-      P_(T(imagery ? "Imagini © Esri, Maxar, Earthstar Geographics · Plan cadastral BCPI Timiș" : "Plan cadastral BCPI Timiș", { size: 14, color: "6B6B85" })),
+      P_(T(imagery ? `${CREDIT} · Plan cadastral BCPI Timiș` : "Plan cadastral BCPI Timiș", { size: 14, color: "6B6B6B" })),
       facts,
       ...d.notes.concat([`Coordonate centru (WGS84): ${d.center}`]).map((n) => P_(T(n), { spacing: { before: 160, after: 0 } })),
     );
     for (const s of d.sections) children.push(H_(s.h), ...s.lines.map((l) => P_(T(l))));
     children.push(H_(d.tableTitle), coords, P_(T(d.total, { bold: true, font: "Consolas" }), { spacing: { before: 120 } }),
-      P_(T(DISCLAIMER, { size: 16, color: "6B6B85", italics: true }), { spacing: { before: 240 } }));
+      P_(T(DISCLAIMER, { size: 16, color: "6B6B6B", italics: true }), { spacing: { before: 240 } }));
     const doc = new D.Document({
-      creator: "VALUEFY", title: `${d.title} · ${U.name}`, description: "Fișă de localizare cadastrală",
+      creator: "Localizator cadastral", title: `${d.title} · ${U.name}`, description: "Fișă de localizare cadastrală",
       sections: [{ properties: { page: { margin: { top: 900, bottom: 900, left: 900, right: 900 } } }, children }],
     });
     save(await D.Packer.toBlob(doc), d.file + ".docx");
@@ -329,6 +331,7 @@
   document.head.append(css);
 
   let busy = false;
+  let multiSel = null, hidden = null; // localizarea multiplă afișată (mai jos)
   async function run(kind, btns) {
     const o = multiSel || cur;
     if (busy || !o || !(o.s || o.multi)) return;
@@ -339,25 +342,32 @@
       say(r.imagery === false ? "Fișa a fost descărcată (fără imagine satelit)." : "Fișa a fost descărcată.");
     } catch (e) {
       console.error(e); say("Nu am putut genera fișa. Verifică conexiunea și încearcă din nou.");
-    } finally { busy = false; btns.forEach((b) => (b.disabled = false)); }
+    } finally { busy = false; btns.forEach((b) => (b.disabled = false)); addButtons(); }
   }
 
+  // Butoanele stau în bara de sus (lângă titlu); active doar când e afișat un imobil sau o localizare multiplă.
   function addButtons() {
     const out = document.getElementById("out");
-    const actions = out && out.querySelector(".actions");
-    if (!actions || out.querySelector(".vfx")) return;
-    const box = document.createElement("div"); box.className = "vfx";
-    box.innerHTML = '<span>Descarcă fișa cu harta și datele:</span><button type="button" data-k="pdf">PDF</button><button type="button" data-k="docx">Word</button><button type="button" data-k="png">PNG</button>';
-    const btns = [...box.querySelectorAll("button")];
-    btns.forEach((b) => (b.onclick = () => run(b.dataset.k, btns)));
-    actions.after(box);
+    let box = document.getElementById("hx");
+    if (!box) {
+      box = document.createElement("div"); box.id = "hx";
+      const actions = out && out.querySelector(".actions");
+      if (!actions) return;
+      box.className = "vfx"; actions.after(box);
+    }
+    if (!box.firstChild) {
+      box.innerHTML = '<span>Descarcă fișa</span><button type="button" data-k="pdf">PDF</button><button type="button" data-k="docx">Word</button><button type="button" data-k="png">PNG</button>';
+      const btns = [...box.querySelectorAll("button")];
+      btns.forEach((b) => (b.onclick = () => run(b.dataset.k, btns)));
+    }
+    const o = multiSel || cur, ready = !!(o && (o.s || o.multi));
+    box.querySelectorAll("button").forEach((b) => { if (!busy) b.disabled = !ready; b.title = ready ? "Descarcă fișa de localizare (" + b.textContent + ")" : "Caută mai întâi un imobil"; });
   }
   const out = document.getElementById("out");
   if (out) new MutationObserver(addButtons).observe(out, { childList: true });
   addButtons();
 
   /* ---------- localizare multiplă ---------- */
-  let multiSel = null, hidden = null;
 
   /** "405306, 405307 406991" → ["405306","405307","406991"]; null when it is a single number or a topo number. */
   function parseMany(v) {

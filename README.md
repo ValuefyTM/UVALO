@@ -26,7 +26,9 @@ Versiunile `next` / `@opennextjs/cloudflare` / `wrangler` sunt fixate: Next 16.4
 - Worker: `tools` · branch `main` · build command `npm ci` · deploy command `npm run cf:deploy`
   (creează baza de date dacă lipsește, aplică migrările D1, construiește, copiază datele, publică).
 - Variabile: `TOOLS_SUPERADMINS` (emailuri separate prin virgulă), `RESEND_API_KEY` (secret),
-  `TOOLS_EMAIL_FROM` (ex. `VALUEFY Tools <tools@valuefy.ro>`).
+  `TOOLS_EMAIL_FROM` (ex. `VALUEFY Tools <tools@valuefy.ro>`),
+  `GOOGLE_MAPS_KEY` (secret, opțional: hărțile Google și căutarea adreselor în localizator; fără ea rămân Esri / OpenStreetMap).
+  În Google Cloud cheia are activate **Map Tiles API** și **Geocoding API**; restricție recomandată: doar aceste două API-uri.
 - Domeniu: `tools.valuefy.ro` (Custom domain pe worker).
 
 ### Local

@@ -10,7 +10,7 @@ export function AppShell(props: { c: Ctx; active: Key; title: string; subtitle?:
   const { c } = props;
   const nav: { key: Key; label: string; href: string; soon?: boolean }[] = [
     { key: "home", label: "Acasă", href: "/" },
-    { key: "localizare", label: "Localizare ANCPI", href: "/localizare" },
+    { key: "localizare", label: "Localizator cadastral", href: "/localizare" },
     ...(c.org && canManageOrg(c) ? [{ key: "firma" as const, label: "Firma mea", href: "/firma" }] : []),
     { key: "cont", label: "Contul meu", href: "/cont" },
   ];
