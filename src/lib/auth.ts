@@ -16,7 +16,7 @@ const inMinutes = (m: number) => new Date(Date.now() + m * 60_000).toISOString()
 
 export type User = {
   id: string; email: string; name: string; phone: string | null; status: "invited" | "active" | "disabled"; is_superadmin: number;
-  anevar_no: string | null; terms_at: string | null; created_at: string; activated_at: string | null; last_login_at: string | null; last_seen_at: string | null;
+  anevar_no: string | null; county: string | null; specs: string | null; has_avatar: number; terms_at: string | null; created_at: string; activated_at: string | null; last_login_at: string | null; last_seen_at: string | null;
   notes: string | null;
 };
 
@@ -25,8 +25,11 @@ export async function audit(db: D1Database, actor: string | null, action: string
     .bind(actor, action, entity ?? null, entityId ?? null, details ?? null).run();
 }
 
-export const getUser = (db: D1Database, id: string) => db.prepare("SELECT * FROM users WHERE id = ?").bind(id).first<User>();
-export const findUser = (db: D1Database, email: string) => db.prepare("SELECT * FROM users WHERE email = ?").bind(normEmail(email)).first<User>();
+// The picture is not loaded with the account (it is served by /api/avatar/<id>).
+const USER_COLS = `id, email, name, phone, status, is_superadmin, anevar_no, county, specs, avatar IS NOT NULL AS has_avatar, terms_at, created_at, activated_at,
+  last_login_at, last_seen_at, notes`;
+export const getUser = (db: D1Database, id: string) => db.prepare(`SELECT ${USER_COLS} FROM users WHERE id = ?`).bind(id).first<User>();
+export const findUser = (db: D1Database, email: string) => db.prepare(`SELECT ${USER_COLS} FROM users WHERE email = ?`).bind(normEmail(email)).first<User>();
 
 /** Emails in TOOLS_SUPERADMINS get a super-admin account on their first sign-in (bootstraps the platform). */
 const superEmails = () => (process.env.TOOLS_SUPERADMINS || "").split(",").map(normEmail).filter(Boolean);
@@ -199,7 +202,7 @@ async function sendInviteEmail(db: D1Database, u: User, orgId: string | null, to
   const active = u.status === "active";
   const link = active ? `${await origin()}/login` : `${await origin()}/invitatie?token=${encodeURIComponent(token)}`;
   const hello = u.name ? `Bună, ${u.name.split(" ")[0]}!` : "Bună!";
-  const where = org ? `în contul firmei <strong style="color:#17173A">${esc(org.name)}</strong>` : "ca administrator VALUEFY";
+  const where = org ? `în contul firmei <strong style="color:#111111">${esc(org.name)}</strong>` : "ca administrator VALUEFY";
   return sendEmail({
     to: u.email,
     subject: org ? `Invitație în VALUEFY Tools — ${org.name}` : "Invitație în VALUEFY Tools",
@@ -228,20 +231,24 @@ export async function resendInvite(db: D1Database, inviteId: string, by: User | 
 /** The invitation behind a link (for the acceptance page). */
 export async function inviteByToken(db: D1Database, token: string) {
   return db
-    .prepare(`SELECT i.id, i.email, i.org_id, i.role, o.name AS org_name, u.id AS user_id, u.name, u.phone, u.status FROM invites i
+    .prepare(`SELECT i.id, i.email, i.org_id, i.role, o.name AS org_name, u.id AS user_id, u.name, u.phone, u.status, u.anevar_no, u.county FROM invites i
       JOIN users u ON u.email = i.email LEFT JOIN orgs o ON o.id = i.org_id
       WHERE i.token_hash = ? AND i.accepted_at IS NULL AND i.cancelled_at IS NULL AND i.expires_at > ?`)
     .bind(await sha256(token), now())
-    .first<{ id: string; email: string; org_id: string | null; role: string; org_name: string | null; user_id: string; name: string; phone: string | null; status: string }>();
+    .first<{ id: string; email: string; org_id: string | null; role: string; org_name: string | null; user_id: string; name: string; phone: string | null; status: string; anevar_no: string | null; county: string | null }>();
 }
 
 export async function acceptInvite(db: D1Database, token: string, name: string, phone: string | null, anevar: string | null) {
   const inv = await inviteByToken(db, token);
   if (!inv) return null;
+  // Name, card, county and specializations come from the ANEVAR list and are not changed by the user.
+  const legit = inv.anevar_no ?? (anevar ? anevar.replace(/\D/g, "") : null);
+  const m = legit ? await db.prepare("SELECT name, county, specs FROM anevar_members WHERE legit = ?").bind(legit).first<{ name: string; county: string | null; specs: string | null }>() : null;
   const t = now();
   await db.batch([
-    db.prepare("UPDATE users SET name = ?, phone = ?, anevar_no = COALESCE(?, anevar_no), status = CASE WHEN status = 'disabled' THEN status ELSE 'active' END, activated_at = COALESCE(activated_at, ?), terms_at = ? WHERE id = ?")
-      .bind(name, phone, anevar, t, t, inv.user_id),
+    db.prepare(`UPDATE users SET name = ?, phone = ?, anevar_no = COALESCE(?, anevar_no), county = COALESCE(?, county), specs = COALESCE(?, specs),
+        status = CASE WHEN status = 'disabled' THEN status ELSE 'active' END, activated_at = COALESCE(activated_at, ?), terms_at = ? WHERE id = ?`)
+      .bind(m?.name ?? (inv.anevar_no ? inv.name : name), phone, m ? legit : null, m?.county ?? null, m?.specs ?? null, t, t, inv.user_id),
     db.prepare("UPDATE invites SET accepted_at = ? WHERE id = ?").bind(t, inv.id),
   ]);
   await audit(db, inv.user_id, "invite.accept", inv.org_id ? "org" : "platform", inv.org_id ?? undefined, inv.email);

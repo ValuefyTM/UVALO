@@ -10,7 +10,7 @@
 <style>
 /* Layout: bară VALUEFY sus · panou fișă (stânga, desktop) + hartă; pe telefon hartă sus și fișa dedesubt, pagina derulează normal */
 :root{
-  --navy:#17173a; --navy-deep:#111130; --navy-hover:#24245a; --ink:#17173a; --muted:#626771; --muted-2:#4a4a66;
+  --navy:#111111; --navy-deep:#000000; --navy-hover:#2a2a2a; --ink:#111111; --muted:#666666; --muted-2:#4a4a4a;
   --acc:#f2a93b; --acc-ink:#e0931a; --acc-soft:#fdf1dc; --acc-text:#9a5f00;
   --white:#ffffff; --cream:#fbf8f2; --cream-deep:#f7f1e4; --gray-bg:#f7f8fa; --line:#e7e9ed; --line-warm:#ede6d8; --header-bg:#f2ece0;
   --danger-soft:#fdecea; --danger-text:#a4281e;
@@ -78,7 +78,7 @@ main{overflow:auto;padding:18px 20px 24px;display:grid;gap:18px;align-content:st
 h2{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--acc-text);margin:0 0 8px}
 .seg{display:inline-flex;background:var(--gray-bg);border:1px solid var(--line);border-radius:999px;padding:3px;margin-bottom:8px}
 .seg button{border:0;background:none;border-radius:999px;padding:6px 12px;font-size:12px;font-weight:700;color:var(--muted);cursor:pointer;min-height:32px}
-.seg button[aria-pressed="true"]{background:var(--white);color:var(--ink);box-shadow:0 1px 3px rgba(23,23,58,.15)}
+.seg button[aria-pressed="true"]{background:var(--white);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.15)}
 .tabs{margin:0;justify-self:start}
 form input.txt{font:400 15px var(--sans);letter-spacing:0}
 #rad{width:96px}
@@ -104,25 +104,25 @@ tfoot td{background:var(--cream);font-weight:700}
 .actions .btn2{justify-content:center}
 .nb{display:flex;flex-wrap:wrap;gap:6px}
 .note{font-size:11.5px;color:var(--muted);line-height:1.5;border-top:1px solid var(--line);padding:12px 20px calc(12px + env(safe-area-inset-bottom,0px));margin:0}
-.loading{position:absolute;inset:0;display:grid;place-items:center;background:rgba(23,23,58,.35);color:#fff;font-weight:700;z-index:900}
+.loading{position:absolute;inset:0;display:grid;place-items:center;background:rgba(0,0,0,.35);color:#fff;font-weight:700;z-index:900}
 .mapwrap{position:relative;min-width:0;min-height:0}
 .mapwrap #map{position:absolute;inset:0}
 .gpsBtn{margin-top:8px;background:var(--white);color:var(--ink);border:1px solid var(--line,#e2d8c4);display:flex;align-items:center;justify-content:center;gap:8px}
-.gpsBtn[aria-pressed="true"],.gpsCtl[aria-pressed="true"]{background:#3b74d4;color:#fff;border-color:#3b74d4}
-.gpsCtl{position:absolute;left:10px;top:84px;z-index:500;width:34px;height:34px;border-radius:4px;border:2px solid rgba(0,0,0,.2);background:#fff;color:#17173a;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;background-clip:padding-box}
-.gpsBar{position:absolute;left:10px;right:10px;bottom:26px;z-index:600;background:#fff;color:#17173a;border-radius:14px;padding:9px 12px;box-shadow:0 8px 24px rgba(23,23,58,.3);font-size:13px;line-height:1.5;max-height:45%;overflow:auto}
-.gpsBar .sub{display:block;color:#6b6b85;font-size:12px;margin-top:2px}
+.gpsBtn[aria-pressed="true"],.gpsCtl[aria-pressed="true"]{background:#111111;color:#fff;border-color:#111111}
+.gpsCtl{position:absolute;left:10px;top:84px;z-index:500;width:34px;height:34px;border-radius:4px;border:2px solid rgba(0,0,0,.2);background:#fff;color:#111111;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;background-clip:padding-box}
+.gpsBar{position:absolute;left:10px;right:10px;bottom:26px;z-index:600;background:#fff;color:#111111;border-radius:14px;padding:9px 12px;box-shadow:0 8px 24px rgba(0,0,0,.3);font-size:13px;line-height:1.5;max-height:45%;overflow:auto}
+.gpsBar .sub{display:block;color:#6b6b6b;font-size:12px;margin-top:2px}
 .gpsBar .acts{margin-top:7px}
 .mapwrap:has(.gpsBar:not([hidden])) .legend{display:none}
 .gpsBar b{font-family:var(--mono,ui-monospace,monospace)}
 .gpsBar .ok{color:#157f55;font-weight:700}.gpsBar .no{color:#9a5f00;font-weight:700}
 .gpsBar .acts{display:flex;gap:6px;flex-wrap:wrap}
 .gpsBar button.pid{padding:2px 8px;margin:0 2px}
-.gpsBar button[aria-pressed="true"]{background:#3b74d4;border-color:#3b74d4;color:#fff}
+.gpsBar button[aria-pressed="true"]{background:#111111;border-color:#111111;color:#fff}
 .gpsDotIco{background:none;border:0}.gpsDotIco .cone{transition:transform .15s linear}
-.gpsBar button{font:inherit;font-size:12px;font-weight:700;padding:5px 10px;display:inline-block;border-radius:999px;border:1px solid #e2d8c4;background:#fbf8f2;color:#17173a;cursor:pointer}
+.gpsBar button{font:inherit;font-size:12px;font-weight:700;padding:5px 10px;display:inline-block;border-radius:999px;border:1px solid #e2d8c4;background:#fbf8f2;color:#111111;cursor:pointer}
 .gpsBar button.pid{background:#fdf1dc;border-color:#f5d9a6;font-family:var(--mono,ui-monospace,monospace)}
-#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--navy);color:#f4f5f7;padding:10px 16px;border-radius:12px;font-size:13px;z-index:2000;box-shadow:0 14px 30px -14px rgba(23,23,58,.5);max-width:calc(100% - 32px)}
+#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--navy);color:#f4f5f7;padding:10px 16px;border-radius:12px;font-size:13px;z-index:2000;box-shadow:0 14px 30px -14px rgba(0,0,0,.5);max-width:calc(100% - 32px)}
 .vx{font:800 11px var(--mono);color:var(--ink);background:var(--acc);border:1.5px solid var(--navy);border-radius:999px;min-width:20px;height:20px;display:grid;place-items:center;padding:0 4px}
 .leaflet-tooltip.pl{font:700 12px var(--mono);color:var(--ink)}
 .leaflet-container{font-family:var(--sans)}
@@ -140,7 +140,7 @@ tfoot td{background:var(--cream);font-weight:700}
 .info b{color:var(--ink)}
 .tchips{display:flex;flex-wrap:wrap;gap:6px}
 .tchips span{border:1px solid var(--line-warm);background:var(--cream);border-radius:999px;font:600 12px var(--mono);padding:5px 10px}
-.legend{position:absolute;left:10px;bottom:28px;z-index:800;background:rgba(255,255,255,.94);border-radius:10px;padding:6px 10px;font-size:11px;color:var(--ink);display:flex;gap:10px;flex-wrap:wrap;box-shadow:0 8px 20px -12px rgba(23,23,58,.5);max-width:calc(100% - 20px)}
+.legend{position:absolute;left:10px;bottom:28px;z-index:800;background:rgba(255,255,255,.94);border-radius:10px;padding:6px 10px;font-size:11px;color:var(--ink);display:flex;gap:10px;flex-wrap:wrap;box-shadow:0 8px 20px -12px rgba(0,0,0,.5);max-width:calc(100% - 20px)}
 .legend i{display:inline-block;width:11px;height:11px;border-radius:2px;vertical-align:-1px;margin-right:4px}
 .leaflet-bar a{color:var(--ink)}
 
@@ -272,7 +272,7 @@ const hullL=L.layerGroup().addTo(map);
 function drawHulls(){
   hullL.clearLayers();
   UATS.forEach(u=>{if(U&&U.key===u.key)return;
-    const h=L.polygon(u.hull,{color:'#f2a93b',weight:U?1.2:2,dashArray:U?'4 6':null,fillColor:'#17173a',fillOpacity:U?0:.25});
+    const h=L.polygon(u.hull,{color:'#f2a93b',weight:U?1.2:2,dashArray:U?'4 6':null,fillColor:'#111111',fillOpacity:U?0:.25});
     h.bindTooltip(u.name+(U?'':' · '+u.n.toLocaleString('ro-RO')+' imobile'),{sticky:true,className:'pl'});
     h.on('click',async()=>{lastNear=null;locLayer.clearLayers();await loadUat(u.key);history.replaceState(null,'','#'+u.key)});
     h.addTo(hullL)});
@@ -377,7 +377,7 @@ async function goToPoint(la,lo,label,alts){
   $('load').hidden=true;
   const R=+$('rad').value;
   L.circle([la,lo],{radius:R,color:'#ffffff',weight:2,dashArray:'5 5',fill:false,interactive:false}).addTo(locLayer);
-  L.circleMarker([la,lo],{radius:8,color:'#17173a',weight:3,fillColor:'#f2a93b',fillOpacity:1,interactive:false}).addTo(locLayer);
+  L.circleMarker([la,lo],{radius:8,color:'#111111',weight:3,fillColor:'#f2a93b',fillOpacity:1,interactive:false}).addTo(locLayer);
   if(!u){lastNear=null;map.setView([la,lo],17,{animate:false});
     $('out').innerHTML='<div class="loc"><b>'+esc(label)+'</b><small>'+la.toFixed(6)+', '+lo.toFixed(6)+'</small></div><div class="flag">Locația e în afara UAT-urilor disponibile ('+UATS.map(u=>u.name).join(', ')+').</div>';return}
   await loadUat(u.key);
@@ -478,7 +478,7 @@ function topoSearch(q){
 function renderTopo(){
   const T=lastTopo; if(!T)return; backTo=null; lastNear=null; sel.clearLayers(); locLayer.clearLayers();
   const res=T.res.slice(0,150);
-  res.forEach((t,k)=>L.circleMarker(t.w,{radius:k<T.nex?7:5,color:'#17173a',weight:2,fillColor:k<T.nex?'#ffd21f':'#ffe9a8',fillOpacity:1,interactive:false}).addTo(locLayer));
+  res.forEach((t,k)=>L.circleMarker(t.w,{radius:k<T.nex?7:5,color:'#111111',weight:2,fillColor:k<T.nex?'#ffd21f':'#ffe9a8',fillOpacity:1,interactive:false}).addTo(locLayer));
   if(res.length)map.fitBounds(L.latLngBounds(res.map(t=>t.w)).pad(.3),{maxZoom:19,animate:false});
   let h='<div class="loc"><b>Nr. topo „'+esc(T.q)+'”</b><small>'+(T.res.length?T.res.length+' rezultate în '+esc(U.name)+(T.nex?' · '+T.nex+' potriviri exacte':''):'niciun rezultat')+'</small></div>';
   if(!T.res.length)h+='<div class="flag">Numărul nu apare în adnotările planului pentru '+esc(U.name)+'. Numerele topo sunt scrise doar parțial în plan. Încearcă o parte a numărului (de exemplu doar „247/2/1/1/2”) sau verifică localitatea.</div>';
@@ -489,7 +489,7 @@ function renderTopo(){
   $('out').innerHTML=h;
   $('out').querySelectorAll('[data-tk]').forEach(b=>b.onclick=()=>{const t=res[+b.dataset.tk];
     if(t.p>=0){show(P[t.p].id,t.p,true);backTo={label:'← Înapoi la rezultatele topo',fn:renderTopo};addBack();
-      L.circleMarker(t.w,{radius:7,color:'#17173a',weight:2,fillColor:'#ffd21f',fillOpacity:1,interactive:false}).bindTooltip(t.t,{permanent:true,direction:'top',className:'pl'}).addTo(sel)}
+      L.circleMarker(t.w,{radius:7,color:'#111111',weight:2,fillColor:'#ffd21f',fillOpacity:1,interactive:false}).bindTooltip(t.t,{permanent:true,direction:'top',className:'pl'}).addTo(sel)}
     else{goToPoint(t.w[0],t.w[1],'Nr. topo '+t.t+' (fără nr. cadastral nou)',[]).then(()=>{backTo={label:'← Înapoi la rezultatele topo',fn:renderTopo};addBack()})}});
 }
 function addBack(){if(!backTo)return;const b=document.createElement('button');b.type='button';b.className='back';b.textContent=backTo.label;const fn=backTo.fn;b.onclick=()=>fn();$('out').prepend(b)}
@@ -538,7 +538,7 @@ let compassOn=false, heading=null, headSrc='', compassRaf=0;
 const DIRS=['N','NE','E','SE','S','SV','V','NV'];
 const dirName=h=>DIRS[Math.round(h/45)%8];
 function gpsIcon(){return L.divIcon({className:'gpsDotIco',iconSize:[96,96],iconAnchor:[48,48],
-  html:'<svg width="96" height="96" viewBox="0 0 96 96" aria-hidden="true"><defs><linearGradient id="gcg" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#3b74d4" stop-opacity=".85"/><stop offset="1" stop-color="#3b74d4" stop-opacity=".05"/></linearGradient></defs><g class="cone" style="transform-origin:48px 48px;display:none"><path d="M48 48 L27 4 A46 46 0 0 1 69 4 Z" fill="url(#gcg)" stroke="#ffffff" stroke-opacity=".6" stroke-width="1"/></g><circle cx="48" cy="48" r="9" fill="#3b74d4" stroke="#fff" stroke-width="3"/></svg>'})}
+  html:'<svg width="96" height="96" viewBox="0 0 96 96" aria-hidden="true"><defs><linearGradient id="gcg" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#111111" stop-opacity=".85"/><stop offset="1" stop-color="#111111" stop-opacity=".05"/></linearGradient></defs><g class="cone" style="transform-origin:48px 48px;display:none"><path d="M48 48 L27 4 A46 46 0 0 1 69 4 Z" fill="url(#gcg)" stroke="#ffffff" stroke-opacity=".6" stroke-width="1"/></g><circle cx="48" cy="48" r="9" fill="#111111" stroke="#fff" stroke-width="3"/></svg>'})}
 function drawHeading(){
   compassRaf=0; const el=gpsDot&&gpsDot.getElement(); if(!el)return; const c=el.querySelector('.cone');
   const h=compassOn?heading:(gpsPos&&gpsPos.course!=null?gpsPos.course:null);
@@ -581,7 +581,7 @@ async function onGps(pos){
   const la=pos.coords.latitude, lo=pos.coords.longitude, acc=Math.max(1,Math.round(pos.coords.accuracy));
   const course=pos.coords.heading!=null&&!isNaN(pos.coords.heading)&&(pos.coords.speed||0)>0.8?pos.coords.heading:null; // direcția de mers, când nu e busolă
   gpsPos={la,lo,acc,course};
-  if(!gpsDot){gpsAcc=L.circle([la,lo],{radius:acc,color:'#3b74d4',weight:1,fillColor:'#3b74d4',fillOpacity:.12,interactive:false}).addTo(gpsL);
+  if(!gpsDot){gpsAcc=L.circle([la,lo],{radius:acc,color:'#111111',weight:1,fillColor:'#111111',fillOpacity:.12,interactive:false}).addTo(gpsL);
     gpsDot=L.marker([la,lo],{icon:gpsIcon(),interactive:false,keyboard:false,zIndexOffset:1000}).addTo(gpsL)}
   else{gpsAcc.setLatLng([la,lo]).setRadius(acc);gpsDot.setLatLng([la,lo])}
   drawHeading();

@@ -30,7 +30,7 @@ export default async function Invitation({ searchParams }: { searchParams: Promi
             <>
               <h1>Activează contul</h1>
               <p>Contul <b>{inv.email}</b>{inv.org_name ? <> · firma <b>{inv.org_name}</b></> : null}</p>
-              <AcceptForm token={token} name={inv.name} phone={inv.phone ?? ""} />
+              <AcceptForm token={token} name={inv.name} phone={inv.phone ?? ""} legit={inv.anevar_no} county={inv.county} />
             </>
           ) : (
             <>

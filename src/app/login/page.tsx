@@ -22,13 +22,18 @@ export default async function Login({ searchParams }: { searchParams: Promise<{ 
           <h2>Instrumente pentru evaluatori, într-un singur cont.</h2>
           <p>Localizare cadastrală ANCPI pe teren și la birou. În curând: analize de piață.</p>
         </div>
-        <p style={{ fontSize: 12 }}>Acces pe bază de invitație</p>
+        <p style={{ fontSize: 12 }}>Pentru membrii titulari ANEVAR</p>
       </aside>
       <main className="authMain">
         <div className="authBox">
           <h1>Intră în VALUEFY Tools</h1>
-          <p>Introdu adresa de email cu care ai fost invitat(ă).</p>
+          <p>Introdu adresa de email a contului tău.</p>
           <LoginForm expired={(await searchParams).link === "expired"} />
+          <div className="note" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <b>Nu ai cont?</b>
+            <span>Dacă ești membru titular ANEVAR, solicită un cont cu numărul legitimației.</span>
+            <a className="btn btnGhost" href="/solicita-cont" style={{ alignSelf: "flex-start" }}>Solicită cont →</a>
+          </div>
         </div>
       </main>
     </div>

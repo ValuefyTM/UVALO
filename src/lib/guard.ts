@@ -11,10 +11,12 @@ export async function page(): Promise<{ db: D1Database; c: Ctx }> {
   return { db, c };
 }
 
+/** VALUEFY administration portal; also the number of account requests waiting (menu badge). */
 export async function superPage() {
   const r = await page();
   if (!r.c.super) redirect("/");
-  return r;
+  const p = await r.db.prepare("SELECT COUNT(*) AS n FROM account_requests WHERE status = 'pending'").first<{ n: number }>();
+  return { ...r, pending: p?.n ?? 0 };
 }
 
 export async function orgAdminPage() {

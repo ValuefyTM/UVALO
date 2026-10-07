@@ -3,8 +3,7 @@ import { notFound } from "next/navigation";
 import { fmtDate, superPage } from "@/lib/guard";
 import { orgBlock, seatsUsed } from "@/lib/access";
 import { activityByDay, getOrg, members, pendingInvites, recentEvents, topTargets } from "@/lib/orgs";
-import { AppShell } from "@/components/AppShell";
-import { AdminTabs } from "@/components/AdminTabs";
+import { AdminShell } from "@/components/AdminShell";
 import { MembersPanel, OrgForm } from "@/components/forms";
 import { CountTable, DayBars, EventLog } from "@/components/Charts";
 
@@ -12,7 +11,7 @@ export const metadata: Metadata = { title: "Firmă | VALUEFY Tools" };
 export const dynamic = "force-dynamic";
 
 export default async function AdminOrg({ params }: { params: Promise<{ id: string }> }) {
-  const { db, c } = await superPage();
+  const { db, c, pending } = await superPage();
   const { id } = await params;
   const org = await getOrg(db, id);
   if (!org) notFound();
@@ -22,8 +21,7 @@ export default async function AdminOrg({ params }: { params: Promise<{ id: strin
   ]);
   const block = orgBlock(org);
   return (
-    <AppShell c={c} active="admin" title={org.name} subtitle={`Creată ${fmtDate(org.created_at)} · ${org.plan_name} · ${used} / ${org.seats} locuri`} actions={<a className="btn btnGhost btnSm" href="/admin">← Firme</a>}>
-      <AdminTabs active="firme" />
+    <AdminShell c={c} active="firme" pending={pending} title={org.name} subtitle={`Creată ${fmtDate(org.created_at)} · ${org.plan_name} · ${used} / ${org.seats} locuri`} actions={<a className="btn btnGhost btnSm" href="/admin/firme">← Firme</a>}>
       {block && <div className="note">{block}</div>}
       <MembersPanel
         org={id} admin
@@ -40,6 +38,6 @@ export default async function AdminOrg({ params }: { params: Promise<{ id: strin
         <CountTable title="Localități folosite (30 de zile)" rows={uats.map((u) => [u.target, u.n, u.u])} head={["UAT", "Deschideri", "Persoane"]} empty="Nicio localitate deschisă încă." />
       </div>
       <EventLog rows={events} showOrg={false} />
-    </AppShell>
+    </AdminShell>
   );
 }

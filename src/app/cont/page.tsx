@@ -1,31 +1,21 @@
 import type { Metadata } from "next";
-import { fmtDate, page } from "@/lib/guard";
-import { device } from "@/lib/ua";
-import { recentEvents } from "@/lib/orgs";
+import { fmtDate, initials, page } from "@/lib/guard";
 import { AppShell } from "@/components/AppShell";
-import { ProfileForm, SessionsList } from "@/components/forms";
-import { EventLog } from "@/components/Charts";
+import { AccountPanel } from "@/components/AccountPanel";
 
 export const metadata: Metadata = { title: "Contul meu | VALUEFY Tools" };
 export const dynamic = "force-dynamic";
 
 export default async function Account() {
   const { db, c } = await page();
-  const { results } = await db
-    .prepare("SELECT id, user_agent, ip, country, city, created_at, last_seen_at FROM sessions WHERE user_id = ? AND revoked_at IS NULL AND expires_at > ? ORDER BY last_seen_at DESC")
-    .bind(c.user.id, new Date().toISOString())
-    .all<{ id: string; user_agent: string | null; ip: string | null; country: string | null; city: string | null; created_at: string; last_seen_at: string | null }>();
-  const events = await recentEvents(db, { userId: c.user.id, limit: 30 });
+  const u = c.user;
+  const m = u.anevar_no ? await db.prepare("SELECT name, county, specs, tablou_date FROM anevar_members WHERE legit = ?").bind(u.anevar_no).first<{ name: string; county: string | null; specs: string | null; tablou_date: string | null }>() : null;
   return (
-    <AppShell c={c} active="cont" title="Contul meu" subtitle={c.user.email}>
-      <div className="cols">
-        <ProfileForm name={c.user.name} phone={c.user.phone ?? ""} anevar={c.user.anevar_no ?? ""} email={c.user.email} />
-        <SessionsList rows={results.map((s) => ({
-          id: s.id, device: device(s.user_agent), place: [s.city, s.country].filter(Boolean).join(", ") || s.ip || "locație necunoscută",
-          created: fmtDate(s.created_at, true), seen: fmtDate(s.last_seen_at, true), current: s.id === c.session.id,
-        }))} />
+    <AppShell c={c} active="cont" title="Contul meu">
+      <div style={{ maxWidth: 760 }}>
+        <AccountPanel id={u.id} name={m?.name ?? u.name} email={u.email} legit={u.anevar_no} county={m?.county ?? u.county} specs={m?.specs ?? u.specs}
+          hasAvatar={!!u.has_avatar} initials={initials(u.name, u.email)} tablou={m?.tablou_date ? fmtDate(m.tablou_date) : null} />
       </div>
-      <EventLog rows={events} showOrg={c.orgs.length > 1} showUser={false} />
     </AppShell>
   );
 }

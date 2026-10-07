@@ -11,8 +11,8 @@ export function GET() {
       scope: "/localizare",
       display: "standalone",
       orientation: "any",
-      background_color: "#17173A",
-      theme_color: "#17173A",
+      background_color: "#111111",
+      theme_color: "#111111",
       icons: [
         { src: "/loc-icon-192.png", sizes: "192x192", type: "image/png" },
         { src: "/loc-icon-512.png", sizes: "512x512", type: "image/png" },

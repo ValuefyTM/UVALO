@@ -3,7 +3,7 @@ import { canManageOrg, ROLE_LABEL } from "@/lib/access";
 import { initials } from "@/lib/guard";
 import { LogoutButton, OrgSwitch } from "./ClientBits";
 
-type Key = "home" | "localizare" | "firma" | "admin" | "cont";
+type Key = "home" | "localizare" | "firma" | "cont";
 
 /** Sidebar layout (VALUEFY design), with the menu the person is entitled to. */
 export function AppShell(props: { c: Ctx; active: Key; title: string; subtitle?: string; actions?: React.ReactNode; children: React.ReactNode }) {
@@ -12,10 +12,9 @@ export function AppShell(props: { c: Ctx; active: Key; title: string; subtitle?:
     { key: "home", label: "Acasă", href: "/" },
     { key: "localizare", label: "Localizare ANCPI", href: "/localizare" },
     ...(c.org && canManageOrg(c) ? [{ key: "firma" as const, label: "Firma mea", href: "/firma" }] : []),
-    ...(c.super ? [{ key: "admin" as const, label: "Administrare", href: "/admin" }] : []),
     { key: "cont", label: "Contul meu", href: "/cont" },
   ];
-  const sub = c.org ? `${c.org.name} · ${c.role ? ROLE_LABEL[c.role] : ""}` : c.super ? "Administrator VALUEFY" : c.user.email;
+  const sub = c.user.anevar_no ? `Legitimație ANEVAR ${c.user.anevar_no}` : c.org ? `${c.org.name} · ${c.role ? ROLE_LABEL[c.role] : ""}` : c.super ? "Administrator VALUEFY" : c.user.email;
   return (
     <div className="shell">
       <aside className="side">
@@ -33,9 +32,13 @@ export function AppShell(props: { c: Ctx; active: Key; title: string; subtitle?:
           <a aria-disabled="true" tabIndex={-1} style={{ opacity: 0.6, cursor: "default" }}>Analize de piață <span className="soon">în curând</span></a>
         </nav>
         <div className="me">
+          {c.super && <a className="sideLink" href="/admin">Portal admin →</a>}
           <OrgSwitch orgs={c.orgs.map((o) => ({ id: o.org_id, name: o.org_name }))} current={c.org?.id ?? null} />
           <div className="meCard">
-            <span className="avatar">{initials(c.user.name, c.user.email)}</span>
+            {c.user.has_avatar
+              // eslint-disable-next-line @next/next/no-img-element
+              ? <img className="avatar avatarImg" src={`/api/avatar/${c.user.id}`} alt="" />
+              : <span className="avatar">{initials(c.user.name, c.user.email)}</span>}
             <span className="meText"><b>{c.user.name || c.user.email}</b><small>{sub}</small></span>
           </div>
           <LogoutButton />

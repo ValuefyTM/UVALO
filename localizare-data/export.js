@@ -5,7 +5,7 @@
    sel, lblL, show, loadUat, geom, fmt, toast, $) fără să le modifice codul. */
 (() => {
   "use strict";
-  const NAVY = "#17173A", GOLD = "#F2A93B", INK = "#17173A", MUTED = "#4A4A66", LINE = "#E2D8C4", CREAM = "#FBF8F2";
+  const NAVY = "#111111", GOLD = "#F2A93B", INK = "#111111", MUTED = "#4A4A4A", LINE = "#E2D8C4", CREAM = "#FBF8F2";
   const FONT = "Verdana, Geneva, sans-serif", MONO = "ui-monospace, Menlo, Consolas, monospace";
   const LIBS = {
     pdf: "https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js",
@@ -113,7 +113,7 @@
     let imagery = 0;
     for (const t of await Promise.all(tiles)) if (t.img) { x.drawImage(t.img, t.tx * size - ox, t.ty * size - oy, size, size); imagery++; }
     try { x.getImageData(0, 0, 1, 1); } catch { x.fillStyle = NAVY; x.fillRect(0, 0, W, H); imagery = 0; }
-    if (imagery) { x.fillStyle = "rgba(17,17,48,.18)"; x.fillRect(0, 0, W, H); }
+    if (imagery) { x.fillStyle = "rgba(0,0,0,.18)"; x.fillRect(0, 0, W, H); }
 
     const path = (w) => { x.beginPath(); w.forEach((p, i) => { const [a, b] = pt(p); i ? x.lineTo(a, b) : x.moveTo(a, b); }); x.closePath(); };
     const vis = (q) => q.bb && !(q.bb[2] < (bb[0] - 0.01) || q.bb[0] > bb[2] + 0.01 || q.bb[3] < bb[1] - 0.01 || q.bb[1] > bb[3] + 0.01);
@@ -285,7 +285,7 @@
     const png = async (c) => new Uint8Array(await (await toBlob(c)).arrayBuffer());
     let logo = null;
     if (logoImg) { const c = document.createElement("canvas"); c.width = logoImg.width; c.height = logoImg.height; c.getContext("2d").drawImage(logoImg, 0, 0); logo = await png(c); }
-    const T = (text, o2 = {}) => new D.TextRun({ text, font: "Verdana", size: 20, color: "17173A", ...o2 });
+    const T = (text, o2 = {}) => new D.TextRun({ text, font: "Verdana", size: 20, color: "111111", ...o2 });
     const P_ = (runs, o2 = {}) => new D.Paragraph({ children: Array.isArray(runs) ? runs : [runs], spacing: { after: 120 }, ...o2 });
     const H_ = (text) => P_(T(text.toUpperCase(), { bold: true, size: 18, color: "9A5F00" }), { spacing: { before: 240, after: 100 } });
     const border = { style: D.BorderStyle.SINGLE, size: 4, color: "E2D8C4" };
@@ -294,7 +294,7 @@
     const facts = new D.Table({ width: { size: 100, type: D.WidthType.PERCENTAGE }, borders,
       rows: [new D.TableRow({ children: d.facts.map(([k]) => cell(k, { fill: "FBF8F2", color: "4A4A66" })) }), new D.TableRow({ children: d.facts.map(([, v]) => cell(v, { bold: true, size: 22 })) })] });
     const coords = new D.Table({ width: { size: 100, type: D.WidthType.PERCENTAGE }, borders,
-      rows: [new D.TableRow({ tableHeader: true, children: d.cols.map(([t]) => cell(t, { bold: true, color: "FFFFFF", fill: "17173A" })) })]
+      rows: [new D.TableRow({ tableHeader: true, children: d.cols.map(([t]) => cell(t, { bold: true, color: "FFFFFF", fill: "111111" })) })]
         .concat(d.rows.map((r, i) => new D.TableRow({ children: r.map((v) => cell(v, { font: "Consolas", fill: i % 2 ? "FBF8F2" : undefined })) }))) });
     const children = [];
     if (logo) children.push(P_(new D.ImageRun({ type: "png", data: logo, transformation: { width: 150, height: Math.round((150 * logoImg.height) / logoImg.width) } })));
@@ -321,10 +321,10 @@
   /* ---------- butoanele ---------- */
   const css = document.createElement("style");
   css.textContent = ".vfx{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:12px 0 4px;padding:12px 14px;border-radius:14px;background:#fdf1dc;border:1px solid #f5d9a6}" +
-    ".vfx span{font-size:12.5px;font-weight:700;color:#9a5f00;margin-right:4px}.vfx button{height:36px;padding:0 14px;border-radius:999px;border:1px solid #e2d8c4;background:#fff;color:#17173a;font:700 13px Verdana,Geneva,sans-serif;cursor:pointer}" +
-    ".vfx button:hover{border-color:#17173a}.vfx button:disabled{opacity:.55;cursor:progress}" +
-    ".vfm-l{background:#fff;border:2px solid #f2a93b;border-radius:999px;color:#17173a;font:700 12px ui-monospace,Menlo,monospace;padding:2px 8px;box-shadow:none}.vfm-l:before{display:none}" +
-    ".vfm-t td button{border:0;background:none;padding:0;font:inherit;font-weight:700;color:#17173a;text-decoration:underline;text-underline-offset:3px;cursor:pointer}.vfm-t td button:hover{color:#9a5f00}" +
+    ".vfx span{font-size:12.5px;font-weight:700;color:#9a5f00;margin-right:4px}.vfx button{height:36px;padding:0 14px;border-radius:999px;border:1px solid #e2d8c4;background:#fff;color:#111111;font:700 13px Verdana,Geneva,sans-serif;cursor:pointer}" +
+    ".vfx button:hover{border-color:#111111}.vfx button:disabled{opacity:.55;cursor:progress}" +
+    ".vfm-l{background:#fff;border:2px solid #f2a93b;border-radius:999px;color:#111111;font:700 12px ui-monospace,Menlo,monospace;padding:2px 8px;box-shadow:none}.vfm-l:before{display:none}" +
+    ".vfm-t td button{border:0;background:none;padding:0;font:inherit;font-weight:700;color:#111111;text-decoration:underline;text-underline-offset:3px;cursor:pointer}.vfm-t td button:hover{color:#9a5f00}" +
     ".vfm-miss{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.vfm-miss span{font:700 12px ui-monospace,Menlo,monospace;padding:3px 9px;border-radius:999px;background:#fbe9e7;color:#b3261e}";
   document.head.append(css);
 
