@@ -24,7 +24,7 @@ Versiunile `next` / `@opennextjs/cloudflare` / `wrangler` sunt fixate: Next 16.4
 ### Cloudflare (Workers Builds)
 
 - Worker: `tools` · branch `main` · build command `npm ci` · deploy command `npm run cf:deploy`
-  (aplică migrările D1, construiește, copiază datele, publică). Baza de date se creează la primul deploy.
+  (creează baza de date dacă lipsește, aplică migrările D1, construiește, copiază datele, publică).
 - Variabile: `TOOLS_SUPERADMINS` (emailuri separate prin virgulă), `RESEND_API_KEY` (secret),
   `TOOLS_EMAIL_FROM` (ex. `VALUEFY Tools <tools@valuefy.ro>`).
 - Domeniu: `tools.valuefy.ro` (Custom domain pe worker).

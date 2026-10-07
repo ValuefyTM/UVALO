@@ -7,7 +7,7 @@
     "build": "next build",
     "lint": "tsc --noEmit",
     "cf:build": "opennextjs-cloudflare build && node scripts/copy-localizare.mjs",
-    "cf:deploy": "wrangler d1 migrations apply DB --remote && opennextjs-cloudflare build && node scripts/copy-localizare.mjs && opennextjs-cloudflare deploy",
+    "cf:deploy": "(wrangler d1 create valuefy-tools-db > /dev/null 2>&1 || true) && wrangler d1 migrations apply DB --remote && opennextjs-cloudflare build && node scripts/copy-localizare.mjs && opennextjs-cloudflare deploy",
     "db:migrate:local": "wrangler d1 migrations apply DB --local"
   },
   "dependencies": {
