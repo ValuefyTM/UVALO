@@ -568,14 +568,11 @@ a.rMeta:hover u { color: var(--acc-light); }
 @media (max-width: 760px) { .reqCard { grid-template-columns: 1fr; } }
 .stepNum { width: 28px; height: 28px; border-radius: 50%; background: var(--navy); color: #fff; font-size: 13px; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; }
 
-/* ---------- Profile card, account button, recommendation sticker ---------- */
+/* ---------- Profile card (opens the account), recommendation sticker ---------- */
 .meLink { color: #fff; transition: background 0.2s, border-color 0.2s; }
 .meLink:hover, .meLink[aria-current="page"] { background: rgba(255, 255, 255, 0.1); border-color: rgba(242, 169, 59, 0.55); }
 .meGear { margin-left: auto; color: var(--on-navy-2); display: flex; flex-shrink: 0; }
 .meLink:hover .meGear { color: var(--acc-light); }
-.meRow { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.meBtn { height: 36px; border-radius: 10px; background: var(--acc); color: var(--ink); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
-.meBtn:hover { background: var(--acc-ink); }
 .refSticker { position: relative; display: flex; gap: 10px; align-items: center; text-align: left; padding: 12px; border-radius: 14px; border: 1px dashed rgba(242, 169, 59, 0.6); background: linear-gradient(135deg, rgba(242, 169, 59, 0.2), rgba(242, 169, 59, 0.06)); color: #fff; cursor: pointer; font: inherit; transition: border-color 0.2s, transform 0.2s; }
 .refSticker:hover { border-style: solid; border-color: var(--acc); transform: translateY(-1px); }
 .refSticker b { display: block; font-size: 12.5px; }
