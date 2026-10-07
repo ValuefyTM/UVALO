@@ -56,6 +56,9 @@ export async function context(db: D1Database): Promise<Ctx | null> {
   return { user, session, super: sup, orgs, org, role, modules, block };
 }
 
+/** "Birou de evaluare" (Firma mea: colleagues, seats) opens together with the subscriptions; until then it shows "În curând". */
+export const OFFICE_READY = false;
+
 export const canManageOrg = (c: Ctx) => c.super || c.role === "owner" || c.role === "admin";
 
 /** Seats taken in a firm: active members plus pending invitations. */

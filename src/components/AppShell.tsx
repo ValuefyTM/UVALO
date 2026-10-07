@@ -1,5 +1,5 @@
 import type { Ctx } from "@/lib/access";
-import { canManageOrg, ROLE_LABEL } from "@/lib/access";
+import { canManageOrg, OFFICE_READY, ROLE_LABEL } from "@/lib/access";
 import { initials } from "@/lib/guard";
 import { LogoutButton, OrgSwitch } from "./ClientBits";
 import { Referral } from "./Referral";
@@ -13,7 +13,7 @@ export function AppShell(props: { c: Ctx; active: Key; title: string; subtitle?:
     { key: "home", label: "Acasă", href: "/" },
     { key: "localizare", label: "Localizator cadastral", href: "/localizare" },
     // "Firma mea" only for those who turned on "Lucrez ca birou de evaluare" in their account.
-    ...(c.org && canManageOrg(c) && c.user.is_office ? [{ key: "firma" as const, label: "Firma mea", href: "/firma" }] : []),
+    ...(OFFICE_READY && c.org && canManageOrg(c) && c.user.is_office ? [{ key: "firma" as const, label: "Firma mea", href: "/firma" }] : []),
   ];
   // On the phone the account is in the bottom menu; on the computer it opens from the profile card.
   const mobileNav = [...nav, { key: "cont" as const, label: "Contul meu", href: "/cont" }];

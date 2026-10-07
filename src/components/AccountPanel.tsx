@@ -105,7 +105,7 @@ export function AccountPanel(p: { id: string; name: string; email: string; legit
 }
 
 /** "Lucrez ca birou de evaluare": turns on "Firma mea" (colleagues, seats, team activity). */
-export function OfficeToggle(p: { on: boolean; can: boolean; org: string | null }) {
+export function OfficeToggle(p: { ready: boolean; on: boolean; can: boolean; org: string | null }) {
   const [on, setOn] = useState(p.on);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
@@ -116,6 +116,17 @@ export function OfficeToggle(p: { on: boolean; can: boolean; org: string | null 
     if (!r?.ok) return setErr("Nu am putut salva. Încearcă din nou.");
     setOn(v); setTimeout(() => location.reload(), 500);
   };
+  // Not open yet: shown as "În curând", turned off and not clickable (it opens with the subscriptions).
+  if (!p.ready) return (
+    <section className="card">
+      <div className="cardHead"><h2>Birou de evaluare</h2><span className="pill pillWarn">În curând</span></div>
+      <label className="switchRow" style={{ cursor: "default", opacity: 0.6 }}>
+        <input type="checkbox" role="switch" checked={false} disabled readOnly />
+        <span className="switch" aria-hidden="true" />
+        <span><b>Lucrez ca birou de evaluare</b><small>Vei putea adăuga colegii din birou și urmări activitatea echipei. Funcția se activează odată cu abonamentele pentru birouri.</small></span>
+      </label>
+    </section>
+  );
   return (
     <section className="card">
       <div className="cardHead"><h2>Birou de evaluare</h2>{on && p.can && <a className="btn btnGhost btnSm" href="/firma">Firma mea →</a>}</div>

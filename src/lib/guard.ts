@@ -1,7 +1,7 @@
 // Server components: load the signed-in person or send them to the sign-in page.
 import { redirect } from "next/navigation";
 import { getDb } from "./db";
-import { canManageOrg, context, type Ctx } from "./access";
+import { canManageOrg, context, OFFICE_READY, type Ctx } from "./access";
 
 export async function page(): Promise<{ db: D1Database; c: Ctx }> {
   const db = await getDb();
@@ -22,7 +22,7 @@ export async function superPage() {
 export async function orgAdminPage() {
   const r = await page();
   if (!r.c.org || !canManageOrg(r.c)) redirect("/");
-  if (!r.c.user.is_office) redirect("/cont"); // "Firma mea" is turned on from the account ("Lucrez ca birou")
+  if (!r.c.super && (!OFFICE_READY || !r.c.user.is_office)) redirect("/cont"); // "Firma mea" is turned on from the account ("Lucrez ca birou")
   return r;
 }
 
