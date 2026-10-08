@@ -265,7 +265,7 @@ const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',
 const map=L.map('map',{preferCanvas:true,zoomControl:true,tap:true}).setView([45.75,21.25],12);
 /* Hărți de fundal: Google (când pagina are cheia, pe tools.valuefy.ro) sau, fără ea, Esri + OpenStreetMap. */
 const GM=window.VF_GMAPS||null;
-let sat,roads=null,osm,base;
+let sat,roads=null,osm,base,planAttr=null;
 if(GM){
   const gUrl=s=>'https://tile.googleapis.com/v1/2dtiles/{z}/{x}/{y}?session='+s+'&key='+encodeURIComponent(GM.key);
   const gOpt={maxZoom:22,maxNativeZoom:20,referrerPolicy:'strict-origin-when-cross-origin'};
@@ -367,9 +367,8 @@ async function loadUat(key){
   ids=[...byId.keys()].sort();
   all.clearLayers(); sel.clearLayers(); cur=null;
   const base={color:'#ffffff',weight:.8,opacity:.7,fillOpacity:0};
-  // Parcels kept from an earlier plan (not in the latest ANCPI export): dashed, and under the current ones, which get the clicks where they overlap.
-  const prev={...base,dashArray:'4 4',opacity:.5};
-  const ls=P.map(p=>{const l=L.polygon(p.w,p.o?prev:base);l.bindTooltip(p.id+(p.o?' (plan anterior)':''),{className:'pl',sticky:true,direction:'top'});l.on('click',()=>{$('q').value=p.id;show(p.id,p.i,true)});return l});
+  // Parcels kept from an earlier plan go under the current ones, which get the clicks where they overlap.
+  const ls=P.map(p=>{const l=L.polygon(p.w,base);l.bindTooltip(p.id,{className:'pl',sticky:true,direction:'top'});l.on('click',()=>{$('q').value=p.id;show(p.id,p.i,true)});return l});
   P.forEach((p,i)=>{if(p.o)ls[i].addTo(all)});P.forEach((p,i)=>{if(!p.o)ls[i].addTo(all)});
   bL.clearLayers(); ivL.clearLayers();
   const bst={color:'#9e1218',weight:1,fillColor:'#e3262e',fillOpacity:.78};
@@ -377,7 +376,9 @@ async function loadUat(key){
   D.IV.forEach(v=>L.polygon(v.w,{color:'#2bd4c4',weight:2,dashArray:'6 5',fill:false,interactive:false}).bindTooltip(v.name).addTo(ivL));
   map.fitBounds(L.featureGroup(ls).getBounds(),{animate:false});
   drawHulls(); refreshLabels();
-  $('hint').textContent=byId.size.toLocaleString('ro-RO')+' imobile și '+BL.length.toLocaleString('ro-RO')+' construcții în '+u.name+'. Sau atinge o parcelă sau o construcție pe hartă.';
+  $('hint').textContent=byId.size.toLocaleString('ro-RO')+' imobile și '+BL.length.toLocaleString('ro-RO')+' construcții în '+u.name+(U.date?' · date cadastrale la '+U.date:'')+'. Sau atinge o parcelă sau o construcție pe hartă.';
+  if(planAttr)map.attributionControl.removeAttribution(planAttr);
+  map.attributionControl.addAttribution(planAttr='Plan cadastral '+u.name+(U.date?' la '+U.date:''));
   $('foot').textContent='Sursă: plan cadastral (strat ImobileE3), UAT '+u.name+'. Construcțiile sunt din stratul ConstructiiE3 (numerotarea C1, C2… e orientativă, după mărime). Numerele topo provin din adnotările planului și sunt orientative. Coordonatele Stereo 70 sunt cele din planul cadastral; cele GPS (WGS84) sunt calculate, cu o precizie de aproximativ 1–3 m. Informațiile au caracter orientativ și nu înlocuiesc extrasul de carte funciară sau documentația cadastrală.';
   $('out').innerHTML='<p class="empty">Introdu numărul cadastral din extrasul CF pentru '+esc(u.name)+'.</p>';
   $('load').hidden=true;
@@ -473,7 +474,6 @@ function show(id,idx,fromMap){
   map.fitBounds(poly.getBounds(),{padding:[40,40],maxZoom:20,animate:false});
   const g=geom(p);
   let h=(lastNear&&lastNear.ids.has(p.id)?'<button type="button" class="back" id="back">← Înapoi la parcelele din jurul adresei</button>':'')+'<div class="idrow"><div><div class="lbl">Nr. cadastral · '+esc(U.name)+'</div><div class="id">'+esc(p.id)+'</div></div>'+(list.length>1?'<span class="pill">contur '+(list.indexOf(p)+1)+' din '+list.length+'</span>':'')+'</div>';
-  if(p.o)h+='<div class="info">Parcelă din <b>planul anterior</b>: nu mai apare în ultimul export ANCPI'+(U.date?' (din '+U.date+')':'')+'. Poate fi dezmembrată sau alipită între timp, verifică în extrasul CF.</div>';
   h+='<div class="facts"><div><small>Suprafață</small><b>'+fmt(p.a,2)+' mp</b></div><div><small>Perimetru</small><b>'+fmt(g.per,2)+' m</b></div><div><small>Puncte</small><b>'+p.s.length+'</b></div></div>';
   h+='<div class="info">'+(p.iv?'În <b>intravilanul istoric</b> al localității <b>'+esc(p.iv)+'</b> (plan 1:5000).':'În afara intravilanului istoric din plan. Poate fi totuși intravilan prin PUG/PUZ, verifică în extrasul CF.')+'</div>';
   if(p.f&&p.f.includes('shared'))h+='<div class="flag">Același contur are mai multe numere cadastrale în plan (posibilă dezmembrare sau alipire). Verifică în extrasul CF.</div>';

@@ -63,9 +63,9 @@ Exporturile DXF noi au doar stratul cu parcele `T_A1S1_<UAT>_<data>` (contur + n
     python3 tools/dxf/convert.py <fișier.dxf> <cheie>      # ex. CHEVERESU_MARE.dxf cheveresu-mare
 
 Nu se șterge nimic: parcelele și construcțiile din DXF se adaugă sau le înlocuiesc pe cele cu același număr, iar cele
-din versiunea actuală care nu apar în export rămân (parcelele, marcate „plan anterior” și desenate punctat; construcțiile
-vechi rămân doar unde nu le acoperă una nouă). Numerele topo și intravilanul se păstrează (exportul nu le are), iar
-numerele topo se leagă din nou de parcele. Scriptul rescrie `localizare-data/<cheie>.json` și
+din versiunea actuală care nu apar în export rămân (construcțiile vechi doar unde nu le acoperă una nouă). Numerele topo și
+intravilanul se păstrează (exportul nu le are), iar numerele topo se leagă din nou de parcele. Data exportului (din
+numele stratului) apare în localizator: „date cadastrale la …” și în colțul hărții. Scriptul rescrie `localizare-data/<cheie>.json` și
 intrarea UAT-ului din `localizare-data/index.html` și afișează ce s-a schimbat față de versiunea anterioară.
 
 ## API: centrul parcelei după numărul cadastral
