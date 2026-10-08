@@ -70,7 +70,21 @@ button, input, select, textarea { font-family: inherit; }
   }
   .bottomNav a { height: 50px; border-radius: 10px; color: var(--on-navy-2); font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; text-align: center; }
   .bottomNav a[aria-current="page"] { color: #fff; background: rgba(255, 255, 255, 0.1); }
+  /* "Meniu": the sidebar as a panel from the left, over a dark backdrop */
+  .menuBtn { height: 50px; border: 0; border-radius: 10px; background: transparent; color: var(--on-navy-2); font: inherit; font-size: 11px; font-weight: 700; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; cursor: pointer; }
+  .shell[data-menu] .side {
+    display: flex; position: fixed; top: 0; left: 0; bottom: 0; z-index: 60; width: min(300px, 86vw); height: 100dvh; overflow-y: auto;
+    padding-bottom: calc(22px + env(safe-area-inset-bottom)); box-shadow: 20px 0 60px -20px rgba(0, 0, 0, 0.6); animation: menuIn 0.2s ease-out;
+  }
+  .shell[data-menu] .menuBackdrop { display: block; position: fixed; inset: 0; z-index: 50; border: 0; background: rgba(0, 0, 0, 0.5); }
+  .shell[data-menu] .menuClose {
+    display: flex; position: fixed; top: 14px; left: calc(min(300px, 86vw) + 10px); z-index: 61; width: 40px; height: 40px; border-radius: 50%;
+    border: 0; background: #fff; color: var(--ink); font-size: 16px; font-weight: 700; align-items: center; justify-content: center; cursor: pointer;
+  }
 }
+.menuBtn, .menuBackdrop, .menuClose { display: none; }
+@media (max-width: 979px) { .bottomNav .menuBtn { display: flex; } }
+@keyframes menuIn { from { transform: translateX(-100%); } to { transform: none; } }
 
 /* ---------- Building blocks ---------- */
 .card { background: #fff; border: 1px solid var(--line); border-radius: 20px; padding: clamp(16px, 2.4vw, 22px); display: flex; flex-direction: column; gap: 14px; animation: vfIn 0.3s ease-out; }
@@ -627,3 +641,5 @@ a.rMeta:hover u { color: var(--acc-light); }
 /* outside production: a strip at the bottom of every page (APP_ENV local / staging) */
 .envBar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 9999; background: #b3261e; color: #fff; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-align: center; padding: 5px 8px; }
 .envBar a { color: #fff; text-decoration: underline; }
+@media (max-width: 979px) { body:has(.bottomNav) .envBar { bottom: calc(62px + env(safe-area-inset-bottom)); } }
+body:has(.shell[data-menu]) .envBar { display: none; }

@@ -1,7 +1,7 @@
 import type { Ctx } from "@/lib/access";
 import { canManageOrg, OFFICE_READY, ROLE_LABEL } from "@/lib/access";
 import { initials } from "@/lib/guard";
-import { LogoutButton, OrgSwitch } from "./ClientBits";
+import { LogoutButton, MenuButton, OrgSwitch } from "./ClientBits";
 import { Referral } from "./Referral";
 
 type Key = "home" | "localizare" | "firma" | "cont";
@@ -15,8 +15,8 @@ export function AppShell(props: { c: Ctx; active: Key; title: string; subtitle?:
     // "Firma mea" only for those who turned on "Lucrez ca birou de evaluare" in their account.
     ...(OFFICE_READY && c.org && canManageOrg(c) && c.user.is_office ? [{ key: "firma" as const, label: "Firma mea", href: "/firma" }] : []),
   ];
-  // On the phone the account is in the bottom menu; on the computer it opens from the profile card.
-  const mobileNav = [...nav, { key: "cont" as const, label: "Contul meu", href: "/cont" }];
+  // Phone: the main pages in the bottom menu, the rest (account, sign out…) behind "Meniu", the sidebar as a panel.
+  const mobileNav = [...nav, { key: "cont" as const, label: "Contul meu", href: "/cont" }].slice(0, 3);
   const sub = c.user.anevar_no ? `Legitimație ANEVAR ${c.user.anevar_no}` : c.org ? `${c.org.name} · ${c.role ? ROLE_LABEL[c.role] : ""}` : c.super ? "Administrator VALUEFY" : c.user.email;
   return (
     <div className="shell">
@@ -63,9 +63,10 @@ export function AppShell(props: { c: Ctx; active: Key; title: string; subtitle?:
         <main className="content">{props.children}</main>
       </div>
       <nav className="bottomNav" aria-label="Meniu">
-        {mobileNav.slice(0, 4).map((i) => (
+        {mobileNav.map((i) => (
           <a key={i.key} href={i.href} aria-current={props.active === i.key ? "page" : undefined}>{i.label}</a>
         ))}
+        <MenuButton />
       </nav>
     </div>
   );

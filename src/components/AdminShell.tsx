@@ -1,6 +1,6 @@
 import type { Ctx } from "@/lib/access";
 import { initials } from "@/lib/guard";
-import { LogoutButton } from "./ClientBits";
+import { LogoutButton, MenuButton } from "./ClientBits";
 
 export type AdminKey = "panou" | "solicitari" | "recomandari" | "tablou" | "utilizatori" | "firme" | "activitate" | "planuri";
 
@@ -48,7 +48,8 @@ export function AdminShell(props: { c: Ctx; active: AdminKey; pending?: number; 
         <main className="content">{props.children}</main>
       </div>
       <nav className="bottomNav" aria-label="Administrare">
-        {nav.slice(0, 4).map(([k, l, h]) => <a key={k} href={h} aria-current={props.active === k ? "page" : undefined}>{l}</a>)}
+        {nav.slice(0, 3).map(([k, l, h]) => <a key={k} href={h} aria-current={props.active === k ? "page" : undefined}>{l}</a>)}
+        <MenuButton />
       </nav>
     </div>
   );
