@@ -6,7 +6,7 @@
 # Order: types → build → D1 migrations → deploy, so a failed build never leaves a migrated database behind.
 # Needs the repository secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID.
 name: Deploy
-run-name: ${{ github.event_name == 'pull_request' && format('Verificare PR #{0}', github.event.number) || format('Deploy {0} · {1}', github.event_name == 'workflow_dispatch' && inputs.environment || (github.ref_name == 'main' && 'production' || 'staging'), github.ref_name) }}
+run-name: "${{ github.event_name == 'pull_request' && format('Verificare PR {0}', github.event.number) || format('Deploy {0} din {1}', github.event_name == 'workflow_dispatch' && inputs.environment || (github.ref_name == 'main' && 'production' || 'staging'), github.ref_name) }}"
 
 on:
   pull_request:
