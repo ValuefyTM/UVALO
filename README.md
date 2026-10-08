@@ -54,6 +54,18 @@ Planurile vin ca DWG de la BCPI (straturi `ImobileE3`, `ImobileE3_IE`, `Construc
 3. copiază `out/<cheie>.json` în `localizare-data/` și adaugă intrările din `out/uats-<Nume>.json` în lista `UATS`
    din `localizare-data/index.html`; push → deploy.
 
+### Actualizarea unui UAT din exportul DXF ANCPI
+
+Exporturile DXF noi au doar stratul cu parcele `T_A1S1_<UAT>_<data>` (contur + nr. cadastral) și
+`<UAT>_constructiie3` (contur + nr. construcție, ex. `400963-C19`). Pentru un UAT care există deja în localizator
+(Python 3 cu `ezdxf`, `shapely`, `pyproj`):
+
+    python3 tools/dxf/convert.py <fișier.dxf> <cheie>      # ex. CHEVERESU_MARE.dxf cheveresu-mare
+
+Parcelele și construcțiile se iau din DXF; numerele topo și intravilanul se păstrează din versiunea actuală (exportul
+nu le are), iar numerele topo se leagă din nou de parcelele noi. Scriptul rescrie `localizare-data/<cheie>.json` și
+intrarea UAT-ului din `localizare-data/index.html` și afișează ce s-a schimbat față de versiunea anterioară.
+
 ## API: centrul parcelei după numărul cadastral
 
 `/api/localizare/centroid` dă coordonatele GPS ale centrului unei parcele din planurile localizatorului (Timiș), pentru
