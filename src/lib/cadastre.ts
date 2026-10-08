@@ -28,7 +28,10 @@ export function cadastralRoot(v: string | null | undefined) {
 
 async function uats(req: Request) {
   uatList ??= locatorAsset("c/index.json", req).then((r) => (r ? (r.json() as Promise<Uat[]>) : [])).catch(() => []);
-  return uatList;
+  const list = await uatList;
+  // A failed first load (data not built yet, a hiccup) is not kept: the next request tries again.
+  if (!list.length) uatList = null;
+  return list;
 }
 /** Parcel centres of one UAT; the last 10 UATs stay in memory (all 59 would not fit in a worker). */
 function centres(key: string, req: Request) {
