@@ -90,6 +90,34 @@ async function release(): Promise<number> {
   return made.id;
 }
 
+export type CheckStep = { label: string; ok: boolean; detail: string };
+
+/** "Verifică legătura cu GitHub": the token, access to the repository, the workflow, the upload release (Contents write). */
+export async function githubCheck(): Promise<CheckStep[]> {
+  const { token, repo } = await env();
+  const steps: CheckStep[] = [];
+  const step = async (label: string, run: () => Promise<string>) => {
+    if (steps.some((x) => !x.ok)) return;
+    try { steps.push({ label, ok: true, detail: await run() }); } catch (e) { steps.push({ label, ok: false, detail: e instanceof PlanError ? e.message : String(e) }); }
+  };
+  await step("Token în Cloudflare (PLANS_GITHUB_TOKEN)", async () => {
+    if (!token) throw new PlanError("Lipsește. Pune-l în Cloudflare → Workers → tools → Settings → Variables and Secrets, apoi fă deploy.");
+    return `găsit (${token.slice(0, 11)}…)`;
+  });
+  await step(`Acces la ${repo}`, async () => {
+    const r = await gh<{ full_name: string; permissions?: { push?: boolean } }>("GET", "");
+    if (r.permissions && r.permissions.push === false) throw new PlanError("Tokenul poate doar citi: dă-i Contents: Read and write.");
+    return r.full_name;
+  });
+  await step("Fluxul de conversie (.github/workflows/plan.yml)", async () => {
+    const w = await gh<{ state: string }>("GET", `/actions/workflows/${WORKFLOW}`);
+    if (w.state !== "active") throw new PlanError(`Workflow-ul este ${w.state}: activează-l în GitHub → Actions.`);
+    return "activ (Actions: citire OK)";
+  });
+  await step("Locul pentru fișierele încărcate (Contents: scriere)", async () => `release „${RELEASE_TAG}” #${await release()}`);
+  return steps;
+}
+
 async function dispatch(inputs: Record<string, string>) {
   const { branch } = await env();
   await gh("POST", `/actions/workflows/${WORKFLOW}/dispatches`, { ref: branch, inputs });

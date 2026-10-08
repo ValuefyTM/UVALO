@@ -30,3 +30,14 @@ export function safeEqual(a: string, b: string) {
 
 export const normEmail = (e: string) => e.trim().toLowerCase();
 export const validEmail = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.trim());
+
+/** A phone number as entered (spaces, dots, dashes, +40 / 0040) → "07xx xxx xxx" for Romania, "+…" otherwise; null when it is not one. */
+export function cleanPhone(raw: unknown) {
+  if (typeof raw !== "string") return null;
+  let d = raw.trim().replace(/[\s.\-()/]/g, "");
+  if (d.startsWith("00")) d = `+${d.slice(2)}`;
+  if (d.startsWith("+40")) d = `0${d.slice(3)}`;
+  if (/^0\d{9}$/.test(d)) return `${d.slice(0, 4)} ${d.slice(4, 7)} ${d.slice(7)}`;
+  if (/^\+[1-9]\d{7,14}$/.test(d)) return d;
+  return null;
+}

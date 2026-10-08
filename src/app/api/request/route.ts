@@ -3,7 +3,7 @@ import { getDb } from "@/lib/db";
 import { err, json } from "@/lib/api";
 import { createRequest } from "@/lib/requests";
 
-/** Step 2 of "Solicită cont": card number + email (+ phone, firm) → request waiting for approval. */
+/** Step 2 of "Solicită cont": card number + email + phone (+ firm) → request waiting for approval. */
 export async function POST(req: Request) {
   const db = await getDb();
   if (!db) return err("Serviciul nu este disponibil momentan.", 503);

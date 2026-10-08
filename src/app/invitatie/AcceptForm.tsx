@@ -26,7 +26,7 @@ export function AcceptForm({ token, name: n0, phone: p0, legit, county }: { toke
       ) : (
         <label className="field">Nume și prenume<input className="input" value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" /></label>
       )}
-      <label className="field"><span>Telefon <small>(opțional)</small></span><input className="input" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} autoComplete="tel" /></label>
+      <label className="field"><span>Telefon mobil</span><input className="input" type="tel" placeholder="07xx xxx xxx" required value={phone} onChange={(e) => setPhone(e.target.value)} autoComplete="tel" /></label>
       {!legit && <label className="field"><span>Nr. legitimație ANEVAR <small>(opțional)</small></span><input className="input" inputMode="numeric" value={anevar} onChange={(e) => setAnevar(e.target.value)} /></label>}
       <label className="check"><input type="checkbox" checked={terms} onChange={(e) => setTerms(e.target.checked)} />
         <span>Accept termenii de utilizare: contul este personal și nu se împarte cu alte persoane; activitatea din platformă este înregistrată pentru securitate și statistici; datele cadastrale au caracter orientativ.</span>

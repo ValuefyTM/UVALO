@@ -66,7 +66,7 @@ export function RequestForm({ r: refToken, email }: { r?: string; email?: string
       </div>
       <label className="check"><input type="checkbox" checked={f.confirm} onChange={(e) => setF({ ...f, confirm: e.target.checked })} /><span>Confirm că sunt <b>{found.name}</b>, titularul acestei legitimații.</span></label>
       <label className="field">Adresa de email pentru cont<input className="input" type="email" autoComplete="email" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} placeholder="nume@exemplu.ro" /></label>
-      <label className="field"><span>Telefon <small>(opțional)</small></span><input className="input" type="tel" autoComplete="tel" value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} /></label>
+      <label className="field"><span>Telefon mobil</span><input className="input" type="tel" autoComplete="tel" placeholder="07xx xxx xxx" required value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} /></label>
       <label className="field"><span>Firma de evaluare <small>(opțional)</small></span><input className="input" value={f.company} onChange={(e) => setF({ ...f, company: e.target.value })} /></label>
       {msg && <div role="alert" className="error">{msg}</div>}
       <button type="submit" className="btn btnNavy" style={{ height: 52 }} disabled={busy}>{busy ? "Se trimite…" : "Trimite solicitarea"}</button>

@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import { api, err } from "@/lib/api";
-import { KEY_RE, listUploads, PlanError, refresh, startUpload, uats } from "@/lib/plans";
+import { githubCheck, KEY_RE, listUploads, PlanError, refresh, startUpload, uats } from "@/lib/plans";
 
 /** The uploaded plans, brought up to date with their GitHub runs (the admin page asks every few seconds while one runs). */
-export async function GET() {
+export async function GET(req: Request) {
   const a = await api("super");
   if ("res" in a) return a.res;
+  if (new URL(req.url).searchParams.has("check")) return NextResponse.json({ steps: await githubCheck() });
   const warning = await refresh(a.db).then(() => null, (e) => (e instanceof PlanError ? e.message : "Nu am putut verifica stadiul pe GitHub."));
   return NextResponse.json({ uploads: await listUploads(a.db), warning });
 }

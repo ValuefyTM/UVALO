@@ -2,7 +2,7 @@
 import { headers } from "next/headers";
 import { now, uuid } from "./db";
 import { audit, findUser, invite, type User } from "./auth";
-import { normEmail, validEmail } from "./crypto";
+import { cleanPhone, normEmail, validEmail } from "./crypto";
 import { esc, layout, sendEmail } from "./email";
 import { origin } from "./site";
 import { seatsUsed } from "./access";
@@ -61,6 +61,8 @@ export async function createRequest(db: D1Database, b: Record<string, unknown>) 
   const l = found as Extract<Lookup, { status: "ok" }>;
   const email = normEmail(s("email"));
   if (!validEmail(email)) return { ok: false as const, error: "Adresa de email nu pare validă." };
+  const phone = cleanPhone(b.phone);
+  if (!phone) return { ok: false as const, error: "Completează un număr de telefon valid (ex. 0722 123 456)." };
   if (b.confirm !== true) return { ok: false as const, error: `Confirmă că ești ${l.name}.` };
   const taken = await findUser(db, email);
   if (taken && taken.status !== "disabled") return { ok: false as const, error: "Adresa de email are deja cont. Intră cu ea sau folosește altă adresă." };
@@ -70,7 +72,7 @@ export async function createRequest(db: D1Database, b: Record<string, unknown>) 
   // Came from a colleague's recommendation (link in the email)?
   const ref = await referralByToken(db, typeof b.r === "string" ? b.r : null);
   await db.prepare("INSERT INTO account_requests (id, legit, name, email, phone, company, message, ip, user_agent, referral_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
-    .bind(id, legit, l.name, email, s("phone", 40) || null, s("company") || null, s("message", 1000) || null, ip, ua, ref?.id ?? null).run();
+    .bind(id, legit, l.name, email, phone, s("company") || null, s("message", 1000) || null, ip, ua, ref?.id ?? null).run();
   await db.prepare("INSERT INTO events (module, action, target, meta) VALUES ('public', 'request', ?, ?)").bind(legit, JSON.stringify({ email })).run();
 
   const base = await origin();

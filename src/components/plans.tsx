@@ -78,6 +78,7 @@ export function PlanUploader({ uats, ready }: { uats: Uat[]; ready: boolean }) {
       <h2>Încarcă un plan nou</h2>
       <p className="hint">Exportul DXF de la ANCPI, oricât de mare: browserul îl comprimă înainte de trimitere. Datele existente nu se șterg: se adaugă parcelele și construcțiile noi și se actualizează cele cu același număr.</p>
       {!ready && <div role="alert" className="error">Încărcarea nu funcționează încă: lipsește PLANS_GITHUB_TOKEN din setările Cloudflare ale Tools (vezi README).</div>}
+      <GithubCheck />
       <label className="field">Fișier DXF
         <input ref={input} className="input" type="file" accept=".dxf" disabled={!!step} onChange={(e) => pick(e.target.files?.[0] ?? null)} />
       </label>
@@ -115,6 +116,30 @@ export function PlanUploader({ uats, ready }: { uats: Uat[]; ready: boolean }) {
         </button>
       </div>
     </section>
+  );
+}
+
+/** Checks the GitHub token from where it runs (the Tools worker). */
+export function GithubCheck() {
+  const [steps, setSteps] = useState<{ label: string; ok: boolean; detail: string }[] | null>(null);
+  const [busy, setBusy] = useState(false);
+  const run = async () => {
+    setBusy(true);
+    const r = await fetch("/api/admin/plans?check=1").catch(() => null);
+    const d = (await r?.json().catch(() => null)) as { steps?: { label: string; ok: boolean; detail: string }[]; error?: string } | null;
+    setSteps(d?.steps ?? [{ label: "Verificare", ok: false, detail: d?.error || "Nu am primit răspuns." }]);
+    setBusy(false);
+  };
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      <div><button type="button" className="btn btnGhost btnSm" disabled={busy} onClick={run}>{busy ? "Se verifică…" : "Verifică legătura cu GitHub"}</button></div>
+      {steps && (
+        <ul style={{ margin: 0, paddingLeft: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 4, fontSize: 13 }}>
+          {steps.map((x, i) => <li key={i}><b style={{ color: x.ok ? "var(--ok-text)" : "var(--err)" }}>{x.ok ? "✓" : "✗"}</b> {x.label}: <span className={x.ok ? "muted" : "error"}>{x.detail}</span></li>)}
+          {steps.length === 4 && steps.every((x) => x.ok) && <li className="muted">Totul e în regulă. Dreptul „Actions: write” se vede la prima încărcare.</li>}
+        </ul>
+      )}
+    </div>
   );
 }
 
