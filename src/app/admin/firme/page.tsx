@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
+import { countyOfUats } from "@/lib/plans";
 import { fmtDate, superPage } from "@/lib/guard";
 import { orgBlock, ORG_SQL, type Org } from "@/lib/access";
 import { activityByDay, topTargets } from "@/lib/orgs";
 import { AdminShell } from "@/components/AdminShell";
 import { OrgForm } from "@/components/forms";
-import { CountTable, DayBars } from "@/components/Charts";
+import { DayBars, UatCountTable } from "@/components/Charts";
 
 export const metadata: Metadata = { title: "Firme | VALUEFY Tools Admin" };
 export const dynamic = "force-dynamic";
@@ -27,6 +28,7 @@ export default async function AdminFirms() {
     activityByDay(db, 30), topTargets(db, 30, "uat_open"),
     db.prepare("SELECT id, name FROM plans WHERE active = 1 ORDER BY sort").all<{ id: string; name: string }>(),
   ]);
+  const countyOf = await countyOfUats();
   return (
     <AdminShell c={c} active="firme" pending={pending} title="Firme și abonamente" subtitle="Conturile individuale aprobate și firmele cu mai mulți utilizatori">
       <div className="kpis">
@@ -65,7 +67,7 @@ export default async function AdminFirms() {
       </section>
       <div className="cols">
         <DayBars days={days} label="Activitate pe platformă, ultimele 30 de zile" />
-        <CountTable title="Localități cele mai folosite (30 de zile)" rows={uats.map((u) => [u.target, u.n, u.u])} head={["UAT", "Deschideri", "Persoane"]} empty="Nicio localitate deschisă încă." />
+        <UatCountTable title="Localități cele mai folosite (30 de zile)" rows={uats} countyOf={countyOf} empty="Nicio localitate deschisă încă." />
       </div>
       <OrgForm plans={plans} />
     </AdminShell>

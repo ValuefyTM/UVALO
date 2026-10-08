@@ -1,7 +1,7 @@
 # Cadastral plans uploaded from the admin panel (Planuri cadastrale), started by the Tools worker (src/lib/plans.ts):
 #   convert: the compressed DXF (an asset of the draft release "plan-uploads") → tools/dxf/convert.py → branch plan/<id>,
 #            whose commit message is the summary shown in the admin panel; the uploaded file is then deleted
-#   publish: the plan of branch plan/<id> goes into main (and the UAT's entry in the locator list), then the deploy
+#   publish: the plans of branches plan/<id> (several ids and keys, comma-separated) go into main (and the UAT's entry in the locator list), then the deploy
 #            (when the CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID secrets are set)
 name: Plan cadastral
 run-name: plan ${{ inputs.mode }} ${{ inputs.id }}
@@ -10,9 +10,10 @@ on:
   workflow_dispatch:
     inputs:
       mode: { description: "convert | publish", required: true, type: string }
-      id: { description: "plan upload id", required: true, type: string }
-      key: { description: "UAT key", required: true, type: string }
+      id: { description: "plan upload id (publish: several, comma-separated)", required: true, type: string }
+      key: { description: "UAT key (publish: several, comma-separated)", required: true, type: string }
       name: { description: "UAT name (new UAT only)", required: false, type: string, default: "" }
+      county: { description: "county (new UAT only)", required: false, type: string, default: "" }
       asset: { description: "release asset id (convert)", required: false, type: string, default: "" }
 
 concurrency:
@@ -31,6 +32,7 @@ jobs:
       ID: ${{ inputs.id }}
       KEY: ${{ inputs.key }}
       NAME: ${{ inputs.name }}
+      COUNTY: ${{ inputs.county }}
       ASSET: ${{ inputs.asset }}
       GH_TOKEN: ${{ github.token }}
       REPO: ${{ github.repository }}
@@ -39,9 +41,10 @@ jobs:
       - name: Check the inputs
         run: |
           [[ "$MODE" == convert || "$MODE" == publish ]]
-          [[ "$ID" =~ ^[a-f0-9]{8}$ ]]
-          [[ "$KEY" =~ ^[a-z]+(-[a-z]+)*$ ]]
-          [[ "$MODE" == publish || "$ASSET" =~ ^[0-9]+$ ]]
+          [[ "$ID" =~ ^[a-f0-9]{8}(,[a-f0-9]{8})*$ ]]
+          [[ "$KEY" =~ ^[a-z]+(-[a-z]+)*(,[a-z]+(-[a-z]+)*)*$ ]]
+          [[ "$MODE" == publish || ( "$ASSET" =~ ^[0-9]+$ && "$ID" != *,* && "$KEY" != *,* ) ]]
+          [[ -z "$NAME" || -n "$COUNTY" ]]
 
       - uses: actions/checkout@v4
 
@@ -58,7 +61,7 @@ jobs:
             "https://api.github.com/repos/$REPO/releases/assets/$ASSET" -o "$RUNNER_TEMP/plan.dxf.gz"
           gunzip "$RUNNER_TEMP/plan.dxf.gz"
           if [[ -n "$NAME" ]]; then
-            SUMMARY_FILE="$RUNNER_TEMP/summary.txt" python3 tools/dxf/convert.py "$RUNNER_TEMP/plan.dxf" "$KEY" "$NAME"
+            SUMMARY_FILE="$RUNNER_TEMP/summary.txt" python3 tools/dxf/convert.py "$RUNNER_TEMP/plan.dxf" "$KEY" "$NAME" "$COUNTY"
           else
             SUMMARY_FILE="$RUNNER_TEMP/summary.txt" python3 tools/dxf/convert.py "$RUNNER_TEMP/plan.dxf" "$KEY"
           fi
@@ -75,16 +78,22 @@ jobs:
         if: inputs.mode == 'publish'
         run: |
           set -euo pipefail
-          git fetch -q origin "plan/$ID"
-          git checkout FETCH_HEAD -- "localizare-data/$KEY.json"
-          python3 tools/dxf/convert.py --entry "$KEY"
+          IFS=, read -ra IDS <<< "$ID"
+          IFS=, read -ra KEYS <<< "$KEY"
+          [[ ${#IDS[@]} == ${#KEYS[@]} ]]
+          printf 'Planuri cadastrale publicate din admin: %s\n\n' "${KEYS[*]}" > "$RUNNER_TEMP/msg.txt"
+          for i in "${!IDS[@]}"; do
+            git fetch -q origin "plan/${IDS[$i]}"
+            git checkout FETCH_HEAD -- "localizare-data/${KEYS[$i]}.json"
+            python3 tools/dxf/convert.py --entry "${KEYS[$i]}"
+            git log -1 --format=%B FETCH_HEAD | tail -n +3 >> "$RUNNER_TEMP/msg.txt"
+          done
           git config user.name "VALUEFY Tools"
           git config user.email "tools@valuefy.ro"
           git add localizare-data
-          git log -1 --format=%B FETCH_HEAD | sed '1s/(încărcat din admin)/publicat din admin/' > "$RUNNER_TEMP/msg.txt"
           git commit -q -F "$RUNNER_TEMP/msg.txt" || echo "nimic nou de publicat"
           git push origin "HEAD:${GITHUB_REF_NAME}"
-          git push -q origin --delete "plan/$ID" || true
+          for b in "${IDS[@]}"; do git push -q origin --delete "plan/$b" || true; done
 
       - uses: actions/setup-node@v4
         if: inputs.mode == 'publish' && env.HAS_CF == 'true'

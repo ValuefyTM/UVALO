@@ -32,7 +32,7 @@ const JS = `(() => {
     };
   };
   let lastUat = null;
-  wrap("loadUat", null, () => { const n = uat(); if (n && n !== lastUat) { lastUat = n; track("uat_open", n); } });
+  wrap("loadUat", null, () => { const n = uat(); if (n && n !== lastUat) { lastUat = n; track("uat_open", n, { county: U.county || null }); } });
   wrap("show", (id, idx, fromMap) => track("parcel", id, { uat: uat(), via: fromMap ? "hartă" : "căutare" }));
   wrap("showBuilding", (b) => track("building", b && b.c, { uat: uat() }));
   wrap("topoSearch", (v) => track("search_topo", v, { uat: uat() }));

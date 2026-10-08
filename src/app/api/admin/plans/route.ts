@@ -16,7 +16,7 @@ const dec = (v: string | null) => { try { return decodeURIComponent(v ?? "").tri
 
 /**
  * A plan uploaded from the admin panel: the body is the DXF compressed with gzip in the browser; the UAT and the
- * file's details come in headers (x-plan-key, x-plan-name for a new UAT, x-plan-file, x-plan-size, x-plan-date).
+ * file's details come in headers (x-plan-key, x-plan-name and x-plan-county for a new UAT, x-plan-file, x-plan-size, x-plan-date).
  */
 export async function POST(req: Request) {
   const a = await api("super");
@@ -27,6 +27,8 @@ export async function POST(req: Request) {
   const known = list.find((u) => u.key === key);
   const name = known?.name ?? dec(req.headers.get("x-plan-name")).replace(/\s+/g, " ").slice(0, 60);
   if (!name) return err("Scrie numele UAT-ului nou (cu diacritice).");
+  const county = known?.county ?? dec(req.headers.get("x-plan-county")).replace(/\s+/g, " ").slice(0, 40);
+  if (!county) return err("Alege județul UAT-ului nou.");
   const fileName = dec(req.headers.get("x-plan-file")).slice(0, 160) || `${key}.dxf`;
   if (!/\.dxf$/i.test(fileName)) return err("Încarcă fișierul DXF exportat din ANCPI.");
   const size = Number(req.headers.get("x-plan-size")) || 0;
@@ -37,7 +39,7 @@ export async function POST(req: Request) {
   const head = new Uint8Array(await body.slice(0, 2).arrayBuffer());
   if (head[0] !== 0x1f || head[1] !== 0x8b) return err("Fișierul nu a fost comprimat în browser. Reîncarcă pagina și încearcă din nou.");
   try {
-    const id = await startUpload(a.db, a.c, { key, name, isNew: !known, fileName, size, date, body });
+    const id = await startUpload(a.db, a.c, { key, name, county, isNew: !known, fileName, size, date, body });
     return NextResponse.json({ ok: true, id });
   } catch (e) {
     if (e instanceof PlanError) return err(e.message, 409);

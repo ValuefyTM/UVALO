@@ -15,6 +15,10 @@ cpSync("localizare-data", `${out}/_localizare`, { recursive: true });
 console.log("copy-localizare: localizare-data → .open-next/assets/_localizare");
 
 mkdirSync(`${out}/_localizare/c`, { recursive: true });
+// the county of each UAT, from the list of the locator page
+const html = readFileSync("localizare-data/index.html", "utf8");
+const at = html.indexOf("const UATS=") + "const UATS=".length;
+const county = Object.fromEntries(JSON.parse(html.slice(at, html.indexOf("].map(u=>", at) + 1)).map((u) => [u.key, u.county ?? "Timiș"]));
 const index = [];
 let total = 0;
 for (const file of readdirSync("localizare-data").filter((f) => f.endsWith(".json")).sort()) {
@@ -28,7 +32,7 @@ for (const file of readdirSync("localizare-data").filter((f) => f.endsWith(".jso
     p[String(parcel.id)] = [Math.round(lat * 1e6) / 1e6, Math.round(lng * 1e6) / 1e6];
   }
   writeFileSync(`${out}/_localizare/c/${key}.json`, JSON.stringify({ uat: d.uat, p }));
-  index.push({ key, name: d.uat, n: Object.keys(p).length });
+  index.push({ key, name: d.uat, county: county[key] ?? null, n: Object.keys(p).length });
   total += Object.keys(p).length;
 }
 writeFileSync(`${out}/_localizare/c/index.json`, JSON.stringify(index));

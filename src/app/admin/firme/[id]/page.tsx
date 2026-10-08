@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
+import { countyOfUats } from "@/lib/plans";
 import { notFound } from "next/navigation";
 import { fmtDate, superPage } from "@/lib/guard";
 import { orgBlock, seatsUsed } from "@/lib/access";
 import { activityByDay, getOrg, members, pendingInvites, recentEvents, topTargets } from "@/lib/orgs";
 import { AdminShell } from "@/components/AdminShell";
 import { MembersPanel, OrgForm } from "@/components/forms";
-import { CountTable, DayBars, EventLog } from "@/components/Charts";
+import { DayBars, EventLog, UatCountTable } from "@/components/Charts";
 
 export const metadata: Metadata = { title: "Firmă | VALUEFY Tools" };
 export const dynamic = "force-dynamic";
@@ -20,6 +21,7 @@ export default async function AdminOrg({ params }: { params: Promise<{ id: strin
     db.prepare("SELECT id, name FROM plans WHERE active = 1 ORDER BY sort").all<{ id: string; name: string }>(),
   ]);
   const block = orgBlock(org);
+  const countyOf = await countyOfUats();
   return (
     <AdminShell c={c} active="firme" pending={pending} title={org.name} subtitle={`Creată ${fmtDate(org.created_at)} · ${org.plan_name} · ${used} / ${org.seats} locuri`} actions={<a className="btn btnGhost btnSm" href="/admin/firme">← Firme</a>}>
       {block && <div className="note">{block}</div>}
@@ -35,7 +37,7 @@ export default async function AdminOrg({ params }: { params: Promise<{ id: strin
       }} />
       <div className="cols">
         <DayBars days={days} label="Activitate, ultimele 30 de zile" />
-        <CountTable title="Localități folosite (30 de zile)" rows={uats.map((u) => [u.target, u.n, u.u])} head={["UAT", "Deschideri", "Persoane"]} empty="Nicio localitate deschisă încă." />
+        <UatCountTable title="Localități folosite (30 de zile)" rows={uats} countyOf={countyOf} empty="Nicio localitate deschisă încă." />
       </div>
       <EventLog rows={events} showOrg={false} />
     </AdminShell>

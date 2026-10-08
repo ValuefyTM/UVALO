@@ -4,8 +4,8 @@
 # where they overlap), and the topo numbers and the intravilan limits, which the export does not have, stay as they
 # are (the topo numbers are linked again to the parcels).
 #
-#   python3 tools/dxf/convert.py <file.dxf> <key> [<name>]   e.g.  python3 tools/dxf/convert.py CHEVERESU_MARE.dxf cheveresu-mare
-#       (<name>, with diacritics, only for a UAT that is not in the locator yet)
+#   python3 tools/dxf/convert.py <file.dxf> <key> [<name> <county>]   e.g.  python3 tools/dxf/convert.py CHEVERESU_MARE.dxf cheveresu-mare
+#       (<name> and <county>, with diacritics, only for a UAT that is not in the locator yet)
 #   python3 tools/dxf/convert.py --entry <key>               only the entry of the UAT in index.html, from its data file
 # With SUMMARY_FILE set, the summary of the changes is also written there (the automatic update puts it in the commit).
 import hashlib, json, os, re, sys
@@ -91,15 +91,15 @@ def say(line):
     LOG.append(line)
 
 
-def main(path, key, name=None):
+def main(path, key, name=None, county=None):
     if not re.fullmatch(r"[a-z]+(?:-[a-z]+)*", key):
         sys.exit(f"Cheie UAT nevalidă: {key}")
     if os.path.exists(f"{DATA}/{key}.json"):
         old = json.load(open(f"{DATA}/{key}.json"))
-    elif name:
+    elif name and county:
         old = {"uat": name, "parcels": [], "b": [], "t": [], "iv": []}
     else:
-        sys.exit(f"{key} nu există în localizator: dă și numele UAT-ului (cu diacritice).")
+        sys.exit(f"{key} nu există în localizator: dă și numele UAT-ului și județul (cu diacritice).")
     plan, date, ppolys, plabels, bpolys, blabels = read(path)
     ppolys = [p for p in ppolys if p.area > 0.5]
     pid = assign(ppolys, plabels, ID)
@@ -225,7 +225,7 @@ def main(path, key, name=None):
             o["t"] = ptopo[base + k]
         parcels.append(o)
     d, mth, y = date.split("-")[2], date.split("-")[1], date.split("-")[0]
-    data = {"uat": old["uat"], "src": f"Export ANCPI din {d}.{mth}.{y} · {os.path.basename(path)} (completat cu planul anterior)",
+    data = {"uat": old["uat"], **({"county": county or old["county"]} if county or old.get("county") else {}), "src": f"Export ANCPI din {d}.{mth}.{y} · {os.path.basename(path)} (completat cu planul anterior)",
             "date": date, "parcels": parcels, "b": B, "t": T, "iv": old.get("iv", [])}
 
     # what changed
@@ -238,12 +238,12 @@ def main(path, key, name=None):
     body = json.dumps(data, ensure_ascii=False, separators=(",", ":"))
     open(f"{DATA}/{key}.json", "w").write(body)
 
-    entry(key)
+    entry(key, county)
     if os.environ.get("SUMMARY_FILE"):
         open(os.environ["SUMMARY_FILE"], "w").write("\n".join(LOG) + "\n")
 
 
-def entry(key):
+def entry(key, county=None):
     """The entry of the UAT in the list of the locator page (counts, date, version, bounding box and outline),
     computed from its data file; added when the UAT is new."""
     body = open(f"{DATA}/{key}.json").read()
@@ -260,6 +260,7 @@ def entry(key):
     html = open(f"{DATA}/index.html", encoding="utf8").read()
     m = re.search(r'\{"key":"' + re.escape(key) + r'"[^{}]*\}', html)
     e = json.loads(m.group(0)) if m else {"key": key, "name": data["uat"]}
+    e["county"] = e.get("county") or data.get("county") or county or "Timiș"
     # "v": the version of the data file, in its address, so browsers and the offline copy fetch the new plan at once
     e.update({"v": hashlib.sha1(body.encode()).hexdigest()[:10], "n": len({p["id"] for p in data["parcels"]}), "nb": len(data.get("b", [])),
               "bb": [round(la1, 4), round(lo1, 4), round(la2, 4), round(lo2, 4)], "hull": [[round(a[1], 5), round(a[0], 5)] for a in ll]})
@@ -278,7 +279,7 @@ def entry(key):
 if __name__ == "__main__":
     if len(sys.argv) == 3 and sys.argv[1] == "--entry":
         entry(sys.argv[2])
-    elif len(sys.argv) in (3, 4):
-        main(sys.argv[1], sys.argv[2], sys.argv[3] if len(sys.argv) == 4 else None)
+    elif len(sys.argv) in (3, 5):
+        main(sys.argv[1], sys.argv[2], *(sys.argv[3:5] if len(sys.argv) == 5 else []))
     else:
-        sys.exit("python3 tools/dxf/convert.py <file.dxf> <key> [<name>]  |  python3 tools/dxf/convert.py --entry <key>")
+        sys.exit("python3 tools/dxf/convert.py <file.dxf> <key> [<name> <county>]  |  python3 tools/dxf/convert.py --entry <key>")

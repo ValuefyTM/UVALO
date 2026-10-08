@@ -57,3 +57,31 @@ export function EventLog({ rows, showOrg = true, showUser = true }: { rows: Even
     </section>
   );
 }
+
+/** Localities opened (UAT name, opens, people), grouped by county; `countyOf` maps a UAT name to its county. */
+export function UatCountTable({ title, rows, countyOf, empty }: { title: string; rows: { target: string; n: number; u: number }[]; countyOf: Record<string, string>; empty: string }) {
+  const groups = new Map<string, typeof rows>();
+  for (const r of rows) {
+    const c = countyOf[r.target] ?? "Alte localități";
+    groups.set(c, [...(groups.get(c) ?? []), r]);
+  }
+  const ordered = [...groups].sort((a, b) => b[1].reduce((s, r) => s + r.n, 0) - a[1].reduce((s, r) => s + r.n, 0));
+  return (
+    <section className="card">
+      <h2>{title}</h2>
+      {rows.length === 0 ? <p className="hint">{empty}</p> : (
+        <div className="tableWrap">
+          <table className="table">
+            <thead><tr><th>UAT</th><th className="r">Deschideri</th><th className="r">Persoane</th></tr></thead>
+            {ordered.map(([c, list]) => (
+              <tbody key={c}>
+                <tr className="groupRow"><td>Județul {c}</td><td className="r mono">{list.reduce((s, r) => s + r.n, 0).toLocaleString("ro-RO")}</td><td /></tr>
+                {list.map((r) => <tr key={r.target}><td>{r.target}</td><td className="r mono">{r.n.toLocaleString("ro-RO")}</td><td className="r mono">{r.u}</td></tr>)}
+              </tbody>
+            ))}
+          </table>
+        </div>
+      )}
+    </section>
+  );
+}

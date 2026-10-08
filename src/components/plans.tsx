@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type { PlanUpload, Uat } from "@/lib/plans";
 import { roDate } from "@/lib/plan-format";
 
-const slug = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z]+/g, "-").replace(/^-|-$/g, "");
+const slug = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z]+/g, "-").replace(/^-|-$/g, "");
 const title = (s: string) => s.toLowerCase().replace(/(^|[\s-])\p{L}/gu, (m) => m.toUpperCase());
 const mb = (n: number) => `${(n / 1048576).toLocaleString("ro-RO", { maximumFractionDigits: 1 })} MB`;
 
@@ -15,104 +15,163 @@ async function detect(file: File) {
   return m ? { uat: m[1].trim(), date: m[2] } : null;
 }
 
-/** Choose a DXF, check the UAT, upload: the browser compresses it (about 8 times smaller) before sending. */
+export const COUNTIES_RO = ["Alba", "Arad", "Argeș", "Bacău", "Bihor", "Bistrița-Năsăud", "Botoșani", "Brăila", "Brașov", "București", "Buzău", "Călărași",
+  "Caraș-Severin", "Cluj", "Constanța", "Covasna", "Dâmbovița", "Dolj", "Galați", "Giurgiu", "Gorj", "Harghita", "Hunedoara", "Ialomița", "Iași", "Ilfov",
+  "Maramureș", "Mehedinți", "Mureș", "Neamț", "Olt", "Prahova", "Sălaj", "Satu Mare", "Sibiu", "Suceava", "Teleorman", "Timiș", "Tulcea", "Vâlcea", "Vaslui", "Vrancea"];
+
+type Item = {
+  file: File; uat: string; date: string; key: string; // key "" = to choose, "__new" = a UAT not in the locator yet
+  newName: string; newCounty: string; note: string;
+  state: "" | "zip" | "up" | "done" | "error"; pct: number; msg: string;
+};
+
+/** The UATs grouped by county, for a <select>. */
+function UatOptions({ uats }: { uats: Uat[] }) {
+  const by = new Map<string, Uat[]>();
+  for (const u of uats) by.set(u.county, [...(by.get(u.county) ?? []), u]);
+  return <>{[...by].map(([c, list]) => <optgroup key={c} label={`Județul ${c}`}>{list.map((u) => <option key={u.key} value={u.key}>{u.name}{u.date ? ` · plan la ${roDate(u.date)}` : ""}</option>)}</optgroup>)}</>;
+}
+
+/** Choose one or more DXF files, check each UAT, upload them one after another (each is compressed in the browser, about 8 times smaller). */
 export function PlanUploader({ uats, ready }: { uats: Uat[]; ready: boolean }) {
-  const [file, setFile] = useState<File | null>(null);
-  const [found, setFound] = useState<{ uat: string; date: string } | null>(null);
-  const [key, setKey] = useState("");
-  const [newName, setNewName] = useState("");
-  const [newKey, setNewKey] = useState("");
-  const [step, setStep] = useState<"" | "zip" | "up">("");
-  const [pct, setPct] = useState(0);
+  const [items, setItems] = useState<Item[]>([]);
+  const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
   const input = useRef<HTMLInputElement>(null);
+  const set = (i: number, p: Partial<Item>) => setItems((l) => l.map((x, k) => (k === i ? { ...x, ...p } : x)));
 
-  const pick = async (f: File | null) => {
-    setMsg(""); setFile(f); setFound(null); setKey(""); setNewName(""); setNewKey("");
-    if (!f) return;
-    if (!/\.dxf$/i.test(f.name)) return setMsg("Alege fișierul .dxf exportat din ANCPI (nu arhivat).");
-    const d = await detect(f);
-    if (!d) return setMsg("Nu găsesc în fișier stratul cu parcele (T_A1S1_<UAT>_<data>). Este exportul DXF de la ANCPI?");
-    setFound(d);
-    const k = slug(d.uat);
-    if (uats.some((u) => u.key === k)) setKey(k);
-    else { setKey("__new"); setNewName(title(d.uat)); setNewKey(k); }
+  const pick = async (files: FileList | null) => {
+    setMsg("");
+    const out: Item[] = [];
+    const bad: string[] = [];
+    for (const f of Array.from(files ?? [])) {
+      if (!/\.dxf$/i.test(f.name)) { bad.push(`${f.name}: nu este .dxf (nu îl arhiva)`); continue; }
+      const d = await detect(f);
+      if (!d) { bad.push(`${f.name}: nu găsesc stratul cu parcele (T_A1S1_<UAT>_<data>)`); continue; }
+      const same = uats.filter((u) => slug(u.name) === slug(d.uat));
+      const it: Item = { file: f, uat: d.uat, date: d.date, key: "", newName: "", newCounty: "", note: "", state: "", pct: 0, msg: "" };
+      if (same.length === 1) it.key = same[0].key;
+      else if (same.length > 1) it.note = `„${title(d.uat)}” există în mai multe județe: alege-l pe cel corect.`;
+      else { it.key = "__new"; it.newName = title(d.uat); }
+      out.push(it);
+    }
+    setItems(out);
+    if (bad.length) setMsg(bad.join(" · "));
   };
 
-  const send = async () => {
-    if (!file) return;
-    const isNew = key === "__new";
-    const k = isNew ? slug(newKey || newName) : key;
-    if (!k) return setMsg("Alege UAT-ul.");
-    if (isNew && !newName.trim()) return setMsg("Scrie numele UAT-ului nou, cu diacritice.");
-    setMsg(""); setStep("zip"); setPct(0);
+  const keyOf = (it: Item) => {
+    if (it.key !== "__new") return it.key;
+    const k = slug(it.newName);
+    return uats.some((u) => u.key === k) ? `${k}-${slug(it.newCounty)}` : k;
+  };
+  const problem = (it: Item) => {
+    if (!it.key) return "Alege UAT-ul.";
+    if (it.key === "__new" && !it.newName.trim()) return "Scrie numele UAT-ului nou.";
+    if (it.key === "__new" && !it.newCounty.trim()) return "Alege județul.";
+    return "";
+  };
+  const keys = items.filter((x) => x.state !== "done").map(keyOf);
+  const dup = keys.find((k, i) => k && keys.indexOf(k) !== i);
+
+  const upload = (it: Item, i: number) => new Promise<boolean>(async (resolve) => {
+    set(i, { state: "zip", msg: "" });
     let body: Blob;
     try {
-      body = await new Response(file.stream().pipeThrough(new CompressionStream("gzip"))).blob();
+      body = await new Response(it.file.stream().pipeThrough(new CompressionStream("gzip"))).blob();
     } catch {
-      setStep(""); return setMsg("Browserul nu a putut comprima fișierul. Folosește un Chrome, Edge, Safari sau Firefox actualizat.");
+      set(i, { state: "error", msg: "Browserul nu a putut comprima fișierul. Folosește un Chrome, Edge, Safari sau Firefox actualizat." });
+      return resolve(false);
     }
-    setStep("up");
+    set(i, { state: "up", pct: 0 });
     const xhr = new XMLHttpRequest();
     xhr.open("POST", "/api/admin/plans");
     xhr.setRequestHeader("Content-Type", "application/gzip");
-    xhr.setRequestHeader("x-plan-key", k);
-    xhr.setRequestHeader("x-plan-name", encodeURIComponent(isNew ? newName.trim() : ""));
-    xhr.setRequestHeader("x-plan-file", encodeURIComponent(file.name));
-    xhr.setRequestHeader("x-plan-size", String(file.size));
-    if (found) xhr.setRequestHeader("x-plan-date", found.date);
-    xhr.upload.onprogress = (e) => e.lengthComputable && setPct(Math.round((e.loaded / e.total) * 100));
+    xhr.setRequestHeader("x-plan-key", keyOf(it));
+    xhr.setRequestHeader("x-plan-name", encodeURIComponent(it.key === "__new" ? it.newName.trim() : ""));
+    xhr.setRequestHeader("x-plan-county", encodeURIComponent(it.key === "__new" ? it.newCounty.trim() : ""));
+    xhr.setRequestHeader("x-plan-file", encodeURIComponent(it.file.name));
+    xhr.setRequestHeader("x-plan-size", String(it.file.size));
+    xhr.setRequestHeader("x-plan-date", it.date);
+    xhr.upload.onprogress = (e) => e.lengthComputable && set(i, { pct: Math.round((e.loaded / e.total) * 100) });
     xhr.onload = () => {
       let d: { error?: string } = {};
       try { d = JSON.parse(xhr.responseText); } catch { /* not JSON */ }
-      if (xhr.status >= 200 && xhr.status < 300) return location.reload();
-      setStep(""); setMsg(d.error || `Încărcarea a eșuat (HTTP ${xhr.status}).`);
+      const ok = xhr.status >= 200 && xhr.status < 300;
+      set(i, ok ? { state: "done" } : { state: "error", msg: d.error || `Încărcarea a eșuat (HTTP ${xhr.status}).` });
+      resolve(ok);
     };
-    xhr.onerror = () => { setStep(""); setMsg("Conexiunea s-a întrerupt. Încearcă din nou."); };
+    xhr.onerror = () => { set(i, { state: "error", msg: "Conexiunea s-a întrerupt. Încearcă din nou." }); resolve(false); };
     xhr.send(body);
+  });
+
+  const send = async () => {
+    const p = items.map(problem).find((x, i) => x && items[i].state !== "done");
+    if (p) return setMsg(p);
+    if (dup) return setMsg("Două fișiere pentru același UAT: încarcă-l doar pe cel mai nou.");
+    setMsg(""); setBusy(true);
+    let all = true;
+    for (const [i, it] of items.entries()) if (it.state !== "done") all = (await upload(it, i)) && all;
+    setBusy(false);
+    if (all) location.reload();
   };
 
-  const known = uats.find((u) => u.key === key);
+  const STATE: Record<Item["state"], string> = { "": "", zip: "Se comprimă…", up: "Se încarcă…", done: "Încărcat ✓", error: "" };
   return (
     <section className="card">
-      <h2>Încarcă un plan nou</h2>
-      <p className="hint">Exportul DXF de la ANCPI, oricât de mare: browserul îl comprimă înainte de trimitere. Datele existente nu se șterg: se adaugă parcelele și construcțiile noi și se actualizează cele cu același număr.</p>
+      <h2>Încarcă planuri noi</h2>
+      <p className="hint">Exporturile DXF de la ANCPI, oricât de mari și oricâte deodată: browserul le comprimă înainte de trimitere. Datele existente nu se șterg: se adaugă parcelele și construcțiile noi și se actualizează cele cu același număr.</p>
       {!ready && <div role="alert" className="error">Încărcarea nu funcționează încă: lipsește PLANS_GITHUB_TOKEN din setările Cloudflare ale Tools (vezi README).</div>}
       <GithubCheck />
-      <label className="field">Fișier DXF
-        <input ref={input} className="input" type="file" accept=".dxf" disabled={!!step} onChange={(e) => pick(e.target.files?.[0] ?? null)} />
+      <label className="field">Fișiere DXF <small>(poți alege mai multe)</small>
+        <input ref={input} className="input" type="file" accept=".dxf" multiple disabled={busy} onChange={(e) => pick(e.target.files)} />
       </label>
-      {file && found && (
-        <>
-          <p className="hint">În fișier: <b>{found.uat}</b> · date cadastrale la <b>{roDate(found.date)}</b> · {mb(file.size)}</p>
-          <label className="field">UAT
-            <select className="select" value={key} disabled={!!step} onChange={(e) => {
-              setKey(e.target.value);
-              if (e.target.value === "__new" && !newName && found) { setNewName(title(found.uat)); setNewKey(slug(found.uat)); }
-            }}>
-              <option value="" disabled>Alege UAT-ul</option>
-              {uats.map((u) => <option key={u.key} value={u.key}>{u.name}{u.date ? ` · plan la ${roDate(u.date)}` : ""}</option>)}
-              <option value="__new">UAT nou (nu e încă în localizator)</option>
-            </select>
-          </label>
-          {key === "__new" && (
-            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-              <label className="field" style={{ flex: "1 1 200px" }}>Nume UAT <small>(cu diacritice, cum apare în localizator)</small>
-                <input className="input" value={newName} disabled={!!step} onChange={(e) => { setNewName(e.target.value); setNewKey(slug(e.target.value)); }} />
-              </label>
-              <label className="field" style={{ flex: "1 1 160px" }}>Cheie <small>(fără diacritice)</small>
-                <input className="input" value={newKey} disabled={!!step} onChange={(e) => setNewKey(e.target.value)} />
-              </label>
-            </div>
-          )}
-          {key === "__new" && <p className="hint">Un UAT nou apare doar cu parcele și construcții: exportul nu are numere topo și limite de intravilan.</p>}
-          {known && known.date && found.date < known.date && <div role="alert" className="error">Atenție: planul din localizator ({roDate(known.date)}) este mai nou decât acesta.</div>}
-        </>
+      {items.length > 0 && (
+        <ul className="docList">
+          {items.map((it, i) => {
+            const known = uats.find((u) => u.key === it.key);
+            return (
+              <li key={i} style={{ flexDirection: "column", alignItems: "stretch", gap: 8 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+                  <span className="who"><b>{it.file.name}</b><small>În fișier: {it.uat} · date cadastrale la {roDate(it.date)} · {mb(it.file.size)}</small></span>
+                  {it.state && it.state !== "error" && <span className={`pill ${it.state === "done" ? "pillOk" : "pillInfo"}`}><i />{it.state === "up" ? `Se încarcă… ${it.pct}%` : STATE[it.state]}</span>}
+                </div>
+                {it.state !== "done" && (
+                  <>
+                    <label className="field">UAT
+                      <select className="select" value={it.key} disabled={busy} onChange={(e) => set(i, { key: e.target.value, note: "", ...(e.target.value === "__new" && !it.newName ? { newName: title(it.uat) } : {}) })}>
+                        <option value="" disabled>Alege UAT-ul</option>
+                        <UatOptions uats={uats} />
+                        <option value="__new">UAT nou (nu e încă în localizator)</option>
+                      </select>
+                    </label>
+                    {it.note && <p className="hint">{it.note}</p>}
+                    {it.key === "__new" && (
+                      <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                        <label className="field" style={{ flex: "1 1 180px" }}>Nume UAT <small>(cu diacritice)</small>
+                          <input className="input" value={it.newName} disabled={busy} onChange={(e) => set(i, { newName: e.target.value })} />
+                        </label>
+                        <label className="field" style={{ flex: "1 1 160px" }}>Județ
+                          <select className="select" value={it.newCounty} disabled={busy} onChange={(e) => set(i, { newCounty: e.target.value })}>
+                            <option value="" disabled>Alege județul</option>
+                            {COUNTIES_RO.map((c) => <option key={c} value={c}>{c}</option>)}
+                          </select>
+                        </label>
+                      </div>
+                    )}
+                    {it.key === "__new" && <p className="hint">Un UAT nou apare doar cu parcele și construcții: exportul nu are numere topo și limite de intravilan.</p>}
+                    {known?.date && it.date < known.date && <div role="alert" className="error">Atenție: planul din localizator ({roDate(known.date)}) este mai nou decât acesta.</div>}
+                  </>
+                )}
+                {it.msg && <div role="alert" className="error">{it.msg}</div>}
+              </li>
+            );
+          })}
+        </ul>
       )}
       {msg && <div role="alert" className="error">{msg}</div>}
       <div className="actions">
-        <button type="button" className="btn btnNavy" disabled={!file || !found || !key || !!step || !ready} onClick={send}>
-          {step === "zip" ? "Se comprimă…" : step === "up" ? `Se încarcă… ${pct}%` : "Încarcă și convertește"}
+        <button type="button" className="btn btnNavy" disabled={!items.some((x) => x.state !== "done") || busy || !ready} onClick={send}>
+          {busy ? "Se încarcă…" : items.length > 1 ? `Încarcă și convertește (${items.filter((x) => x.state !== "done").length})` : "Încarcă și convertește"}
         </button>
       </div>
     </section>
@@ -153,6 +212,7 @@ export function PlanList({ initial }: { initial: PlanUpload[] }) {
   const [list, setList] = useState(initial);
   const [warning, setWarning] = useState("");
   const [busy, setBusy] = useState("");
+  const readyIds = list.filter((u) => u.status === "ready").map((u) => u.id);
   const running = list.some((u) => u.status === "converting" || u.status === "publishing");
 
   useEffect(() => {
@@ -166,10 +226,10 @@ export function PlanList({ initial }: { initial: PlanUpload[] }) {
     return () => clearInterval(t);
   }, [running]);
 
-  const act = async (id: string, action: "publish" | "discard") => {
+  const act = async (id: string, action: "publish" | "discard", ids?: string[]) => {
     if (action === "discard" && !confirm("Renunți la acest plan? Localizatorul rămâne cum este.")) return;
     setBusy(id);
-    const r = await fetch(`/api/admin/plans/${id}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action }) }).catch(() => null);
+    const r = await fetch(`/api/admin/plans/${id}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action, ids }) }).catch(() => null);
     const d = (await r?.json().catch(() => ({}))) as { error?: string };
     setBusy("");
     if (!r?.ok) return alert(d?.error || "Nu am putut face asta. Încearcă din nou.");
@@ -179,7 +239,11 @@ export function PlanList({ initial }: { initial: PlanUpload[] }) {
   if (!list.length) return <section className="card"><h2>Planuri încărcate</h2><p className="hint">Niciun plan încărcat încă din admin.</p></section>;
   return (
     <section className="card">
-      <h2>Planuri încărcate</h2>
+      <div className="cardHead">
+        <h2>Planuri încărcate</h2>
+        {readyIds.length > 1 && <button type="button" className="btn btnNavy btnSm" disabled={!!busy} onClick={() => act("toate", "publish", readyIds)}>{busy === "toate" ? "…" : `Publică toate (${readyIds.length})`}</button>}
+      </div>
+      {readyIds.length > 1 && <p className="hint">„Publică toate” le pune în localizator dintr-o dată, cu un singur deploy.</p>}
       {warning && <div role="alert" className="error">{warning}</div>}
       <ul className="docList">
         {list.map((u) => {
@@ -188,7 +252,7 @@ export function PlanList({ initial }: { initial: PlanUpload[] }) {
             <li key={u.id} style={{ flexDirection: "column", alignItems: "stretch", gap: 8 }}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
                 <span className="who">
-                  <b>{u.uat_name}{u.new_uat ? " (UAT nou)" : ""}</b>
+                  <b>{u.uat_name}{u.county ? `, jud. ${u.county}` : ""}{u.new_uat ? " (UAT nou)" : ""}</b>
                   <small>{[u.plan_date && `date la ${roDate(u.plan_date)}`, u.file_name, mb(u.size), u.by_name, new Date(u.created_at).toLocaleString("ro-RO", { dateStyle: "short", timeStyle: "short", timeZone: "Europe/Bucharest" })].filter(Boolean).join(" · ")}</small>
                 </span>
                 <span className={`pill ${cls}`}><i />{label}</span>

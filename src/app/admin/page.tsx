@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
+import { countyOfUats } from "@/lib/plans";
 import { fmtDate, superPage } from "@/lib/guard";
 import { activityByDay, topTargets } from "@/lib/orgs";
 import { AdminShell } from "@/components/AdminShell";
-import { CountTable, DayBars } from "@/components/Charts";
+import { DayBars, UatCountTable } from "@/components/Charts";
 
 export const metadata: Metadata = { title: "Panou | VALUEFY Tools Admin" };
 export const dynamic = "force-dynamic";
@@ -25,6 +26,7 @@ export default async function AdminHome() {
     db.prepare("SELECT id, name, legit, email, created_at FROM account_requests WHERE status = 'pending' ORDER BY created_at LIMIT 6").all<{ id: string; name: string; legit: string; email: string; created_at: string }>(),
   ]);
   const pct = k && k.members ? Math.round((k.with_account / k.members) * 1000) / 10 : 0;
+  const countyOf = await countyOfUats();
   return (
     <AdminShell c={c} active="panou" pending={pending} title="Panou" subtitle={k?.tablou ? `Tablou ANEVAR la ${fmtDate(k.tablou)}` : undefined}>
       <div className="kpis">
@@ -53,7 +55,7 @@ export default async function AdminHome() {
           )}
         </section>
       </div>
-      <CountTable title="Localități cele mai folosite (30 de zile)" rows={uats.map((u) => [u.target, u.n, u.u])} head={["UAT", "Deschideri", "Persoane"]} empty="Nicio localitate deschisă încă." />
+      <UatCountTable title="Localități cele mai folosite (30 de zile)" rows={uats} countyOf={countyOf} empty="Nicio localitate deschisă încă." />
     </AdminShell>
   );
 }

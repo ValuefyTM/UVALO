@@ -67,18 +67,21 @@ din versiunea actuală care nu apar în export rămân (construcțiile vechi doa
 intravilanul se păstrează (exportul nu le are), iar numerele topo se leagă din nou de parcele. Data exportului (din
 numele stratului) apare în localizator: „date cadastrale la …” și în colțul hărții. Scriptul rescrie `localizare-data/<cheie>.json` și
 intrarea UAT-ului din `localizare-data/index.html` și afișează ce s-a schimbat față de versiunea anterioară.
-Pentru un UAT nou se dă și numele: `python3 tools/dxf/convert.py <fișier.dxf> <cheie> "<Nume cu diacritice>"`.
+Pentru un UAT nou se dau și numele și județul: `python3 tools/dxf/convert.py <fișier.dxf> <cheie> "<Nume>" "<Județ>"`.
 
 ### Planuri cadastrale din admin
 
-Admin → **Planuri cadastrale**: alegi DXF-ul (oricât de mare; browserul îl comprimă de ~8 ori înainte de trimitere),
-UAT-ul și data sunt recunoscute din numele stratului, apoi:
+Admin → **Planuri cadastrale**: alegi unul sau mai multe DXF-uri (oricât de mari; browserul le comprimă de ~8 ori
+înainte de trimitere), UAT-ul și data sunt recunoscute din numele stratului (pentru un UAT nou alegi județul), apoi:
 
 1. fișierul comprimat ajunge ca atașament la un release GitHub „plan-uploads” (draft) și pornește workflow-ul
    `.github/workflows/plan.yml` (mod `convert`): conversia cu `tools/dxf/convert.py` într-o ramură `plan/<id>`; rezumatul
    modificărilor apare în admin;
-2. **Publică în localizator** pornește din nou workflow-ul (mod `publish`): planul intră în `main`, ramura se șterge,
-   apoi deploy-ul. **Renunță** șterge ramura și fișierul.
+2. **Publică în localizator** (sau **Publică toate**, mai multe planuri cu un singur deploy) pornește din nou workflow-ul
+   (mod `publish`): planurile intră în `main`, ramurile se șterg, apoi deploy-ul. **Renunță** șterge ramura și fișierul.
+
+Fiecare UAT are județul în lista din `localizare-data/index.html` (`"county"`); localizatorul are selector de județ, iar
+listele de UAT-uri din admin sunt grupate pe județe.
 
 Configurare, o singură dată:
 

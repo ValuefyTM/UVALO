@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
+import { countyOfUats } from "@/lib/plans";
 import { fmtDate, orgAdminPage } from "@/lib/guard";
 import { orgBlock, seatsUsed } from "@/lib/access";
 import { activityByDay, members, pendingInvites, recentEvents, topTargets } from "@/lib/orgs";
 import { AppShell } from "@/components/AppShell";
 import { MembersPanel } from "@/components/forms";
-import { CountTable, DayBars, EventLog } from "@/components/Charts";
+import { DayBars, EventLog, UatCountTable } from "@/components/Charts";
 
 export const metadata: Metadata = { title: "Firma mea | VALUEFY Tools" };
 export const dynamic = "force-dynamic";
@@ -16,6 +17,7 @@ export default async function Firm() {
     members(db, org.id), pendingInvites(db, org.id), seatsUsed(db, org.id), activityByDay(db, 30, org.id), topTargets(db, 30, "uat_open", org.id), recentEvents(db, { orgId: org.id, limit: 50 }),
   ]);
   const block = orgBlock(org);
+  const countyOf = await countyOfUats();
   return (
     <AppShell c={c} active="firma" title={org.name} subtitle={`${org.seats} ${org.seats === 1 ? "loc" : "locuri"} în echipă`}>
       {block && <div className="note">{block}</div>}
@@ -26,7 +28,7 @@ export default async function Firm() {
       />
       <div className="cols">
         <DayBars days={days} label="Activitatea firmei, ultimele 30 de zile" />
-        <CountTable title="Localități folosite (30 de zile)" rows={uats.map((u) => [u.target, u.n, u.u])} head={["UAT", "Deschideri", "Persoane"]} empty="Nicio localitate deschisă încă." />
+        <UatCountTable title="Localități folosite (30 de zile)" rows={uats} countyOf={countyOf} empty="Nicio localitate deschisă încă." />
       </div>
       <EventLog rows={events} showOrg={false} />
     </AppShell>
