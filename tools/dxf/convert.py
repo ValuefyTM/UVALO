@@ -5,7 +5,7 @@
 # are (the topo numbers are linked again to the parcels).
 #
 #   python3 tools/dxf/convert.py <file.dxf> <key>        e.g.  python3 tools/dxf/convert.py CHEVERESU_MARE.dxf cheveresu-mare
-import json, os, re, sys
+import hashlib, json, os, re, sys
 from collections import defaultdict
 import ezdxf
 from shapely.geometry import Point, Polygon
@@ -217,7 +217,8 @@ def main(path, key):
     print(f"  parcele: {len(op)} → {len(parcels)} · noi {len(np_.keys() - op.keys())} · modificate {changed} · păstrate din planul anterior {len(kept)}")
     print(f"  construcții: {len(old.get('b', []))} → {len(B)} (din export {nb_new}, păstrate {len(B) - nb_new}) · nr. topo {len(T)} (în parcele {sum(1 for t in T if t[3] >= 0)}) · intravilan {[x[0] for x in data['iv']]}")
 
-    json.dump(data, open(f"{DATA}/{key}.json", "w"), ensure_ascii=False, separators=(",", ":"))
+    body = json.dumps(data, ensure_ascii=False, separators=(",", ":"))
+    open(f"{DATA}/{key}.json", "w").write(body)
 
     # the entry in the UAT list of the locator page: counts, bounding box and outline
     area = unary_union([p.buffer(25) for p in P + K]).buffer(-20)
@@ -231,7 +232,8 @@ def main(path, key):
     if not m:
         sys.exit(f"Nu găsesc {key} în lista UATS din {DATA}/index.html")
     entry = json.loads(m.group(0))
-    entry.update({"n": len(parcels), "nb": len(B), "bb": [round(la1, 4), round(lo1, 4), round(la2, 4), round(lo2, 4)],
+    # "v": the version of the data file, in its address, so browsers and the offline copy fetch the new plan at once
+    entry.update({"v": hashlib.sha1(body.encode()).hexdigest()[:10], "n": len(parcels), "nb": len(B), "bb": [round(la1, 4), round(lo1, 4), round(la2, 4), round(lo2, 4)],
                   "hull": [[round(a[1], 5), round(a[0], 5)] for a in ll]})
     html = html[:m.start()] + json.dumps(entry, ensure_ascii=False, separators=(",", ":")) + html[m.end():]
     open(f"{DATA}/index.html", "w", encoding="utf8").write(html)
