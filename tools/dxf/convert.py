@@ -1,13 +1,14 @@
 # ANCPI DXF export (layers "T_A1S1_<UAT>_<date>" with the parcels and "<UAT>_constructiie3" with the buildings) →
 # update of a locator data file (localizare-data/<key>.json) and of its entry in localizare-data/index.html.
-# The export has only the registered parcels and buildings: the topo numbers and the intravilan limits are kept from
-# the current version of the file (the topo numbers are linked again to the new parcels).
+# Nothing of the current version is lost: parcels and buildings that are not in the export are kept (the new ones win
+# where they overlap), and the topo numbers and the intravilan limits, which the export does not have, stay as they
+# are (the topo numbers are linked again to the parcels).
 #
 #   python3 tools/dxf/convert.py <file.dxf> <key>        e.g.  python3 tools/dxf/convert.py CHEVERESU_MARE.dxf cheveresu-mare
 import json, os, re, sys
 from collections import defaultdict
 import ezdxf
-from shapely.geometry import Point
+from shapely.geometry import Point, Polygon
 from shapely.strtree import STRtree
 from shapely.ops import unary_union
 
@@ -104,9 +105,24 @@ def main(path, key):
                 near.add(mine[j][1])
         nb.append(sorted(near))
 
+    # Parcels of the current version that are not in the export are kept (marked "o": from an earlier plan), after
+    # the new ones; the new parcels win where they overlap.
+    old_parcels = old["parcels"]
+    new_ids = {i for _, i in mine}
+    kept = [(Polygon(dec(o["z"])), o) for o in old_parcels if o["id"] not in new_ids]
+    kept = [(p if p.is_valid else p.buffer(0), o) for p, o in kept]
+    K = [p for p, _ in kept]
+    ktree = STRtree(K) if K else None
+    base = len(mine)
+    for k, (_, o) in enumerate(kept):
+        first.setdefault(o["id"], base + k)
+
     def parcel_at(pt):
         hits = [int(j) for j in tree.query(pt) if P[int(j)].contains(pt)]
-        return min(hits, key=lambda j: P[j].area) if hits else -1
+        if hits:
+            return min(hits, key=lambda j: P[j].area)
+        hits = [int(j) for j in ktree.query(pt) if K[int(j)].contains(pt)] if ktree else []
+        return base + min(hits, key=lambda j: K[j].area) if hits else -1
 
     # buildings: their own number (400963-C19 → C19 on parcel 400963), else the parcel that contains them
     bpolys = [b for b in bpolys if b.area > 1]
@@ -136,12 +152,31 @@ def main(path, key):
         if j < 0:
             j = parcel_at(b.representative_point())
         B.append([m.group(2) if m else "", j, z])
-    # unnamed buildings get the next free number of their parcel
+    # buildings of the current version that no new building covers are kept, on the same parcel number
+    nb_new = len(B)
+    if old.get("b"):
+        newb = [Polygon(dec(r[2])) for r in B]
+        ntree = STRtree(newb) if newb else None
+        for c, j, z in old["b"]:
+            ob = Polygon(dec(z))
+            ob = ob if ob.is_valid else ob.buffer(0)
+            if ntree is not None and any(ob.intersection(newb[int(i)]).area > 0.5 * min(ob.area, newb[int(i)].area) for i in ntree.query(ob)):
+                continue
+            pid = old_parcels[j]["id"] if 0 <= j < len(old_parcels) else None
+            jj = first.get(pid, -1) if pid else -1
+            if jj < 0:
+                jj = parcel_at(ob.representative_point())
+            B.append(["", jj, z, c])
+    # unnamed buildings (and kept ones whose number is taken) get the next free number of their parcel
     used = defaultdict(set)
-    for c, j, _ in B:
-        if c:
-            used[j].add(c)
+    for r in B[:nb_new]:
+        if r[0]:
+            used[r[1]].add(r[0])
     for r in B:
+        want = r.pop() if len(r) == 4 else None
+        if want and want not in used[r[1]]:
+            r[0] = want
+            used[r[1]].add(want)
         if not r[0]:
             n = 1
             while f"C{n}" in used[r[1]]:
@@ -165,25 +200,31 @@ def main(path, key):
             o["t"] = ptopo[k]
         o["z"] = enc(list(p.exterior.coords)[:-1])
         parcels.append(o)
+    for k, (_, o) in enumerate(kept):
+        o = {key_: v for key_, v in o.items() if key_ != "t"}
+        o["o"] = 1
+        if ptopo.get(base + k):
+            o["t"] = ptopo[base + k]
+        parcels.append(o)
     d, mth, y = date.split("-")[2], date.split("-")[1], date.split("-")[0]
-    data = {"uat": old["uat"], "src": f"Export ANCPI din {d}.{mth}.{y} · {os.path.basename(path)} (nr. topo și intravilan din planul anterior)",
+    data = {"uat": old["uat"], "src": f"Export ANCPI din {d}.{mth}.{y} · {os.path.basename(path)} (completat cu planul anterior)",
             "date": date, "parcels": parcels, "b": B, "t": T, "iv": old.get("iv", [])}
 
     # what changed
     op = {p["id"]: p for p in old["parcels"]}
-    np_ = {p["id"]: p for p in parcels}
+    np_ = {p["id"]: p for p in parcels[:base]}
     changed = sum(1 for i in op.keys() & np_.keys() if abs(op[i]["a"] - np_[i]["a"]) > max(1, 0.01 * op[i]["a"]))
-    print(f"  parcele: {len(op)} → {len(np_)} · noi {len(np_.keys() - op.keys())} · dispărute {len(op.keys() - np_.keys())} · cu altă suprafață {changed}")
-    print(f"  construcții: {len(old.get('b', []))} → {len(B)} · nr. topo {len(T)} (în parcele {sum(1 for t in T if t[3] >= 0)}) · intravilan {[x[0] for x in data['iv']]}")
+    print(f"  parcele: {len(op)} → {len(parcels)} · noi {len(np_.keys() - op.keys())} · modificate {changed} · păstrate din planul anterior {len(kept)}")
+    print(f"  construcții: {len(old.get('b', []))} → {len(B)} (din export {nb_new}, păstrate {len(B) - nb_new}) · nr. topo {len(T)} (în parcele {sum(1 for t in T if t[3] >= 0)}) · intravilan {[x[0] for x in data['iv']]}")
 
     json.dump(data, open(f"{DATA}/{key}.json", "w"), ensure_ascii=False, separators=(",", ":"))
 
     # the entry in the UAT list of the locator page: counts, bounding box and outline
-    area = unary_union([p.buffer(25) for p in P]).buffer(-20)
+    area = unary_union([p.buffer(25) for p in P + K]).buffer(-20)
     if area.geom_type == "MultiPolygon":
         area = max(area.geoms, key=lambda g: g.area)
     ll = [TO_WGS.transform(x, y) for x, y in area.exterior.simplify(150).coords[:-1]]
-    minx, miny, maxx, maxy = unary_union(P).bounds
+    minx, miny, maxx, maxy = unary_union(P + K).bounds
     (lo1, la1), (lo2, la2) = TO_WGS.transform(minx, miny), TO_WGS.transform(maxx, maxy)
     html = open(f"{DATA}/index.html", encoding="utf8").read()
     m = re.search(r'\{"key":"' + re.escape(key) + r'"[^{}]*\}', html)
