@@ -67,6 +67,28 @@ din versiunea actuală care nu apar în export rămân (construcțiile vechi doa
 intravilanul se păstrează (exportul nu le are), iar numerele topo se leagă din nou de parcele. Data exportului (din
 numele stratului) apare în localizator: „date cadastrale la …” și în colțul hărții. Scriptul rescrie `localizare-data/<cheie>.json` și
 intrarea UAT-ului din `localizare-data/index.html` și afișează ce s-a schimbat față de versiunea anterioară.
+Pentru un UAT nou se dă și numele: `python3 tools/dxf/convert.py <fișier.dxf> <cheie> "<Nume cu diacritice>"`.
+
+### Planuri cadastrale din admin
+
+Admin → **Planuri cadastrale**: alegi DXF-ul (oricât de mare; browserul îl comprimă de ~8 ori înainte de trimitere),
+UAT-ul și data sunt recunoscute din numele stratului, apoi:
+
+1. fișierul comprimat ajunge ca atașament la un release GitHub „plan-uploads” (draft) și pornește workflow-ul
+   `.github/workflows/plan.yml` (mod `convert`): conversia cu `tools/dxf/convert.py` într-o ramură `plan/<id>`; rezumatul
+   modificărilor apare în admin;
+2. **Publică în localizator** pornește din nou workflow-ul (mod `publish`): planul intră în `main`, ramura se șterge,
+   apoi deploy-ul. **Renunță** șterge ramura și fișierul.
+
+Configurare, o singură dată:
+
+- token GitHub *fine-grained* (github.com → Settings → Developer settings → Personal access tokens → Fine-grained):
+  resource owner `ValuefyTM`, doar repository-ul `tools`, permisiuni **Contents: Read and write** și
+  **Actions: Read and write**; pus în Cloudflare → Workers → tools → Settings → Variables and Secrets ca secret
+  `PLANS_GITHUB_TOKEN`;
+- pentru deploy automat după publicare, în GitHub → tools → Settings → Secrets and variables → Actions:
+  `CLOUDFLARE_API_TOKEN` (șablonul „Edit Cloudflare Workers”, plus D1: Edit) și `CLOUDFLARE_ACCOUNT_ID`. Fără ele,
+  după publicare rulează `npm run cf:deploy`.
 
 ## API: centrul parcelei după numărul cadastral
 

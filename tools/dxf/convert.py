@@ -4,7 +4,10 @@
 # where they overlap), and the topo numbers and the intravilan limits, which the export does not have, stay as they
 # are (the topo numbers are linked again to the parcels).
 #
-#   python3 tools/dxf/convert.py <file.dxf> <key>        e.g.  python3 tools/dxf/convert.py CHEVERESU_MARE.dxf cheveresu-mare
+#   python3 tools/dxf/convert.py <file.dxf> <key> [<name>]   e.g.  python3 tools/dxf/convert.py CHEVERESU_MARE.dxf cheveresu-mare
+#       (<name>, with diacritics, only for a UAT that is not in the locator yet)
+#   python3 tools/dxf/convert.py --entry <key>               only the entry of the UAT in index.html, from its data file
+# With SUMMARY_FILE set, the summary of the changes is also written there (the automatic update puts it in the commit).
 import hashlib, json, os, re, sys
 from collections import defaultdict
 import ezdxf
@@ -80,8 +83,23 @@ def assign(polys, labels, pattern, near=15):
     return out
 
 
-def main(path, key):
-    old = json.load(open(f"{DATA}/{key}.json"))
+LOG = []
+
+
+def say(line):
+    print(line)
+    LOG.append(line)
+
+
+def main(path, key, name=None):
+    if not re.fullmatch(r"[a-z]+(?:-[a-z]+)*", key):
+        sys.exit(f"Cheie UAT nevalidă: {key}")
+    if os.path.exists(f"{DATA}/{key}.json"):
+        old = json.load(open(f"{DATA}/{key}.json"))
+    elif name:
+        old = {"uat": name, "parcels": [], "b": [], "t": [], "iv": []}
+    else:
+        sys.exit(f"{key} nu există în localizator: dă și numele UAT-ului (cu diacritice).")
     plan, date, ppolys, plabels, bpolys, blabels = read(path)
     ppolys = [p for p in ppolys if p.area > 0.5]
     pid = assign(ppolys, plabels, ID)
@@ -91,7 +109,7 @@ def main(path, key):
     first = {}
     for k, (_, i) in enumerate(mine):
         first.setdefault(i, k)
-    print(f"{key}: strat {plan} · {len(plabels)} etichete · {len(mine)} parcele cu nr. cadastral")
+    say(f"{old['uat']}: strat {plan} · {len(plabels)} etichete · {len(mine)} parcele cu nr. cadastral")
 
     # neighbours: the same rule as the DWG converter (a shared edge longer than 0.5 m)
     nb = []
@@ -138,7 +156,7 @@ def main(path, key):
     for dist, t, i in sorted(pairs):
         if i not in bl and t not in taken and dist <= 8:
             bl[i] = [t]; taken.add(t)
-    print(f"  etichete construcții: {sum(1 for t, _ in blabels if BUILDING.fullmatch(t))} · legate de un contur {len(taken)}")
+    say(f"  etichete construcții: {sum(1 for t, _ in blabels if BUILDING.fullmatch(t))} · legate de un contur {len(taken)}")
     B, seen = [], set()
     for i, b in enumerate(bpolys):
         z = enc(list(b.exterior.coords)[:-1])
@@ -214,33 +232,53 @@ def main(path, key):
     op = {p["id"]: p for p in old["parcels"]}
     np_ = {p["id"]: p for p in parcels[:base]}
     changed = sum(1 for i in op.keys() & np_.keys() if abs(op[i]["a"] - np_[i]["a"]) > max(1, 0.01 * op[i]["a"]))
-    print(f"  parcele: {len(op)} → {len(parcels)} · noi {len(np_.keys() - op.keys())} · modificate {changed} · păstrate din planul anterior {len(kept)}")
-    print(f"  construcții: {len(old.get('b', []))} → {len(B)} (din export {nb_new}, păstrate {len(B) - nb_new}) · nr. topo {len(T)} (în parcele {sum(1 for t in T if t[3] >= 0)}) · intravilan {[x[0] for x in data['iv']]}")
+    say(f"  parcele: {len(op)} → {len(parcels)} · noi {len(np_.keys() - op.keys())} · modificate {changed} · păstrate din planul anterior {len(kept)}")
+    say(f"  construcții: {len(old.get('b', []))} → {len(B)} (din export {nb_new}, păstrate {len(B) - nb_new}) · nr. topo {len(T)} (în parcele {sum(1 for t in T if t[3] >= 0)}) · intravilan {[x[0] for x in data['iv']]}")
 
     body = json.dumps(data, ensure_ascii=False, separators=(",", ":"))
     open(f"{DATA}/{key}.json", "w").write(body)
 
-    # the entry in the UAT list of the locator page: counts, bounding box and outline
-    area = unary_union([p.buffer(25) for p in P + K]).buffer(-20)
+    entry(key)
+    if os.environ.get("SUMMARY_FILE"):
+        open(os.environ["SUMMARY_FILE"], "w").write("\n".join(LOG) + "\n")
+
+
+def entry(key):
+    """The entry of the UAT in the list of the locator page (counts, date, version, bounding box and outline),
+    computed from its data file; added when the UAT is new."""
+    body = open(f"{DATA}/{key}.json").read()
+    data = json.loads(body)
+    P = [poly(dec(p["z"])) for p in data["parcels"]]
+    if not P:
+        sys.exit(f"{key}: nicio parcelă")
+    area = unary_union([p.buffer(25) for p in P]).buffer(-20)
     if area.geom_type == "MultiPolygon":
         area = max(area.geoms, key=lambda g: g.area)
     ll = [TO_WGS.transform(x, y) for x, y in area.exterior.simplify(150).coords[:-1]]
-    minx, miny, maxx, maxy = unary_union(P + K).bounds
+    minx, miny, maxx, maxy = unary_union(P).bounds
     (lo1, la1), (lo2, la2) = TO_WGS.transform(minx, miny), TO_WGS.transform(maxx, maxy)
     html = open(f"{DATA}/index.html", encoding="utf8").read()
     m = re.search(r'\{"key":"' + re.escape(key) + r'"[^{}]*\}', html)
-    if not m:
-        sys.exit(f"Nu găsesc {key} în lista UATS din {DATA}/index.html")
-    entry = json.loads(m.group(0))
+    e = json.loads(m.group(0)) if m else {"key": key, "name": data["uat"]}
     # "v": the version of the data file, in its address, so browsers and the offline copy fetch the new plan at once
-    entry.update({"v": hashlib.sha1(body.encode()).hexdigest()[:10], "n": len(parcels), "nb": len(B), "bb": [round(la1, 4), round(lo1, 4), round(la2, 4), round(lo2, 4)],
-                  "hull": [[round(a[1], 5), round(a[0], 5)] for a in ll]})
-    html = html[:m.start()] + json.dumps(entry, ensure_ascii=False, separators=(",", ":")) + html[m.end():]
+    e.update({"v": hashlib.sha1(body.encode()).hexdigest()[:10], "n": len({p["id"] for p in data["parcels"]}), "nb": len(data.get("b", [])),
+              "bb": [round(la1, 4), round(lo1, 4), round(la2, 4), round(lo2, 4)], "hull": [[round(a[1], 5), round(a[0], 5)] for a in ll]})
+    if data.get("date"):
+        e["date"] = data["date"]
+    text = json.dumps(e, ensure_ascii=False, separators=(",", ":"))
+    if m:
+        html = html[:m.start()] + text + html[m.end():]
+    else:
+        at = html.index("const UATS=[") + len("const UATS=[")
+        html = html[:at] + text + "," + html[at:]
     open(f"{DATA}/index.html", "w", encoding="utf8").write(html)
-    print(f"  scris {DATA}/{key}.json și intrarea din index.html")
+    print(f"  {'actualizat' if m else 'adăugat'} {key} în lista UAT-urilor din index.html")
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 3:
-        sys.exit(__doc__ or "python3 tools/dxf/convert.py <file.dxf> <key>")
-    main(sys.argv[1], sys.argv[2])
+    if len(sys.argv) == 3 and sys.argv[1] == "--entry":
+        entry(sys.argv[2])
+    elif len(sys.argv) in (3, 4):
+        main(sys.argv[1], sys.argv[2], sys.argv[3] if len(sys.argv) == 4 else None)
+    else:
+        sys.exit("python3 tools/dxf/convert.py <file.dxf> <key> [<name>]  |  python3 tools/dxf/convert.py --entry <key>")

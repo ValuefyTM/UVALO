@@ -1,0 +1,100 @@
+# Cadastral plans uploaded from the admin panel (Planuri cadastrale), started by the Tools worker (src/lib/plans.ts):
+#   convert: the compressed DXF (an asset of the draft release "plan-uploads") → tools/dxf/convert.py → branch plan/<id>,
+#            whose commit message is the summary shown in the admin panel; the uploaded file is then deleted
+#   publish: the plan of branch plan/<id> goes into main (and the UAT's entry in the locator list), then the deploy
+#            (when the CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID secrets are set)
+name: Plan cadastral
+run-name: plan ${{ inputs.mode }} ${{ inputs.id }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode: { description: "convert | publish", required: true, type: string }
+      id: { description: "plan upload id", required: true, type: string }
+      key: { description: "UAT key", required: true, type: string }
+      name: { description: "UAT name (new UAT only)", required: false, type: string, default: "" }
+      asset: { description: "release asset id (convert)", required: false, type: string, default: "" }
+
+concurrency:
+  group: plans
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      MODE: ${{ inputs.mode }}
+      ID: ${{ inputs.id }}
+      KEY: ${{ inputs.key }}
+      NAME: ${{ inputs.name }}
+      ASSET: ${{ inputs.asset }}
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+      HAS_CF: ${{ secrets.CLOUDFLARE_API_TOKEN != '' }}
+    steps:
+      - name: Check the inputs
+        run: |
+          [[ "$MODE" == convert || "$MODE" == publish ]]
+          [[ "$ID" =~ ^[a-f0-9]{8}$ ]]
+          [[ "$KEY" =~ ^[a-z]+(-[a-z]+)*$ ]]
+          [[ "$MODE" == publish || "$ASSET" =~ ^[0-9]+$ ]]
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+
+      - run: pip install --quiet ezdxf shapely pyproj
+
+      - name: Convert
+        if: inputs.mode == 'convert'
+        run: |
+          set -euo pipefail
+          curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/octet-stream" \
+            "https://api.github.com/repos/$REPO/releases/assets/$ASSET" -o "$RUNNER_TEMP/plan.dxf.gz"
+          gunzip "$RUNNER_TEMP/plan.dxf.gz"
+          if [[ -n "$NAME" ]]; then
+            SUMMARY_FILE="$RUNNER_TEMP/summary.txt" python3 tools/dxf/convert.py "$RUNNER_TEMP/plan.dxf" "$KEY" "$NAME"
+          else
+            SUMMARY_FILE="$RUNNER_TEMP/summary.txt" python3 tools/dxf/convert.py "$RUNNER_TEMP/plan.dxf" "$KEY"
+          fi
+          git config user.name "VALUEFY Tools"
+          git config user.email "tools@valuefy.ro"
+          git checkout -b "plan/$ID"
+          git add localizare-data
+          { printf 'Plan cadastral %s din DXF (încărcat din admin)\n\n' "$KEY"; cat "$RUNNER_TEMP/summary.txt"; } > "$RUNNER_TEMP/msg.txt"
+          git commit -q --allow-empty -F "$RUNNER_TEMP/msg.txt"
+          git push -f origin "plan/$ID"
+          curl -fsS -X DELETE -H "Authorization: Bearer $GH_TOKEN" "https://api.github.com/repos/$REPO/releases/assets/$ASSET" || true
+
+      - name: Publish
+        if: inputs.mode == 'publish'
+        run: |
+          set -euo pipefail
+          git fetch -q origin "plan/$ID"
+          git checkout FETCH_HEAD -- "localizare-data/$KEY.json"
+          python3 tools/dxf/convert.py --entry "$KEY"
+          git config user.name "VALUEFY Tools"
+          git config user.email "tools@valuefy.ro"
+          git add localizare-data
+          git log -1 --format=%B FETCH_HEAD | sed '1s/(încărcat din admin)/publicat din admin/' > "$RUNNER_TEMP/msg.txt"
+          git commit -q -F "$RUNNER_TEMP/msg.txt" || echo "nimic nou de publicat"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
+          git push -q origin --delete "plan/$ID" || true
+
+      - uses: actions/setup-node@v4
+        if: inputs.mode == 'publish' && env.HAS_CF == 'true'
+        with: { node-version: 22, cache: npm }
+
+      - name: Deploy
+        if: inputs.mode == 'publish' && env.HAS_CF == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          npm ci --no-audit --no-fund
+          npm run cf:deploy
