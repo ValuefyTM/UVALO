@@ -1,8 +1,9 @@
 # Cadastral plans uploaded from the admin panel (Planuri cadastrale), started by the Tools worker (src/lib/plans.ts):
 #   convert: the compressed DXF (an asset of the draft release "plan-uploads") → tools/dxf/convert.py → branch plan/<id>,
 #            whose commit message is the summary shown in the admin panel; the uploaded file is then deleted
-#   publish: the plans of branches plan/<id> (several ids and keys, comma-separated) go into main (and the UAT's entry in the locator list), then the deploy
-#            (when the CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID secrets are set)
+#   publish: the plans of branches plan/<id> (several ids and keys, comma-separated) go into the branch the run was started
+#            on (main from production, staging from the test environment), then the "Deploy" workflow is started for
+#            that environment (production waits for approval there)
 name: Plan cadastral
 run-name: plan ${{ inputs.mode }} ${{ inputs.id }}
 
@@ -22,6 +23,7 @@ concurrency:
 
 permissions:
   contents: write
+  actions: write   # to start the Deploy workflow after publishing
 
 jobs:
   plan:
@@ -36,7 +38,6 @@ jobs:
       ASSET: ${{ inputs.asset }}
       GH_TOKEN: ${{ github.token }}
       REPO: ${{ github.repository }}
-      HAS_CF: ${{ secrets.CLOUDFLARE_API_TOKEN != '' }}
     steps:
       - name: Check the inputs
         run: |
@@ -95,15 +96,6 @@ jobs:
           git push origin "HEAD:${GITHUB_REF_NAME}"
           for b in "${IDS[@]}"; do git push -q origin --delete "plan/$b" || true; done
 
-      - uses: actions/setup-node@v4
-        if: inputs.mode == 'publish' && env.HAS_CF == 'true'
-        with: { node-version: 22, cache: npm }
-
       - name: Deploy
-        if: inputs.mode == 'publish' && env.HAS_CF == 'true'
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: |
-          npm ci --no-audit --no-fund
-          npm run cf:deploy
+        if: inputs.mode == 'publish'
+        run: gh workflow run deploy.yml --repo "$REPO" --ref "$GITHUB_REF_NAME" -f environment="$([[ "$GITHUB_REF_NAME" == main ]] && echo production || echo staging)"

@@ -1,25 +1,63 @@
+// VALUEFY Tools on Cloudflare Workers. Environments:
+//   production (top level)  → worker "tools",         D1 "valuefy-tools-db",         https://tools.valuefy.ro
+//   staging (env.staging)   → worker "tools-staging", D1 "valuefy-tools-staging-db", https://tools-staging.<account>.workers.dev
+//   local                   → wrangler dev with this same configuration, D1 local (.wrangler/), variables from .dev.vars
+// Deploys go through GitHub Actions (.github/workflows/deploy.yml): staging on push to "staging", production on push to
+// "main" after approval. Secrets (RESEND_API_KEY, GOOGLE_MAPS_KEY, LOCATOR_API_TOKEN, PLANS_GITHUB_TOKEN,
+// TOOLS_SUPERADMINS…) are set per worker in Cloudflare; the variables below are not secret.
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
-	// tools.valuefy.ro — VALUEFY Tools (SaaS for valuers).
 	"name": "tools",
 	"main": ".open-next/worker.js",
 	"compatibility_date": "2026-09-25",
 	"compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
-	// Keep the variables set in the Cloudflare dashboard (RESEND_API_KEY, TOOLS_EMAIL_FROM, TOOLS_SUPERADMINS, GOOGLE_MAPS_KEY) on every deploy.
 	"keep_vars": true,
 	"assets": {
 		"directory": ".open-next/assets",
 		"binding": "ASSETS",
-		// Module data (scripts/copy-localizare.mjs): only the worker reads it, for signed-in users with a subscription.
 		"run_worker_first": ["/_localizare/*"]
 	},
 	"d1_databases": [
 		{
-			// Its own database, separate from the website and the CRM. Created automatically on the first deploy.
 			"binding": "DB",
 			"database_name": "valuefy-tools-db",
 			"migrations_dir": "migrations"
 		}
 	],
-	"observability": { "enabled": true }
+	"vars": {
+		"APP_ENV": "production",
+		"APP_URL": "https://tools.valuefy.ro",
+		"APP_NAME": "VALUEFY Tools",
+		"SUPPORT_EMAIL": "office@valuefy.ro"
+	},
+	"observability": { "enabled": true },
+
+	"env": {
+		"staging": {
+			"name": "tools-staging",
+			"assets": {
+				"directory": ".open-next/assets",
+				"binding": "ASSETS",
+				"run_worker_first": ["/_localizare/*"]
+			},
+			"d1_databases": [
+				{
+					"binding": "DB",
+					"database_name": "valuefy-tools-staging-db",
+					"migrations_dir": "migrations"
+				}
+			],
+			"vars": {
+				"APP_ENV": "staging",
+				// empty: links use the address of the request (tools-staging.<account>.workers.dev); set it for a custom domain
+				"APP_URL": "",
+				"APP_NAME": "VALUEFY Tools (test)",
+				"SUPPORT_EMAIL": "office@valuefy.ro",
+				"MAIL_ALLOW": "@valuefy.ro",
+				// cadastral plans uploaded in staging are converted and published on the "staging" branch, never on main
+				"PLANS_GITHUB_BRANCH": "staging"
+			},
+			"observability": { "enabled": true }
+		}
+	}
 }

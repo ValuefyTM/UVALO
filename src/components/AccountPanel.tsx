@@ -17,7 +17,7 @@ async function square(file: File): Promise<string> {
 }
 
 /** "Administrare cont": picture and email can be changed; name, card, specializations and county come from the ANEVAR list. */
-export function AccountPanel(p: { id: string; name: string; email: string; legit: string | null; county: string | null; specs: string | null; hasAvatar: boolean; initials: string; tablou: string | null }) {
+export function AccountPanel(p: { id: string; name: string; email: string; legit: string | null; county: string | null; specs: string | null; hasAvatar: boolean; initials: string; tablou: string | null; support: string }) {
   const [img, setImg] = useState<string | null>(p.hasAvatar ? `/api/avatar/${p.id}?v=${Date.now()}` : null);
   const [msg, setMsg] = useState<{ ok: boolean; t: string } | null>(null);
   const [email, setEmail] = useState("");
@@ -68,7 +68,7 @@ export function AccountPanel(p: { id: string; name: string; email: string; legit
           <div><dt>Județ</dt><dd>{p.county ?? "—"}</dd></div>
           <div><dt>Specializări</dt><dd>{p.specs ? <div className="specs" style={{ justifyContent: "flex-end" }}>{p.specs.split(",").map((s) => <span key={s} className="spec" title={SPEC[s]}>{s}</span>)}</div> : "—"}</dd></div>
         </dl>
-        <p className="hint">Datele vin din tabloul membrilor titulari ANEVAR{p.tablou ? ` (la ${p.tablou})` : ""} și nu se modifică din cont. Dacă nu sunt corecte, scrie-ne la office@valuefy.ro.</p>
+        <p className="hint">Datele vin din tabloul membrilor titulari ANEVAR{p.tablou ? ` (la ${p.tablou})` : ""} și nu se modifică din cont. Dacă nu sunt corecte, scrie-ne la {p.support}.</p>
       </section>
 
       <section className="card">

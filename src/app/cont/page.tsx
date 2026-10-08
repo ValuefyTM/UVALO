@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { supportEmail } from "@/lib/config";
 import { fmtDate, initials, page } from "@/lib/guard";
 import { AppShell } from "@/components/AppShell";
 import { AccountPanel, OfficeToggle } from "@/components/AccountPanel";
@@ -14,7 +15,7 @@ export default async function Account() {
   return (
     <AppShell c={c} active="cont" title="Contul meu">
       <div style={{ maxWidth: 760 }}>
-        <AccountPanel id={u.id} name={m?.name ?? u.name} email={u.email} legit={u.anevar_no} county={m?.county ?? u.county} specs={m?.specs ?? u.specs}
+        <AccountPanel support={supportEmail()} id={u.id} name={m?.name ?? u.name} email={u.email} legit={u.anevar_no} county={m?.county ?? u.county} specs={m?.specs ?? u.specs}
           hasAvatar={!!u.has_avatar} initials={initials(u.name, u.email)} tablou={m?.tablou_date ? fmtDate(m.tablou_date) : null} />
         <div style={{ height: 18 }} />
         <OfficeToggle ready={OFFICE_READY} on={!!u.is_office} can={!!c.org && canManageOrg(c)} org={c.org?.name ?? null} />

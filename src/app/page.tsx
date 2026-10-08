@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { supportEmail } from "@/lib/config";
 import { firstName, page } from "@/lib/guard";
 import { MODULES } from "@/lib/access";
 import { AppShell } from "@/components/AppShell";
@@ -16,7 +17,7 @@ export default async function Home() {
   const sub = org && org.name.trim().toLowerCase() !== c.user.name.trim().toLowerCase() ? org.name : c.super ? "Administrator VALUEFY" : undefined;
   return (
     <AppShell c={c} active="home" title={`Bună${first ? `, ${first}` : ""}!`} subtitle={sub}>
-      {c.block && !c.super && <div className="note">{c.block} Scrie-ne la <a className="rowLink" href="mailto:office@valuefy.ro">office@valuefy.ro</a> ca să reactivăm accesul.</div>}
+      {c.block && !c.super && <div className="note">{c.block} Scrie-ne la <a className="rowLink" href={`mailto:${supportEmail()}`}>{supportEmail()}</a> ca să reactivăm accesul.</div>}
       <div className="tools">
         {MODULES.map((m) => {
           const on = c.modules.includes(m.key);

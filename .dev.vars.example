@@ -1,0 +1,9 @@
+# Local environment (npm run dev): copy to .dev.vars (never committed) and fill in what you need.
+APP_ENV=local
+APP_URL=http://localhost:8787
+# Your email: a super-admin account on the first sign-in. The login link appears at http://localhost:8787/dev/mail
+TOOLS_SUPERADMINS=office@valuefy.ro
+# Optional, only to test these features locally (the same names as the Cloudflare secrets):
+# GOOGLE_MAPS_KEY=
+# LOCATOR_API_TOKEN=
+# PLANS_GITHUB_TOKEN=

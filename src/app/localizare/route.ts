@@ -1,11 +1,12 @@
 import { locatorAccess, locatorAsset } from "@/lib/locator";
 import { track } from "@/lib/track";
 import { gmapsConfig, hasGoogle } from "@/lib/gmaps";
+import { appName, envBanner, supportEmail } from "@/lib/config";
 
 // /localizare — cadastral locator (cadastral plans, Timiș), for people whose firm has the module.
 export const dynamic = "force-dynamic";
 
-// The origin goes along with the map images, so a Google key restricted to tools.valuefy.ro is accepted.
+// The origin goes along with the map images, so a Google key restricted to the app's domain is accepted.
 const PRIVATE = { "Cache-Control": "private, no-store", "X-Robots-Tag": "noindex, nofollow", "Referrer-Policy": "strict-origin-when-cross-origin" };
 
 // Installable on the phone (PWA): manifest, icons, and a service worker that keeps the map usable with a weak signal.
@@ -49,7 +50,7 @@ export async function GET(req: Request) {
   const GM = gm ? `<script>window.VF_GMAPS=${JSON.stringify(gm).replace(/</g, "\\u003c")}</script>` : "";
   const html = (await page.text())
     .replace("</head>", `${PWA_HEAD}${GM}</head>`)
-    .replace("</body>", `${ack?.loc_ack_at ? "" : NOTICE}${BACK}<script src="/api/localizare/script" defer></script><script src="/api/localizare/track-js" defer></script>${PWA_SCRIPT}</body>`);
+    .replace("</body>", `${ack?.loc_ack_at ? "" : NOTICE}${BACK}${envBanner()}<script src="/api/localizare/script" defer></script><script src="/api/localizare/track-js" defer></script>${PWA_SCRIPT}</body>`);
   return new Response(html, { headers: { "Content-Type": "text/html; charset=utf-8", ...PRIVATE } });
 }
 
@@ -57,5 +58,5 @@ function blocked(why: string) {
   return `<!DOCTYPE html><html lang="ro"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Localizator cadastral · VALUEFY Tools</title>
 <style>body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:#F2ECE0;color:#111111;font-family:Verdana,Geneva,sans-serif}
 .box{width:min(440px,100%);background:#fff;border:1px solid #E2D8C4;border-radius:22px;padding:30px 26px;display:flex;flex-direction:column;gap:14px}h1{margin:0;font-size:21px}p{margin:0;font-size:14px;line-height:1.6;color:#4A4A4A}a{color:#9A5F00;font-weight:700}</style></head>
-<body><div class="box"><h1>Localizatorul cadastral nu este disponibil</h1><p>${why.replace(/[<>&]/g, "")}</p><p>Scrie-ne la <a href="mailto:office@valuefy.ro">office@valuefy.ro</a> ca să activăm accesul.</p><p><a href="/">← Înapoi la VALUEFY Tools</a></p></div></body></html>`;
+<body><div class="box"><h1>Localizatorul cadastral nu este disponibil</h1><p>${why.replace(/[<>&]/g, "")}</p><p>Scrie-ne la <a href="mailto:${supportEmail()}">${supportEmail()}</a> ca să activăm accesul.</p><p><a href="/">← Înapoi la ${appName()}</a></p></div></body></html>`;
 }

@@ -624,3 +624,6 @@ a.rMeta:hover u { color: var(--acc-light); }
 /* tables grouped by county (localities) */
 .table tr.groupRow td { background: var(--cream); font-size: 11px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); padding-top: 9px; padding-bottom: 9px; }
 .table tbody tr.groupRow:hover { background: var(--cream); }
+/* outside production: a strip at the bottom of every page (APP_ENV local / staging) */
+.envBar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 9999; background: #b3261e; color: #fff; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-align: center; padding: 5px 8px; }
+.envBar a { color: #fff; text-decoration: underline; }

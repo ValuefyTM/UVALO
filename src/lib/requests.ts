@@ -5,6 +5,7 @@ import { audit, findUser, invite, type User } from "./auth";
 import { cleanPhone, normEmail, validEmail } from "./crypto";
 import { esc, layout, sendEmail } from "./email";
 import { origin } from "./site";
+import { supportEmail } from "./config";
 import { seatsUsed } from "./access";
 import { getOrg } from "./orgs";
 import { referralByToken } from "./referrals";
@@ -163,10 +164,10 @@ export async function reject(db: D1Database, by: User, id: string, note: string,
     await sendEmail({
       to: r.email,
       subject: "Solicitarea ta de cont VALUEFY Tools",
-      text: `Bună ziua, ${r.name}!\nDeocamdată nu putem activa contul solicitat în VALUEFY Tools.${note ? `\n${note}` : ""}\nPentru detalii, scrie-ne la office@valuefy.ro.`,
+      text: `Bună ziua, ${r.name}!\nDeocamdată nu putem activa contul solicitat în VALUEFY Tools.${note ? `\n${note}` : ""}\nPentru detalii, scrie-ne la ${supportEmail()}.`,
       html: layout({
         eyebrow: "VALUEFY Tools", title: `Bună ziua, ${r.name}!`,
-        body: `<p style="margin:0 0 10px;font-size:15px;line-height:1.65;color:#4A4A4A">Deocamdată nu putem activa contul solicitat în VALUEFY Tools.</p>${note ? `<p style="margin:0 0 10px;font-size:15px;line-height:1.65;color:#4A4A4A">${esc(note)}</p>` : ""}<p style="margin:0;font-size:15px;line-height:1.65;color:#4A4A4A">Pentru detalii, scrie-ne la office@valuefy.ro.</p>`,
+        body: `<p style="margin:0 0 10px;font-size:15px;line-height:1.65;color:#4A4A4A">Deocamdată nu putem activa contul solicitat în VALUEFY Tools.</p>${note ? `<p style="margin:0 0 10px;font-size:15px;line-height:1.65;color:#4A4A4A">${esc(note)}</p>` : ""}<p style="margin:0;font-size:15px;line-height:1.65;color:#4A4A4A">Pentru detalii, scrie-ne la ${supportEmail()}.</p>`,
         foot: "VALUEFY · firmă autorizată ANEVAR",
       }),
     });

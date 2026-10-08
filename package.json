@@ -3,12 +3,17 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev -p 3300",
+    "dev": "node scripts/dev.mjs",
+    "dev:ui": "next dev -p 3300",
     "build": "next build",
     "lint": "tsc --noEmit",
+    "check": "tsc --noEmit && npm run cf:build",
     "cf:build": "opennextjs-cloudflare build && node scripts/copy-localizare.mjs",
-    "cf:deploy": "(wrangler d1 create valuefy-tools-db > /dev/null 2>&1 || true) && wrangler d1 migrations apply DB --remote && opennextjs-cloudflare build && node scripts/copy-localizare.mjs && opennextjs-cloudflare deploy",
-    "db:migrate:local": "wrangler d1 migrations apply DB --local"
+    "db:migrate:local": "wrangler d1 migrations apply DB --local",
+    "db:reset": "node -e \"require('fs').rmSync('.wrangler/state/v3/d1',{recursive:true,force:true})\" && wrangler d1 migrations apply DB --local",
+    "db:pull": "node scripts/db-copy.mjs --to local",
+    "db:pull:staging": "node scripts/db-copy.mjs --to staging",
+    "cf:deploy": "node -e \"console.error('Deploy-ul se face din GitHub Actions (workflow-ul Deploy, cu aprobare). Dacă vezi asta în Cloudflare, deconectează Workers Builds: Workers → tools → Settings → Build.'); process.exit(1)\""
   },
   "dependencies": {
     "@opennextjs/cloudflare": "1.20.6",

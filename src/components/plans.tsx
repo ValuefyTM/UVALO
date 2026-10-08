@@ -258,7 +258,8 @@ export function PlanList({ initial }: { initial: PlanUpload[] }) {
                 <span className={`pill ${cls}`}><i />{label}</span>
               </div>
               {u.status === "converting" && <p className="hint">Conversia durează câteva minute. Pagina se actualizează singură.</p>}
-              {u.status === "publishing" && <p className="hint">Se pune în localizator și se face deploy-ul (câteva minute).</p>}
+              {u.status === "published" && u.published_at && Date.now() - new Date(u.published_at).getTime() < 3 * 3600e3 && <p className="hint">Apare în localizator după deploy (în producție: după ce îl aprobi în GitHub → Actions → Deploy).</p>}
+              {u.status === "publishing" && <p className="hint">Se pune în localizator, apoi pornește deploy-ul. În producție deploy-ul așteaptă aprobarea ta în GitHub → Actions → Deploy.</p>}
               {u.summary && <pre style={{ margin: 0, whiteSpace: "pre-wrap", fontSize: 12, background: "var(--cream)", borderRadius: 10, padding: "10px 12px" }}>{u.summary}</pre>}
               {u.error && <div className="error">{u.error}</div>}
               <div className="actions" style={{ justifyContent: "flex-start" }}>
