@@ -29,7 +29,7 @@ async function env() {
   const { env } = await getCloudflareContext({ async: true });
   const e = env as unknown as Record<string, unknown>;
   const s = (k: string) => (typeof e[k] === "string" ? (e[k] as string).trim() : "") || (process.env[k] ?? "").trim();
-  return { token: s("PLANS_GITHUB_TOKEN"), repo: s("PLANS_GITHUB_REPO") || "ValuefyTM/tools", branch: s("PLANS_GITHUB_BRANCH") || "main" };
+  return { token: s("PLANS_GITHUB_TOKEN"), repo: s("PLANS_GITHUB_REPO") || "ValuefyTM/uvalo", branch: s("PLANS_GITHUB_BRANCH") || "main" };
 }
 
 export async function githubReady() {

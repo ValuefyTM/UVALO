@@ -1,4 +1,4 @@
-# VALUEFY Tools — tools.valuefy.ro
+# UVALO — app.uvalo.ro (fost VALUEFY Tools)
 
 Platformă pentru colegii evaluatori: instrumente VALUEFY pe bază de cont și abonament.
 Primul modul: **Localizare cadastrală ANCPI** (planurile cadastrale din Timiș). Urmează: analize de piață.
@@ -86,10 +86,10 @@ listele de UAT-uri din admin sunt grupate pe județe.
 Configurare, o singură dată:
 
 - token GitHub *fine-grained* (github.com → Settings → Developer settings → Personal access tokens → Fine-grained):
-  resource owner `ValuefyTM`, doar repository-ul `tools`, permisiuni **Contents: Read and write** și
+  resource owner `ValuefyTM`, doar repository-ul `uvalo`, permisiuni **Contents: Read and write** și
   **Actions: Read and write**; pus în Cloudflare → Workers → tools → Settings → Variables and Secrets ca secret
   `PLANS_GITHUB_TOKEN`;
-- pentru deploy automat după publicare, în GitHub → tools → Settings → Secrets and variables → Actions:
+- pentru deploy automat după publicare, în GitHub → uvalo → Settings → Secrets and variables → Actions:
   `CLOUDFLARE_API_TOKEN` (șablonul „Edit Cloudflare Workers”, plus D1: Edit) și `CLOUDFLARE_ACCOUNT_ID`. Fără ele,
   după publicare rulează `npm run cf:deploy`.
 
