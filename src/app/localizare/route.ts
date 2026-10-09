@@ -14,8 +14,6 @@ const PWA_HEAD = `<link rel="manifest" href="/api/localizare/manifest"><link rel
 <meta name="apple-mobile-web-app-title" content="Localizator"><meta name="apple-mobile-web-app-status-bar-style" content="default">
 <style>.vfBack{display:inline-flex;align-items:center;gap:6px;margin-left:auto;font-size:13px;font-weight:700;color:#9a5f00;text-decoration:none;padding:6px 10px;border-radius:999px;border:1px solid #f5d9a6;background:#fdf1dc}</style>`;
 const PWA_SCRIPT = `<script>if("serviceWorker" in navigator)addEventListener("load",function(){navigator.serviceWorker.register("/api/localizare/sw",{scope:"/localizare"}).catch(function(){})})</script>`;
-// Back to the UVALO home, in the page header.
-const BACK = `<script>(function(){var h=document.querySelector("header");if(!h)return;var a=document.createElement("a");a.href="/";a.className="vfBack";a.textContent="← UVALO";h.appendChild(a)})()</script>`;
 
 // First opening: the data is informative, from unofficial cadastral sources; it must be acknowledged once (kept on the account).
 const NOTICE = `<div id="vfNotice" role="dialog" aria-modal="true" aria-labelledby="vfNoticeT" style="position:fixed;inset:0;z-index:5000;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:16px;font-family:Verdana,Geneva,sans-serif">
@@ -50,7 +48,7 @@ export async function GET(req: Request) {
   const GM = gm ? `<script>window.VF_GMAPS=${JSON.stringify(gm).replace(/</g, "\\u003c")}</script>` : "";
   const html = (await page.text())
     .replace("</head>", `${PWA_HEAD}${GM}</head>`)
-    .replace("</body>", `${ack?.loc_ack_at ? "" : NOTICE}${BACK}<script src="/api/localizare/script" defer></script><script src="/api/localizare/track-js" defer></script>${PWA_SCRIPT}</body>`);
+    .replace("</body>", `${ack?.loc_ack_at ? "" : NOTICE}<script src="/api/localizare/script" defer></script><script src="/api/localizare/track-js" defer></script>${PWA_SCRIPT}</body>`);
   return new Response(html, { headers: { "Content-Type": "text/html; charset=utf-8", ...PRIVATE } });
 }
 
