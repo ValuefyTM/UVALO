@@ -78,7 +78,7 @@ export async function uats(req: Request = new Request("https://tools.local/")): 
 
 export async function listUploads(db: D1Database) {
   const { results } = await db.prepare(`SELECT p.*, COALESCE(NULLIF(u.name, ''), u.email) AS by_name FROM plan_uploads p LEFT JOIN users u ON u.id = p.created_by
-    ORDER BY p.created_at DESC LIMIT 40`).all<PlanUpload>();
+    ORDER BY p.created_at DESC LIMIT 200`).all<PlanUpload>();
   return results;
 }
 
@@ -150,11 +150,21 @@ type Run = { id: number; display_title: string; status: string; conclusion: stri
 export async function refresh(db: D1Database) {
   const open = (await db.prepare("SELECT * FROM plan_uploads WHERE status IN ('converting', 'publishing')").all<PlanUpload>()).results;
   if (!open.length || !(await githubReady())) return;
-  const runs = (await gh<{ workflow_runs: Run[] }>("GET", `/actions/workflows/${WORKFLOW}/runs?event=workflow_dispatch&per_page=50`)).workflow_runs;
+  // newest first; enough pages to reach the oldest upload still open (many conversions can run at once)
+  const oldest = open.reduce((m, u) => (u.updated_at < m ? u.updated_at : m), open[0].updated_at);
+  const runs: Run[] = [];
+  for (let page = 1; page <= 4; page++) {
+    const batch = (await gh<{ workflow_runs: Run[] }>("GET", `/actions/workflows/${WORKFLOW}/runs?event=workflow_dispatch&per_page=100&page=${page}`)).workflow_runs;
+    runs.push(...batch);
+    if (batch.length < 100 || batch[batch.length - 1].created_at < oldest.slice(0, 19)) break;
+  }
   for (const u of open) {
     const mode = u.status === "converting" ? "convert" : "publish";
     // a publication can hold several plans: "plan publish id1,id2"
-    const run = runs.find((r) => r.display_title.startsWith(`plan ${mode} `) && r.display_title.slice(`plan ${mode} `.length).split(",").includes(u.id));
+    // only runs started for this attempt (a retried conversion also has the earlier, stopped run)
+    const since = new Date(new Date(u.updated_at).getTime() - 120e3).toISOString().slice(0, 19);
+    const run = runs.find((r) => r.created_at.slice(0, 19) >= since && r.display_title.startsWith(`plan ${mode} `)
+      && r.display_title.slice(`plan ${mode} `.length).split(",").includes(u.id));
     if (!run) {
       // never started (e.g. the workflow file is not on GitHub yet)
       if (Date.now() - new Date(u.updated_at).getTime() > 15 * 60e3)
@@ -168,8 +178,11 @@ export async function refresh(db: D1Database) {
     }
     const t = now();
     if (run.conclusion !== "success") {
+      const why = run.conclusion === "cancelled"
+        ? (mode === "convert" ? "Conversia a fost oprită înainte să înceapă. Fișierul e păstrat: apasă „Reîncearcă”." : "Publicarea a fost oprită. Apasă „Publică din nou”.")
+        : (mode === "convert" ? "Conversia a eșuat. Detaliile sunt în jurnalul de pe GitHub." : "Publicarea a eșuat. Detaliile sunt în jurnalul de pe GitHub.");
       await db.prepare("UPDATE plan_uploads SET status = 'failed', error = ?, run_url = ?, updated_at = ? WHERE id = ?")
-        .bind(mode === "convert" ? "Conversia a eșuat. Detaliile sunt în jurnalul de pe GitHub." : "Publicarea a eșuat. Detaliile sunt în jurnalul de pe GitHub.", run.html_url, t, u.id).run();
+        .bind(why, run.html_url, t, u.id).run();
     } else if (mode === "convert") {
       const commit = await gh<{ commit: { message: string } }>("GET", `/commits/plan/${u.id}`).catch(() => null);
       const summary = commit?.commit.message.split("\n").slice(2).join("\n").trim() || null;
@@ -198,6 +211,22 @@ export async function publish(db: D1Database, c: Ctx, ids: string[]) {
     await db.prepare("UPDATE plan_uploads SET status = 'publishing', error = NULL, updated_at = ? WHERE id = ?").bind(t, u.id).run();
     await track(db, c, "admin", "plan_publish", u.uat_key, { id: u.id });
   }
+}
+
+/** Converts again plans whose conversion did not finish (stopped or failed): the uploaded file is still on GitHub. */
+export async function retry(db: D1Database, c: Ctx, ids: string[]) {
+  // at most 40 per click: each start is a request to GitHub, and a Cloudflare request may make only so many
+  let n = 0;
+  for (const id of [...new Set(ids)].slice(0, 40)) {
+    const u = await db.prepare("SELECT * FROM plan_uploads WHERE id = ?").bind(id).first<PlanUpload>();
+    if (!u || u.status !== "failed" || u.summary || !u.asset_id) continue;
+    await dispatch({ mode: "convert", id: u.id, key: u.uat_key, name: u.new_uat ? u.uat_name : "", county: u.new_uat ? (u.county ?? "") : "", asset: String(u.asset_id) });
+    await db.prepare("UPDATE plan_uploads SET status = 'converting', error = NULL, run_url = NULL, updated_at = ? WHERE id = ?").bind(now(), u.id).run();
+    n++;
+  }
+  if (!n) throw new PlanError("Niciun plan de reconvertit.");
+  await track(db, c, "admin", "plan_retry", null, { n });
+  return n;
 }
 
 export async function discard(db: D1Database, c: Ctx, id: string) {
