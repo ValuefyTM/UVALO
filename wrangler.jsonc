@@ -2,7 +2,7 @@
 	"$schema": "node_modules/wrangler/config-schema.json",
 	// tools.valuefy.ro — VALUEFY Tools (SaaS for valuers).
 	"name": "tools",
-	"main": ".open-next/worker.js",
+	"main": "worker.ts",
 	"compatibility_date": "2026-09-25",
 	"compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
 	// Keep the variables set in the Cloudflare dashboard (RESEND_API_KEY, TOOLS_EMAIL_FROM, TOOLS_SUPERADMINS, GOOGLE_MAPS_KEY) on every deploy.
