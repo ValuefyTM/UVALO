@@ -47,7 +47,7 @@ export function LoginForm({ expired }: { expired: boolean }) {
           <input ref={codeRef} className="input codeInput" inputMode="numeric" autoComplete="one-time-code" maxLength={7} value={code} onChange={(e) => setCode(e.target.value.replace(/[^\d ]/g, ""))} placeholder="••••••" />
         </label>
         {msg && <div role="alert" className="error">{msg}</div>}
-        <button type="submit" className="btn btnNavy" style={{ height: 52 }} disabled={busy}>{busy ? "Se verifică…" : "Intră în cont"}</button>
+        <button type="submit" className="btn btnGold" style={{ height: 52 }} disabled={busy}>{busy ? "Se verifică…" : "Intră în cont"}</button>
         <div className="actions" style={{ justifyContent: "space-between" }}>
           <button type="button" className="linkBtn" onClick={() => { setStep("email"); setCode(""); setMsg(""); }}>← Altă adresă</button>
           <button type="button" className="linkBtn" onClick={() => sendCode()} disabled={busy}>Retrimite codul</button>
@@ -61,7 +61,7 @@ export function LoginForm({ expired }: { expired: boolean }) {
         <input className="input" type="email" autoComplete="email" inputMode="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="nume@firma.ro" />
       </label>
       {msg && <div role="alert" className="error">{msg}</div>}
-      <button type="submit" className="btn btnNavy" style={{ height: 52 }} disabled={busy}>{busy ? "Se trimite…" : "Trimite-mi codul"}</button>
+      <button type="submit" className="btn btnGold" style={{ height: 52 }} disabled={busy}>{busy ? "Se trimite…" : "Trimite-mi codul"}</button>
       <p className="hint">Nu folosim parole. Primești pe email un cod de 6 cifre și un link valabile 15 minute.</p>
     </form>
   );

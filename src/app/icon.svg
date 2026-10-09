@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+<title>UVALO</title>
+<rect width="512" height="512" rx="112" fill="#141414"/>
+<g transform="translate(76 70) scale(0.97)">
+<path fill="#FFFFFF" d="M 0 88 L 44 88 C 65 88 80 103 80 125 L 80 241 C 80 278 105 306 148 306 L 270 306 C 264 349 230 380 172 380 L 148 380 C 63 380 0 322 0 244 Z"/>
+<path fill="#E0AD4F" d="M 108 165 L 108 116 C 108 94 116 84 133 71 L 220 7 C 230 0 238 -2 246 4 L 355 82 C 368 91 374 104 374 123 L 374 255 C 374 316 335 361 258 380 C 290 359 303 334 303 301 L 303 125 L 233 73 Z"/>
+</g>
+</svg>

@@ -661,3 +661,31 @@ a.rMeta:hover u { color: var(--acc-light); }
 /* administrators while maintenance is on */
 .mntStrip { background: #F2A93B; color: #1A1714; font-size: 12px; font-weight: 700; padding: 8px 16px; text-align: center; }
 .mntStrip a { color: #1A1714; text-decoration: underline; }
+/* ---------- UVALO sign-in pages (login, account request, invitation) ---------- */
+.authPage { background: #F4ECE1; }
+.authSide { background: #141414; padding: 44px 48px; }
+.authSide::after { top: -220px; right: -220px; width: 620px; height: 620px; background: radial-gradient(closest-side, rgba(242, 169, 59, 0.2), transparent); }
+.authLockup { position: relative; z-index: 1; height: 38px; width: auto; align-self: flex-start; display: block; }
+.authMark { position: absolute; right: -90px; bottom: -70px; width: 420px; height: auto; opacity: 0.07; pointer-events: none; }
+.authPitch { position: relative; z-index: 1; display: flex; flex-direction: column; gap: 18px; max-width: 460px; }
+.authEyebrow { font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: #F2A93B; }
+.authEyebrow.dark { color: #9A6A12; }
+.authSide h2 { font-size: clamp(28px, 2.8vw, 38px); }
+.authSide ul { color: #CFC6BA; }
+.authSide li { display: flex; align-items: flex-start; line-height: 1.5; }
+.authSide li::before { flex: none; margin-top: 1px; background: rgba(242, 169, 59, 0.18); color: #F2A93B; }
+.authFine { position: relative; z-index: 1; font-size: 12px !important; color: #8D857A !important; }
+.authMain { align-items: center; }
+.authCard { background: #fff; border: 1px solid #E9DDCB; border-radius: 22px; padding: clamp(24px, 4vw, 40px); box-shadow: 0 30px 60px -40px rgba(26, 23, 20, 0.35); max-width: 460px; }
+.authCard .authBox { gap: 14px; }
+.authCard h1 { font-size: clamp(26px, 2.6vw, 32px); }
+.authCard .btnGold:hover { filter: brightness(0.96); }
+.authAlt { margin-top: 6px; padding-top: 18px; border-top: 1px solid #F0E6D7; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.authAlt div { display: flex; flex-direction: column; gap: 2px; font-size: 13px; color: #6B6259; min-width: 200px; flex: 1; }
+.authAlt b { color: #1A1714; }
+.authLogoSm { height: 96px; align-self: center; margin: 0 0 8px; }
+@media (max-width: 899px) {
+  .authMain { padding: 28px 16px 40px; justify-content: flex-start; }
+  .authCard { border-radius: 18px; }
+  .authCard .authEyebrow, .authCard h1, .authCard > p { text-align: center; }
+}
