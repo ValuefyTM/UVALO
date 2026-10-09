@@ -5,7 +5,7 @@ import { gmapsConfig, hasGoogle } from "@/lib/gmaps";
 // /localizare — cadastral locator (cadastral plans, Timiș), for people whose firm has the module.
 export const dynamic = "force-dynamic";
 
-// The origin goes along with the map images, so a Google key restricted to tools.valuefy.ro is accepted.
+// The origin goes along with the map images, so a Google key restricted to the app's domain is accepted.
 const PRIVATE = { "Cache-Control": "private, no-store", "X-Robots-Tag": "noindex, nofollow", "Referrer-Policy": "strict-origin-when-cross-origin" };
 
 // Installable on the phone (PWA): manifest, icons, and a service worker that keeps the map usable with a weak signal.
