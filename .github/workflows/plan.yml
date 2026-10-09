@@ -58,6 +58,8 @@ jobs:
         if: inputs.mode == 'convert'
         run: |
           set -euo pipefail
+          # started twice: the first run has already converted the file (and deleted it)
+          if git ls-remote --exit-code --heads origin "plan/$ID" > /dev/null; then echo "Deja convertit: plan/$ID."; exit 0; fi
           curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/octet-stream" \
             "https://api.github.com/repos/$REPO/releases/assets/$ASSET" -o "$RUNNER_TEMP/plan.dxf.gz"
           gunzip "$RUNNER_TEMP/plan.dxf.gz"
@@ -83,21 +85,26 @@ jobs:
           IFS=, read -ra KEYS <<< "$KEY"
           [[ ${#IDS[@]} == ${#KEYS[@]} ]]
           printf 'Planuri cadastrale publicate din admin: %s\n\n' "${KEYS[*]}" > "$RUNNER_TEMP/msg.txt"
-          for i in "${!IDS[@]}"; do
-            git fetch -q origin "plan/${IDS[$i]}"
-            git checkout FETCH_HEAD -- "localizare-data/${KEYS[$i]}.json"
-            python3 tools/dxf/convert.py --entry "${KEYS[$i]}"
-            git log -1 --format=%B FETCH_HEAD | tail -n +3 >> "$RUNNER_TEMP/msg.txt"
+          for b in "${IDS[@]}"; do
+            git fetch -q origin "+refs/heads/plan/$b:refs/plans/$b"
+            git log -1 --format=%B "refs/plans/$b" | tail -n +3 >> "$RUNNER_TEMP/msg.txt"
           done
           git config user.name "VALUEFY Tools"
           git config user.email "tools@valuefy.ro"
-          git add localizare-data
-          git commit -q -F "$RUNNER_TEMP/msg.txt" || echo "nimic nou de publicat"
-          # another publication may have pushed meanwhile: take it and try again
+          # Always on top of the latest branch: the checkout is the branch as it was when the run was started, and another
+          # publication may have pushed meanwhile. When the push is refused the plans are applied again on the new head
+          # instead of rebasing: two publications both rewrite the list of localities in index.html and would conflict.
           for try in 1 2 3 4 5; do
+            git fetch -q origin "+refs/heads/$GITHUB_REF_NAME:refs/remotes/origin/$GITHUB_REF_NAME"
+            git reset -q --hard "origin/$GITHUB_REF_NAME"
+            for i in "${!IDS[@]}"; do
+              git checkout "refs/plans/${IDS[$i]}" -- "localizare-data/${KEYS[$i]}.json"
+              python3 tools/dxf/convert.py --entry "${KEYS[$i]}"
+            done
+            git add localizare-data
+            git commit -q -F "$RUNNER_TEMP/msg.txt" || echo "nimic nou de publicat"
             git push origin "HEAD:${GITHUB_REF_NAME}" && break
             [[ $try == 5 ]] && exit 1
-            git pull --rebase -q origin "$GITHUB_REF_NAME" || { git rebase --abort; exit 1; }
             sleep $((try * 3))
           done
           for b in "${IDS[@]}"; do git push -q origin --delete "plan/$b" || true; done
