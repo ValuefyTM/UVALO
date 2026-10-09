@@ -1,7 +1,8 @@
 // Server-only: the ANEVAR list in the administration, with accounts and activity (who signs in, who never did).
-export type TablouFilter = { judet?: string; spec?: string; cont?: string; q?: string; vechi?: string; sort?: string; page?: string };
+export type TablouFilter = { judet?: string; spec?: string; cont?: string; contact?: string; q?: string; vechi?: string; sort?: string; page?: string };
 export type TablouRow = {
   legit: string; name: string; county: string | null; specs: string | null; in_current: number; tablou_date: string | null;
+  pub_address: string | null; pub_phone: string | null; pub_fax: string | null; pub_email: string | null; pub_website: string | null; contact_source: string | null; contact_date: string | null;
   user_id: string | null; user_status: string | null; email: string | null; last_login_at: string | null; last_seen_at: string | null; events_30: number; request: string | null;
 };
 
@@ -9,6 +10,8 @@ export const CONT_FILTERS: [string, string][] = [
   ["", "Toți membrii"], ["cu", "Cu cont activ"], ["activi", "Activi în ultimele 30 de zile"], ["inactivi", "Cu cont, inactivi 30 de zile"],
   ["niciodata", "Cu cont, neautentificați niciodată"], ["invitati", "Invitați (cont neactivat)"], ["solicitari", "Solicitare în așteptare"], ["fara", "Fără cont"],
 ];
+// Public contact details (anevar.ro): who has published some, or an email / a phone in particular.
+export const CONTACT_FILTERS: [string, string][] = [["", "Oricare"], ["da", "Cu date de contact publice"], ["email", "Cu email public"], ["tel", "Cu telefon public"], ["nu", "Fără date de contact"]];
 export const SPECS = ["EPI", "EBM", "EI", "EIF", "VE-EPI", "VE-EBM", "VE-EI", "VE-EIF"];
 export const PAGE_SIZE = 100;
 
@@ -23,6 +26,12 @@ function where(f: TablouFilter, withCounty = true) {
   if (q) {
     if (/^\d+$/.test(q)) { w.push("m.legit LIKE ?"); p.push(`${q}%`); }
     else { w.push("m.name LIKE ?"); p.push(`%${q.replace(/[%_]/g, "")}%`); }
+  }
+  switch (f.contact) {
+    case "da": w.push("m.contact_date IS NOT NULL"); break;
+    case "email": w.push("m.pub_email IS NOT NULL"); break;
+    case "tel": w.push("m.pub_phone IS NOT NULL"); break;
+    case "nu": w.push("m.contact_date IS NULL"); break;
   }
   const s30 = since30();
   switch (f.cont) {
@@ -46,7 +55,8 @@ export async function tablou(db: D1Database, f: TablouFilter, all = false) {
   const page = Math.max(1, Number(f.page) || 1);
   const [total, rows] = await Promise.all([
     db.prepare(`SELECT COUNT(*) AS n ${FROM} ${sql}`).bind(...p).first<{ n: number }>(),
-    db.prepare(`SELECT m.legit, m.name, m.county, m.specs, m.in_current, m.tablou_date, u.id AS user_id, u.status AS user_status, u.email, u.last_login_at, u.last_seen_at,
+    db.prepare(`SELECT m.legit, m.name, m.county, m.specs, m.in_current, m.tablou_date,
+        m.pub_address, m.pub_phone, m.pub_fax, m.pub_email, m.pub_website, m.contact_source, m.contact_date, u.id AS user_id, u.status AS user_status, u.email, u.last_login_at, u.last_seen_at,
         (SELECT COUNT(*) FROM events e WHERE e.user_id = u.id AND e.at > ?) AS events_30,
         (SELECT r.status FROM account_requests r WHERE r.legit = m.legit ORDER BY r.created_at DESC LIMIT 1) AS request
       ${FROM} ${sql} ORDER BY ${order} ${all ? "LIMIT 10000" : `LIMIT ${PAGE_SIZE} OFFSET ${(page - 1) * PAGE_SIZE}`}`).bind(since30(), ...p).all<TablouRow>(),

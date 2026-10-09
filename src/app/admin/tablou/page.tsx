@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { fmtDate, superPage } from "@/lib/guard";
-import { byCounty, CONT_FILTERS, counties, PAGE_SIZE, SPECS, tablou, type TablouFilter } from "@/lib/tablou";
+import { byCounty, CONT_FILTERS, CONTACT_FILTERS, counties, PAGE_SIZE, SPECS, tablou, type TablouFilter } from "@/lib/tablou";
 import { SPEC_LABEL } from "@/lib/requests";
 import { AdminShell } from "@/components/AdminShell";
 
@@ -47,6 +47,9 @@ export default async function Tablou({ searchParams }: { searchParams: Promise<T
         <label className="field">Cont
           <select className="select" name="cont" defaultValue={f.cont ?? ""}>{CONT_FILTERS.map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select>
         </label>
+        <label className="field">Date de contact
+          <select className="select" name="contact" defaultValue={f.contact ?? ""}>{CONTACT_FILTERS.map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select>
+        </label>
         <label className="field">Ordonează
           <select className="select" name="sort" defaultValue={f.sort ?? ""}>
             <option value="">Nume</option><option value="judet">Județ</option><option value="login">Ultima activitate</option><option value="legit">Nr. legitimație</option>
@@ -68,7 +71,7 @@ export default async function Tablou({ searchParams }: { searchParams: Promise<T
       <section className="card flush">
         <div className="tableWrap">
           <table className="table">
-            <thead><tr><th>Legitimație</th><th>Nume</th><th>Județ</th><th>Specializări</th><th>Cont</th><th>Ultima activitate</th><th className="r">Acțiuni 30 zile</th></tr></thead>
+            <thead><tr><th>Legitimație</th><th>Nume</th><th>Județ</th><th>Specializări</th><th>Contact public</th><th>Cont</th><th>Ultima activitate</th><th className="r">Acțiuni 30 zile</th></tr></thead>
             <tbody>
               {list.rows.map((r) => {
                 const [t, cls] = status(r);
@@ -78,6 +81,14 @@ export default async function Tablou({ searchParams }: { searchParams: Promise<T
                     <td><b className="block">{r.name}</b>{r.email && <span className="muted">{r.email}</span>}{!r.in_current && <span className="muted block">nu mai apare în tablou</span>}</td>
                     <td>{r.county ?? "—"}</td>
                     <td><div className="specs">{(r.specs ?? "").split(",").filter(Boolean).map((s) => <span key={s} className="spec" title={SPEC_LABEL[s]}>{s}</span>)}</div></td>
+                    <td className="pubContact">{r.contact_date ? (<>
+                      {r.pub_email && <a className="rowLink block" href={`mailto:${r.pub_email}`}>{r.pub_email}</a>}
+                      {r.pub_phone && <a className="rowLink block mono" href={`tel:${r.pub_phone.replace(/[^\d+]/g, "")}`}>{r.pub_phone}</a>}
+                      {r.pub_fax && <span className="muted block">fax {r.pub_fax}</span>}
+                      {r.pub_website && <a className="rowLink block" href={/^https?:\/\//i.test(r.pub_website) ? r.pub_website : `https://${r.pub_website}`} target="_blank" rel="noopener noreferrer">{r.pub_website}</a>}
+                      {r.pub_address && <span className="muted block">{r.pub_address}</span>}
+                      <span className="pill pillPublic" title={`Date publicate de membru pe ${r.contact_source ?? "anevar.ro"}, preluate la ${fmtDate(r.contact_date)}`}>Date publice · {r.contact_source ?? "anevar.ro"}</span>
+                    </>) : <span className="muted">—</span>}</td>
                     <td><span className={`pill ${cls}`}><i />{t}</span></td>
                     <td>{r.last_seen_at ? fmtDate(r.last_seen_at, true) : r.user_id ? "niciodată" : "—"}</td>
                     <td className="r mono">{r.user_id ? <a className="rowLink" href={`/admin/activitate?user=${r.user_id}`}>{r.events_30}</a> : "—"}</td>

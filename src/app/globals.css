@@ -693,3 +693,8 @@ a.rMeta:hover u { color: var(--acc-light); }
 
 /* "Gratuit" on the account request page */
 .freeBadge { position: relative; align-self: flex-start; display: inline-flex; align-items: center; height: 26px; padding: 0 12px; border-radius: 999px; background: var(--acc); color: #141414; font-size: 12px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
+
+/* Admin · Tablou ANEVAR: public contact details (anevar.ro), marked as such */
+.pubContact { min-width: 200px; max-width: 280px; font-size: 12.5px; line-height: 1.5; overflow-wrap: anywhere; }
+.pubContact .pillPublic { margin-top: 6px; }
+.pillPublic { background: #e8f1fb; color: #1d5a96; font-size: 10.5px; padding: 2px 8px; }
