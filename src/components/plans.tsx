@@ -213,6 +213,7 @@ export function PlanList({ initial }: { initial: PlanUpload[] }) {
   const [warning, setWarning] = useState("");
   const [busy, setBusy] = useState("");
   const readyIds = list.filter((u) => u.status === "ready").map((u) => u.id);
+  const retryIds = list.filter((u) => u.status === "failed" && !u.summary && u.asset_id).map((u) => u.id);
   const running = list.some((u) => u.status === "converting" || u.status === "publishing");
 
   useEffect(() => {
@@ -226,7 +227,7 @@ export function PlanList({ initial }: { initial: PlanUpload[] }) {
     return () => clearInterval(t);
   }, [running]);
 
-  const act = async (id: string, action: "publish" | "discard", ids?: string[]) => {
+  const act = async (id: string, action: "publish" | "discard" | "retry", ids?: string[]) => {
     if (action === "discard" && !confirm("Renunți la acest plan? Localizatorul rămâne cum este.")) return;
     setBusy(id);
     const r = await fetch(`/api/admin/plans/${id}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action, ids }) }).catch(() => null);
@@ -241,8 +242,12 @@ export function PlanList({ initial }: { initial: PlanUpload[] }) {
     <section className="card">
       <div className="cardHead">
         <h2>Planuri încărcate</h2>
-        {readyIds.length > 1 && <button type="button" className="btn btnNavy btnSm" disabled={!!busy} onClick={() => act("toate", "publish", readyIds)}>{busy === "toate" ? "…" : `Publică toate (${readyIds.length})`}</button>}
+        <div className="actions">
+          {retryIds.length > 1 && <button type="button" className="btn btnGhost btnSm" disabled={!!busy} onClick={() => act("toate", "retry", retryIds)}>{busy === "toate" ? "…" : `Reîncearcă toate (${retryIds.length})`}</button>}
+          {readyIds.length > 1 && <button type="button" className="btn btnNavy btnSm" disabled={!!busy} onClick={() => act("toate", "publish", readyIds)}>{busy === "toate" ? "…" : `Publică toate (${readyIds.length})`}</button>}
+        </div>
       </div>
+      {retryIds.length > 40 && <p className="hint">„Reîncearcă toate” pornește câte 40 o dată: apasă din nou pentru restul.</p>}
       {readyIds.length > 1 && <p className="hint">„Publică toate” le pune în localizator dintr-o dată, cu un singur deploy.</p>}
       {warning && <div role="alert" className="error">{warning}</div>}
       <ul className="docList">
@@ -266,6 +271,7 @@ export function PlanList({ initial }: { initial: PlanUpload[] }) {
                 {(u.status === "ready" || (u.status === "failed" && u.summary)) && (
                   <button type="button" className="btn btnNavy btnSm" disabled={!!busy} onClick={() => act(u.id, "publish")}>{busy === u.id ? "…" : u.status === "failed" ? "Publică din nou" : "Publică în localizator"}</button>
                 )}
+                {u.status === "failed" && !u.summary && !!u.asset_id && <button type="button" className="btn btnNavy btnSm" disabled={!!busy} onClick={() => act(u.id, "retry")}>{busy === u.id ? "…" : "Reîncearcă"}</button>}
                 {(u.status === "ready" || u.status === "failed") && <button type="button" className="btn btnGhost btnSm" disabled={!!busy} onClick={() => act(u.id, "discard")}>Renunță</button>}
                 {u.run_url && <a className="link" style={{ fontSize: 13 }} href={u.run_url} target="_blank" rel="noreferrer">Jurnal GitHub</a>}
               </div>
