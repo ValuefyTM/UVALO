@@ -7,7 +7,7 @@ import { AdminShell } from "@/components/AdminShell";
 import { OrgForm } from "@/components/forms";
 import { DayBars, UatCountTable } from "@/components/Charts";
 
-export const metadata: Metadata = { title: "Firme | VALUEFY Tools Admin" };
+export const metadata: Metadata = { title: "Firme | UVALO Admin" };
 export const dynamic = "force-dynamic";
 
 const since = (d: number) => new Date(Date.now() - d * 864e5).toISOString();

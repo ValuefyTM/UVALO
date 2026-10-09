@@ -15,8 +15,6 @@ const PWA_HEAD = `<link rel="manifest" href="/api/localizare/manifest"><link rel
 <meta name="apple-mobile-web-app-title" content="Localizator"><meta name="apple-mobile-web-app-status-bar-style" content="default">
 <style>.vfBack{display:inline-flex;align-items:center;gap:6px;margin-left:auto;font-size:13px;font-weight:700;color:#9a5f00;text-decoration:none;padding:6px 10px;border-radius:999px;border:1px solid #f5d9a6;background:#fdf1dc}</style>`;
 const PWA_SCRIPT = `<script>if("serviceWorker" in navigator)addEventListener("load",function(){navigator.serviceWorker.register("/api/localizare/sw",{scope:"/localizare"}).catch(function(){})})</script>`;
-// Back to the VALUEFY Tools home, in the page header.
-const BACK = `<script>(function(){var h=document.querySelector("header");if(!h)return;var a=document.createElement("a");a.href="/";a.className="vfBack";a.textContent="← VALUEFY Tools";h.appendChild(a)})()</script>`;
 
 // First opening: the data is informative, from unofficial cadastral sources; it must be acknowledged once (kept on the account).
 const NOTICE = `<div id="vfNotice" role="dialog" aria-modal="true" aria-labelledby="vfNoticeT" style="position:fixed;inset:0;z-index:5000;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:16px;font-family:Verdana,Geneva,sans-serif">
@@ -25,7 +23,7 @@ const NOTICE = `<div id="vfNotice" role="dialog" aria-modal="true" aria-labelled
 <h2 id="vfNoticeT" style="margin:0;font:700 20px/1.3 Verdana,Geneva,sans-serif;letter-spacing:-.02em;text-transform:none;color:#111">Înainte să folosești localizatorul</h2>
 <p style="margin:0;font-size:14px;line-height:1.6">Datele afișate au <b>caracter informativ</b> și provin din <b>surse cadastrale neoficiale</b>. Nu înlocuiesc extrasul de carte funciară, documentația cadastrală sau alte documente oficiale emise de OCPI / ANCPI.</p>
 <p style="margin:0;font-size:14px;line-height:1.6">Pot exista diferențe față de evidențele oficiale sau de situația din teren: contururi, suprafețe, numere cadastrale, coordonate.</p>
-<p style="margin:0;font-size:14px;line-height:1.6;color:#4a4a4a">Platforma VALUEFY Tools <b style="color:#111">nu este responsabilă pentru eventualele diferențe</b> și nici pentru deciziile luate pe baza acestor informații. Verifică întotdeauna datele în documentele oficiale.</p>
+<p style="margin:0;font-size:14px;line-height:1.6;color:#4a4a4a">Platforma UVALO <b style="color:#111">nu este responsabilă pentru eventualele diferențe</b> și nici pentru deciziile luate pe baza acestor informații. Verifică întotdeauna datele în documentele oficiale.</p>
 <button type="button" id="vfNoticeOk" style="margin-top:6px;height:50px;border:0;border-radius:999px;background:#111;color:#fff;font:700 15px Verdana,Geneva,sans-serif;cursor:pointer">Am luat la cunoștință</button>
 </div></div>
 <script>(function(){var d=document.getElementById("vfNotice"),b=document.getElementById("vfNoticeOk");document.documentElement.style.overflow="hidden";b.focus();
@@ -36,6 +34,7 @@ export async function GET(req: Request) {
   const a = await locatorAccess();
   if ("status" in a) {
     if (a.status === 401) return Response.redirect(new URL("/login", req.url), 303);
+    if ("maintenance" in a && a.maintenance) return Response.redirect(new URL("/mentenanta", req.url), 303);
     const why = a.c?.block ?? "Abonamentul firmei tale nu include localizarea cadastrală.";
     return new Response(blocked(why), { status: a.status, headers: { "Content-Type": "text/html; charset=utf-8", ...PRIVATE } });
   }
@@ -50,12 +49,12 @@ export async function GET(req: Request) {
   const GM = gm ? `<script>window.VF_GMAPS=${JSON.stringify(gm).replace(/</g, "\\u003c")}</script>` : "";
   const html = (await page.text())
     .replace("</head>", `${PWA_HEAD}${GM}</head>`)
-    .replace("</body>", `${ack?.loc_ack_at ? "" : NOTICE}${BACK}${envBanner()}<script src="/api/localizare/script" defer></script><script src="/api/localizare/track-js" defer></script>${PWA_SCRIPT}</body>`);
+    .replace("</body>", `${ack?.loc_ack_at ? "" : NOTICE}${envBanner()}<script src="/api/localizare/script" defer></script><script src="/api/localizare/track-js" defer></script>${PWA_SCRIPT}</body>`);
   return new Response(html, { headers: { "Content-Type": "text/html; charset=utf-8", ...PRIVATE } });
 }
 
 function blocked(why: string) {
-  return `<!DOCTYPE html><html lang="ro"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Localizator cadastral · VALUEFY Tools</title>
+  return `<!DOCTYPE html><html lang="ro"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Localizator cadastral · UVALO</title>
 <style>body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:#F2ECE0;color:#111111;font-family:Verdana,Geneva,sans-serif}
 .box{width:min(440px,100%);background:#fff;border:1px solid #E2D8C4;border-radius:22px;padding:30px 26px;display:flex;flex-direction:column;gap:14px}h1{margin:0;font-size:21px}p{margin:0;font-size:14px;line-height:1.6;color:#4A4A4A}a{color:#9A5F00;font-weight:700}</style></head>
 <body><div class="box"><h1>Localizatorul cadastral nu este disponibil</h1><p>${why.replace(/[<>&]/g, "")}</p><p>Scrie-ne la <a href="mailto:${supportEmail()}">${supportEmail()}</a> ca să activăm accesul.</p><p><a href="/">← Înapoi la ${appName()}</a></p></div></body></html>`;

@@ -4,7 +4,7 @@ import { byCounty, CONT_FILTERS, counties, PAGE_SIZE, SPECS, tablou, type Tablou
 import { SPEC_LABEL } from "@/lib/requests";
 import { AdminShell } from "@/components/AdminShell";
 
-export const metadata: Metadata = { title: "Tablou ANEVAR | VALUEFY Tools Admin" };
+export const metadata: Metadata = { title: "Tablou ANEVAR | UVALO Admin" };
 export const dynamic = "force-dynamic";
 
 function status(r: { user_status: string | null; last_seen_at: string | null; request: string | null }): [string, string] {

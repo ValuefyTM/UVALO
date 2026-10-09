@@ -21,10 +21,10 @@ export async function POST(req: Request) {
     .bind(uuid(), a.c.user.id, email, await sha256(`${email}:${code}`), new Date(Date.now() + 15 * 60_000).toISOString()).run();
   await sendEmail({
     to: email,
-    subject: `Confirmă noua adresă VALUEFY Tools: ${code}`,
-    text: `Codul pentru confirmarea noii adrese a contului VALUEFY Tools este ${code}. Este valabil 15 minute.`,
+    subject: `Confirmă noua adresă UVALO: ${code}`,
+    text: `Codul pentru confirmarea noii adrese a contului UVALO este ${code}. Este valabil 15 minute.`,
     html: layout({
-      eyebrow: "VALUEFY Tools", title: "Confirmă noua adresă de email",
+      eyebrow: "UVALO", title: "Confirmă noua adresă de email",
       body: `<p style="margin:0 0 8px;font-size:15px;line-height:1.6;color:#4A4A4A">Introdu codul în pagina „Contul meu”:</p><p style="margin:16px 0;font-size:34px;font-weight:bold;letter-spacing:8px;font-family:ui-monospace,Menlo,monospace">${code}</p>`,
       foot: "Codul este valabil 15 minute. Dacă nu ai cerut tu schimbarea, ignoră acest email.",
     }),

@@ -1,6 +1,7 @@
 // Server components: load the signed-in person or send them to the sign-in page.
 import { redirect } from "next/navigation";
 import { getDb } from "./db";
+import { maintenance } from "./maintenance";
 import { canManageOrg, context, OFFICE_READY, type Ctx } from "./access";
 
 export async function page(): Promise<{ db: D1Database; c: Ctx }> {
@@ -8,6 +9,7 @@ export async function page(): Promise<{ db: D1Database; c: Ctx }> {
   if (!db) throw new Error("Baza de date nu este disponibilă.");
   const c = await context(db);
   if (!c) redirect("/login");
+  if (!c.super && (await maintenance(db)).on) redirect("/mentenanta");
   return { db, c };
 }
 

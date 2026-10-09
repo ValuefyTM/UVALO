@@ -10,7 +10,7 @@ export const appEnv = (): AppEnv => {
   return v === "staging" || v === "local" ? v : "production";
 };
 
-export const appName = () => process.env.APP_NAME?.trim() || "VALUEFY Tools";
+export const appName = () => process.env.APP_NAME?.trim() || "UVALO";
 export const supportEmail = () => process.env.SUPPORT_EMAIL?.trim() || "office@valuefy.ro";
 
 /**

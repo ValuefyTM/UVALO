@@ -4,7 +4,7 @@ import { connection } from "next/server";
 import { envLabel } from "@/lib/config";
 
 export const metadata: Metadata = {
-  title: "VALUEFY Tools",
+  title: "UVALO",
   description: "Instrumente pentru evaluatori: localizator cadastral și altele.",
   robots: { index: false, follow: false },
 };

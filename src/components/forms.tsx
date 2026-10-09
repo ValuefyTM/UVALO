@@ -199,7 +199,7 @@ export function UserActions({ id, status, isSuper, me }: { id: string; status: s
         ? <button type="button" className="linkBtn" onClick={() => go("enable")}>Reactivează</button>
         : <button type="button" className="linkBtn danger" onClick={() => go("disable", "Dezactivezi contul? Persoana este deconectată imediat de pe toate dispozitivele.")}>Dezactivează</button>}
       <button type="button" className="linkBtn" onClick={() => go("logout_all", "Deconectezi persoana de pe toate dispozitivele?")}>Deconectează</button>
-      <button type="button" className="linkBtn" onClick={() => go(isSuper ? "super_off" : "super_on", isSuper ? "Scoți drepturile de administrator VALUEFY?" : "Faci persoana administrator VALUEFY (vede și administrează toate firmele)?")}>{isSuper ? "Scoate admin" : "Fă admin"}</button>
+      <button type="button" className="linkBtn" onClick={() => go(isSuper ? "super_off" : "super_on", isSuper ? "Scoți drepturile de administrator UVALO?" : "Faci persoana administrator UVALO (vede și administrează toate firmele)?")}>{isSuper ? "Scoate admin" : "Fă admin"}</button>
     </span>
   );
 }
@@ -213,7 +213,7 @@ export function InviteAdmin() {
       const er = await send("/api/admin/superadmins", "POST", { email });
       setMsg(er ? { ok: false, t: er } : { ok: true, t: `Invitația a fost trimisă la ${email}.` });
     }}>
-      <label className="field">Invită un administrator VALUEFY<input className="input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="coleg@valuefy.ro" required /></label>
+      <label className="field">Invită un administrator UVALO<input className="input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="coleg@valuefy.ro" required /></label>
       <button type="submit" className="btn btnGhost">Invită</button>
       {msg && <span role={msg.ok ? "status" : "alert"} className={msg.ok ? "okMsg" : "error"}>{msg.t}</span>}
     </form>

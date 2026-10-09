@@ -4,7 +4,7 @@ import { ROLE_LABEL, type Role } from "@/lib/access";
 import { AdminShell } from "@/components/AdminShell";
 import { InviteAdmin, UserActions } from "@/components/forms";
 
-export const metadata: Metadata = { title: "Utilizatori | VALUEFY Tools" };
+export const metadata: Metadata = { title: "Utilizatori | UVALO" };
 export const dynamic = "force-dynamic";
 
 const since = (d: number) => new Date(Date.now() - d * 864e5).toISOString();
@@ -23,7 +23,7 @@ export default async function AdminUsers() {
     <AdminShell c={c} active="utilizatori" pending={pending} title="Utilizatori" subtitle={`${results.length} conturi`}>
       <section className="card">
         <InviteAdmin />
-        <p className="hint">Utilizatorii firmelor se invită din pagina firmei. Aici inviți colegi VALUEFY care administrează platforma.</p>
+        <p className="hint">Utilizatorii firmelor se invită din pagina firmei. Aici inviți colegi care administrează platforma.</p>
       </section>
       <section className="card flush">
         <div className="tableWrap">
@@ -32,7 +32,7 @@ export default async function AdminUsers() {
             <tbody>
               {results.map((u) => (
                 <tr key={u.id}>
-                  <td><b className="block">{u.name || u.email}</b><span className="muted">{u.email}{u.anevar_no ? ` · leg. ${u.anevar_no}` : ""}{u.county ? ` · ${u.county}` : ""}</span>{u.is_superadmin ? <span className="pill pillInfo" style={{ marginLeft: 8 }}><i />Admin VALUEFY</span> : null}</td>
+                  <td><b className="block">{u.name || u.email}</b><span className="muted">{u.email}{u.anevar_no ? ` · leg. ${u.anevar_no}` : ""}{u.county ? ` · ${u.county}` : ""}</span>{u.is_superadmin ? <span className="pill pillInfo" style={{ marginLeft: 8 }}><i />Admin UVALO</span> : null}</td>
                   <td>{u.orgs ? u.orgs.split(";;").map((x) => { const [n, r, id] = x.split("|"); return <a key={id} className="rowLink block" href={`/admin/firme/${id}`}>{n} <span className="muted">· {ROLE_LABEL[r as Role] ?? r}</span></a>; }) : <span className="muted">—</span>}</td>
                   <td><span className={`pill ${u.status === "active" ? "pillOk" : u.status === "disabled" ? "pillErr" : "pillWarn"}`}><i />{u.status === "active" ? "Activ" : u.status === "disabled" ? "Dezactivat" : "Invitat"}</span></td>
                   <td>{u.last_seen_at ? fmtDate(u.last_seen_at, true) : "—"}</td>

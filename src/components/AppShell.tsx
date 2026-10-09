@@ -1,4 +1,5 @@
 import type { Ctx } from "@/lib/access";
+import { maintenanceOn } from "@/lib/maintenance";
 import { canManageOrg, OFFICE_READY, ROLE_LABEL } from "@/lib/access";
 import { initials } from "@/lib/guard";
 import { LogoutButton, MenuButton, OrgSwitch } from "./ClientBits";
@@ -7,7 +8,8 @@ import { Referral } from "./Referral";
 type Key = "home" | "localizare" | "firma" | "cont";
 
 /** Sidebar layout (VALUEFY design), with the menu the person is entitled to. */
-export function AppShell(props: { c: Ctx; active: Key; title: string; subtitle?: string; actions?: React.ReactNode; children: React.ReactNode }) {
+export async function AppShell(props: { c: Ctx; active: Key; title: string; subtitle?: string; actions?: React.ReactNode; children: React.ReactNode }) {
+  const mnt = props.c.super ? await maintenanceOn() : false;
   const { c } = props;
   const nav: { key: Key; label: string; href: string; soon?: boolean }[] = [
     { key: "home", label: "Acasă", href: "/" },
@@ -17,16 +19,15 @@ export function AppShell(props: { c: Ctx; active: Key; title: string; subtitle?:
   ];
   // Phone: the main pages in the bottom menu, the rest (account, sign out…) behind "Meniu", the sidebar as a panel.
   const mobileNav = [...nav, { key: "cont" as const, label: "Contul meu", href: "/cont" }].slice(0, 3);
-  const sub = c.user.anevar_no ? `Legitimație ANEVAR ${c.user.anevar_no}` : c.org ? `${c.org.name} · ${c.role ? ROLE_LABEL[c.role] : ""}` : c.super ? "Administrator VALUEFY" : c.user.email;
+  const sub = c.user.anevar_no ? `Legitimație ANEVAR ${c.user.anevar_no}` : c.org ? `${c.org.name} · ${c.role ? ROLE_LABEL[c.role] : ""}` : c.super ? "Administrator UVALO" : c.user.email;
   return (
     <div className="shell">
       <aside className="side">
         <div className="brand">
-          <span className="brandPill">
+          <a href="/" className="brandLogo" aria-label="UVALO">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/valuefy-logo.png" alt="VALUEFY" />
-          </span>
-          <span className="brandLabel">Tools</span>
+            <img src="/uvalo-logo.svg" alt="UVALO" />
+          </a>
         </div>
         <nav className="nav" aria-label="Meniu">
           {nav.map((i) => (
@@ -53,6 +54,7 @@ export function AppShell(props: { c: Ctx; active: Key; title: string; subtitle?:
         </div>
       </aside>
       <div className="main">
+        {mnt && <div className="mntStrip">Mentenanță pornită: utilizatorii văd pagina „Revenim în curând”. Doar administratorii UVALO văd platforma. <a href="/admin">Oprește din Admin → Panou</a></div>}
         <header className="top">
           <div>
             <h1>{props.title}</h1>

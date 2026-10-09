@@ -2,7 +2,7 @@
 export function GET() {
   return Response.json(
     {
-      name: "Localizator cadastral · VALUEFY Tools",
+      name: "Localizator cadastral · UVALO",
       short_name: "Localizator",
       description: "Hartă cadastrală Timiș: număr cadastral, topo, adresă și locația ta pe parcelă.",
       lang: "ro",

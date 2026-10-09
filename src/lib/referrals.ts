@@ -16,7 +16,7 @@ export async function recommend(db: D1Database, by: User, b: Record<string, unkn
   if (!validEmail(email)) return { error: "Adresa de email nu pare validă." };
   if (email === by.email) return { error: "Introdu adresa colegului, nu pe a ta." };
   const u = await findUser(db, email);
-  if (u && u.status !== "disabled") return { error: "Această adresă are deja cont în VALUEFY Tools." };
+  if (u && u.status !== "disabled") return { error: "Această adresă are deja cont în UVALO." };
   const dayAgo = new Date(Date.now() - 86_400_000).toISOString();
   const [mine, again] = await Promise.all([
     db.prepare("SELECT COUNT(*) AS n FROM referrals WHERE by_user = ? AND created_at > ?").bind(by.id, dayAgo).first<{ n: number }>(),
@@ -35,11 +35,11 @@ export async function recommend(db: D1Database, by: User, b: Record<string, unkn
   const hello = name ? `Bună ziua, ${name}!` : "Bună ziua!";
   const sent = await sendEmail({
     to: email,
-    subject: `${who} îți recomandă VALUEFY Tools`,
-    text: `${hello}\n${who}${by.anevar_no ? ` (legitimație ANEVAR ${by.anevar_no})` : ""} îți recomandă VALUEFY Tools: instrumente pentru evaluatorii autorizați ANEVAR, începând cu localizatorul cadastral.${note ? `\n\n„${note}”` : ""}\n\nSolicită cont cu numărul legitimației ANEVAR: ${url}\nDupă aprobare primești pe email linkul de activare.`,
+    subject: `${who} îți recomandă UVALO`,
+    text: `${hello}\n${who}${by.anevar_no ? ` (legitimație ANEVAR ${by.anevar_no})` : ""} îți recomandă UVALO: instrumente pentru evaluatorii autorizați ANEVAR, începând cu localizatorul cadastral.${note ? `\n\n„${note}”` : ""}\n\nSolicită cont cu numărul legitimației ANEVAR: ${url}\nDupă aprobare primești pe email linkul de activare.`,
     html: layout({
-      eyebrow: "VALUEFY Tools", title: hello,
-      body: `<p style="margin:0 0 10px;font-size:15px;line-height:1.65;color:#4A4A4A"><strong style="color:#111111">${esc(who)}</strong>${by.anevar_no ? ` (legitimație ANEVAR ${esc(by.anevar_no)})` : ""} îți recomandă VALUEFY Tools: instrumente pentru evaluatorii autorizați ANEVAR, începând cu localizatorul cadastral.</p>`
+      eyebrow: "UVALO", title: hello,
+      body: `<p style="margin:0 0 10px;font-size:15px;line-height:1.65;color:#4A4A4A"><strong style="color:#111111">${esc(who)}</strong>${by.anevar_no ? ` (legitimație ANEVAR ${esc(by.anevar_no)})` : ""} îți recomandă UVALO: instrumente pentru evaluatorii autorizați ANEVAR, începând cu localizatorul cadastral.</p>`
         + (note ? `<p style="margin:0 0 10px;font-size:15px;line-height:1.65;color:#4A4A4A;font-style:italic">„${esc(note)}”</p>` : "")
         + `<p style="margin:0;font-size:15px;line-height:1.65;color:#4A4A4A">Solicită cont cu numărul legitimației ANEVAR. După aprobare primești pe email linkul de activare.</p>`,
       button: { label: "Solicită cont →", url },

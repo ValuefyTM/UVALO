@@ -79,11 +79,11 @@ export async function createRequest(db: D1Database, b: Record<string, unknown>) 
   const base = await origin();
   await sendEmail({
     to: email,
-    subject: "Am primit solicitarea ta de cont VALUEFY Tools",
-    text: `Bună ziua, ${l.name}!\nAm primit solicitarea de cont în VALUEFY Tools pentru legitimația ANEVAR ${legit}. După aprobare primești pe această adresă linkul de activare.`,
+    subject: "Am primit solicitarea ta de cont UVALO",
+    text: `Bună ziua, ${l.name}!\nAm primit solicitarea de cont în UVALO pentru legitimația ANEVAR ${legit}. După aprobare primești pe această adresă linkul de activare.`,
     html: layout({
-      eyebrow: "VALUEFY Tools", title: `Bună ziua, ${l.name}!`,
-      body: `<p style="margin:0;font-size:15px;line-height:1.65;color:#4A4A4A">Am primit solicitarea de cont în VALUEFY Tools pentru legitimația ANEVAR <strong style="color:#111111">${esc(legit)}</strong>. După aprobare primești pe această adresă linkul de activare.</p>`,
+      eyebrow: "UVALO", title: `Bună ziua, ${l.name}!`,
+      body: `<p style="margin:0;font-size:15px;line-height:1.65;color:#4A4A4A">Am primit solicitarea de cont în UVALO pentru legitimația ANEVAR <strong style="color:#111111">${esc(legit)}</strong>. După aprobare primești pe această adresă linkul de activare.</p>`,
       foot: "Dacă nu ai cerut tu contul, ignoră acest email.",
     }),
   });
@@ -93,12 +93,12 @@ export async function createRequest(db: D1Database, b: Record<string, unknown>) 
     await sendEmail({
       to: a.email,
       subject: `Solicitare de cont: ${l.name} (${legit})`,
-      text: `${l.name}, legitimația ANEVAR ${legit}${l.county ? `, ${l.county}` : ""}, cere cont în VALUEFY Tools cu adresa ${email}.\nAprobă sau respinge: ${base}/admin/solicitari`,
+      text: `${l.name}, legitimația ANEVAR ${legit}${l.county ? `, ${l.county}` : ""}, cere cont în UVALO cu adresa ${email}.\nAprobă sau respinge: ${base}/admin/solicitari`,
       html: layout({
-        eyebrow: "VALUEFY Tools · Admin", title: "Solicitare nouă de cont",
+        eyebrow: "UVALO · Admin", title: "Solicitare nouă de cont",
         body: `<p style="margin:0;font-size:15px;line-height:1.65;color:#4A4A4A"><strong style="color:#111111">${esc(l.name)}</strong>, legitimația ANEVAR ${esc(legit)}${l.county ? `, ${esc(l.county)}` : ""}, cere cont cu adresa ${esc(email)}.</p>`,
         button: { label: "Vezi solicitările →", url: `${base}/admin/solicitari` },
-        foot: "Primești acest email ca administrator VALUEFY Tools.",
+        foot: "Primești acest email ca administrator UVALO.",
       }),
     });
   }
@@ -163,12 +163,12 @@ export async function reject(db: D1Database, by: User, id: string, note: string,
   if (notify) {
     await sendEmail({
       to: r.email,
-      subject: "Solicitarea ta de cont VALUEFY Tools",
-      text: `Bună ziua, ${r.name}!\nDeocamdată nu putem activa contul solicitat în VALUEFY Tools.${note ? `\n${note}` : ""}\nPentru detalii, scrie-ne la ${supportEmail()}.`,
+      subject: "Solicitarea ta de cont UVALO",
+      text: `Bună ziua, ${r.name}!\nDeocamdată nu putem activa contul solicitat în UVALO.${note ? `\n${note}` : ""}\nPentru detalii, scrie-ne la ${supportEmail()}.`,
       html: layout({
-        eyebrow: "VALUEFY Tools", title: `Bună ziua, ${r.name}!`,
-        body: `<p style="margin:0 0 10px;font-size:15px;line-height:1.65;color:#4A4A4A">Deocamdată nu putem activa contul solicitat în VALUEFY Tools.</p>${note ? `<p style="margin:0 0 10px;font-size:15px;line-height:1.65;color:#4A4A4A">${esc(note)}</p>` : ""}<p style="margin:0;font-size:15px;line-height:1.65;color:#4A4A4A">Pentru detalii, scrie-ne la ${supportEmail()}.</p>`,
-        foot: "VALUEFY · firmă autorizată ANEVAR",
+        eyebrow: "UVALO", title: `Bună ziua, ${r.name}!`,
+        body: `<p style="margin:0 0 10px;font-size:15px;line-height:1.65;color:#4A4A4A">Deocamdată nu putem activa contul solicitat în UVALO.</p>${note ? `<p style="margin:0 0 10px;font-size:15px;line-height:1.65;color:#4A4A4A">${esc(note)}</p>` : ""}<p style="margin:0;font-size:15px;line-height:1.65;color:#4A4A4A">Pentru detalii, scrie-ne la ${supportEmail()}.</p>`,
+        foot: "UVALO · platformă pentru evaluatori",
       }),
     });
   }

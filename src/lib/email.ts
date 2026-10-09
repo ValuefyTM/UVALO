@@ -1,5 +1,5 @@
 // Server-only: email through Resend. Returns false (never throws) when it cannot send.
-// RESEND_API_KEY + EMAIL_FROM (e.g. "VALUEFY Tools <tools@valuefy.ro>", the domain must be verified in Resend).
+// RESEND_API_KEY + EMAIL_FROM (e.g. "UVALO <tools@valuefy.ro>", the domain must be verified in Resend).
 // Local and test environments (APP_ENV local / staging) keep every email in dev_mail, shown at /dev/mail; in staging
 // only the addresses in MAIL_ALLOW ("ana@valuefy.ro,@valuefy.ro") also receive it for real.
 import { appEnv } from "./config";
@@ -54,7 +54,7 @@ export function layout(opts: { eyebrow: string; title: string; body: string; but
   return `<!DOCTYPE html><html lang="ro"><body style="margin:0;padding:0;background:#F2ECE0">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F2ECE0;padding:24px 12px"><tr><td align="center">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#FFFFFF;border-radius:16px;overflow:hidden;font-family:Verdana,Geneva,sans-serif;color:#111111">
-<tr><td style="background:#111111;padding:20px 28px;color:#F5BE66;font-size:12px;font-weight:bold;letter-spacing:2px">VALUEFY TOOLS</td></tr>
+<tr><td style="background:#111111;padding:20px 28px;color:#F5BE66;font-size:12px;font-weight:bold;letter-spacing:2px">UVALO</td></tr>
 <tr><td style="padding:28px">
 <p style="margin:0 0 6px;font-size:12px;font-weight:bold;letter-spacing:1px;color:#9A5F00;text-transform:uppercase">${esc(opts.eyebrow)}</p>
 <h1 style="margin:0 0 14px;font-size:21px;line-height:1.3">${esc(opts.title)}</h1>

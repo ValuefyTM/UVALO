@@ -27,7 +27,7 @@
 	"vars": {
 		"APP_ENV": "production",
 		"APP_URL": "https://tools.valuefy.ro",
-		"APP_NAME": "VALUEFY Tools",
+		"APP_NAME": "UVALO",
 		"SUPPORT_EMAIL": "office@valuefy.ro"
 	},
 	"observability": { "enabled": true },
@@ -51,7 +51,7 @@
 				"APP_ENV": "staging",
 				// empty: links use the address of the request (tools-staging.<account>.workers.dev); set it for a custom domain
 				"APP_URL": "",
-				"APP_NAME": "VALUEFY Tools (test)",
+				"APP_NAME": "UVALO (test)",
 				"SUPPORT_EMAIL": "office@valuefy.ro",
 				"MAIL_ALLOW": "@valuefy.ro",
 				// cadastral plans uploaded in staging are converted and published on the "staging" branch, never on main

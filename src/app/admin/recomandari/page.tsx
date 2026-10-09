@@ -3,7 +3,7 @@ import { fmtDate, superPage } from "@/lib/guard";
 import { listReferrals, stage } from "@/lib/referrals";
 import { AdminShell } from "@/components/AdminShell";
 
-export const metadata: Metadata = { title: "Recomandări | VALUEFY Tools Admin" };
+export const metadata: Metadata = { title: "Recomandări | UVALO Admin" };
 export const dynamic = "force-dynamic";
 
 /** Who recommended whom, and how far each colleague got (link opened → request → approval → active account). */

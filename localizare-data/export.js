@@ -1,4 +1,4 @@
-/* VALUEFY · Căutare cadastrală — completări la pagina primită:
+/* UVALO · Localizator cadastral — completări la pagina primită:
    1. export fișă de localizare (PDF, Word, PNG) pentru parcela / construcția afișată;
    2. localizare multiplă: mai multe numere cadastrale separate prin virgulă → doar acele parcele pe hartă.
    Script separat de pagină: folosește variabilele și funcțiile globale ale paginii (U, P, BL, byId, cur, map, all, bL,
@@ -11,11 +11,11 @@
     pdf: "https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js",
     docx: "https://cdn.jsdelivr.net/npm/docx@9.5.1/dist/index.iife.js",
   };
-  // Google satellite when the page has the key (tools.valuefy.ro), otherwise Esri World Imagery.
+  // Google satellite when the page has the key, otherwise Esri World Imagery.
   const GM = window.VF_GMAPS || null;
   const tileUrl = (z, x, y) => GM ? `https://tile.googleapis.com/v1/2dtiles/${z}/${x}/${y}?session=${GM.sat}&key=${GM.key}` : `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${z}/${y}/${x}`;
   const CREDIT = GM ? "Imagini © Google" : "Imagini © Esri, Maxar, Earthstar Geographics";
-  const DISCLAIMER = "Informații orientative, extrase din planul cadastral (BCPI Timiș). Nu înlocuiesc extrasul de carte funciară sau documentația cadastrală.";
+  const DISCLAIMER = "Informații orientative, extrase din planul cadastral (ANCPI / OCPI). Nu înlocuiesc extrasul de carte funciară sau documentația cadastrală.";
 
   /* ---------- utilitare ---------- */
   const isBuilding = (o) => o && o.id === undefined;
@@ -181,7 +181,7 @@
     x.fillStyle = "rgba(255,255,255,.92)"; x.fillRect(16, H - 60, len + 32, 44);
     x.fillStyle = NAVY; x.fillRect(32, H - 28, len, 6); x.font = `bold 17px ${FONT}`; x.textAlign = "left"; x.textBaseline = "alphabetic";
     x.fillText(`${nice >= 1000 ? nice / 1000 + " km" : nice + " m"}`, 32, H - 36);
-    const attr = imagery ? `${CREDIT} · Plan cadastral BCPI Timiș` : "Plan cadastral BCPI Timiș (imaginea satelit nu a putut fi încărcată)";
+    const attr = imagery ? `${CREDIT} · Plan cadastral ANCPI / OCPI` : "Plan cadastral ANCPI / OCPI (imaginea satelit nu a putut fi încărcată)";
     x.font = `15px ${FONT}`; const aw = x.measureText(attr).width;
     x.fillStyle = "rgba(255,255,255,.85)"; x.fillRect(W - aw - 24, H - 30, aw + 24, 30); x.fillStyle = MUTED; x.fillText(attr, W - aw - 12, H - 10);
     return { canvas: c, imagery: !!imagery };
@@ -325,7 +325,7 @@
       P_(T(d.title, { bold: true, size: 40 }), { spacing: { after: 60 } }),
       P_(T(`${d.subtitle} · generată ${today()}`, { color: "4A4A4A" })),
       P_(new D.ImageRun({ type: "png", data: await png(map), transformation: { width: 620, height: 355 } })),
-      P_(T(imagery ? `${CREDIT} · Plan cadastral BCPI Timiș` : "Plan cadastral BCPI Timiș", { size: 14, color: "6B6B6B" })),
+      P_(T(imagery ? `${CREDIT} · Plan cadastral ANCPI / OCPI` : "Plan cadastral ANCPI / OCPI", { size: 14, color: "6B6B6B" })),
       facts,
       ...d.notes.concat([`Coordonate centru (WGS84): ${d.center}`]).map((n) => P_(T(n), { spacing: { before: 160, after: 0 } })),
     );

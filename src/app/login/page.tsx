@@ -4,7 +4,7 @@ import { getDb } from "@/lib/db";
 import { currentSession } from "@/lib/auth";
 import { LoginForm } from "@/components/LoginForm";
 
-export const metadata: Metadata = { title: "Autentificare | VALUEFY Tools" };
+export const metadata: Metadata = { title: "Autentificare | UVALO" };
 export const dynamic = "force-dynamic";
 
 export default async function Login({ searchParams }: { searchParams: Promise<{ link?: string }> }) {
@@ -13,12 +13,10 @@ export default async function Login({ searchParams }: { searchParams: Promise<{ 
   return (
     <div className="authPage">
       <aside className="authSide">
-        <span className="brandPill" style={{ position: "relative", alignSelf: "flex-start" }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/valuefy-logo.png" alt="VALUEFY" style={{ height: 22, display: "block" }} />
-        </span>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/uvalo-logo.svg" alt="UVALO" style={{ position: "relative", height: 30, width: "auto", alignSelf: "flex-start", display: "block" }} />
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <span className="eyebrow" style={{ position: "relative", color: "var(--acc-light)" }}>VALUEFY TOOLS</span>
+          <span className="eyebrow" style={{ position: "relative", color: "var(--acc-light)" }}>UVALO</span>
           <h2>Instrumente pentru evaluatori, într-un singur cont.</h2>
           <p>Localizator cadastral, pe teren și la birou. În curând: analize de piață.</p>
         </div>
@@ -26,7 +24,9 @@ export default async function Login({ searchParams }: { searchParams: Promise<{ 
       </aside>
       <main className="authMain">
         <div className="authBox">
-          <h1>Intră în VALUEFY Tools</h1>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img className="authLogoSm" src="/uvalo-logo-ink.svg" alt="UVALO" />
+          <h1>Intră în UVALO</h1>
           <p>Introdu adresa de email a contului tău.</p>
           <LoginForm expired={(await searchParams).link === "expired"} />
           <div className="note" style={{ display: "flex", flexDirection: "column", gap: 6 }}>

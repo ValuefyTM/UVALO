@@ -5,7 +5,7 @@ import { activityByDay, actionLabel, recentEvents, topActions, topTargets } from
 import { AdminShell } from "@/components/AdminShell";
 import { CountTable, DayBars, EventLog, UatCountTable } from "@/components/Charts";
 
-export const metadata: Metadata = { title: "Activitate | VALUEFY Tools" };
+export const metadata: Metadata = { title: "Activitate | UVALO" };
 export const dynamic = "force-dynamic";
 
 export default async function AdminActivity({ searchParams }: { searchParams: Promise<{ user?: string; org?: string; action?: string }> }) {
