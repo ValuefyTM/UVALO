@@ -37,8 +37,8 @@ export default async function Login({ searchParams }: { searchParams: Promise<{ 
           <p>Introdu adresa de email a contului tău UVALO. Îți trimitem un cod de acces, fără parolă.</p>
           <LoginForm expired={(await searchParams).link === "expired"} />
           <div className="authAlt">
-            <div><b>Nu ai cont?</b><span>Membrii titulari ANEVAR îl solicită cu numărul legitimației.</span></div>
-            <a className="btn btnGhost btnSm" href="/solicita-cont">Solicită cont →</a>
+            <div><b>Nu ai cont?</b><span>Este gratuit pentru membrii titulari ANEVAR: îl soliciți cu numărul legitimației.</span></div>
+            <a className="btn btnGhost btnSm" href="/solicita-cont">Solicită cont gratuit →</a>
           </div>
         </div>
       </main>

@@ -688,4 +688,8 @@ a.rMeta:hover u { color: var(--acc-light); }
   .authMain { padding: 28px 16px 40px; justify-content: flex-start; }
   .authCard { border-radius: 18px; }
   .authCard .authEyebrow, .authCard h1, .authCard > p { text-align: center; }
+  .authCard .freeBadge { align-self: center; }
 }
+
+/* "Gratuit" on the account request page */
+.freeBadge { position: relative; align-self: flex-start; display: inline-flex; align-items: center; height: 26px; padding: 0 12px; border-radius: 999px; background: var(--acc); color: #141414; font-size: 12px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }

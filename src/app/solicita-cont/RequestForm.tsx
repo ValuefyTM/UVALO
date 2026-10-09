@@ -69,7 +69,7 @@ export function RequestForm({ r: refToken, email }: { r?: string; email?: string
       <label className="field"><span>Telefon mobil</span><input className="input" type="tel" autoComplete="tel" placeholder="07xx xxx xxx" required value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} /></label>
       <label className="field"><span>Firma de evaluare <small>(opțional)</small></span><input className="input" value={f.company} onChange={(e) => setF({ ...f, company: e.target.value })} /></label>
       {msg && <div role="alert" className="error">{msg}</div>}
-      <button type="submit" className="btn btnNavy" style={{ height: 52 }} disabled={busy}>{busy ? "Se trimite…" : "Trimite solicitarea"}</button>
+      <button type="submit" className="btn btnNavy" style={{ height: 52 }} disabled={busy}>{busy ? "Se trimite…" : "Solicită contul gratuit"}</button>
       <button type="button" className="linkBtn" onClick={() => { setFound(null); setMsg(""); }}>← Altă legitimație</button>
     </form>
   );
