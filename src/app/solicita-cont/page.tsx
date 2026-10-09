@@ -19,7 +19,7 @@ export default async function RequestAccount({ searchParams }: { searchParams: P
     <div className="authPage">
       <aside className="authSide">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/uvalo-logo.svg" alt="UVALO" style={{ position: "relative", height: 30, width: "auto", alignSelf: "flex-start", display: "block" }} />
+        <img className="authLockup" src="/uvalo-lockup.svg" alt="UVALO" />
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <span className="eyebrow" style={{ position: "relative", color: "var(--acc-light)" }}>UVALO</span>
           <h2>Cont pentru evaluatorii autorizați ANEVAR.</h2>
@@ -32,9 +32,9 @@ export default async function RequestAccount({ searchParams }: { searchParams: P
         <p style={{ fontSize: 12 }}>Datele din tablou: anevar.ro</p>
       </aside>
       <main className="authMain">
-        <div className="authBox">
+        <div className="authBox authCard">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img className="authLogoSm" src="/uvalo-logo-ink.svg" alt="UVALO" />
+          <img className="authLogoSm" src="/uvalo-vertical-ink.svg" alt="UVALO" />
           <h1>Solicită cont</h1>
           {ref && <div className="note"><b>{ref.by_name}</b> ți-a recomandat UVALO.</div>}
           <RequestForm r={ref ? r : undefined} email={ref?.email} />

@@ -18,7 +18,7 @@ export default async function Invitation({ searchParams }: { searchParams: Promi
     <div className="authPage">
       <aside className="authSide">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/uvalo-logo.svg" alt="UVALO" style={{ position: "relative", height: 30, width: "auto", alignSelf: "flex-start", display: "block" }} />
+        <img className="authLockup" src="/uvalo-lockup.svg" alt="UVALO" />
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <span className="eyebrow" style={{ position: "relative", color: "var(--acc-light)" }}>UVALO</span>
           <h2>{inv?.org_name ? `Bine ai venit în contul ${inv.org_name}.` : "Bine ai venit în UVALO."}</h2>
@@ -27,9 +27,9 @@ export default async function Invitation({ searchParams }: { searchParams: Promi
         <p style={{ fontSize: 12 }}>Firmă autorizată ANEVAR</p>
       </aside>
       <main className="authMain">
-        <div className="authBox">
+        <div className="authBox authCard">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img className="authLogoSm" src="/uvalo-logo-ink.svg" alt="UVALO" />
+          <img className="authLogoSm" src="/uvalo-vertical-ink.svg" alt="UVALO" />
           {inv ? (
             <>
               <h1>Activează contul</h1>

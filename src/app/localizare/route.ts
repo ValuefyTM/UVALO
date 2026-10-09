@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 const PRIVATE = { "Cache-Control": "private, no-store", "X-Robots-Tag": "noindex, nofollow", "Referrer-Policy": "strict-origin-when-cross-origin" };
 
 // Installable on the phone (PWA): manifest, icons, and a service worker that keeps the map usable with a weak signal.
-const PWA_HEAD = `<link rel="manifest" href="/api/localizare/manifest"><link rel="apple-touch-icon" href="/loc-icon-apple.png">
+const PWA_HEAD = `<link rel="manifest" href="/api/localizare/manifest"><link rel="icon" href="/icon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/loc-icon-apple.png">
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Localizator"><meta name="apple-mobile-web-app-status-bar-style" content="default">
 <style>.vfBack{display:inline-flex;align-items:center;gap:6px;margin-left:auto;font-size:13px;font-weight:700;color:#9a5f00;text-decoration:none;padding:6px 10px;border-radius:999px;border:1px solid #f5d9a6;background:#fdf1dc}</style>`;
