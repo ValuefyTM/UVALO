@@ -1,5 +1,7 @@
 # UVALO — app.uvalo.ro
 
+Repo: `ValuefyTM/uvalo` (fost `ValuefyTM/tools`).
+
 Platformă SaaS pentru evaluatori imobiliari (fostă „VALUEFY Tools”). Modulul principal este **Localizatorul cadastral**
 (hartă cu parcele/clădiri din exporturile ANCPI, căutare după nr. cadastral/topo/adresă, export PDF/Word/PNG, GPS).
 Proprietar: VALUEFY (firmă de evaluări imobiliare, Timișoara). UVALO devine un produs separat de site-ul și CRM-ul VALUEFY.
@@ -56,7 +58,7 @@ Proprietar: VALUEFY (firmă de evaluări imobiliare, Timișoara). UVALO devine u
 - Starea se citește din `display_title` al rulărilor („plan {mode} {ids}”). Concurență: grup separat per conversie,
   `plans-publish` pentru publicări (altfel GitHub anulează rulările în așteptare). Butoane „Reîncearcă (toate)”.
 - Secret-uri worker: `PLANS_GITHUB_TOKEN` (fine-grained, Contents + Actions read/write pe repo),
-  opțional `PLANS_GITHUB_REPO` (implicit `ValuefyTM/tools`), `PLANS_GITHUB_BRANCH`.
+  opțional `PLANS_GITHUB_REPO` (implicit `ValuefyTM/uvalo`), `PLANS_GITHUB_BRANCH`.
 - Publicările scriu pe `main` → înainte de push fă mereu `git pull --rebase`. Conflict în `localizare-data/index.html`
   → rezolvă rulând din nou `convert.py --entry <key>` pentru UAT-urile afectate.
 - UAT-urile sunt grupate pe **județ** peste tot (selector Județ în localizator, tabele în admin). UAT nou = cere județul.

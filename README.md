@@ -137,7 +137,7 @@ listele de UAT-uri din admin sunt grupate pe județe.
 Configurare, o singură dată:
 
 - token GitHub *fine-grained* (github.com → Settings → Developer settings → Personal access tokens → Fine-grained):
-  resource owner `ValuefyTM`, doar repository-ul `tools`, permisiuni **Contents: Read and write** și
+  resource owner `ValuefyTM`, doar repository-ul `uvalo`, permisiuni **Contents: Read and write** și
   **Actions: Read and write**; pus în Cloudflare → Workers → tools → Settings → Variables and Secrets ca secret
   `PLANS_GITHUB_TOKEN`;
 - după publicare, deploy-ul îl face workflow-ul **Deploy** (vezi „Medii”): în producție cu aprobare.
