@@ -1,4 +1,4 @@
-# VALUEFY Tools — tools.valuefy.ro
+# UVALO — app.uvalo.ro
 
 Platformă pentru colegii evaluatori: instrumente VALUEFY pe bază de cont și abonament.
 Primul modul: **Localizare cadastrală ANCPI** (planurile cadastrale din Timiș). Urmează: analize de piață.
@@ -29,7 +29,7 @@ Versiunile `next` / `@opennextjs/cloudflare` / `wrangler` sunt fixate: Next 16.4
 | Pornire / deploy | `npm run dev` | push pe branch-ul `staging` | push pe `main` + **aprobare** |
 | Worker | `wrangler dev` (același runtime) | `tools-staging` | `tools` |
 | D1 | local (`.wrangler/`) | `valuefy-tools-staging-db` | `valuefy-tools-db` |
-| Adresă | http://localhost:8787 | `tools-staging.<cont>.workers.dev` | https://tools.valuefy.ro |
+| Adresă | http://localhost:8787 | `tools-staging.<cont>.workers.dev` | https://app.uvalo.ro |
 | Emailuri | doar în `/dev/mail` | `/dev/mail` + reale doar pentru `MAIL_ALLOW` (`@valuefy.ro`) | reale |
 | Planuri cadastrale din admin | — | branch `staging` | branch `main` |
 
@@ -68,10 +68,18 @@ npm run dev            # migrări locale + build + wrangler dev → http://local
 - Un Pull Request rulează doar verificarea (tipuri + build), fără deploy.
 - Publicarea planurilor din admin pornește tot workflow-ul **Deploy** (cu aprobare).
 - Variabile și secrete (Cloudflare → Workers → tools): `TOOLS_SUPERADMINS`, `RESEND_API_KEY` (secret),
-  `EMAIL_FROM` (ex. `VALUEFY Tools <tools@valuefy.ro>`; până e setat se folosesc `TOOLS_EMAIL_FROM` / `CRM_EMAIL_FROM`),
+  `EMAIL_FROM` (ex. `UVALO <noreply@uvalo.ro>`, domeniul verificat în Resend; până e setat se folosesc `TOOLS_EMAIL_FROM` / `CRM_EMAIL_FROM`),
   `GOOGLE_MAPS_KEY` (secret, opțional: hărțile Google și căutarea adreselor în localizator, doar pentru firmele al căror plan
   are modulul `google_maps`; în Google Cloud cheia are activate **Map Tiles API** și **Geocoding API**),
   `LOCATOR_API_TOKEN`, `PLANS_GITHUB_TOKEN`.
+
+### Domeniul
+
+Producția e pe `app.uvalo.ro` (Custom domain pe workerul `tools`; `APP_URL` în `wrangler.jsonc`). Vechiul
+`tools.valuefy.ro` se redirecționează 301 cu Redirect Rule în zona `valuefy.ro`:
+`concat("https://app.uvalo.ro", http.request.uri.path)`, cu query string păstrat (invitațiile și linkurile de login
+trimise rămân valide). Cheia Google Maps are în restricții domeniul `app.uvalo.ro`; CRM-ul are
+`LOCATOR_API_URL=https://app.uvalo.ro`. Sesiunile sunt legate de domeniu: după mutare, fiecare se autentifică o dată.
 
 ### Configurare GitHub și Cloudflare (o singură dată)
 

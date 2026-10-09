@@ -1,5 +1,5 @@
 // VALUEFY Tools on Cloudflare Workers. Environments:
-//   production (top level)  → worker "tools",         D1 "valuefy-tools-db",         https://tools.valuefy.ro
+//   production (top level)  → worker "tools",         D1 "valuefy-tools-db",         https://app.uvalo.ro
 //   staging (env.staging)   → worker "tools-staging", D1 "valuefy-tools-staging-db", https://tools-staging.<account>.workers.dev
 //   local                   → wrangler dev with this same configuration, D1 local (.wrangler/), variables from .dev.vars
 // Deploys go through GitHub Actions (.github/workflows/deploy.yml): staging on push to "staging", production on push to
@@ -26,7 +26,7 @@
 	],
 	"vars": {
 		"APP_ENV": "production",
-		"APP_URL": "https://tools.valuefy.ro",
+		"APP_URL": "https://app.uvalo.ro",
 		"APP_NAME": "UVALO",
 		"SUPPORT_EMAIL": "office@valuefy.ro"
 	},
