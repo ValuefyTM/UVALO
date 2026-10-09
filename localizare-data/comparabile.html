@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Localizator de comparabile · UVALO</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+  :root{
+    --paper:#F4ECE1;        /* fundalul localizatorului */
+    --paper-2:#FFFFFF;
+    --ink:#1A160E;          /* negru cald */
+    --ink-soft:#6B6253;
+    --line:#E5D9C6;
+    --line-strong:#E1D3BE;
+    --dark:#141414;         /* antetul închis, ca la localizator */
+    --brand:#F2A93B;        /* auriul UVALO */
+    --brand-ink:#9A6A12;
+    --gold:#F2A93B;
+    --gold-soft:#F0E6CC;
+    --subject:#C23A2E;      /* roșu cărămiziu – proprietatea subiect */
+    --subject-soft:#F8E4DF;
+    --comp:#1F6F63;         /* teal – comparabile */
+    --comp-soft:#E1EEEB;
+    --amber:#F2A93B;
+    --sans:Verdana,Geneva,sans-serif; --mono:ui-monospace,Menlo,Consolas,monospace;
+    --side:400px;
+    --shadow:0 1px 2px rgba(26,22,14,.05),0 10px 28px -14px rgba(26,22,14,.22);
+    --radius:16px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:var(--sans);
+    background:var(--paper);
+    color:var(--ink);
+    font-size:14px;
+    line-height:1.45;
+    -webkit-font-smoothing:antialiased;
+  }
+  .app{display:flex;flex-direction:column;height:100vh;height:100dvh}
+
+  /* ---------- Antet (ca la localizatorul cadastral): înapoi · logo · titlu ---------- */
+  .phead{flex:none;display:flex;align-items:center;gap:12px;padding:14px 18px;background:var(--dark)}
+  .pback{display:flex;align-items:center;gap:8px;color:#fff;font-size:12px;font-weight:700;padding:8px 12px 8px 10px;border-radius:9px;border:1px solid #2E2E2E;white-space:nowrap;text-decoration:none;transition:background .2s}
+  .pback:hover{background:#2A2A2A}
+  .plogo{height:22px;width:auto;display:block;flex:none}
+  .ptitle{font-size:12px;color:#A79E92;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .btn{
+    font-family:inherit;font-weight:600;font-size:12.5px;cursor:pointer;border:none;
+    border-radius:9px;padding:8px 14px;transition:transform .08s ease, opacity .15s ease;
+  }
+  .btn:active{transform:translateY(1px)}
+
+  /* ---------- Body layout ---------- */
+  .main{flex:1;display:flex;min-height:0}
+  .panel{
+    width:var(--side);flex:none;min-width:0;background:var(--paper-2);
+    display:flex;flex-direction:column;overflow:hidden;
+  }
+  #map{flex:1;background:#e9e4d8;position:relative}
+  .map-empty{
+    position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;gap:14px;padding:30px;color:var(--ink-soft);
+    background:
+      radial-gradient(circle at 1px 1px, rgba(26,25,22,.06) 1px, transparent 0) 0 0/22px 22px,
+      var(--paper);
+  }
+  .map-empty .ic{font-size:40px}
+  .map-empty h2{font-family:var(--sans);font-size:21px;color:var(--ink);font-weight:600}
+  .map-empty p{max-width:330px;font-size:13px}
+  .steps{text-align:left;font-size:12.5px;background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:14px 16px;max-width:340px}
+  .steps li{margin:5px 0 5px 4px}
+  .steps a{color:var(--brand);font-weight:600}
+
+  /* ---------- Panel sections ---------- */
+  .p-scroll{overflow-y:auto;flex:1}
+  .section{padding:16px 18px;border-bottom:1px solid var(--line)}
+  .section h3{
+    font-family:var(--sans);font-size:15px;font-weight:600;margin-bottom:3px;
+    display:flex;align-items:center;gap:8px;
+  }
+  .section .sub{font-size:11.5px;color:var(--ink-soft);margin-bottom:11px}
+  .dot{width:11px;height:11px;border-radius:50%;display:inline-block;flex:none}
+  .dot.subj{background:var(--subject)}
+  .dot.comp{background:var(--comp)}
+
+  .mode-toggle{display:flex;background:var(--paper);border:1px solid var(--line-strong);border-radius:11px;padding:4px;gap:4px;margin-bottom:11px}
+  .mode-toggle button{
+    flex:1;border:none;background:transparent;cursor:pointer;font-family:inherit;font-weight:600;font-size:12px;
+    padding:8px 6px;border-radius:8px;color:var(--ink-soft);display:flex;align-items:center;justify-content:center;gap:7px;transition:.15s;
+  }
+  .mode-toggle button.active.subj{background:var(--subject);color:#fff}
+  .mode-toggle button.active.comp{background:var(--comp);color:#fff}
+
+  .addrow{display:flex;gap:7px}
+  .addrow input{
+    flex:1;font-family:inherit;font-size:13px;padding:9px 11px;border:1px solid var(--line-strong);
+    border-radius:9px;background:var(--paper);color:var(--ink);
+  }
+  .addrow input:focus{outline:none;border-color:var(--brand)}
+  .addrow .btn{background:var(--brand);color:#1b1407;padding:9px 13px;white-space:nowrap}
+  .tip{font-size:11px;color:var(--ink-soft);margin-top:8px;display:flex;align-items:flex-start;gap:6px}
+
+  /* ---------- Subject card ---------- */
+  .subject-card{background:var(--subject-soft);border:1px solid #f1c4cc;border-radius:12px;padding:12px 13px}
+  .subject-card.empty{background:var(--paper);border-style:dashed;border-color:var(--line-strong);color:var(--ink-soft);text-align:center;padding:18px 12px;font-size:12.5px}
+  .subject-card .lbl{font-weight:600;font-size:13.5px;display:flex;align-items:center;gap:7px}
+  .subject-card .coord{font-size:11.5px;color:var(--ink-soft);margin-top:3px;font-variant-numeric:tabular-nums}
+  .mini{display:flex;gap:6px;margin-top:10px}
+  .mini button{font-size:11px;padding:5px 9px;border-radius:7px;border:1px solid var(--line-strong);background:#fff;cursor:pointer;font-family:inherit;color:var(--ink)}
+  .mini button:hover{border-color:var(--ink)}
+
+  /* ---------- Comparable list ---------- */
+  .stats{display:flex;gap:8px;margin-bottom:12px}
+  .stat{flex:1;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:9px 10px}
+  .stat .n{font-family:var(--sans);font-size:19px;font-weight:600;line-height:1;font-variant-numeric:tabular-nums}
+  .stat .t{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-soft);margin-top:3px}
+
+  .comp-item{border:1px solid var(--line);border-radius:12px;margin-bottom:8px;background:#fff;overflow:hidden;transition:border-color .15s, box-shadow .15s}
+  .comp-item:hover{border-color:#bcdbd5}
+  .comp-item.open{border-color:var(--comp);box-shadow:var(--shadow)}
+  .comp-top{display:flex;align-items:center;gap:10px;padding:10px 11px;cursor:pointer}
+  .badge{
+    width:23px;height:23px;border-radius:7px;background:var(--comp);color:#fff;font-weight:700;font-size:12.5px;
+    display:flex;align-items:center;justify-content:center;flex:none;font-variant-numeric:tabular-nums;
+  }
+  .comp-main{flex:1;min-width:0}
+  .comp-name{font-weight:600;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .comp-pills{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+  .pill{font-size:10.5px;font-weight:600;padding:2px 7px;border-radius:999px;background:var(--paper);color:var(--ink-soft);border:1px solid var(--line);font-variant-numeric:tabular-nums;white-space:nowrap}
+  .pill.accent{background:var(--comp-soft);color:#0d5a51;border-color:#b8ddd6}
+  .pill.soft{background:#f4efe3;color:#7a6a44;border-color:#e7ddc6;text-transform:capitalize}
+  .pill.muted{background:transparent;color:#aaa498;border-style:dashed}
+  .comp-right{display:flex;align-items:center;gap:7px;flex:none}
+  .dist-chip{
+    background:var(--comp-soft);color:#0d5a51;border:1px solid #b8ddd6;font-weight:700;font-size:11.5px;
+    padding:3px 8px;border-radius:999px;white-space:nowrap;font-variant-numeric:tabular-nums;
+  }
+  .chev{color:var(--ink-soft);font-size:13px;line-height:1;transition:transform .18s}
+  .comp-item.open .chev{transform:rotate(180deg)}
+  .comp-detail{display:none;padding:2px 11px 12px;border-top:1px solid var(--line)}
+  .comp-item.open .comp-detail{display:block}
+  .comp-detail .flbl{display:block;font-size:9.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-soft);margin:10px 0 4px}
+  .url-row{display:flex;gap:6px}
+  .url-row input{flex:1;min-width:0;font-family:inherit;font-size:12px;padding:7px 9px;border:1px solid var(--line-strong);border-radius:8px;background:var(--paper);color:var(--ink)}
+  .url-row input:focus{outline:none;border-color:var(--comp)}
+  .url-row .ext-btn{font-family:inherit;font-weight:600;font-size:11.5px;white-space:nowrap;border:none;border-radius:8px;padding:7px 11px;background:var(--comp);color:#fff;cursor:pointer}
+  .url-row .ext-btn:disabled{opacity:.6;cursor:default}
+  .fields-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .fields-grid .flbl{margin-top:8px}
+  .fields-grid input{width:100%;font-family:inherit;font-size:12.5px;padding:6px 8px;border:1px solid var(--line-strong);border-radius:7px;background:var(--paper)}
+  .fields-grid input:focus{outline:none;border-color:var(--comp)}
+  .comp-actions{display:flex;gap:6px;margin-top:12px;flex-wrap:wrap}
+  .comp-actions .act{font-size:11px;padding:6px 9px;border-radius:7px;border:1px solid var(--line-strong);background:#fff;cursor:pointer;font-family:inherit;color:var(--ink-soft);flex:1;text-align:center;text-decoration:none;white-space:nowrap}
+  .comp-actions .act:hover{border-color:var(--ink);color:var(--ink)}
+  .comp-actions .act-link{background:var(--brand);color:#1b1407;border-color:var(--brand);font-weight:600}
+  .comp-actions .act-link:hover{color:#1b1407;opacity:.9}
+  .comp-actions .del:hover{border-color:var(--subject);color:var(--subject)}
+  .empty-list{text-align:center;color:var(--ink-soft);font-size:12.5px;padding:14px;border:1px dashed var(--line-strong);border-radius:12px}
+
+  /* ---------- Footer actions ---------- */
+  .panel-footer{padding:12px 18px;border-top:1px solid var(--line);display:flex;flex-wrap:wrap;gap:8px;background:var(--paper-2)}
+  .panel-footer .btn{flex:1 1 calc(50% - 4px);border:1px solid var(--line-strong);background:#fff;color:var(--ink)}
+  .panel-footer .btn.primary{background:var(--brand);color:#1b1407;border-color:var(--brand)}
+  .panel-footer .btn.danger:hover{border-color:var(--subject);color:var(--subject)}
+
+  .toast{
+    position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);
+    background:var(--ink);color:var(--paper);padding:11px 18px;border-radius:10px;font-size:13px;
+    box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:.25s;z-index:50;max-width:90vw;text-align:center;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  /* scrollbar */
+  .p-scroll::-webkit-scrollbar{width:9px}
+  .p-scroll::-webkit-scrollbar-thumb{background:var(--line-strong);border-radius:5px;border:2px solid var(--paper-2)}
+
+  /* ---------- Overlay legendă peste hartă ---------- */
+  .map-overlay{
+    position:absolute;top:12px;right:12px;width:min(272px,72%);max-height:74%;overflow:auto;
+    background:rgba(255,255,255,.95);border:1px solid var(--line-strong);border-radius:13px;
+    box-shadow:var(--shadow);padding:13px 14px;z-index:5;font-size:12px;backdrop-filter:blur(3px);
+  }
+  .ov-title{font-family:var(--sans);font-weight:600;font-size:14px;margin-bottom:9px;color:var(--ink)}
+  .ov-row{display:flex;gap:9px;align-items:flex-start;padding:6px 0;border-top:1px solid var(--line)}
+  .ov-row:first-of-type{border-top:none}
+  .ov-pin{width:21px;height:21px;border-radius:6px;color:#fff;font-weight:700;font-size:11.5px;display:flex;align-items:center;justify-content:center;flex:none;font-variant-numeric:tabular-nums}
+  .ov-pin.subj{background:var(--subject)}
+  .ov-pin.comp{background:var(--comp)}
+  .ov-lbl{font-weight:600;color:var(--ink);line-height:1.25;word-break:break-word}
+  .ov-sub{display:block;font-weight:400;color:var(--ink-soft);font-size:11px;margin-top:1px;font-variant-numeric:tabular-nums}
+  .ov-foot{margin-top:10px;padding-top:8px;border-top:1px solid var(--line);font-size:10px;color:var(--ink-soft)}
+  .ov-toggle{
+    position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:6;
+    background:var(--ink);color:var(--paper);border:none;border-radius:9px;padding:8px 13px;
+    font-family:inherit;font-weight:600;font-size:12px;cursor:pointer;box-shadow:var(--shadow);
+  }
+
+
+  /* glisorul dintre panou și hartă (ca la localizator) */
+  .split{width:10px;flex:none;cursor:col-resize;position:relative;z-index:1100;background:var(--paper);border:0;border-left:1px solid var(--line);border-right:1px solid #2a2f22;display:flex;align-items:center;justify-content:center;padding:0;touch-action:none}
+  .split::after{content:"";width:4px;height:44px;border-radius:999px;background:#CFC1AA}
+  .split:hover,.split.drag{background:#FBEBD0}
+  .split.drag::after{background:var(--brand)}
+  body.resizing{cursor:col-resize;user-select:none}
+  body.resizing #map{pointer-events:none}
+
+  /* telefon: pagina derulează (antet, panou, apoi harta), ca la localizator */
+  @media(max-width:820px){
+    .app{height:auto;min-height:100vh}
+    .main{flex-direction:column}
+    .panel{width:100%;min-width:0;overflow:visible;border-bottom:1px solid var(--line)}
+    .p-scroll{overflow:visible;flex:none}
+    .split{display:none}
+    .ptitle{display:none}
+    #map{flex:none;height:60svh;min-height:320px}
+  }
+  /* Leaflet: legenda și butonul ei peste hartă */
+  #map .map-overlay{z-index:1000}
+  #map .ov-toggle{z-index:1000}
+  #map .map-empty{z-index:1001}
+  .pin{background:none;border:none}
+  .leaflet-container{font-family:var(--sans)}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <div class="main">
+    <aside class="panel">
+      <header class="phead">
+        <a class="pback" href="/" title="Înapoi la UVALO">← Înapoi</a>
+        <img class="plogo" src="/uvalo-logo.svg" alt="UVALO" width="923" height="228">
+        <span class="ptitle">Localizator de comparabile</span>
+      </header>
+      <div class="p-scroll">
+
+        <!-- Mod adăugare -->
+        <div class="section">
+          <h3>Adaugă pe hartă</h3>
+          <p class="sub">Alege ce adaugi, apoi dă click pe hartă <em>sau</em> caută o adresă.</p>
+          <div class="mode-toggle" id="modeToggle">
+            <button data-mode="subject" class="subj active"><span class="dot subj"></span>Proprietate subiect</button>
+            <button data-mode="comp" class="comp"><span class="dot comp"></span>Comparabilă</button>
+          </div>
+          <div class="addrow">
+            <input id="addrInput" type="text" placeholder="ex: Str. Alba Iulia 1, Timișoara">
+            <button class="btn" id="searchBtn">Caută</button>
+          </div>
+          <div class="tip">📍 <span>Sfat: poți da click direct pe hartă pentru a fixa un punct exact (util când adresa nu este precisă).</span></div>
+        </div>
+
+        <!-- Proprietatea subiect -->
+        <div class="section">
+          <h3><span class="dot subj"></span>Proprietatea subiect</h3>
+          <div id="subjectBox">
+            <div class="subject-card empty">Niciun punct fixat. Selectează „Proprietate subiect" și dă click pe hartă sau caută adresa.</div>
+          </div>
+        </div>
+
+        <!-- Comparabile -->
+        <div class="section">
+          <h3><span class="dot comp"></span>Comparabile <span style="color:var(--ink-soft);font-weight:400;font-size:12px">(<span id="compCount">0</span>)</span></h3>
+          <div class="stats">
+            <div class="stat"><div class="n" id="statCount">0</div><div class="t">Comparabile</div></div>
+            <div class="stat"><div class="n" id="statAvg">–</div><div class="t">Distanță medie</div></div>
+            <div class="stat"><div class="n" id="statMax">–</div><div class="t">Cea mai departe</div></div>
+          </div>
+          <div id="compList"></div>
+        </div>
+
+      </div>
+      <div class="panel-footer">
+        <button class="btn primary" id="fitBtn">Încadrează tot</button>
+        <button class="btn" id="pngBtn">Hartă PNG</button>
+        <button class="btn" id="pdfBtn">Export PDF</button>
+        <button class="btn" id="wordBtn">Export Word</button>
+        <button class="btn" id="exportBtn">Export CSV</button>
+        <button class="btn danger" id="clearBtn">Șterge tot</button>
+      </div>
+    </aside>
+    <button type="button" class="split" id="split" role="separator" aria-orientation="vertical" aria-label="Lățimea panoului (trage sau folosește săgețile)" title="Trage ca să redimensionezi · dublu click resetează"></button>
+
+    <div id="map">
+      <div class="map-empty" id="mapEmpty">
+        <div class="ic">🗺️</div>
+        <h2>Se încarcă harta…</h2>
+        <p>Dacă harta nu apare în câteva secunde, reîmprospătează pagina.</p>
+      </div>
+      <div class="map-overlay" id="mapOverlay" style="display:none"></div>
+      <button class="ov-toggle" id="ovToggle" style="display:none">Ascunde legenda</button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════════
+   HARTA — fără cheie: Leaflet + OpenStreetMap (hartă) / Esri World Imagery (satelit).
+   Căutarea adreselor: Nominatim (OpenStreetMap), maximum o cerere pe secundă.
+   ═══════════════════════════════════════════════════════════════════════ */
+// Antetul rapoartelor: firma și numele celui autentificat (puse de pagina /comparabile).
+const ME=window.UVALO_USER||{};
+const DEF_BRAND={company:ME.company||'',subtitle:ME.subtitle||'',evaluator:ME.name||''};
+const TILES={
+  map:{url:'https://tile.openstreetmap.org/{z}/{x}/{y}.png',max:19,attr:'© OpenStreetMap'},
+  sat:{url:'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',max:19,attr:'Imagini © Esri, Maxar, Earthstar Geographics'},
+  satLabels:{url:'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',max:19}
+};
+
+/* ============ STARE ============ */
+const state = {
+  map:null, ready:false, base:'map', layers:{},
+  addMode:'subject',
+  subject:null,            // {marker, lat, lng, label}
+  comps:[],                // {id, marker, lat, lng, label, price, area, dist, line}
+  seq:0,
+  overlayVisible:true,
+  brand:{ logo:null, logoImg:null, company:DEF_BRAND.company, subtitle:DEF_BRAND.subtitle, reportNo:'', evalDate:'', evaluator:DEF_BRAND.evaluator },
+  center:{lat:45.7489, lng:21.2087} // Timișoara
+};
+
+/* ============ UTILE ============ */
+function toast(msg,ms){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),ms||2600);
+}
+function fmtDist(m){
+  if(m==null) return '–';
+  return m<1000 ? Math.round(m)+' m' : (m/1000).toFixed(2).replace('.',',')+' km';
+}
+function fmtNum(n){ return n.toLocaleString('ro-RO'); }
+function escapeHtml(s){return String(s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
+
+/* Pinii: aceleași forme ca în export (desenate și pe canvas) */
+const SUBJ_PIN='M23 2C12 2 3 11 3 22c0 14 20 33 20 33s20-19 20-33C43 11 34 2 23 2z', SUBJ_HOUSE='M23 13l9 7v11h-6v-7h-6v7h-6V20z';
+const COMP_PIN='M19 2C10 2 3 9 3 18c0 11 16 28 16 28s16-17 16-28C35 9 28 2 19 2z';
+function subjectIcon(){
+  const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="46" height="58" viewBox="0 0 46 58"><defs><filter id="s" x="-30%" y="-20%" width="160%" height="160%"><feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000" flood-opacity="0.35"/></filter></defs><path filter="url(#s)" d="${SUBJ_PIN}" fill="#C9283E" stroke="#fff" stroke-width="3"/><path d="${SUBJ_HOUSE}" fill="#fff"/></svg>`;
+  return L.divIcon({className:'pin',html:svg,iconSize:[46,58],iconAnchor:[23,56]});
+}
+function compIcon(num){
+  const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="38" height="48" viewBox="0 0 38 48"><defs><filter id="c" x="-30%" y="-20%" width="160%" height="160%"><feDropShadow dx="0" dy="2" stdDeviation="1.6" flood-color="#000" flood-opacity="0.3"/></filter></defs><path filter="url(#c)" d="${COMP_PIN}" fill="#157A6E" stroke="#fff" stroke-width="2.5"/><text x="19" y="24" text-anchor="middle" font-family="Verdana,Geneva,sans-serif" font-size="16" font-weight="700" fill="#fff">${num}</text></svg>`;
+  return L.divIcon({className:'pin',html:svg,iconSize:[38,48],iconAnchor:[19,46]});
+}
+
+/* ============ HARTA ============ */
+function initMap(){
+  const e=document.getElementById('mapEmpty');
+  if(!window.L){ if(e){ e.querySelector('h2').textContent='Harta nu s-a încărcat'; e.querySelector('p').textContent='Verifică conexiunea la internet și reîmprospătează pagina.'; } return; }
+  state.map=L.map('map',{zoomControl:true}).setView([state.center.lat,state.center.lng],13);
+  state.map.attributionControl.setPrefix(false);
+  const osm=L.tileLayer(TILES.map.url,{maxZoom:20,maxNativeZoom:TILES.map.max,attribution:TILES.map.attr,crossOrigin:'anonymous'});
+  const sat=L.layerGroup([
+    L.tileLayer(TILES.sat.url,{maxZoom:20,maxNativeZoom:TILES.sat.max,attribution:TILES.sat.attr,crossOrigin:'anonymous'}),
+    L.tileLayer(TILES.satLabels.url,{maxZoom:20,maxNativeZoom:TILES.satLabels.max,crossOrigin:'anonymous'})
+  ]);
+  state.layers={map:osm,sat};
+  osm.addTo(state.map);
+  L.control.layers({'Hartă':osm,'Satelit':sat},null,{position:'topleft'}).addTo(state.map);
+  state.map.on('baselayerchange',ev=>{ state.base = ev.layer===sat ? 'sat' : 'map'; });
+  L.control.scale({imperial:false,position:'bottomleft'}).addTo(state.map);
+  state.ready=true;
+  if(e) e.style.display='none';
+  state.map.on('click',ev=>placePoint(ev.latlng.lat,ev.latlng.lng));
+}
+
+/* ============ ADĂUGARE PUNCTE ============ */
+function placePoint(lat,lng,label){
+  if(state.addMode==='subject') setSubject(lat,lng,label);
+  else addComparable(lat,lng,label);
+}
+function setSubject(lat,lng,label){
+  if(state.subject && state.subject.marker) state.subject.marker.remove();
+  const marker=L.marker([lat,lng],{icon:subjectIcon(),zIndexOffset:1000,title:'Proprietatea subiect',draggable:true}).addTo(state.map);
+  marker.on('dragend',()=>{ const p=marker.getLatLng(); state.subject.lat=p.lat; state.subject.lng=p.lng; recalc(); renderSubject(); });
+  state.subject={marker,lat,lng,label:label||'Proprietatea subiect'};
+  if(!label){ reverseGeocode(lat,lng,(addr)=>{ if(state.subject && state.subject.marker===marker){state.subject.label=addr; renderSubject();} }); }
+  recalc(); renderSubject();
+}
+function addComparable(lat,lng,label){
+  const id=++state.seq;
+  const num=state.comps.length+1;
+  const marker=L.marker([lat,lng],{icon:compIcon(num),draggable:true,title:'Comparabilă '+num}).addTo(state.map);
+  const c={id,marker,lat,lng,label:label||('Comparabila '+num),price:'',area:'',rooms:'',ptype:'',url:'',open:false,dist:null,line:null};
+  marker.on('dragend',()=>{ const p=marker.getLatLng(); c.lat=p.lat; c.lng=p.lng; recalc(); renderComps(); });
+  marker.on('click',()=>{ c.open=true; renderComps(); const el=document.getElementById('comp-'+id); if(el) el.scrollIntoView({behavior:'smooth',block:'center'}); });
+  state.comps.push(c);
+  if(!label){ reverseGeocode(lat,lng,(addr)=>{ c.label=addr; renderComps(); }); }
+  recalc(); renderComps();
+}
+
+/* ============ GEOCODARE (Nominatim) ============ */
+let geoChain=Promise.resolve(), geoLast=0;
+function nominatim(path){
+  // politica Nominatim: cel mult o cerere pe secundă
+  const run=async()=>{
+    const wait=geoLast+1100-Date.now(); if(wait>0) await new Promise(r=>setTimeout(r,wait));
+    geoLast=Date.now();
+    const r=await fetch('https://nominatim.openstreetmap.org/'+path+(path.includes('?')?'&':'?')+'format=jsonv2&accept-language=ro');
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    return r.json();
+  };
+  const p=geoChain.then(run,run); geoChain=p.catch(()=>{}); return p;
+}
+function shortAddress(j){
+  const a=(j&&j.address)||{};
+  const street=[a.road||a.pedestrian||a.footway||a.square,a.house_number].filter(Boolean).join(' ');
+  const place=a.city||a.town||a.village||a.municipality||a.county||'';
+  const s=[street||a.neighbourhood||a.suburb,place].filter(Boolean).join(', ');
+  return s || (j&&j.display_name) || '';
+}
+function searchAddress(){
+  if(!state.ready){ toast('Harta nu este încărcată încă. Așteaptă câteva secunde sau reîmprospătează pagina.'); return; }
+  const q=document.getElementById('addrInput').value.trim();
+  if(!q){ toast('Scrie o adresă.'); return; }
+  nominatim('search?limit=1&addressdetails=1&countrycodes=ro&q='+encodeURIComponent(q)).then(res=>{
+    if(res && res[0]){
+      const lat=+res[0].lat, lng=+res[0].lon;
+      placePoint(lat,lng,shortAddress(res[0]));
+      state.map.setView([lat,lng],Math.max(state.map.getZoom(),16));
+      document.getElementById('addrInput').value='';
+    } else toast('Adresa nu a fost găsită. Încearcă altă formulare sau dă click pe hartă.');
+  }).catch(()=>toast('Căutarea adresei nu a răspuns. Încearcă din nou peste câteva secunde.'));
+}
+function reverseGeocode(lat,lng,cb){
+  const fallback=lat.toFixed(5)+', '+lng.toFixed(5);
+  nominatim('reverse?zoom=18&addressdetails=1&lat='+lat+'&lon='+lng).then(j=>cb(shortAddress(j)||fallback),()=>cb(fallback));
+}
+
+/* ============ DISTANȚE ============ */
+function haversine(a,b){
+  const R=6371008.8, t=Math.PI/180, dLat=(b.lat-a.lat)*t, dLng=(b.lng-a.lng)*t;
+  const h=Math.sin(dLat/2)**2+Math.cos(a.lat*t)*Math.cos(b.lat*t)*Math.sin(dLng/2)**2;
+  return 2*R*Math.asin(Math.sqrt(h));
+}
+function recalc(){
+  state.comps.forEach(c=>{ if(c.line){ c.line.remove(); c.line=null; } });
+  if(!state.subject){ state.comps.forEach(c=>{ c.dist=null; }); updateStats(); return; }
+  const s=state.subject;
+  state.comps.forEach(c=>{
+    c.dist=haversine(s,c);
+    c.line=L.polyline([[s.lat,s.lng],[c.lat,c.lng]],{color:'#C9283E',weight:2,opacity:.6,dashArray:'4 8',interactive:false}).addTo(state.map);
+  });
+  updateStats();
+}
+function updateStats(){
+  const ds=state.comps.map(c=>c.dist).filter(d=>d!=null);
+  document.getElementById('statCount').textContent=state.comps.length;
+  document.getElementById('compCount').textContent=state.comps.length;
+  if(ds.length){
+    document.getElementById('statAvg').textContent=fmtDist(ds.reduce((a,b)=>a+b,0)/ds.length);
+    document.getElementById('statMax').textContent=fmtDist(Math.max(...ds));
+  } else {
+    document.getElementById('statAvg').textContent='–';
+    document.getElementById('statMax').textContent='–';
+  }
+  renderOverlay();
+}
+
+/* ============ RANDARE PANOU ============ */
+function renderSubject(){
+  const box=document.getElementById('subjectBox');
+  if(!state.subject){ box.innerHTML='<div class="subject-card empty">Niciun punct fixat. Selectează „Proprietate subiect" și dă click pe hartă sau caută adresa.</div>'; renderOverlay(); return; }
+  const s=state.subject;
+  box.innerHTML=`<div class="subject-card">
+    <div class="lbl"><span class="dot subj"></span><span>${escapeHtml(s.label)}</span></div>
+    <div class="coord">${s.lat.toFixed(6)}, ${s.lng.toFixed(6)}</div>
+    <div class="mini">
+      <button onclick="panTo(${s.lat},${s.lng})">Centrează</button>
+      <button onclick="streetView(${s.lat},${s.lng})">Street View</button>
+      <button onclick="removeSubject()">Elimină</button>
+    </div></div>`;
+  renderOverlay();
+}
+function pillsHtml(c){
+  const ppm=(c.price&&c.area&&+c.area>0)?Math.round(+c.price/+c.area):null;
+  let p='';
+  if(c.price) p+=`<span class="pill">${fmtNum(+c.price)} €</span>`;
+  if(c.area) p+=`<span class="pill">${fmtNum(+c.area)} mp</span>`;
+  if(ppm!=null) p+=`<span class="pill accent">${fmtNum(ppm)} €/mp</span>`;
+  if(c.rooms) p+=`<span class="pill">${escapeHtml(c.rooms)} cam.</span>`;
+  if(c.ptype) p+=`<span class="pill soft">${escapeHtml(c.ptype)}</span>`;
+  if(!p) p='<span class="pill muted">fără date</span>';
+  return p;
+}
+function safeUrl(u){ return /^https?:\/\//i.test(u||'') ? u : ''; }
+function renderComps(){
+  state.comps.forEach((c,i)=>c.marker.setIcon(compIcon(i+1)));
+  const list=document.getElementById('compList');
+  if(!state.comps.length){ list.innerHTML='<div class="empty-list">Nicio comparabilă adăugată încă.</div>'; updateStats(); return; }
+  list.innerHTML=state.comps.map((c,i)=>{
+    const u=escapeHtml(c.url||''), su=escapeHtml(safeUrl(c.url));
+    return `<div class="comp-item ${c.open?'open':''}" id="comp-${c.id}">
+      <div class="comp-top" onclick="toggleComp(${c.id})">
+        <div class="badge">${i+1}</div>
+        <div class="comp-main">
+          <div class="comp-name">${escapeHtml(c.label)}</div>
+          <div class="comp-pills">${pillsHtml(c)}</div>
+        </div>
+        <div class="comp-right">
+          <span class="dist-chip">${fmtDist(c.dist)}</span>
+          <span class="chev">▾</span>
+        </div>
+      </div>
+      <div class="comp-detail">
+        <span class="flbl">Link anunț vânzare</span>
+        <div class="url-row">
+          <input type="url" placeholder="https://imobiliare.ro/..." value="${u}" oninput="setField(${c.id},'url',this.value)">
+        </div>
+        <div class="fields-grid">
+          <div><span class="flbl">Preț (€)</span><input type="number" min="0" value="${c.price}" oninput="setField(${c.id},'price',this.value)" placeholder="–"></div>
+          <div><span class="flbl">Suprafață (mp)</span><input type="number" min="0" value="${c.area}" oninput="setField(${c.id},'area',this.value)" placeholder="–"></div>
+          <div><span class="flbl">Camere</span><input type="number" min="0" value="${c.rooms}" oninput="setField(${c.id},'rooms',this.value)" placeholder="–"></div>
+          <div><span class="flbl">Tip</span><input type="text" value="${escapeHtml(c.ptype)}" oninput="setField(${c.id},'ptype',this.value)" placeholder="ap./casă/teren"></div>
+        </div>
+        <div class="comp-actions">
+          <a class="act act-link" id="lnk-${c.id}" href="${su||'#'}" target="_blank" rel="noopener" style="display:${su?'block':'none'}">Vezi anunțul ↗</a>
+          <button class="act" onclick="panTo(${c.lat},${c.lng})">Centrează</button>
+          <button class="act" onclick="streetView(${c.lat},${c.lng})">Street View</button>
+          <button class="act del" onclick="removeComp(${c.id})">Șterge</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  updateStats();
+}
+
+/* ============ ACȚIUNI ITEM ============ */
+window.toggleComp=function(id){
+  const c=state.comps.find(x=>x.id===id); if(!c) return;
+  c.open=!c.open;
+  const el=document.getElementById('comp-'+id); if(el) el.classList.toggle('open',c.open);
+};
+window.setField=function(id,f,v){
+  const c=state.comps.find(x=>x.id===id); if(!c) return;
+  c[f]=v;
+  const pl=document.querySelector('#comp-'+id+' .comp-pills'); if(pl) pl.innerHTML=pillsHtml(c);
+  if(f==='url'){ const a=document.getElementById('lnk-'+id), s=safeUrl(v); if(a){ a.href=s||'#'; a.style.display=s?'block':'none'; } }
+  updateStats();
+};
+window.panTo=function(lat,lng){ if(state.map) state.map.setView([lat,lng],17); };
+// Street View se deschide în Google Maps (link public, fără cheie)
+window.streetView=function(lat,lng){ window.open(`https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${lat},${lng}`,'_blank'); };
+window.removeComp=function(id){ const i=state.comps.findIndex(x=>x.id===id); if(i>-1){ const c=state.comps[i]; c.marker.remove(); if(c.line)c.line.remove(); state.comps.splice(i,1); recalc(); renderComps(); } };
+window.removeSubject=function(){ if(state.subject){ state.subject.marker.remove(); state.subject=null; recalc(); renderSubject(); } };
+
+/* ============ FOOTER ============ */
+function fitAll(){
+  if(!state.ready) return;
+  const pts=[]; if(state.subject) pts.push([state.subject.lat,state.subject.lng]);
+  state.comps.forEach(c=>pts.push([c.lat,c.lng]));
+  if(!pts.length){ toast('Nu există puncte de încadrat.'); return; }
+  if(pts.length===1) state.map.setView(pts[0],16); else state.map.fitBounds(pts,{padding:[80,80]});
+}
+function clearAll(){
+  if(!state.subject && !state.comps.length){ return; }
+  if(!confirm('Ștergi proprietatea subiect și toate comparabilele?')) return;
+  if(state.subject){state.subject.marker.remove(); state.subject=null;}
+  state.comps.forEach(c=>{c.marker.remove(); if(c.line)c.line.remove();});
+  state.comps=[]; recalc(); renderSubject(); renderComps(); toast('Toate punctele au fost șterse.');
+}
+function exportCSV(){
+  if(!state.comps.length && !state.subject){ toast('Nimic de exportat.'); return; }
+  const rows=[['Tip','Etichetă / Adresă','Latitudine','Longitudine','Distanță față de subiect (m)','Preț (€)','Suprafață (mp)','Preț unitar (€/mp)','Camere','Tip proprietate','Link anunț']];
+  if(state.subject) rows.push(['Proprietate subiect',state.subject.label,state.subject.lat,state.subject.lng,0,'','','','','','']);
+  state.comps.forEach((c,i)=>{
+    const ppm=(c.price&&c.area&&+c.area>0)?Math.round(+c.price/+c.area):'';
+    rows.push(['Comparabila '+(i+1),c.label,c.lat,c.lng,c.dist!=null?Math.round(c.dist):'',c.price||'',c.area||'',ppm,c.rooms||'',c.ptype||'',c.url||'']);
+  });
+  const csv='﻿'+rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='comparabile_'+new Date().toISOString().slice(0,10)+'.csv'; a.click();
+  toast('CSV exportat.');
+}
+
+/* ============ EVENIMENTE UI ============ */
+document.getElementById('searchBtn').addEventListener('click',searchAddress);
+document.getElementById('addrInput').addEventListener('keydown',e=>{if(e.key==='Enter')searchAddress();});
+document.getElementById('fitBtn').addEventListener('click',fitAll);
+document.getElementById('exportBtn').addEventListener('click',exportCSV);
+document.getElementById('clearBtn').addEventListener('click',clearAll);
+document.getElementById('modeToggle').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b) return;
+  state.addMode=b.dataset.mode;
+  document.querySelectorAll('#modeToggle button').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active');
+});
+
+/* ============ OVERLAY (legendă peste hartă, pe ecran) ============ */
+function renderOverlay(){
+  const ov=document.getElementById('mapOverlay'), tg=document.getElementById('ovToggle');
+  if(!ov||!tg) return;
+  const has=!!(state.subject||state.comps.length);
+  tg.style.display=(state.ready&&has)?'block':'none';
+  tg.textContent=state.overlayVisible?'Ascunde legenda':'Arată legenda';
+  if(!state.ready||!has||!state.overlayVisible){ ov.style.display='none'; return; }
+  let h=`<div class="ov-title">Proprietatea subiect &amp; comparabile</div>`;
+  if(state.subject){
+    h+=`<div class="ov-row"><span class="ov-pin subj">S</span><span class="ov-lbl">${escapeHtml(state.subject.label)}<span class="ov-sub">Proprietatea subiect</span></span></div>`;
+  }
+  state.comps.forEach((c,i)=>{
+    const ppm=(c.price&&c.area&&+c.area>0)?'  ·  '+fmtNum(Math.round(+c.price/+c.area))+' €/mp':'';
+    h+=`<div class="ov-row"><span class="ov-pin comp">${i+1}</span><span class="ov-lbl">${escapeHtml(c.label)}<span class="ov-sub">${fmtDist(c.dist)}${ppm}</span></span></div>`;
+  });
+  h+=`<div class="ov-foot">Generat ${new Date().toLocaleDateString('ro-RO')} · distanțe în linie dreaptă</div>`;
+  ov.innerHTML=h; ov.style.display='block';
+}
+document.getElementById('ovToggle').addEventListener('click',()=>{ state.overlayVisible=!state.overlayVisible; renderOverlay(); });
+['mapOverlay','ovToggle'].forEach(id=>{ const el=document.getElementById(id); L&&L.DomEvent&&L.DomEvent.disableClickPropagation(el); });
+
+/* ============ HARTA PENTRU EXPORT (desenată din plăci, fără Google Static Maps) ============ */
+const TS=256;
+const projX=(lng,z)=>(lng+180)/360*TS*2**z;
+const projY=(lat,z)=>{ const s=Math.sin(lat*Math.PI/180); return (0.5-Math.log((1+s)/(1-s))/(4*Math.PI))*TS*2**z; };
+function loadTile(url){
+  return new Promise(res=>{ const i=new Image(); i.crossOrigin='anonymous'; i.onload=()=>res(i); i.onerror=()=>res(null); i.src=url; });
+}
+/* Canvas w×h cu harta curentă (hartă / satelit), liniile și pinii. null dacă nu e niciun punct. */
+async function renderMapCanvas(w,h){
+  const pts=[]; if(state.subject) pts.push(state.subject); state.comps.forEach(c=>pts.push(c));
+  if(!pts.length) return null;
+  const pad=90, pinScale=1.25;
+  let z=17;
+  if(pts.length>1){
+    for(z=18;z>3;z--){
+      const xs=pts.map(p=>projX(p.lng,z)), ys=pts.map(p=>projY(p.lat,z));
+      if(Math.max(...xs)-Math.min(...xs)<=w-2*pad && Math.max(...ys)-Math.min(...ys)<=h-2*pad) break;
+    }
+  }
+  const xs=pts.map(p=>projX(p.lng,z)), ys=pts.map(p=>projY(p.lat,z));
+  const cx=(Math.max(...xs)+Math.min(...xs))/2, cy=(Math.max(...ys)+Math.min(...ys))/2+20; // un pic mai jos: pinii au vârful jos
+  const x0=cx-w/2, y0=cy-h/2;
+  const cv=document.createElement('canvas'); cv.width=w; cv.height=h;
+  const ctx=cv.getContext('2d');
+  ctx.fillStyle='#e9e4d8'; ctx.fillRect(0,0,w,h);
+  const urls=state.base==='sat' ? [TILES.sat.url,TILES.satLabels.url] : [TILES.map.url];
+  const n=2**z, jobs=[];
+  for(const u of urls){
+    for(let tx=Math.floor(x0/TS);tx<=Math.floor((x0+w)/TS);tx++){
+      for(let ty=Math.floor(y0/TS);ty<=Math.floor((y0+h)/TS);ty++){
+        if(ty<0||ty>=n) continue;
+        const wx=((tx%n)+n)%n;
+        jobs.push({u,tx,ty,p:loadTile(u.replace('{z}',z).replace('{x}',wx).replace('{y}',ty))});
+      }
+    }
+  }
+  for(const j of jobs){ const img=await j.p; if(img) ctx.drawImage(img,Math.round(j.tx*TS-x0),Math.round(j.ty*TS-y0)); }
+  const at=p=>[projX(p.lng,z)-x0, projY(p.lat,z)-y0];
+  // linii subiect → comparabile
+  if(state.subject){
+    const [sx,sy]=at(state.subject);
+    ctx.save(); ctx.strokeStyle='rgba(201,40,62,.75)'; ctx.lineWidth=2.5; ctx.setLineDash([6,9]);
+    state.comps.forEach(c=>{ const [x,y]=at(c); ctx.beginPath(); ctx.moveTo(sx,sy); ctx.lineTo(x,y); ctx.stroke(); });
+    ctx.restore();
+  }
+  const pin=(x,y,path,ax,ay,fill,lw,extra)=>{
+    ctx.save(); ctx.translate(x-ax*pinScale,y-ay*pinScale); ctx.scale(pinScale,pinScale);
+    ctx.shadowColor='rgba(0,0,0,.35)'; ctx.shadowBlur=4; ctx.shadowOffsetY=2;
+    const p=new Path2D(path); ctx.fillStyle=fill; ctx.fill(p);
+    ctx.shadowColor='transparent'; ctx.strokeStyle='#fff'; ctx.lineWidth=lw; ctx.stroke(p);
+    extra&&extra(); ctx.restore();
+  };
+  state.comps.forEach((c,i)=>{ const [x,y]=at(c); pin(x,y,COMP_PIN,19,46,'#157A6E',2.5,()=>{
+    ctx.fillStyle='#fff'; ctx.font='700 16px Verdana, Geneva, sans-serif'; ctx.textAlign='center'; ctx.textBaseline='alphabetic'; ctx.fillText(String(i+1),19,24); }); });
+  if(state.subject){ const [x,y]=at(state.subject); pin(x,y,SUBJ_PIN,23,56,'#C9283E',3,()=>{ ctx.fillStyle='#fff'; ctx.fill(new Path2D(SUBJ_HOUSE)); }); }
+  // atribuire
+  const attr=state.base==='sat' ? TILES.sat.attr : TILES.map.attr;
+  ctx.font='400 11px Arial, sans-serif'; const tw=ctx.measureText(attr).width;
+  ctx.fillStyle='rgba(255,255,255,.8)'; ctx.fillRect(w-tw-12,h-18,tw+12,18);
+  ctx.fillStyle='#333'; ctx.textAlign='right'; ctx.textBaseline='middle'; ctx.fillText(attr,w-6,h-9);
+  return cv;
+}
+
+function rr(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function trunc(ctx,t,maxW){ if(ctx.measureText(t).width<=maxW) return t; let s=t; while(s.length&&ctx.measureText(s+'…').width>maxW) s=s.slice(0,-1); return s+'…'; }
+function metaLines(){
+  const b=state.brand, out=[];
+  const d = b.evalDate ? new Date(b.evalDate) : new Date();
+  if(b.reportNo) out.push('Nr. raport: '+b.reportNo);
+  out.push('Data: '+d.toLocaleDateString('ro-RO'));
+  if(b.evaluator) out.push('Evaluator: '+b.evaluator);
+  return out;
+}
+function drawHeader(ctx,x,y,w){
+  const b=state.brand;
+  ctx.textAlign='left'; ctx.textBaseline='alphabetic';
+  // siglă
+  let textX=x;
+  const li=b.logoImg;
+  if(li && li.complete && li.naturalWidth>0){
+    const lh=54, lw=Math.min(230, lh*li.naturalWidth/li.naturalHeight);
+    ctx.drawImage(li, x, y, lw, lh);
+    textX=x+lw+18;
+  }
+  // firmă
+  const cW=w*0.62-(textX-x);
+  ctx.fillStyle='#1A1916'; ctx.font='600 25px Verdana, Geneva, sans-serif';
+  ctx.fillText(trunc(ctx, b.company||'', cW), textX, y+25);
+  ctx.fillStyle='#54514A'; ctx.font='400 13px Verdana, Geneva, sans-serif';
+  ctx.fillText(trunc(ctx, b.subtitle||'', cW), textX, y+46);
+  // meta dreapta
+  ctx.textAlign='right'; ctx.fillStyle='#6b6559'; ctx.font='400 12.5px Verdana, Geneva, sans-serif';
+  let my=y+14; metaLines().forEach(t=>{ ctx.fillText(trunc(ctx,t,w*0.36), x+w, my); my+=18; });
+  ctx.textAlign='left';
+  // linie chihlimbar
+  ctx.fillStyle='#F2A93B'; ctx.fillRect(x, y+70, w, 2);
+  // bandă titlu document
+  ctx.fillStyle='#1A1916'; ctx.font='600 22px Verdana, Geneva, sans-serif';
+  ctx.fillText(trunc(ctx,'Localizare proprietate subiect și comparabile', w), x, y+104);
+  ctx.fillStyle='#54514A'; ctx.font='400 13px Verdana, Geneva, sans-serif';
+  ctx.fillText('S = proprietatea subiect · numerele = comparabile · distanțe în linie dreaptă', x, y+124);
+}
+function drawCell(ctx,text,c,rowY,rowH,align){
+  const padX=10; let tx;
+  ctx.textAlign=align;
+  if(align==='left') tx=c.x+padX; else if(align==='right') tx=c.x+c.w-padX; else tx=c.x+c.w/2;
+  ctx.textBaseline='middle';
+  ctx.fillText(trunc(ctx,text,c.w-padX*2), tx, rowY+rowH/2+1);
+  ctx.textBaseline='alphabetic'; ctx.textAlign='left';
+}
+function drawTable(ctx,x,y,w,rows,rowH,tTitleH,tHeadH){
+  ctx.textAlign='left'; ctx.textBaseline='alphabetic';
+  ctx.fillStyle='#1A1916'; ctx.font='600 18px Verdana, Geneva, sans-serif';
+  ctx.fillText('Comparabile', x, y+20);
+  const ty=y+tTitleH;
+  const cols=[
+    {k:'nr',   t:'Nr',              w:44,  a:'center'},
+    {k:'addr', t:'Adresă / Locație',w:360, a:'left'},
+    {k:'dist', t:'Distanță',        w:104, a:'right'},
+    {k:'price',t:'Preț (€)',        w:128, a:'right'},
+    {k:'area', t:'Supraf. (mp)',    w:112, a:'right'},
+    {k:'ppm',  t:'€/mp',            w:108, a:'right'},
+    {k:'rooms',t:'Camere',          w:80,  a:'center'},
+    {k:'ptype',t:'Tip',             w:0,   a:'left'}
+  ];
+  let used=0; cols.forEach(c=>used+=c.w); cols[cols.length-1].w=w-used;
+  let cx=x; cols.forEach(c=>{ c.x=cx; cx+=c.w; });
+  // antet tabel
+  rr(ctx,x,ty,w,tHeadH,8); ctx.fillStyle='#1A1916'; ctx.fill();
+  ctx.fillStyle='#fff'; ctx.font='600 13px Verdana, Geneva, sans-serif';
+  cols.forEach(c=>drawCell(ctx,c.t,c,ty,tHeadH,c.a));
+  let ry=ty+tHeadH;
+  rows.forEach((r,i)=>{
+    ctx.fillStyle = r.nr==='S' ? '#FBE7EA' : (i%2 ? '#FAF7F1' : '#FFFFFF');
+    ctx.fillRect(x,ry,w,rowH);
+    ctx.strokeStyle='#ECE6DA'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(x,ry+rowH); ctx.lineTo(x+w,ry+rowH); ctx.stroke();
+    // badge
+    const bs=Math.min(26,rowH-12), bx=cols[0].x+(cols[0].w-bs)/2, by=ry+(rowH-bs)/2;
+    rr(ctx,bx,by,bs,bs,5); ctx.fillStyle=r.col; ctx.fill();
+    ctx.fillStyle='#fff'; ctx.font=`700 ${Math.round(bs*0.55)}px Verdana, Geneva, sans-serif`;
+    ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(r.nr,bx+bs/2,by+bs/2+1);
+    ctx.textBaseline='alphabetic'; ctx.textAlign='left';
+    // celule
+    cols.slice(1).forEach(c=>{
+      const val=String(r[c.k]||'');
+      if(c.k==='ppm'&&val){ ctx.fillStyle='#0d5a51'; ctx.font='700 13.5px Verdana, Geneva, sans-serif'; }
+      else { ctx.fillStyle='#1A1916'; ctx.font='400 13.5px Verdana, Geneva, sans-serif'; }
+      drawCell(ctx,val,c,ry,rowH,c.a);
+    });
+    ry+=rowH;
+  });
+  ctx.strokeStyle='#CFC4AE'; ctx.lineWidth=1.5;
+  rr(ctx,x,ty,w,tHeadH+rows.length*rowH,8); ctx.stroke();
+}
+/* --- geometrie + date pentru compunerea A4 (folosite de PNG și PDF) --- */
+function a4Layout(){
+  const rows=[];
+  if(state.subject) rows.push({nr:'S',col:'#C9283E',addr:state.subject.label,dist:'—',price:'',area:'',ppm:'',rooms:'',ptype:''});
+  state.comps.forEach((c,i)=>{
+    const ppm=(c.price&&c.area&&+c.area>0)?fmtNum(Math.round(+c.price/+c.area)):'';
+    rows.push({nr:String(i+1),col:'#157A6E',addr:c.label,dist:fmtDist(c.dist),
+      price:c.price?fmtNum(+c.price):'',area:c.area?fmtNum(+c.area):'',ppm,rooms:c.rooms||'',ptype:c.ptype||''});
+  });
+  const R=rows.length;
+  const W=1240, H=1754, M=52, usableW=W-2*M, usableH=H-2*M;
+  const headerH=128, gap1=10, gap2=26, tTitleH=34, tHeadH=40;
+  let rowH=42;
+  let mapH = usableH - headerH - gap1 - gap2 - (tTitleH + tHeadH + R*rowH);
+  if(mapH < 440){ rowH=Math.max(28,(usableH-headerH-gap1-gap2-440-tTitleH-tHeadH)/Math.max(R,1)); mapH=440; }
+  mapH = Math.min(mapH, 980);
+  return {rows,W,H,M,usableW,headerH,gap1,gap2,tTitleH,tHeadH,rowH,mapH,wBase:Math.round(usableW/2),hBase:Math.round(mapH/2)};
+}
+function buildA4Canvas(img,L){
+  const cv=document.createElement('canvas'); cv.width=L.W; cv.height=L.H;
+  const ctx=cv.getContext('2d');
+  ctx.fillStyle='#FFFFFF'; ctx.fillRect(0,0,L.W,L.H);
+  drawHeader(ctx,L.M,L.M,L.usableW);
+  const mapY=L.M+L.headerH+L.gap1;
+  ctx.drawImage(img,L.M,mapY,L.usableW,L.mapH);
+  ctx.strokeStyle='#CFC4AE'; ctx.lineWidth=1.5; ctx.strokeRect(L.M,mapY,L.usableW,L.mapH);
+  drawTable(ctx,L.M,mapY+L.mapH+L.gap2,L.usableW,L.rows,L.rowH,L.tTitleH,L.tHeadH);
+  return cv;
+}
+const CORS_MSG='Browserul a blocat compunerea imaginii din plăcile hărții. Încearcă din nou sau schimbă între Hartă și Satelit.';
+
+async function exportPNG(){
+  if(!state.ready){ toast('Harta nu este încărcată încă. Așteaptă câteva secunde sau reîmprospătează pagina.'); return; }
+  if(!state.subject && !state.comps.length){ toast('Adaugă cel puțin un punct pe hartă.'); return; }
+  toast('Se generează imaginea A4…');
+  try{ if(document.fonts&&document.fonts.ready) await document.fonts.ready; }catch(e){}
+  const L=a4Layout();
+  const img=await renderMapCanvas(L.usableW,Math.round(L.mapH));
+  try{
+    const data=buildA4Canvas(img,L).toDataURL('image/png');
+    const a=document.createElement('a'); a.href=data;
+    a.download='raport_comparabile_A4_'+new Date().toISOString().slice(0,10)+'.png'; a.click();
+    toast('PNG A4 exportat. Inserează-l în raport: Insert → Pictures.');
+  }catch(err){ toast(CORS_MSG,7000); }
+}
+document.getElementById('pngBtn').addEventListener('click',exportPNG);
+
+/* ============ EXPORT PDF (pagină A4) ============ */
+
+function loadScript(src){ return new Promise((res,rej)=>{ const s=document.createElement('script'); s.src=src; s.onload=res; s.onerror=()=>rej(new Error(src)); document.head.appendChild(s); }); }
+function ensureJsPDF(){
+  if(window.jspdf && window.jspdf.jsPDF) return Promise.resolve();
+  return loadScript('https://unpkg.com/jspdf@2.5.1/dist/jspdf.umd.min.js');
+}
+async function exportPDF(){
+  if(!state.ready){ toast('Harta nu este încărcată încă. Așteaptă câteva secunde sau reîmprospătează pagina.'); return; }
+  if(!state.subject && !state.comps.length){ toast('Adaugă cel puțin un punct pe hartă.'); return; }
+  toast('Se generează PDF-ul A4…');
+  try{ if(document.fonts&&document.fonts.ready) await document.fonts.ready; }catch(e){}
+  try{ await ensureJsPDF(); }catch(e){ toast('Nu am putut încărca biblioteca PDF (verifică conexiunea la internet).'); return; }
+  const L=a4Layout();
+  const img=await renderMapCanvas(L.usableW,Math.round(L.mapH));
+  let data;
+  try{ data=buildA4Canvas(img,L).toDataURL('image/png'); }
+  catch(err){ toast(CORS_MSG,7000); return; }
+  try{
+    const { jsPDF }=window.jspdf;
+    const doc=new jsPDF({unit:'mm',format:'a4',orientation:'portrait'});
+    doc.addImage(data,'PNG',0,0,210,297,undefined,'FAST');
+    doc.save('raport_comparabile_'+new Date().toISOString().slice(0,10)+'.pdf');
+    toast('PDF A4 exportat.');
+  }catch(err){ toast('Eroare la generarea PDF-ului.'); }
+}
+document.getElementById('pdfBtn').addEventListener('click',exportPDF);
+
+/* ============ EXPORT WORD (.docx) ============ */
+
+function ensureDocx(){
+  return new Promise((res,rej)=>{
+    if(window.docx) return res();
+    const s=document.createElement('script');
+    s.src='https://unpkg.com/docx@7.8.2/build/index.js';
+    s.onload=()=>res(); s.onerror=()=>rej(new Error('docx'));
+    document.head.appendChild(s);
+  });
+}
+function dataUrlToBytes(d){ const b=atob(d.split(',')[1]); const u=new Uint8Array(b.length); for(let i=0;i<b.length;i++) u[i]=b.charCodeAt(i); return u; }
+async function getMapPngBytes(){
+  const wBase=600,hBase=380;
+  const cv=await renderMapCanvas(wBase*2,hBase*2);
+  if(!cv) return null;
+  try{ return {bytes:dataUrlToBytes(cv.toDataURL('image/png')),w:wBase,h:hBase}; }catch(e){ return null; }
+}
+
+async function exportWord(){
+  if(!state.ready){ toast('Harta nu este încărcată încă. Așteaptă câteva secunde sau reîmprospătează pagina.'); return; }
+  if(!state.subject && !state.comps.length){ toast('Adaugă cel puțin un punct pe hartă.'); return; }
+  toast('Se generează documentul Word…');
+  try{ await ensureDocx(); }catch(e){ toast('Nu am putut încărca biblioteca Word (verifică conexiunea la internet).'); return; }
+  const D=window.docx;
+  let mapImg=null; try{ mapImg=await getMapPngBytes(); }catch(e){ mapImg=null; }
+
+  const cols=[
+    {k:'nr',t:'Nr',w:520,a:D.AlignmentType.CENTER},
+    {k:'addr',t:'Adresă / Locație',w:2500,a:D.AlignmentType.LEFT},
+    {k:'dist',t:'Distanță',w:950,a:D.AlignmentType.RIGHT},
+    {k:'price',t:'Preț (€)',w:1080,a:D.AlignmentType.RIGHT},
+    {k:'area',t:'Supraf. (mp)',w:1080,a:D.AlignmentType.RIGHT},
+    {k:'ppm',t:'€/mp',w:1000,a:D.AlignmentType.RIGHT},
+    {k:'rooms',t:'Camere',w:820,a:D.AlignmentType.CENTER},
+    {k:'ptype',t:'Tip',w:1150,a:D.AlignmentType.LEFT},
+    {k:'link',t:'Anunț',w:1240,a:D.AlignmentType.LEFT}
+  ];
+  const data=[];
+  if(state.subject) data.push({nr:'S',addr:state.subject.label,dist:'—',price:'',area:'',ppm:'',rooms:'',ptype:'subiect',url:''});
+  state.comps.forEach((c,i)=>{
+    const ppm=(c.price&&c.area&&+c.area>0)?fmtNum(Math.round(+c.price/+c.area)):'';
+    data.push({nr:String(i+1),addr:c.label,dist:fmtDist(c.dist),price:c.price?fmtNum(+c.price):'',area:c.area?fmtNum(+c.area):'',ppm,rooms:c.rooms||'',ptype:c.ptype||'',url:c.url||''});
+  });
+
+  const shade=(fill)=> fill?{type:D.ShadingType.CLEAR,fill,color:'auto'}:undefined;
+  const cell=(text,a,w,fill,bold,color)=>new D.TableCell({
+    width:{size:w,type:D.WidthType.DXA}, shading:shade(fill),
+    margins:{top:40,bottom:40,left:90,right:90},
+    children:[new D.Paragraph({alignment:a,children:[new D.TextRun({text:text||'',bold:!!bold,color:color||'1A1916',font:'Verdana',size:18})]})]
+  });
+  const linkCell=(url,w,fill)=> url ? new D.TableCell({
+      width:{size:w,type:D.WidthType.DXA}, shading:shade(fill), margins:{top:40,bottom:40,left:90,right:90},
+      children:[new D.Paragraph({children:[new D.ExternalHyperlink({link:url,children:[new D.TextRun({text:'Vezi anunțul',color:'1F3A5F',underline:{},font:'Verdana',size:18})]})]})]
+    }) : cell('—',D.AlignmentType.LEFT,w,fill);
+
+  const headerRow=new D.TableRow({tableHeader:true,children:cols.map(c=>cell(c.t,c.a,c.w,'1A1916',true,'FFFFFF'))});
+  const bodyRows=data.map((d,i)=>{
+    const fill = d.nr==='S' ? 'FBE7EA' : (i%2 ? 'FAF7F1' : undefined);
+    return new D.TableRow({children: cols.map(c=>{
+      if(c.k==='link') return linkCell(d.url,c.w,fill);
+      const val=String(d[c.k]||'');
+      const isPpm=c.k==='ppm'&&val;
+      return cell(val,c.a,c.w,fill,isPpm,isPpm?'0D5A51':'1A1916');
+    })});
+  });
+  const bd={style:D.BorderStyle.SINGLE,size:4,color:'CFC4AE'};
+  const table=new D.Table({
+    width:{size:100,type:D.WidthType.PERCENTAGE}, columnWidths:cols.map(c=>c.w),
+    borders:{top:bd,bottom:bd,left:bd,right:bd,insideHorizontal:bd,insideVertical:bd},
+    rows:[headerRow,...bodyRows]
+  });
+
+  const children=[
+    new D.Paragraph({children:[new D.TextRun({text:'Localizare proprietate subiect și comparabile',bold:true,font:'Verdana',size:32,color:'1A1916'})]}),
+    new D.Paragraph({spacing:{after:160},children:[new D.TextRun({text:'S = proprietatea subiect · numerele = comparabile · distanțe în linie dreaptă față de proprietatea subiect',italics:true,font:'Verdana',size:18,color:'54514A'})]})
+  ];
+  if(mapImg){
+    children.push(new D.Paragraph({alignment:D.AlignmentType.CENTER,children:[new D.ImageRun({data:mapImg.bytes,transformation:{width:mapImg.w,height:mapImg.h}})]}));
+    children.push(new D.Paragraph({alignment:D.AlignmentType.CENTER,spacing:{after:200},children:[new D.TextRun({text:'Fig. — Amplasarea proprietății subiect și a comparabilelor',font:'Verdana',size:16,color:'8A857C'})]}));
+  }else{
+    children.push(new D.Paragraph({spacing:{after:200},children:[new D.TextRun({text:'[Harta nu a putut fi inserată automat — folosește „Hartă PNG" și inseraz-o aici manual.]',italics:true,font:'Verdana',size:18,color:'C9283E'})]}));
+  }
+  children.push(table);
+  children.push(new D.Paragraph({spacing:{before:160},children:[new D.TextRun({text:'Generat '+new Date().toLocaleDateString('ro-RO'),font:'Verdana',size:16,color:'8A857C'})]}));
+
+  children.unshift(...wordHeader(D));
+  const doc=new D.Document({sections:[{properties:{page:{margin:{top:720,bottom:720,left:720,right:720}}},children}]});
+  try{
+    const blob=await D.Packer.toBlob(doc);
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+    a.download='raport_comparabile_'+new Date().toISOString().slice(0,10)+'.docx'; a.click();
+    toast(mapImg?'Document Word exportat.':'Word exportat (fără hartă — vezi nota din document).',6000);
+  }catch(e){ toast('Eroare la generarea documentului Word.'); }
+}
+document.getElementById('wordBtn').addEventListener('click',exportWord);
+
+function logoDim(h){ const li=state.brand.logoImg; return (li&&li.naturalWidth>0)?{w:Math.round(h*li.naturalWidth/li.naturalHeight),h}:{w:h,h}; }
+function wordHeader(D){
+  const b=state.brand, out=[];
+  const nb={style:D.BorderStyle.NONE,size:0,color:'auto'};
+  const tableNo={top:nb,bottom:nb,left:nb,right:nb,insideHorizontal:nb,insideVertical:nb};
+  const cellNo={top:nb,bottom:nb,left:nb,right:nb};
+  const left=[];
+  if(b.logo){ try{ const d=logoDim(46); left.push(new D.Paragraph({spacing:{after:40},children:[new D.ImageRun({data:dataUrlToBytes(b.logo),transformation:{width:d.w,height:d.h}})]})); }catch(e){} }
+  left.push(new D.Paragraph({children:[new D.TextRun({text:b.company||'',bold:true,font:'Verdana',size:30,color:'1A1916'})]}));
+  if(b.subtitle) left.push(new D.Paragraph({children:[new D.TextRun({text:b.subtitle,font:'Verdana',size:18,color:'54514A'})]}));
+  const meta=metaLines().map(t=>new D.Paragraph({alignment:D.AlignmentType.RIGHT,spacing:{after:20},children:[new D.TextRun({text:t,font:'Verdana',size:16,color:'6B6559'})]}));
+  out.push(new D.Table({
+    width:{size:100,type:D.WidthType.PERCENTAGE}, columnWidths:[6200,4200], borders:tableNo,
+    rows:[new D.TableRow({children:[
+      new D.TableCell({width:{size:6200,type:D.WidthType.DXA},borders:cellNo,children:left}),
+      new D.TableCell({width:{size:4200,type:D.WidthType.DXA},borders:cellNo,verticalAlign:D.VerticalAlign.CENTER,children:meta.length?meta:[new D.Paragraph({children:[]})]})
+    ]})]
+  }));
+  out.push(new D.Paragraph({spacing:{before:60,after:140},border:{bottom:{style:D.BorderStyle.SINGLE,size:12,color:'F2A93B'}},children:[new D.TextRun({text:'',size:2})]}));
+  return out;
+}
+
+state.brand.evalDate=new Date().toISOString().slice(0,10);
+
+/* ---------- Pornire ---------- */
+initMap();
+renderComps();
+renderOverlay();
+
+/* Lățimea panoului: glisorul dintre panou și hartă (mouse, deget, săgeți), 320 px … 60% din fereastră, ținută minte pe
+   acest dispozitiv; dublu clic revine la 400 px. */
+(()=>{
+  const app=document.getElementById('app'), sp=document.getElementById('split'), DEF=400, KEY='uvalo-comp-panel-w';
+  const clamp=v=>Math.max(320,Math.min(Math.round(innerWidth*.6),Math.round(v)));
+  let w=DEF; try{w=+localStorage.getItem(KEY)||DEF}catch(e){}
+  let raf=0;
+  const set=(v,save)=>{w=clamp(v);app.style.setProperty('--side',w+'px');sp.setAttribute('aria-valuenow',w);
+    cancelAnimationFrame(raf);raf=requestAnimationFrame(()=>state.map&&state.map.invalidateSize({pan:false}));
+    if(save)try{localStorage.setItem(KEY,String(w))}catch(e){}};
+  set(w);
+  sp.addEventListener('pointerdown',e=>{
+    e.preventDefault(); sp.setPointerCapture(e.pointerId); sp.classList.add('drag'); document.body.classList.add('resizing');
+    const x0=e.clientX, w0=w;
+    const mv=ev=>set(w0+ev.clientX-x0);
+    const up=()=>{sp.removeEventListener('pointermove',mv);sp.removeEventListener('pointerup',up);sp.removeEventListener('pointercancel',up);
+      sp.classList.remove('drag');document.body.classList.remove('resizing');set(w,true);state.map&&state.map.invalidateSize()};
+    sp.addEventListener('pointermove',mv);sp.addEventListener('pointerup',up);sp.addEventListener('pointercancel',up);
+  });
+  sp.addEventListener('dblclick',()=>set(DEF,true));
+  sp.addEventListener('keydown',e=>{const d=e.key==='ArrowLeft'?-40:e.key==='ArrowRight'?40:0;if(d){e.preventDefault();set(w+d,true)}});
+  addEventListener('resize',()=>set(w));
+})();
+</script>
+</body>
+</html>

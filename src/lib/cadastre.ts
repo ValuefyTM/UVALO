@@ -2,7 +2,7 @@
 // The centres are computed at build time (scripts/copy-localizare.mjs → /_localizare/c/<uat>.json).
 import { locatorAsset } from "./locator";
 
-type Uat = { key: string; name: string; n: number };
+type Uat = { key: string; name: string; county?: string | null; n: number };
 const cache = new Map<string, Promise<Record<string, [number, number]> | null>>();
 let uatList: Promise<Uat[]> | null = null;
 
@@ -26,7 +26,8 @@ export function cadastralRoot(v: string | null | undefined) {
   return m ? m[1].slice(0, 6) : null;
 }
 
-async function uats(req: Request) {
+/** The UATs of the locator (key, name, parcels with a centre), from the data built with the app. */
+export async function uats(req: Request) {
   uatList ??= locatorAsset("c/index.json", req).then((r) => (r ? (r.json() as Promise<Uat[]>) : [])).catch(() => []);
   const list = await uatList;
   // A failed first load (data not built yet, a hiccup) is not kept: the next request tries again.
