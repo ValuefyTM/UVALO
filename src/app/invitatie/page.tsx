@@ -1,31 +1,35 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
+import { maintenance } from "@/lib/maintenance";
 import { getDb } from "@/lib/db";
 import { inviteByToken } from "@/lib/auth";
 import { AcceptForm } from "./AcceptForm";
 
-export const metadata: Metadata = { title: "Invitație | VALUEFY Tools" };
+export const metadata: Metadata = { title: "Invitație | UVALO" };
 export const dynamic = "force-dynamic";
 
 export default async function Invitation({ searchParams }: { searchParams: Promise<{ token?: string }> }) {
+  const mdb = await getDb();
+  if (mdb && (await maintenance(mdb)).on) redirect("/mentenanta");
   const token = (await searchParams).token ?? "";
   const db = await getDb();
   const inv = db && token ? await inviteByToken(db, token) : null;
   return (
     <div className="authPage">
       <aside className="authSide">
-        <span className="brandPill" style={{ position: "relative", alignSelf: "flex-start" }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/valuefy-logo.png" alt="VALUEFY" style={{ height: 22, display: "block" }} />
-        </span>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/uvalo-logo.svg" alt="UVALO" style={{ position: "relative", height: 30, width: "auto", alignSelf: "flex-start", display: "block" }} />
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <span className="eyebrow" style={{ position: "relative", color: "var(--acc-light)" }}>VALUEFY TOOLS</span>
-          <h2>{inv?.org_name ? `Bine ai venit în contul ${inv.org_name}.` : "Bine ai venit în VALUEFY Tools."}</h2>
+          <span className="eyebrow" style={{ position: "relative", color: "var(--acc-light)" }}>UVALO</span>
+          <h2>{inv?.org_name ? `Bine ai venit în contul ${inv.org_name}.` : "Bine ai venit în UVALO."}</h2>
           <p>Activează-ți contul în mai puțin de un minut. Nu folosim parole: te autentifici cu un cod primit pe email.</p>
         </div>
         <p style={{ fontSize: 12 }}>Firmă autorizată ANEVAR</p>
       </aside>
       <main className="authMain">
         <div className="authBox">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img className="authLogoSm" src="/uvalo-logo-ink.svg" alt="UVALO" />
           {inv ? (
             <>
               <h1>Activează contul</h1>

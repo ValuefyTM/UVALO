@@ -15,7 +15,7 @@ self.addEventListener("activate", (e) => {
 const isTile = (u) => /arcgisonline\\.com|tile\\.openstreetmap\\.org/.test(u.hostname);
 const isLib = (u) => u.hostname === "cdnjs.cloudflare.com" || u.hostname === "cdn.jsdelivr.net" || u.hostname === "unpkg.com";
 const isData = (u) => u.origin === location.origin && (u.pathname.startsWith("/api/localizare/data/") || u.pathname === "/api/localizare/script" || u.pathname === "/api/localizare/track-js");
-const isStatic = (u) => u.origin === location.origin && (u.pathname.startsWith("/_next/static/") || /^\\/(loc-icon|valuefy-logo|icon)/.test(u.pathname) || u.pathname === "/api/localizare/manifest");
+const isStatic = (u) => u.origin === location.origin && (u.pathname.startsWith("/_next/static/") || /^\\/(loc-icon|valuefy-logo|uvalo-logo|icon)/.test(u.pathname) || u.pathname === "/api/localizare/manifest");
 
 async function trim() {
   const c = await caches.open(TILES); const ks = await c.keys();

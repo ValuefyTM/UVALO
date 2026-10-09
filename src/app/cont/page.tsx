@@ -4,7 +4,7 @@ import { AppShell } from "@/components/AppShell";
 import { AccountPanel, OfficeToggle } from "@/components/AccountPanel";
 import { canManageOrg, OFFICE_READY } from "@/lib/access";
 
-export const metadata: Metadata = { title: "Contul meu | VALUEFY Tools" };
+export const metadata: Metadata = { title: "Contul meu | UVALO" };
 export const dynamic = "force-dynamic";
 
 export default async function Account() {

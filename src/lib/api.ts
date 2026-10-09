@@ -1,6 +1,7 @@
 // Server-only helpers for route handlers.
 import { NextResponse } from "next/server";
 import { getDb } from "./db";
+import { maintenance } from "./maintenance";
 import { canManageOrg, context, type Ctx } from "./access";
 
 export const err = (error: string, status = 400) => NextResponse.json({ error }, { status });
@@ -16,6 +17,7 @@ export async function api(need: Need = "user"): Promise<{ db: D1Database; c: Ctx
   const c = await context(db);
   if (!c) return { res: err("Sesiunea a expirat. Autentifică-te din nou.", 401) };
   if (need === "super" && !c.super) return { res: err("Nu ai drepturi pentru această acțiune.", 403) };
+  if (!c.super && (await maintenance(db)).on) return { res: err("Platforma este în mentenanță. Revenim în curând.", 503) };
   if (need === "orgAdmin" && !(c.org && canManageOrg(c))) return { res: err("Doar administratorii firmei pot face asta.", 403) };
   return { db, c };
 }

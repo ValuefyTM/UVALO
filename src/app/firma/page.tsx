@@ -7,7 +7,7 @@ import { AppShell } from "@/components/AppShell";
 import { MembersPanel } from "@/components/forms";
 import { DayBars, EventLog, UatCountTable } from "@/components/Charts";
 
-export const metadata: Metadata = { title: "Firma mea | VALUEFY Tools" };
+export const metadata: Metadata = { title: "Firma mea | UVALO" };
 export const dynamic = "force-dynamic";
 
 export default async function Firm() {

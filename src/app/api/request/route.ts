@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { maintenance } from "@/lib/maintenance";
 import { getDb } from "@/lib/db";
 import { err, json } from "@/lib/api";
 import { createRequest } from "@/lib/requests";
@@ -7,6 +8,7 @@ import { createRequest } from "@/lib/requests";
 export async function POST(req: Request) {
   const db = await getDb();
   if (!db) return err("Serviciul nu este disponibil momentan.", 503);
+  if ((await maintenance(db)).on) return err("Platforma este în mentenanță. Revenim în curând.", 503);
   const r = await createRequest(db, await json(req));
   if (!r.ok) return err(r.error);
   return NextResponse.json({ ok: true, name: r.name });

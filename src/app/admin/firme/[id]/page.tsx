@@ -8,7 +8,7 @@ import { AdminShell } from "@/components/AdminShell";
 import { MembersPanel, OrgForm } from "@/components/forms";
 import { DayBars, EventLog, UatCountTable } from "@/components/Charts";
 
-export const metadata: Metadata = { title: "Firmă | VALUEFY Tools" };
+export const metadata: Metadata = { title: "Firmă | UVALO" };
 export const dynamic = "force-dynamic";
 
 export default async function AdminOrg({ params }: { params: Promise<{ id: string }> }) {

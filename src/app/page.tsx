@@ -5,7 +5,7 @@ import { AppShell } from "@/components/AppShell";
 import { CollabArt, LocatorArt, MarketArt } from "@/components/Art";
 import { Referral } from "@/components/Referral";
 
-export const metadata: Metadata = { title: "VALUEFY Tools" };
+export const metadata: Metadata = { title: "UVALO" };
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
@@ -13,7 +13,7 @@ export default async function Home() {
   const first = await firstName(db, c.user.name, c.user.anevar_no);
   const org = c.org;
   // Only the firm's name, and only when it is not just the person's own name (individual accounts).
-  const sub = org && org.name.trim().toLowerCase() !== c.user.name.trim().toLowerCase() ? org.name : c.super ? "Administrator VALUEFY" : undefined;
+  const sub = org && org.name.trim().toLowerCase() !== c.user.name.trim().toLowerCase() ? org.name : c.super ? "Administrator UVALO" : undefined;
   return (
     <AppShell c={c} active="home" title={`Bună${first ? `, ${first}` : ""}!`} subtitle={sub}>
       {c.block && !c.super && <div className="note">{c.block} Scrie-ne la <a className="rowLink" href="mailto:office@valuefy.ro">office@valuefy.ro</a> ca să reactivăm accesul.</div>}
@@ -51,7 +51,7 @@ export default async function Home() {
         <CollabArt />
         <div className="announceText">
           <span className="eyebrow">În curând · Portal de colaborări</span>
-          <h2>Colaborări între evaluatori, direct în VALUEFY Tools</h2>
+          <h2>Colaborări între evaluatori, direct în UVALO</h2>
           <p>Pregătim un spațiu în care evaluatorii autorizați ANEVAR lucrează împreună:</p>
           <ul>
             <li><b>Cereri de inspecție</b>: ai un dosar în alt oraș sau județ? Ceri unui coleg de acolo să facă inspecția.</li>

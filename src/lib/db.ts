@@ -1,6 +1,6 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 
-/** The VALUEFY Tools database (valuefy-tools-db), or null when unavailable. */
+/** The UVALO database (valuefy-tools-db), or null when unavailable. */
 export async function getDb(): Promise<D1Database | null> {
   try {
     const { env } = await getCloudflareContext({ async: true });

@@ -59,3 +59,40 @@ export function RequestActions({ id, name, plans, firms, until }: { id: string; 
     </form>
   );
 }
+
+/** Admin → Panou: maintenance mode (people see the maintenance page; UVALO administrators keep access). */
+export function MaintenanceCard({ on: on0, message: m0, placeholder }: { on: boolean; message: string; placeholder: string }) {
+  const [on, setOn] = useState(on0);
+  const [message, setMessage] = useState(m0);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState("");
+  const save = async (next: boolean) => {
+    if (next && !on && !confirm("Pornești mentenanța? Utilizatorii vor vedea doar pagina „Revenim în curând” până o oprești.")) return;
+    setBusy(true); setMsg("");
+    const e = await post("/api/admin/maintenance", { on: next, message });
+    setBusy(false);
+    if (e) return setMsg(e);
+    setOn(next);
+    setMsg(next ? "Mentenanța e pornită." : "Mentenanța e oprită: platforma e din nou deschisă tuturor.");
+  };
+  return (
+    <section className="card" style={{ borderColor: on ? "#e8b25c" : undefined, background: on ? "#fdf6ea" : undefined }}>
+      <div className="cardHead">
+        <h2>Mod mentenanță</h2>
+        <span className={`pill ${on ? "pillWarn" : "pillOk"}`}><i />{on ? "Pornit · utilizatorii văd pagina de mentenanță" : "Oprit · platforma e deschisă"}</span>
+      </div>
+      <p className="hint">Cât e pornit, utilizatorii văd doar pagina „Revenim în curând” (și nu se pot face cereri de cont sau accepta invitații). Administratorii UVALO folosesc platforma normal. API-ul folosit de CRM rămâne activ.</p>
+      <label className="field">Mesajul de pe pagina de mentenanță
+        <textarea className="textarea" rows={2} maxLength={300} value={message} placeholder={placeholder} onChange={(e) => setMessage(e.target.value)} />
+      </label>
+      {msg && <div role="status" className={msg.startsWith("Mentenanța") ? "okMsg" : "error"}>{msg}</div>}
+      <div className="actions" style={{ justifyContent: "flex-start" }}>
+        {on
+          ? <><button type="button" className="btn btnNavy btnSm" disabled={busy} onClick={() => save(false)}>{busy ? "…" : "Oprește mentenanța"}</button>
+            <button type="button" className="btn btnGhost btnSm" disabled={busy} onClick={() => save(true)}>Salvează mesajul</button>
+            <a className="link" href="/mentenanta?preview=1" target="_blank" rel="noreferrer" style={{ fontSize: 13 }}>Vezi pagina</a></>
+          : <button type="button" className="btn btnGhost btnSm" disabled={busy} onClick={() => save(true)}>{busy ? "…" : "Pornește mentenanța"}</button>}
+      </div>
+    </section>
+  );
+}

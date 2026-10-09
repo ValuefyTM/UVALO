@@ -4,7 +4,7 @@ import { listRequests, SPEC_LABEL } from "@/lib/requests";
 import { AdminShell } from "@/components/AdminShell";
 import { RequestActions } from "@/components/admin";
 
-export const metadata: Metadata = { title: "Solicitări | VALUEFY Tools Admin" };
+export const metadata: Metadata = { title: "Solicitări | UVALO Admin" };
 export const dynamic = "force-dynamic";
 
 export default async function Requests() {

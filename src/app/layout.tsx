@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "VALUEFY Tools",
+  title: "UVALO",
   description: "Instrumente pentru evaluatori: localizator cadastral și altele.",
   robots: { index: false, follow: false },
 };

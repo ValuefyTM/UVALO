@@ -1,11 +1,13 @@
 import type { Ctx } from "@/lib/access";
+import { maintenanceOn } from "@/lib/maintenance";
 import { initials } from "@/lib/guard";
 import { LogoutButton, MenuButton } from "./ClientBits";
 
 export type AdminKey = "panou" | "solicitari" | "recomandari" | "tablou" | "utilizatori" | "firme" | "activitate" | "planuri";
 
 /** VALUEFY administration portal: its own menu, separate from the tools the valuers use. */
-export function AdminShell(props: { c: Ctx; active: AdminKey; pending?: number; title: string; subtitle?: string; actions?: React.ReactNode; children: React.ReactNode }) {
+export async function AdminShell(props: { c: Ctx; active: AdminKey; pending?: number; title: string; subtitle?: string; actions?: React.ReactNode; children: React.ReactNode }) {
+  const mnt = await maintenanceOn();
   const { c } = props;
   const nav: [AdminKey, string, string][] = [
     ["panou", "Panou", "/admin"], ["solicitari", "Solicitări de cont", "/admin/solicitari"], ["recomandari", "Recomandări", "/admin/recomandari"], ["tablou", "Tablou ANEVAR", "/admin/tablou"],
@@ -15,10 +17,10 @@ export function AdminShell(props: { c: Ctx; active: AdminKey; pending?: number; 
     <div className="shell">
       <aside className="side">
         <div className="brand">
-          <span className="brandPill">
+          <a href="/" className="brandLogo" aria-label="UVALO">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/valuefy-logo.png" alt="VALUEFY" />
-          </span>
+            <img src="/uvalo-logo.svg" alt="UVALO" />
+          </a>
           <span className="brandLabel">Admin</span>
         </div>
         <nav className="nav" aria-label="Administrare">
@@ -29,15 +31,16 @@ export function AdminShell(props: { c: Ctx; active: AdminKey; pending?: number; 
           ))}
         </nav>
         <div className="me">
-          <a className="sideLink" href="/">← Aplicația VALUEFY Tools</a>
+          <a className="sideLink" href="/">← Aplicația UVALO</a>
           <div className="meCard">
             <span className="avatar">{initials(c.user.name, c.user.email)}</span>
-            <span className="meText"><b>{c.user.name || c.user.email}</b><small>Administrator VALUEFY</small></span>
+            <span className="meText"><b>{c.user.name || c.user.email}</b><small>Administrator UVALO</small></span>
           </div>
           <LogoutButton />
         </div>
       </aside>
       <div className="main">
+        {mnt && <div className="mntStrip">Mentenanță pornită: utilizatorii văd pagina „Revenim în curând”. Doar administratorii UVALO văd platforma. <a href="/admin">Oprește din Admin → Panou</a></div>}
         <header className="top">
           <div>
             <h1>{props.title}</h1>

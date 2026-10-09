@@ -79,10 +79,10 @@ export async function requestSignIn(db: D1Database, rawEmail: string) {
   const link = `${await origin()}/login/link?token=${encodeURIComponent(token)}`;
   await sendEmail({
     to: email,
-    subject: `Codul tău VALUEFY Tools: ${code}`,
-    text: `Codul tău de autentificare în VALUEFY Tools este ${code}.\nSau deschide linkul: ${link}\nCodul și linkul sunt valabile ${CODE_MINUTES} minute.`,
+    subject: `Codul tău UVALO: ${code}`,
+    text: `Codul tău de autentificare în UVALO este ${code}.\nSau deschide linkul: ${link}\nCodul și linkul sunt valabile ${CODE_MINUTES} minute.`,
     html: layout({
-      eyebrow: "VALUEFY Tools",
+      eyebrow: "UVALO",
       title: "Codul tău de autentificare",
       body: `<p style="margin:0 0 8px;font-size:15px;line-height:1.6;color:#4A4A4A">Introdu codul de mai jos în pagina de autentificare:</p>
 <p style="margin:16px 0;font-size:34px;font-weight:bold;letter-spacing:8px;font-family:ui-monospace,Menlo,monospace">${code}</p>
@@ -202,17 +202,17 @@ async function sendInviteEmail(db: D1Database, u: User, orgId: string | null, to
   const active = u.status === "active";
   const link = active ? `${await origin()}/login` : `${await origin()}/invitatie?token=${encodeURIComponent(token)}`;
   const hello = u.name ? `Bună, ${u.name.split(" ")[0]}!` : "Bună!";
-  const where = org ? `în contul firmei <strong style="color:#111111">${esc(org.name)}</strong>` : "ca administrator VALUEFY";
+  const where = org ? `în contul firmei <strong style="color:#111111">${esc(org.name)}</strong>` : "ca administrator UVALO";
   return sendEmail({
     to: u.email,
-    subject: org ? `Invitație în VALUEFY Tools — ${org.name}` : "Invitație în VALUEFY Tools",
-    text: `${hello}\n${by?.name || "VALUEFY"} te-a invitat în VALUEFY Tools${org ? `, în contul firmei ${org.name}` : ""}: instrumente pentru evaluatori (localizator cadastral și altele).\n${active ? "Intră cu adresa ta" : "Activează contul"}: ${link}`,
+    subject: org ? `Invitație în UVALO — ${org.name}` : "Invitație în UVALO",
+    text: `${hello}\n${by?.name || "Echipa UVALO"} te-a invitat în UVALO${org ? `, în contul firmei ${org.name}` : ""}: instrumente pentru evaluatori (localizator cadastral și altele).\n${active ? "Intră cu adresa ta" : "Activează contul"}: ${link}`,
     html: layout({
-      eyebrow: "VALUEFY Tools",
-      title: `${hello} Ai fost invitat(ă) în VALUEFY Tools.`,
-      body: `<p style="margin:0 0 10px;font-size:15px;line-height:1.65;color:#4A4A4A">${esc(by?.name || "VALUEFY")} te-a invitat ${where}. Găsești acolo instrumentele VALUEFY pentru evaluatori: localizatorul cadastral (număr cadastral, topo, adresă, locația ta pe parcelă) și, în curând, analize de piață.</p>
+      eyebrow: "UVALO",
+      title: `${hello} Ai fost invitat(ă) în UVALO.`,
+      body: `<p style="margin:0 0 10px;font-size:15px;line-height:1.65;color:#4A4A4A">${esc(by?.name || "Echipa UVALO")} te-a invitat ${where}. Găsești acolo instrumentele UVALO pentru evaluatori: localizatorul cadastral (număr cadastral, topo, adresă, locația ta pe parcelă) și, în curând, analize de piață.</p>
 <p style="margin:0;font-size:15px;line-height:1.65;color:#4A4A4A">Nu ai nevoie de parolă: te autentifici cu un cod primit pe email.</p>`,
-      button: { label: active ? "Intră în VALUEFY Tools →" : "Activează contul →", url: link },
+      button: { label: active ? "Intră în UVALO →" : "Activează contul →", url: link },
       foot: active ? "Dacă nu te aștepți la acest email, îl poți ignora." : `Invitația este valabilă ${INVITE_DAYS} zile. Dacă nu te aștepți la acest email, îl poți ignora.`,
     }),
   });

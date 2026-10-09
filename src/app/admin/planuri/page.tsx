@@ -5,7 +5,7 @@ import { AdminShell } from "@/components/AdminShell";
 import { PlanList, PlanUploader } from "@/components/plans";
 import { roDate } from "@/lib/plan-format";
 
-export const metadata: Metadata = { title: "Planuri cadastrale | VALUEFY Tools Admin" };
+export const metadata: Metadata = { title: "Planuri cadastrale | UVALO Admin" };
 export const dynamic = "force-dynamic";
 
 export default async function Planuri() {

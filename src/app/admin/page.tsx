@@ -4,8 +4,10 @@ import { fmtDate, superPage } from "@/lib/guard";
 import { activityByDay, topTargets } from "@/lib/orgs";
 import { AdminShell } from "@/components/AdminShell";
 import { DayBars, UatCountTable } from "@/components/Charts";
+import { MaintenanceCard } from "@/components/admin";
+import { DEFAULT_MESSAGE, maintenance } from "@/lib/maintenance";
 
-export const metadata: Metadata = { title: "Panou | VALUEFY Tools Admin" };
+export const metadata: Metadata = { title: "Panou | UVALO Admin" };
 export const dynamic = "force-dynamic";
 
 const since = (d: number) => new Date(Date.now() - d * 864e5).toISOString();
@@ -27,8 +29,10 @@ export default async function AdminHome() {
   ]);
   const pct = k && k.members ? Math.round((k.with_account / k.members) * 1000) / 10 : 0;
   const countyOf = await countyOfUats();
+  const mnt = await maintenance(db);
   return (
     <AdminShell c={c} active="panou" pending={pending} title="Panou" subtitle={k?.tablou ? `Tablou ANEVAR la ${fmtDate(k.tablou)}` : undefined}>
+      <MaintenanceCard on={mnt.on} message={mnt.message} placeholder={DEFAULT_MESSAGE} />
       <div className="kpis">
         <div className="kpi"><small>Membri în tablou</small><b>{(k?.members ?? 0).toLocaleString("ro-RO")}</b></div>
         <div className="kpi"><small>Cu cont activ</small><b>{k?.with_account ?? 0} <span className="muted" style={{ fontSize: 13 }}>· {pct}%</span></b></div>

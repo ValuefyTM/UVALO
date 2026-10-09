@@ -1,4 +1,4 @@
-/* VALUEFY Tools — tokens and building blocks shared with the CRM (Portal colaboratori design). */
+/* UVALO — tokens and building blocks shared with the CRM (Portal colaboratori design). */
 :root {
   --navy: #111111; --navy-hover: #2a2a2a; --navy-deep: #000000;
   --acc: #f2a93b; --acc-ink: #e0931a; --acc-text: #9a5f00; --acc-light: #f5be66; --acc-soft: #fdf1dc; --acc-line: #f5d9a6;
@@ -546,7 +546,7 @@ a.rMeta:hover u { color: var(--acc-light); }
 .vfModalBox h2 { margin: 0; font-size: 19px; letter-spacing: -0.02em; }
 .formRow { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
 
-/* ---------- VALUEFY Tools ---------- */
+/* ---------- UVALO ---------- */
 .orgSwitch { background: rgba(255, 255, 255, 0.08); color: #fff; border-color: rgba(255, 255, 255, 0.18); height: 38px; font-size: 12px; }
 .orgSwitch option { color: var(--ink); }
 .tools { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
@@ -638,3 +638,26 @@ a.rMeta:hover u { color: var(--acc-light); }
 /* tables grouped by county (localities) */
 .table tr.groupRow td { background: var(--cream); font-size: 11px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); padding-top: 9px; padding-bottom: 9px; }
 .table tbody tr.groupRow:hover { background: var(--cream); }
+/* UVALO logo: in the dark sidebar; above the sign-in form on the phone (the dark side panel is hidden there) */
+.brandLogo { display: block; line-height: 0; }
+.brandLogo img { display: block; height: 24px; width: auto; }
+.authLogoSm { display: none; height: 26px; width: auto; align-self: flex-start; margin-bottom: 6px; }
+@media (max-width: 899px) { .authLogoSm { display: block; } }
+.okMsg { font-size: 13px; font-weight: 700; color: var(--ok-text); }
+/* maintenance page (/mentenanta) */
+.mntPage { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px 16px; background: #141414; color: #fff; position: relative; overflow: hidden; }
+.mntPage::after { content: ""; position: absolute; top: -200px; right: -200px; width: 560px; height: 560px; border-radius: 50%; background: radial-gradient(closest-side, rgba(242, 169, 59, 0.22), transparent); pointer-events: none; }
+.mntBox { position: relative; z-index: 1; width: min(520px, 100%); display: flex; flex-direction: column; gap: 14px; }
+.mntLogo { height: 40px; width: auto; align-self: flex-start; margin-bottom: 18px; }
+.mntEyebrow { font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: #F2A93B; }
+.mntBox h1 { margin: 0; font-size: clamp(30px, 6vw, 42px); letter-spacing: -0.04em; line-height: 1.1; }
+.mntBox p { margin: 0; font-size: 15px; line-height: 1.65; color: #CFC6BA; }
+.mntBox .mntSmall { font-size: 12.5px; color: #A79E92; }
+.mntBox .mntSmall a { color: #F2A93B; }
+.mntActions { margin-top: 10px; display: flex; gap: 12px; align-items: center; }
+.mntActions .logout { padding: 0 16px; }
+.mntLink { font-size: 13px; font-weight: 700; color: #CFC6BA; }
+.mntLink:hover { color: #fff; }
+/* administrators while maintenance is on */
+.mntStrip { background: #F2A93B; color: #1A1714; font-size: 12px; font-weight: 700; padding: 8px 16px; text-align: center; }
+.mntStrip a { color: #1A1714; text-decoration: underline; }
