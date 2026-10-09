@@ -8,7 +8,7 @@
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"name": "tools",
-	"main": ".open-next/worker.js",
+	"main": "worker.ts",
 	"compatibility_date": "2026-09-25",
 	"compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
 	"keep_vars": true,
