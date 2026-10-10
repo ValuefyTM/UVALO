@@ -13,13 +13,13 @@ export async function locatorAsset(path: string, req: Request) {
   return res.ok ? res : null;
 }
 
-/** The signed-in person when they may use the locator; otherwise why not. */
-export async function locatorAccess(): Promise<{ db: D1Database; c: Ctx } | { status: 401 | 403 | 503; c?: Ctx; maintenance?: boolean }> {
+/** The signed-in person when they may use the locator (or another module served the same way); otherwise why not. */
+export async function locatorAccess(module = "localizare"): Promise<{ db: D1Database; c: Ctx } | { status: 401 | 403 | 503; c?: Ctx; maintenance?: boolean }> {
   const db = await getDb();
   if (!db) return { status: 503 };
   const c = await context(db);
   if (!c) return { status: 401 };
   if (!c.super && (await maintenance(db)).on) return { status: 503, c, maintenance: true };
-  if (!c.modules.includes("localizare")) return { status: 403, c };
+  if (!c.modules.includes(module)) return { status: 403, c };
   return { db, c };
 }

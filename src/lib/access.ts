@@ -14,6 +14,7 @@ export type Membership = { org_id: string; org_name: string; role: Role; org_sta
 /** Modules of the platform; more come later (analize de piață…). */
 export const MODULES = [
   { key: "localizare", name: "Localizator cadastral", href: "/localizare", desc: "Număr cadastral, topo, adresă sau locația ta pe teren, pe planurile cadastrale din Timiș." },
+  { key: "comparabile", name: "Localizator de comparabile", href: "/comparabile", desc: "Pune subiectul și comparabilele pe hartă, cu distanța până la fiecare. Gata de inserat în raport." },
 ] as const;
 
 export const ORG_SQL = `SELECT o.*, p.name AS plan_name, p.modules FROM orgs o JOIN plans p ON p.id = o.plan_id`;

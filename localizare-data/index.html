@@ -396,22 +396,22 @@ if(GM){
   roads=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}',{maxZoom:21,maxNativeZoom:19,opacity:.85}).addTo(map);
   osm=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:21,maxNativeZoom:19,attribution:'© OpenStreetMap'});
 }
-const ivL=L.layerGroup(), all=L.layerGroup().addTo(map), bL=L.layerGroup().addTo(map), sel=L.layerGroup().addTo(map), lblL=L.layerGroup().addTo(map);
+const all=L.layerGroup().addTo(map), bL=L.layerGroup().addTo(map), sel=L.layerGroup().addTo(map), lblL=L.layerGroup().addTo(map);
 const cadLbl=L.layerGroup(), topoLbl=L.layerGroup(), uatLbl=L.layerGroup();   // comutatoare pentru etichete (se desenează doar la zoom mare)
 /* Straturi (panoul din dreapta sus): fundal Satelit / Hartă și straturile cu bife. Google: „Străzi” = satelitul cu străzi. */
-const LY={base:'sat',strazi:true,uat:true,parcele:true,constructii:true,puncte:true,cad:false,topo:false,intravilan:false};
+const LY={base:'sat',strazi:true,uat:true,parcele:true,constructii:true,puncte:true,cad:false,topo:false};
 // Alegerile din panou rămân ținute minte pe acest dispozitiv.
 const LY_KEY='uvalo-cad-layers';
 try{const s=JSON.parse(localStorage.getItem(LY_KEY)||'{}');for(const k in LY)if(typeof s[k]===typeof LY[k]&&(k!=='base'||s[k]==='sat'||s[k]==='map'))LY[k]=s[k]}catch(e){}
 const saveLayers=()=>{try{localStorage.setItem(LY_KEY,JSON.stringify(LY))}catch(e){}};
-const LAYERS=[['strazi','Străzi'],['uat','Nume localități'],['parcele','Parcele'],['constructii','Construcții'],['puncte','Numere puncte'],['cad','Numere cadastrale'],['topo','Numere topo'],['intravilan','Intravilan istoric (1:5000)']];
+const LAYERS=[['strazi','Străzi'],['uat','Nume localități'],['parcele','Parcele'],['constructii','Construcții'],['puncte','Numere puncte'],['cad','Numere cadastrale'],['topo','Numere topo']];
 const put=(l,on)=>{if(!l)return;if(on){if(!map.hasLayer(l))l.addTo(map)}else if(map.hasLayer(l))map.removeLayer(l)};
 function applyLayers(){
   const want=LY.base==='map'?osm:(GM&&LY.strazi?hyb:sat);
   [hyb,sat,osm].forEach(l=>{if(l&&l!==want)put(l,false)});
   if(want&&!map.hasLayer(want)){want.addTo(map);want.bringToBack();map.fire('baselayerchange',{layer:want})}
   put(roads,LY.base==='sat'&&LY.strazi);
-  put(all,LY.parcele);put(bL,LY.constructii);put(cadLbl,LY.cad);put(topoLbl,LY.topo);put(ivL,LY.intravilan);put(uatLbl,LY.uat);
+  put(all,LY.parcele);put(bL,LY.constructii);put(cadLbl,LY.cad);put(topoLbl,LY.topo);put(uatLbl,LY.uat);
   $('mapwrap').classList.toggle('nopts',!LY.puncte);
   $('bases').innerHTML=[['sat','Satelit'],['map','Hartă']].map(([k,l])=>'<button type="button" data-base="'+k+'" aria-pressed="'+(LY.base===k)+'">'+l+'</button>').join('');
   $('lyrList').innerHTML=LAYERS.map(([k,l])=>'<button type="button" data-ly="'+k+'" aria-pressed="'+LY[k]+'"><i></i>'+l+'</button>').join('');
@@ -440,7 +440,6 @@ function refreshLabels(){
   if(cur&&cur.id!==undefined)lg.push('<span><i style="border:2px solid #F2A93B;background:rgba(242,169,59,.25)"></i><b>Parcela '+esc(cur.id)+'</b></span>');
   else if(cur)lg.push('<span><i style="border:2px solid #ffd21f;background:#D9432B"></i><b>'+esc(cur.c||'Construcție')+'</b></span>');
   if(map.hasLayer(bL))lg.push('<span><i style="background:#D9432B"></i>Construcții</span>');
-  if(map.hasLayer(ivL))lg.push('<span><i style="background:none;border:2px dashed #2bd4c4"></i>Intravilan istoric</span>');
   if((map.hasLayer(cadLbl)||map.hasLayer(topoLbl))&&z<LBLZ)lg.push('<span>Apropie harta ca să vezi numerele</span>');
   $('legend').innerHTML=lg.join('<span class="sep"></span>');$('legend').hidden=!lg.length;
 }
@@ -522,10 +521,9 @@ async function loadUat(key){
   // Parcels kept from an earlier plan go under the current ones, which get the clicks where they overlap.
   const ls=P.map(p=>{const l=L.polygon(p.w,base);l.bindTooltip(p.id,{className:'pl',sticky:true,direction:'top'});l.on('click',()=>{$('q').value=p.id;show(p.id,p.i,true)});return l});
   P.forEach((p,i)=>{if(p.o)ls[i].addTo(all)});P.forEach((p,i)=>{if(!p.o)ls[i].addTo(all)});
-  bL.clearLayers(); ivL.clearLayers();
+  bL.clearLayers();
   const bst={color:'#9e1218',weight:1,fillColor:'#e3262e',fillOpacity:.78};
   BL.forEach(b=>{const l=L.polygon(b.w,bst);l.on('click',ev=>{L.DomEvent.stopPropagation(ev);showBuilding(b,true)});l.addTo(bL)});
-  D.IV.forEach(v=>L.polygon(v.w,{color:'#2bd4c4',weight:2,dashArray:'6 5',fill:false,interactive:false}).bindTooltip(v.name).addTo(ivL));
   map.fitBounds(L.featureGroup(ls).getBounds(),{animate:false});
   drawHulls(); refreshLabels();
   $('hint').textContent=byId.size.toLocaleString('ro-RO')+' imobile și '+BL.length.toLocaleString('ro-RO')+' de construcții în '+u.name+(U.date?' · date cadastrale la '+U.date:'')+'.';
@@ -665,7 +663,6 @@ function show(id,idx,fromMap){
   let h=(lastNear&&lastNear.ids.has(p.id)?'<button type="button" class="back" id="back">← Înapoi la parcelele din jurul adresei</button>':'')+
     rhead('Nr. cadastral · '+esc(U.name),p.id,list.length>1?'<span class="pill">contur '+(list.indexOf(p)+1)+' din '+list.length+'</span>':'');
   h+='<div class="facts"><div><small>Suprafață</small><b>'+fmt(p.a,2)+' mp</b></div><div><small>Perimetru</small><b>'+fmt(g.per,2)+' m</b></div><div><small>Puncte</small><b>'+p.s.length+'</b></div></div>';
-  h+='<div class="zone"><span>ZONĂ</span><span>'+(p.iv?'În intravilanul istoric al localității <b>'+esc(p.iv)+'</b> (plan 1:5000).':'În afara intravilanului istoric din plan. Poate fi totuși intravilan prin PUG/PUZ. Verifică în extrasul CF.')+'</span></div>';
   if(p.f&&p.f.includes('shared'))h+='<div class="flag">Același contur are mai multe numere cadastrale în plan (posibilă dezmembrare sau alipire). Verifică în extrasul CF.</div>';
   if(list.length>1)h+='<div class="flag">Numărul apare pe mai multe contururi:<br>'+list.map((q,k)=>'<button type="button" class="chip" data-i="'+q.i+'">contur '+(k+1)+'</button>').join('')+'</div>';
   h+=centerCard(p);
@@ -891,6 +888,12 @@ $('uatSel').addEventListener('change',async e=>{setErr('');if(!e.target.value)re
     $('hint').textContent=(COUNTIES.length>1?COUNTIES.length+' județe, ':'')+UATS.length+' de localități și '+UATS.reduce((s,u)=>s+u.n,0).toLocaleString('ro-RO')+' de imobile'+(COUNTIES.length===1?' în '+COUNTIES[0]:'')+'.';
     $('foot').textContent='Sursă: planuri cadastrale ANCPI / OCPI '+COUNTIES.join(', ')+'. Informațiile au caracter orientativ și nu înlocuiesc extrasul de carte funciară sau documentația cadastrală.';
     $('out').innerHTML='<p class="empty">Alege localitatea și caută numărul cadastral. Poți căuta și după adresă, fără să alegi localitatea, sau poți da click pe o parcelă de pe hartă.</p>'}
+  // Din bara de căutare a paginii de start: o adresă / coordonate (?adr=), sau un număr cadastral / topo în UAT-ul ales (?uat=&q=).
+  const sp=new URLSearchParams(location.search);
+  if(sp.get('adr')){setMode('adr');$('addr').value=sp.get('adr');addrSearch(sp.get('adr'))}
+  else if(sp.get('uat')&&UATS.some(u=>u.key===sp.get('uat'))){await loadUat(sp.get('uat'));history.replaceState(null,'','#'+U.key);
+    if(sp.get('q')){q.value=sp.get('q');$('f').requestSubmit()}}
+  if(location.search)history.replaceState(null,'',location.pathname+location.hash);
 })();
 </script>
 <script>

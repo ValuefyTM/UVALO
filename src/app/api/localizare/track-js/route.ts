@@ -33,7 +33,9 @@ const JS = `(() => {
   };
   let lastUat = null;
   wrap("loadUat", null, () => { const n = uat(); if (n && n !== lastUat) { lastUat = n; track("uat_open", n, { county: U.county || null }); } });
-  wrap("show", (id, idx, fromMap) => track("parcel", id, { uat: uat(), via: fromMap ? "hartă" : "căutare" }));
+  // the area goes with it, for the list of recent parcels on the home page
+  const area = (id, idx) => { try { const l = byId.get(id); const p = l && l[idx || 0]; return p && p.a ? Math.round(p.a) : null; } catch { return null; } };
+  wrap("show", (id, idx, fromMap) => track("parcel", id, { uat: uat(), via: fromMap ? "hartă" : "căutare", a: area(id, idx) }));
   wrap("showBuilding", (b) => track("building", b && b.c, { uat: uat() }));
   wrap("topoSearch", (v) => track("search_topo", v, { uat: uat() }));
   wrap("addrSearch", (v) => track("address", v));
