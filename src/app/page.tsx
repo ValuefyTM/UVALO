@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { firstName, page } from "@/lib/guard";
 import { uats } from "@/lib/cadastre";
 import { AppShell } from "@/components/AppShell";
-import { CollabIcon, ComparablesBand, LocatorBand, MarketIcon } from "@/components/Art";
+import { CollabIcon, ComparablesBand, LocatorBand, MarketIcon, SiteBand } from "@/components/Art";
 import { NotifyButton } from "@/components/NotifyButton";
 import { QuickSearch } from "@/components/QuickSearch";
 import { Referral } from "@/components/Referral";
@@ -12,6 +12,7 @@ export const dynamic = "force-dynamic";
 
 const TOOLS = [
   { key: "localizare", href: "/localizare", name: "Localizator cadastral", desc: "Parcele, Stereo 70, fișă PDF", Band: LocatorBand, isNew: false },
+  { key: "amplasament", href: "/amplasament", name: "Analiza amplasamentului", desc: "Fișa amplasamentului și textul pentru raport, cu AI", Band: SiteBand, isNew: true },
   { key: "comparabile", href: "/comparabile", name: "Comparabile", desc: "Subiectul și comparabilele pe hartă, cu distanțe", Band: ComparablesBand, isNew: true },
 ];
 const SOON = [
@@ -64,7 +65,7 @@ export default async function Home() {
         <section className="homeWork" aria-label="Caută un imobil">
           {loc ? (
             <>
-              <QuickSearch uats={list.map((u) => ({ key: u.key, name: u.name, county: u.county ?? "Timiș" }))} />
+              <QuickSearch uats={list.map((u) => ({ key: u.key, name: u.name, county: u.county ?? "Timiș" }))} amp={c.modules.includes("amplasament")} />
               <h2 className="homeSec">Ultimele imobile căutate</h2>
               {recent.length ? (
                 <ul className="recent">

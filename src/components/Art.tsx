@@ -19,6 +19,25 @@ export function LocatorBand() {
   );
 }
 
+/** The site analysis: the parcel inside its radius, the numbered amenities around and a line of text (wide band). */
+export function SiteBand() {
+  const pois: [number, number][] = [[188, 24], [282, 20], [300, 58], [176, 56]];
+  return (
+    <svg className="toolBand" viewBox="0 0 480 78" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Parcela în zona ei, cu dotările din jur">
+      <rect width="480" height="78" fill="#161616" />
+      <g stroke="#fff" strokeOpacity="0.1"><path d="M0 40 L480 40 M0 12 L480 12 M0 68 L480 68 M120 0 L120 78 M236 0 L236 78 M352 0 L352 78" /></g>
+      <circle cx="236" cy="40" r="34" fill="none" stroke="#f2a93b" strokeOpacity="0.45" strokeDasharray="3 4" />
+      <path d="M228 33 L245 31 L246 47 L229 49 Z" fill="#c23a2e" stroke="#fff" strokeWidth="1.2" />
+      <g fontFamily="Verdana, sans-serif" fontSize="7" fontWeight="700" fill="#fff" textAnchor="middle">
+        {pois.map(([x, y], i) => <g key={x}><circle cx={x} cy={y} r="5.5" fill="#1f6f63" /><text x={x} y={y + 2.5}>{i + 1}</text></g>)}
+      </g>
+      <rect x="318" y="26" width="72" height="5" rx="2.5" fill="#fff" fillOpacity="0.5" />
+      <rect x="318" y="36" width="58" height="5" rx="2.5" fill="#fff" fillOpacity="0.3" />
+      <rect x="318" y="46" width="66" height="5" rx="2.5" fill="#f2a93b" fillOpacity="0.6" />
+    </svg>
+  );
+}
+
 /** The comparables tool: the subject (house) linked to numbered comparables, with a distance (wide band). */
 export function ComparablesBand() {
   const comps: [number, number][] = [[176, 20], [296, 18], [314, 60], [158, 60]];

@@ -31,7 +31,7 @@ function read(text: string, uats: Uat[]) {
  * ("413830 Giroc", "413830, Giroc, Timiș"): the bar finds the UAT and county in the text and says so; without them it
  * asks for them. An address or coordinates go to the locator's address search.
  */
-export function QuickSearch({ uats }: { uats: Uat[] }) {
+export function QuickSearch({ uats, amp = false }: { uats: Uat[]; amp?: boolean }) {
   const [text, setText] = useState("");
   const [tried, setTried] = useState(false);
   const r = useMemo(() => read(text, uats), [text, uats]);
@@ -41,12 +41,16 @@ export function QuickSearch({ uats }: { uats: Uat[] }) {
     r.ask === "county" ? `„${r.options![0].name}” există în mai multe județe: scrie și județul (${r.options!.map((u) => u.county).join(" sau ")}).` :
     "Nu recunosc localitatea. Scrie UAT-ul așa cum apare în localizator, de exemplu „413830 Giroc, Timiș”.";
 
-  const go = (e: React.FormEvent) => {
+  // "Localizează" opens the cadastral locator, "Analiză amplasament" the site analysis (same text, same rules).
+  const go = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setTried(true);
+    const toAmp = ((e.nativeEvent as SubmitEvent).submitter as HTMLButtonElement | null)?.value === "amp";
     if (r.kind === "empty") return;
-    if (r.kind === "address") { location.href = `/localizare?adr=${encodeURIComponent(r.q)}`; return; }
-    if (r.uat) location.href = `/localizare?uat=${encodeURIComponent(r.uat.key)}&q=${encodeURIComponent(r.nr)}`;
+    if (r.kind === "address") { location.href = toAmp ? `/amplasament?adr=${encodeURIComponent(r.q)}` : `/localizare?adr=${encodeURIComponent(r.q)}`; return; }
+    if (r.uat) location.href = toAmp
+      ? `/amplasament?uat=${encodeURIComponent(r.uat.key)}&nr=${encodeURIComponent(r.nr)}`
+      : `/localizare?uat=${encodeURIComponent(r.uat.key)}&q=${encodeURIComponent(r.nr)}`;
   };
 
   return (
@@ -55,7 +59,8 @@ export function QuickSearch({ uats }: { uats: Uat[] }) {
       <div className="quickRow">
         <input id="quickQ" className="quickInput" name="q" value={text} onChange={(e) => { setText(e.target.value); setTried(false); }}
           placeholder="Nr. cadastral și localitatea (413830 Giroc), adresă sau coordonate" autoComplete="off" />
-        <button type="submit" className="quickBtn">Caută</button>
+        <button type="submit" className="quickBtn" value="loc">Localizează</button>
+        {amp && <button type="submit" className="quickBtn alt" value="amp">Analiză amplasament</button>}
       </div>
       {r.kind === "number" && r.uat && <p className="quickHint">Nr. <b>{r.nr}</b> în <b>{r.uat.name}</b>, județul {r.uat.county}</p>}
       {r.kind === "address" && <p className="quickHint">Caut adresa sau coordonatele pe hartă</p>}

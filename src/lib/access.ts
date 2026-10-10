@@ -14,6 +14,7 @@ export type Membership = { org_id: string; org_name: string; role: Role; org_sta
 /** Modules of the platform; more come later (analize de piață…). */
 export const MODULES = [
   { key: "localizare", name: "Localizator cadastral", href: "/localizare", desc: "Număr cadastral, topo, adresă sau locația ta pe teren, pe planurile cadastrale din Timiș." },
+  { key: "amplasament", name: "Analiza amplasamentului", href: "/amplasament", desc: "Fișa amplasamentului din planul cadastral și OpenStreetMap, cu text pentru raport generat cu AI." },
   { key: "comparabile", name: "Localizator de comparabile", href: "/comparabile", desc: "Pune subiectul și comparabilele pe hartă, cu distanța până la fiecare. Gata de inserat în raport." },
 ] as const;
 

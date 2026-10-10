@@ -5,7 +5,7 @@ import { initials } from "@/lib/guard";
 import { LogoutButton, MenuButton, OrgSwitch } from "./ClientBits";
 import { Referral } from "./Referral";
 
-type Key = "home" | "localizare" | "comparabile" | "firma" | "cont";
+type Key = "home" | "localizare" | "amplasament" | "comparabile" | "firma" | "cont";
 
 /** Sidebar layout (VALUEFY design), with the menu the person is entitled to. */
 export async function AppShell(props: { c: Ctx; active: Key; title: string; subtitle?: string; actions?: React.ReactNode; children: React.ReactNode }) {
@@ -14,13 +14,14 @@ export async function AppShell(props: { c: Ctx; active: Key; title: string; subt
   const nav: { key: Key; label: string; href: string; soon?: boolean }[] = [
     { key: "home", label: "Acasă", href: "/" },
     { key: "localizare", label: "Localizator cadastral", href: "/localizare" },
+    { key: "amplasament", label: "Analiza amplasamentului", href: "/amplasament" },
     { key: "comparabile", label: "Localizator de comparabile", href: "/comparabile" },
     // "Firma mea" only for those who turned on "Lucrez ca birou de evaluare" in their account.
     ...(OFFICE_READY && c.org && canManageOrg(c) && c.user.is_office ? [{ key: "firma" as const, label: "Firma mea", href: "/firma" }] : []),
   ];
   // Phone: the main pages in the bottom menu, the rest (account, sign out…) behind "Meniu", the sidebar as a panel.
   // (comparables are a desk tool: on the phone they stay on the home page and behind "Meniu")
-  const mobileNav = [...nav.filter((i) => i.key !== "comparabile"), { key: "cont" as const, label: "Contul meu", href: "/cont" }].slice(0, 3);
+  const mobileNav = [...nav.filter((i) => i.key !== "comparabile" && i.key !== "amplasament"), { key: "cont" as const, label: "Contul meu", href: "/cont" }].slice(0, 3);
   const sub = c.user.anevar_no ? `Legitimație ANEVAR ${c.user.anevar_no}` : c.org ? `${c.org.name} · ${c.role ? ROLE_LABEL[c.role] : ""}` : c.super ? "Administrator UVALO" : c.user.email;
   return (
     <div className="shell">

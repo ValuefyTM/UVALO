@@ -90,6 +90,8 @@ main{flex:1 0 auto;display:flex;flex-direction:column;gap:16px;padding:20px 24px
 .facts div{background:#fff;padding:11px 12px;display:flex;flex-direction:column;gap:4px;min-width:0}
 .facts small{font-size:10px;letter-spacing:1.2px;font-weight:700;color:var(--faint);text-transform:uppercase}
 .facts b{font:700 13px var(--mono);overflow-wrap:anywhere}
+.ampBtn{display:flex;align-items:center;justify-content:center;gap:8px;min-height:44px;border-radius:12px;background:#F2A93B;color:#141414;font-weight:700;font-size:13.5px;text-decoration:none;padding:0 14px}
+.ampBtn:hover{background:#E0931A}
 .zone{display:flex;gap:10px;align-items:flex-start;background:var(--acc-tint);border-radius:12px;padding:12px 14px}
 .zone>span:first-child{font-size:10px;letter-spacing:1.5px;font-weight:700;color:var(--acc-text-2);flex:none;padding-top:2px}
 .zone>span:last-child{font-size:12px;line-height:1.55;color:#3D2A08;text-wrap:pretty}
@@ -663,6 +665,7 @@ function show(id,idx,fromMap){
   let h=(lastNear&&lastNear.ids.has(p.id)?'<button type="button" class="back" id="back">← Înapoi la parcelele din jurul adresei</button>':'')+
     rhead('Nr. cadastral · '+esc(U.name),p.id,list.length>1?'<span class="pill">contur '+(list.indexOf(p)+1)+' din '+list.length+'</span>':'');
   h+='<div class="facts"><div><small>Suprafață</small><b>'+fmt(p.a,2)+' mp</b></div><div><small>Perimetru</small><b>'+fmt(g.per,2)+' m</b></div><div><small>Puncte</small><b>'+p.s.length+'</b></div></div>';
+  h+='<a class="ampBtn" href="/amplasament?uat='+encodeURIComponent(U.key)+'&amp;nr='+encodeURIComponent(p.id)+'"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="10" r="3"/><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/></svg>Generează analiza amplasamentului</a>';
   if(p.f&&p.f.includes('shared'))h+='<div class="flag">Același contur are mai multe numere cadastrale în plan (posibilă dezmembrare sau alipire). Verifică în extrasul CF.</div>';
   if(list.length>1)h+='<div class="flag">Numărul apare pe mai multe contururi:<br>'+list.map((q,k)=>'<button type="button" class="chip" data-i="'+q.i+'">contur '+(k+1)+'</button>').join('')+'</div>';
   h+=centerCard(p);

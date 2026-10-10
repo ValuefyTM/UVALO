@@ -2,7 +2,7 @@
 // The centres are computed at build time (scripts/copy-localizare.mjs → /_localizare/c/<uat>.json).
 import { locatorAsset } from "./locator";
 
-type Uat = { key: string; name: string; county?: string | null; n: number };
+type Uat = { key: string; name: string; county?: string | null; n: number; v?: string | null; bb?: [number, number, number, number] | null };
 const cache = new Map<string, Promise<Record<string, [number, number]> | null>>();
 let uatList: Promise<Uat[]> | null = null;
 
