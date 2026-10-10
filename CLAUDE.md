@@ -62,6 +62,13 @@ Proprietar: VALUEFY (firmă de evaluări imobiliare, Timișoara). UVALO devine u
 - `/api/amplasament/text`: textul „Descrierea amplasamentului” cu Claude (`@anthropic-ai/sdk`, `claude-opus-5-5`,
   fallback server-side), variante scurt/detaliat/academic + promptul utilizatorului; cifrele din răspuns sunt verificate
   față de date (`unverified`). Secret worker: **`ANTHROPIC_API_KEY`**. Limită 60 texte/zi/utilizator.
+- Fără plan în localizator: `/api/amplasament/plan` — evaluatorul încarcă planul de amplasament și delimitare (PDF/poză,
+  max. 15 MB; pozele se micșorează în browser), Claude îl citește cu structured output (nr. cadastral, CF, suprafețe,
+  inventar de coordonate Stereo 70, construcții, vecini, adresă). Pagina reface parcela din coordonate (X=N, Y=E; le
+  întoarce dacă ies din România), verifică suprafața față de cea scrisă pe plan și ia vecinii din planul ANCPI dacă UAT-ul
+  există. Fără coordonate → formular manual (suprafață, deschidere, adâncime, formă, poziție, construcții). Limită 30/zi.
+- Deschiderea: doar laturi aproape paralele (< 30°) cu o stradă OSM la ≤ 25 m; altfel „neidentificată automat”, cu
+  laturile fără vecin înscris și dreptunghiul încadrator (nu se ghicește frontul).
 - Index UAT-uri (`_localizare/c/index.json`) conține acum și `v` (versiunea datelor) și `bb`.
 
 ## Planuri cadastrale din admin (`/admin/planuri`)

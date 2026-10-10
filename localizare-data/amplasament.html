@@ -137,6 +137,16 @@
   .legend{font-size:11.5px;color:var(--muted);display:flex;align-items:center;gap:8px;flex-wrap:wrap;line-height:1.5}
   .legend mark{background:var(--mark);padding:1px 6px;border-radius:4px}
   .legend mark.bad{background:#F9D2CD}
+  .upz{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center;padding:20px 16px;border:2px dashed var(--dashed);border-radius:14px;background:var(--cream);cursor:pointer;transition:.15s}
+  .upz:hover,.upz.over{border-color:var(--acc);background:var(--acc-soft)}
+  .upz b{font-size:14px}
+  .upz span{font-size:12px;color:var(--muted2);line-height:1.5}
+  .upz.busy{pointer-events:none;opacity:.8}
+  .planbox{border:1px solid var(--acc-line);background:var(--acc-soft);border-radius:12px;padding:10px 12px;font-size:12.5px;line-height:1.6;color:#4A3200}
+  .planbox .ok{color:var(--ok);font-weight:700} .planbox .bad{color:var(--err);font-weight:700}
+  details.pts summary{cursor:pointer;font-size:12px;color:var(--acc-text);font-weight:700}
+  details.pts table{width:100%;border-collapse:collapse;font-size:11.5px;margin-top:6px;font-variant-numeric:tabular-nums}
+  details.pts td,details.pts th{padding:3px 6px;border-bottom:1px solid var(--divider);text-align:right}
   .foot{font-size:11px;color:var(--muted2);line-height:1.6}
   .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);background:#141414;color:#fff;padding:11px 18px;border-radius:10px;font-size:13px;opacity:0;pointer-events:none;transition:.25s;z-index:5000;max-width:90vw;text-align:center}
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
@@ -177,6 +187,7 @@
       <li>Zona: OpenStreetMap; distanțele sunt în linie dreaptă.</li>
       <li>Textul: Claude (AI), doar din datele de pe pagină; cifrele se verifică automat.</li>
     </ul>
+    <div data-up></div>
   </section>
 
   <section class="state" id="loading" hidden><div class="loadrow"><span class="spin"></span><span id="loadMsg">Se încarcă…</span></div></section>
@@ -190,6 +201,8 @@
       <button class="btn gold" type="submit">Analizează după adresă</button>
     </form>
     <p class="muted" id="askM"></p>
+    <p class="muted" style="margin-top:6px">Sau, dacă ai documentația cadastrală:</p>
+    <div data-up></div>
   </section>
 
   <div id="res" hidden style="display:flex;flex-direction:column;gap:20px">
@@ -444,7 +457,7 @@ $('sf').addEventListener('submit',e=>{
 $('askF').addEventListener('submit',e=>{e.preventDefault();const q=$('askA').value.trim();if(!q){$('askM').textContent='Scrie adresa.';return}go({adr:q},S.askUat)});
 function go(o,hint){
   const sp=new URLSearchParams(o);history.replaceState(null,'','?'+sp.toString());
-  S.texts={};
+  S.texts={};S.plan=null;S.manual={};
   if(o.nr)byNumber(o.uat,o.nr);else byAddress(o.adr,hint);
 }
 
@@ -476,18 +489,17 @@ function analyseParcel(D,p,roads){
   for(let i=0;i<n;i++){const a=s[i],b=s[(i+1)%n],L=Math.hypot(b[0]-a[0],b[1]-a[1]);const k=Math.max(1,Math.round(L/step));
     for(let j=0;j<k;j++){const t=(j+.5)/k,pt=[a[0]+t*(b[0]-a[0]),a[1]+t*(b[1]-a[1])];
       let shared=false;for(const q of others){const bb=pBox(q);if(pt[0]<bb[0]-1||pt[0]>bb[2]+1||pt[1]<bb[1]-1||pt[1]>bb[3]+1)continue;if(ringDist(pt,q.s)<.6){shared=true;break}}
-      let road=null,rd=Infinity;if(!shared)for(const r of roads){const d=lineDist(pt,r.en);if(d<rd){rd=d;road=r}}
+      // la stradă: latura e aproape paralelă cu strada (sub 30°) și la cel mult 25 m de axul ei
+      let road=null,rd=Infinity;if(!shared){const dv=[(b[0]-a[0])/L,(b[1]-a[1])/L];for(const r of roads){const q=lineNear(pt,r.en);if(q.d<rd&&Math.abs(dv[0]*q.u[1]-dv[1]*q.u[0])<.5){rd=q.d;road=r}}}
       samples.push({pt,len:L/k,dir:[(b[0]-a[0])/L,(b[1]-a[1])/L],shared,road:rd<=25?road:null,rd})}}
   const free=samples.filter(x=>!x.shared);
   const groups=new Map();
   free.filter(x=>x.road).forEach(x=>{const k=x.road.label;const g=groups.get(k)||{road:x.road,len:0,pts:[],dirs:[]};g.len+=x.len;g.pts.push(x.pt);g.dirs.push(x.dir);groups.set(k,g)});
   let fronts=[...groups.values()].filter(g=>g.len>=2).sort((a,b)=>b.len-a.len);
-  let estimated=false;
-  if(!fronts.length&&free.length){ // fără străzi OSM lângă parcelă: latura liberă cea mai lungă, ca front posibil
-    const runs=[];let cur=null;samples.forEach(x=>{if(!x.shared){if(!cur){cur={len:0,pts:[],dirs:[]};runs.push(cur)}cur.len+=x.len;cur.pts.push(x.pt);cur.dirs.push(x.dir)}else cur=null});
-    if(runs.length>1&&!samples[0].shared&&!samples[samples.length-1].shared){const f=runs.shift();const l=runs[runs.length-1];l.len+=f.len;l.pts.push(...f.pts);l.dirs.push(...f.dirs)}
-    const best=runs.sort((a,b)=>b.len-a.len)[0];if(best&&best.len>=3){fronts=[{road:null,len:best.len,pts:best.pts,dirs:best.dirs}];estimated=true}
-  }
+  // laturile fără vecin înscris, drepte (se rup la colțuri peste 30°), cu direcția spre care dau: când nu găsim strada în OSM
+  const freeSides=[];{let cur=null;samples.forEach(x=>{if(x.shared){cur=null;return}if(!cur||Math.abs(cur.d[0]*x.dir[1]-cur.d[1]*x.dir[0])>.5||cur.d[0]*x.dir[0]+cur.d[1]*x.dir[1]<0){cur={len:0,d:x.dir,m:[0,0],n:0};freeSides.push(cur)}cur.len+=x.len;cur.m[0]+=x.pt[0];cur.m[1]+=x.pt[1];cur.n++});
+    freeSides.forEach(f=>{f.m=[f.m[0]/f.n,f.m[1]/f.n];f.dir=card(f.m[0]-C[0],f.m[1]-C[1])})}
+  const libere=freeSides.filter(f=>f.len>=3).sort((a,b)=>b.len-a.len).slice(0,4);
   let depth=null,width=null,orient=null;
   if(fronts.length){const f=fronts[0];
     // direcția frontului (medie pe unghi dublu, ca laturile opuse să nu se anuleze)
@@ -496,19 +508,20 @@ function analyseParcel(D,p,roads){
     width=ma-mi;depth=na-ni;
     const m=f.pts.reduce((t,q)=>[t[0]+q[0]/f.pts.length,t[1]+q[1]/f.pts.length],[0,0]);orient=card(m[0]-C[0],m[1]-C[1]);f.mid=m;f.dir=[ux,uy]}
   // construcții
-  const bs=D.B.filter(b=>b.p===p.i).map(b=>({c:b.c,a:ringArea(b.s),s:b.s})).sort((a,b)=>(+a.c.slice(1)||0)-(+b.c.slice(1)||0));
+  const bs=(p.extB||D.B.filter(b=>b.p===p.i).map(b=>({c:b.c,a:ringArea(b.s),s:b.s}))).slice().sort((a,b)=>(+a.c.slice(1)||0)-(+b.c.slice(1)||0));
   const built=bs.reduce((t,b)=>t+b.a,0);
   // vecinii, pe direcții
   const sides={};(p.n||[]).forEach(id=>{const l=D.byId.get(id);if(!l)return;const c=centroid(l[0].s);const d=card(c[0]-C[0],c[1]-C[1]);(sides[d]=sides[d]||[]).push(id)});
   fronts.forEach(f=>{if(f.road&&f.mid){const d=card(f.mid[0]-C[0],f.mid[1]-C[1]);(sides[d]=sides[d]||[]).unshift(f.road.label)}});
-  return{s,C,A,per,reg,shape,fronts,estimated,depth,width,orient,bs,built,sides,topo:p.t||[]};
+  return{s,C,A,per,reg,shape,fronts,libere,dims:mbr?[Math.min(mbr.w,mbr.h),Math.max(mbr.w,mbr.h)]:null,depth,width,orient,bs,built,sides,topo:p.t||[]};
 }
 function convexHull(pts){const p=pts.slice().sort((a,b)=>a[0]-b[0]||a[1]-b[1]);const cr=(o,a,b)=>(a[0]-o[0])*(b[1]-o[1])-(a[1]-o[1])*(b[0]-o[0]);const lo=[],up=[];
   for(const q of p){while(lo.length>=2&&cr(lo[lo.length-2],lo[lo.length-1],q)<=0)lo.pop();lo.push(q)}
   for(let i=p.length-1;i>=0;i--){const q=p[i];while(up.length>=2&&cr(up[up.length-2],up[up.length-1],q)<=0)up.pop();up.push(q)}
   up.pop();lo.pop();return lo.concat(up)}
 function ringDist(pt,s){let d=Infinity;for(let i=0,j=s.length-1;i<s.length;j=i++)d=Math.min(d,segDist(pt,s[j],s[i]));return d}
-function lineDist(pt,l){let d=Infinity;for(let i=1;i<l.length;i++)d=Math.min(d,segDist(pt,l[i-1],l[i]));return d}
+function lineDist(pt,l){return lineNear(pt,l).d}
+function lineNear(pt,l){let d=Infinity,u=[1,0];for(let i=1;i<l.length;i++){const x=segDist(pt,l[i-1],l[i]);if(x<d){d=x;const L=Math.hypot(l[i][0]-l[i-1][0],l[i][1]-l[i-1][1])||1;u=[(l[i][0]-l[i-1][0])/L,(l[i][1]-l[i-1][1])/L]}}return{d,u}}
 function boxNear(a,b,m){return!(a[2]<b[0]-m||a[0]>b[2]+m||a[3]<b[1]-m||a[1]>b[3]+m)}
 
 const SURF={asphalt:'asfalt',paved:'pavată',concrete:'beton',paving_stones:'pavele',sett:'piatră cubică',compacted:'pietruită',gravel:'pietruită',fine_gravel:'pietruită',unpaved:'nemodernizată',dirt:'de pământ',ground:'de pământ',grass:'de pământ'};
@@ -535,14 +548,15 @@ async function analyse(u,D,p,pt){
 function render(){
   show('res');
   const {p,A,osm,uat,pt}=S;
-  $('crumbs').textContent=p?('Plan cadastral ANCPI › '+uat.county+' › '+uat.name+(S.D&&S.D.date?' · export din '+S.D.date.split('-').reverse().join('.'):'')):'După adresă · fără parcelă în planurile cadastrale';
-  $('title').textContent=p?('Parcela '+p.id+', '+uat.name+', jud. '+uat.county):(pt.label||(pt.lat.toFixed(5)+', '+pt.lng.toFixed(5)));
+  $('crumbs').textContent=S.plan?'Plan de amplasament încărcat · citit cu AI · '+(uat.county||'')+(uat.name?' › '+uat.name:''):p?('Plan cadastral ANCPI › '+uat.county+' › '+uat.name+(S.D&&S.D.date?' · export din '+S.D.date.split('-').reverse().join('.'):'')):'După adresă · fără parcelă în planurile cadastrale';
+  $('title').textContent=p?['Parcela '+p.id,uat.name,uat.county&&'jud. '+uat.county].filter(Boolean).join(', '):(pt.label||(pt.lat.toFixed(5)+', '+pt.lng.toFixed(5)));
   const chips=[];
+  if(S.plan)chips.push('<span class="chip warn">Date citite automat din planul încărcat: verifică-le</span>');
   if(pt.byAddr)chips.push('<span class="chip warn">Parcelă găsită după adresă: verifică numărul cadastral</span>');
   if(pt.label&&p)chips.push('<span class="chip">'+esc(pt.label)+'</span>');
   if(osm&&osm.locality)chips.push('<span class="chip">'+esc(osm.locality.name)+'</span>');
   $('chips').innerHTML=chips.join('');
-  $('toLoc').hidden=!p; if(p)$('toLoc').href='/localizare#'+uat.key+'-'+encodeURIComponent(p.id);
+  $('toLoc').hidden=!p||!uat.key||!!S.plan; if(p&&uat.key)$('toLoc').href='/localizare#'+uat.key+'-'+encodeURIComponent(p.id);
   if(pt.label&&!/^\s*-?\d+[.,]\d+\s*[,; ]\s*-?\d+[.,]\d+\s*$/.test(pt.label)&&!$('extra').querySelector('[data-k=adresa]').value)$('extra').querySelector('[data-k=adresa]').value=pt.label;
   renderA();renderB();renderMap();renderPlan();renderFacts();renderText();
   $('foot').textContent='Surse: '+(p?'plan cadastral ANCPI ('+(S.D.src||'export')+'); ':'')+'© contribuitorii OpenStreetMap'+(osm?' (date din '+osm.date.split('-').reverse().join('.')+')':'')+'. Distanțele sunt în linie dreaptă. Datele au caracter informativ și nu înlocuiesc extrasul de carte funciară sau documentația cadastrală.';
@@ -553,25 +567,26 @@ function actArea(){const v=parseFloat(extraVal('suprafata_din_act').replace(/\./
 
 function renderA(){
   const {A,p}=S, el=$('secA');
-  if(!A){el.innerHTML='<div class="chead"><h2>A · Parcela</h2></div><p class="muted">Adresa nu cade pe o parcelă din planurile cadastrale din localizator, așa că analiza conține doar încadrarea în zonă. Dacă știi numărul cadastral, caută-l cu localitatea aleasă.</p>';return}
+  if(!A){el.innerHTML='<div class="chead"><h2>A · Terenul</h2></div><p class="muted">Adresa nu cade pe o parcelă din planurile cadastrale din localizator. Încarcă planul de amplasament (îl citim cu AI și refacem parcela din coordonate) sau completează datele de mai jos.</p><div data-up></div>'+manualForm();mountUploads();wireManual();return}
   const act=actArea(), dif=act?A.A-act:null;
-  const fr=A.fronts.length?A.fronts.map(f=>fmt(f.len,1)+' m'+(f.road?' la '+esc(f.road.label):'')).join(' · ')+(A.estimated?' (latură liberă, fără stradă în OSM)':''):'nu am identificat [de verificat]';
-  const pos=A.fronts.filter(f=>f.road).length>=2?'parcelă de colț ('+A.fronts.filter(f=>f.road).length+' fronturi)':A.fronts.length?'parcelă interioară, un front':'fără front la stradă identificat';
+  const fr=A.fronts.length?A.fronts.map(f=>fmt(f.len,1)+' m'+(f.road?' la '+esc(f.road.label):'')).join(' · '):'neidentificată automat [de verificat]'+(A.libere.length?'<br><span class="muted">laturi fără vecin înscris: '+A.libere.map(f=>fmt(f.len,1)+' m spre '+f.dir).join(', ')+'</span>':'');
+  const pos=A.fronts.filter(f=>f.road).length>=2?'parcelă de colț ('+A.fronts.filter(f=>f.road).length+' fronturi)':A.fronts.length?'parcelă interioară, un front':(A.libere.length?'neidentificată automat [de verificat]':'fără acces direct la stradă identificat [de verificat]');
   const sides=Object.entries(A.sides).map(([d,l])=>'la '+d+': '+l.map(esc).join(', ')).join('<br>');
-  el.innerHTML='<div class="chead"><h2>A · Parcela</h2><span class="src">din planul ANCPI</span></div>'+
-    '<div class="kpis"><div class="kpi"><small>Suprafață măsurată în plan</small><b>'+fmt(A.A,0)+' mp</b></div>'+
+  el.innerHTML='<div class="chead"><h2>A · Parcela</h2><span class="src">'+(S.plan?'din planul încărcat':'din planul ANCPI')+'</span></div>'+
+    '<div class="kpis"><div class="kpi"><small>'+(S.plan?'Suprafață din coordonate':'Suprafață măsurată în plan')+'</small><b>'+fmt(A.A,0)+' mp</b></div>'+
     '<div class="kpi"><label for="actA" style="font-size:11px;color:var(--muted2)">Suprafață din act</label><span style="display:flex;align-items:center;gap:6px"><input id="actA" inputmode="decimal" value="'+esc(extraVal('suprafata_din_act'))+'" placeholder="mp"><span>mp</span></span></div></div>'+
     (dif!=null?'<div class="diff">Diferență plan – act: <b>'+(dif>=0?'+':'')+fmt(dif,0)+' mp ('+(dif>=0?'+':'')+fmt(100*dif/act,1)+'%)</b></div>':'')+
     '<dl class="kv"><dt>Formă</dt><dd>'+A.shape+' · regularitate '+fmt(A.reg,2)+'</dd>'+
     '<dt>Deschidere la stradă</dt><dd>'+fr+'</dd>'+
     (A.depth!=null?'<dt>Adâncime</dt><dd>'+fmt(A.depth,1)+' m (raport 1 : '+fmt(A.depth/Math.max(A.fronts[0].len,1),1)+')</dd>':'')+
+    (A.dims?'<dt>Dimensiuni (dreptunghi încadrator)</dt><dd>'+fmt(A.dims[0],1)+' × '+fmt(A.dims[1],1)+' m</dd>':'')+
     '<dt>Poziție</dt><dd>'+pos+'</dd>'+
     (A.orient?'<dt>Orientare front</dt><dd>spre '+A.orient+'</dd>':'')+
     '<dt>Perimetru</dt><dd>'+fmt(A.per,1)+' m</dd>'+
     '<dt>Construcții</dt><dd>'+(A.bs.length?A.bs.map(b=>esc(b.c)+' '+fmt(b.a,0)+' mp').join(' · '):'niciuna în plan')+'</dd>'+
     (A.bs.length?'<dt>POT existent</dt><dd><b>'+fmt(100*A.built/A.A,1)+'%</b> ('+fmt(A.built,0)+' mp la sol)</dd>':'')+
     (sides?'<dt>Vecinătăți</dt><dd>'+sides+'</dd>':'')+
-    (A.topo.length?'<dt>Nr. topo (orientativ)</dt><dd>'+A.topo.map(esc).join(', ')+'</dd>':'')+'</dl>';
+    (A.topo.length?'<dt>Nr. topo (orientativ)</dt><dd>'+A.topo.map(esc).join(', ')+'</dd>':'')+'</dl>'+planBox();
   $('actA').addEventListener('input',e=>{$('extra').querySelector('[data-k=suprafata_din_act]').value=e.target.value;clearTimeout(renderA.t);renderA.t=setTimeout(()=>{const pos=e.target.selectionStart;renderA();renderFacts();const i=$('actA');i.focus();try{i.setSelectionRange(pos,pos)}catch(_){}} ,500)});
 }
 
@@ -634,7 +649,7 @@ function planSVG(W,H){
   nb.forEach(q=>{const c=centroid(q.s),B=pBox(q);if((B[2]-B[0])*k>46&&(B[3]-B[1])*k>16&&c[0]>x0&&c[0]<x1&&c[1]>y0&&c[1]<y1)o+='<text x="'+X(c[0])+'" y="'+Y(c[1])+'" font-size="11" fill="#6B6253" text-anchor="middle" dominant-baseline="middle">'+esc(q.id)+'</text>'});
   // parcela
   o+='<path d="'+path(A.s)+'" fill="#F8E4DF" stroke="#C23A2E" stroke-width="3"/>';
-  A.bs.forEach(bb=>{const c=centroid(bb.s);o+='<path d="'+path(bb.s)+'" fill="#E9D9CC" stroke="#141414" stroke-width="1.5"/><text x="'+X(c[0])+'" y="'+Y(c[1])+'" font-size="13" font-weight="700" fill="#141414" text-anchor="middle" dominant-baseline="middle">'+esc(bb.c)+'</text>'});
+  A.bs.forEach(bb=>{if(!bb.s)return;const c=centroid(bb.s);o+='<path d="'+path(bb.s)+'" fill="#E9D9CC" stroke="#141414" stroke-width="1.5"/><text x="'+X(c[0])+'" y="'+Y(c[1])+'" font-size="13" font-weight="700" fill="#141414" text-anchor="middle" dominant-baseline="middle">'+esc(bb.c)+'</text>'});
   o+='<text x="'+X(A.C[0])+'" y="'+(+Y(A.C[1])+(A.bs.length?28:0))+'" font-size="13" font-weight="700" fill="#C23A2E" text-anchor="middle" dominant-baseline="middle">'+esc(p.id)+'</text>';
   // denumirile străzilor
   S.roads.forEach(r=>{if(!r.name)return;let best=null;for(let i=1;i<r.en.length;i++){const m=[(r.en[i-1][0]+r.en[i][0])/2,(r.en[i-1][1]+r.en[i][1])/2];if(m[0]<x0||m[0]>x1||m[1]<y0||m[1]>y1)continue;const L=Math.hypot(r.en[i][0]-r.en[i-1][0],r.en[i][1]-r.en[i-1][1]);if(!best||L>best.L)best={m,L,a:Math.atan2(r.en[i][1]-r.en[i-1][1],r.en[i][0]-r.en[i-1][0])}}
@@ -655,20 +670,25 @@ function renderPlan(){
   $('plan').innerHTML=planSVG(860,520);
   $('planSrc').textContent='Plan ANCPI · străzi OpenStreetMap';
   const A=S.A;
-  $('planNote').textContent=A.fronts.length?(A.estimated?'Nu am găsit străzi în OpenStreetMap lângă parcelă; deschiderea este latura liberă cea mai lungă (fără vecin înscris), de confirmat pe teren.':'Deschiderea = lungimea laturilor fără vecin înscris aflate la cel mult 25 m de axul străzii din OpenStreetMap. Adâncimea = întinderea parcelei perpendicular pe front.'):'Nu am identificat o latură la stradă: parcela pare înconjurată de imobile înscrise (acces prin servitute sau drum neînscris). De verificat.';
+  $('planNote').textContent=A.fronts.length?('Deschiderea = lungimea laturilor fără vecin înscris aflate la cel mult 25 m de axul străzii din OpenStreetMap. Adâncimea = întinderea parcelei perpendicular pe front.'):A.libere.length?'Nu am găsit în OpenStreetMap o stradă paralelă, la cel mult 25 m, cu vreo latură liberă a parcelei (strada poate lipsi din OSM). Deschiderea și adâncimea trebuie confirmate de evaluator; laturile fără vecin înscris sunt în fișă.':'Nu am identificat o latură la stradă: parcela pare înconjurată de imobile înscrise (acces prin servitute sau drum neînscris). De verificat.';
 }
 
 /* ---------- datele de intrare pentru text ---------- */
 function facts(){
   const {p,A,osm,uat,pt}=S, f={};
-  f.identificare={...(p?{nr_cadastral:p.id,uat:uat.name,judet:uat.county,sursa:'plan cadastral ANCPI'+(S.D.date?', export din '+S.D.date.split('-').reverse().join('.'):'')}:{}),...(pt.label?{adresa_gasita:pt.label}:{})};
+  f.identificare={...(p?{nr_cadastral:p.id,uat:uat.name,judet:uat.county,sursa:S.plan?'plan de amplasament și delimitare încărcat de evaluator (date citite automat)':'plan cadastral ANCPI'+(S.D.date?', export din '+S.D.date.split('-').reverse().join('.'):'')}:{}),...(pt.label?{adresa_gasita:pt.label}:{})};
+  if(S.plan){const j=S.plan;f.din_planul_de_amplasament={...(j.nr_carte_funciara?{nr_carte_funciara:j.nr_carte_funciara}:{}),...(j.suprafata_masurata_mp?{suprafata_masurata_pe_plan:fmt(j.suprafata_masurata_mp,0)+' mp'}:{}),
+    ...(j.categorie_folosinta?{categorie_de_folosinta:j.categorie_folosinta}:{}),...(j.vecini&&j.vecini.length?{vecinatati:j.vecini.map(v=>v.latura+': '+v.descriere)}:{})}}
+  if(!A&&manualAny())f.teren_declarat_de_evaluator=manualFacts();
   if(A){
     const act=actArea();
     f.teren={suprafata_masurata_in_plan:fmt(A.A,0)+' mp',...(act?{suprafata_din_act:fmt(act,0)+' mp',diferenta_plan_act:(A.A-act>=0?'+':'')+fmt(A.A-act,0)+' mp ('+(A.A-act>=0?'+':'')+fmt(100*(A.A-act)/act,1)+'%)'}:{}),
       forma:A.shape,indice_regularitate:fmt(A.reg,2),perimetru:fmt(A.per,1)+' m',
-      deschidere_la_strada:A.fronts.length?A.fronts.map(x=>fmt(x.len,1)+' m'+(x.road?' la '+x.road.label:'')).join('; ')+(A.estimated?' (latura liberă cea mai lungă; nu există stradă în OpenStreetMap lângă parcelă)':''):'neidentificată',
+      deschidere_la_strada:A.fronts.length?A.fronts.map(x=>fmt(x.len,1)+' m'+(x.road?' la '+x.road.label:'')).join('; '):'neidentificată automat',
+      ...(!A.fronts.length&&A.libere.length?{laturi_fara_vecin_inscris:A.libere.map(f=>fmt(f.len,1)+' m spre '+f.dir)}:{}),
+      ...(A.dims?{dimensiuni_dreptunghi_incadrator:fmt(A.dims[0],1)+' × '+fmt(A.dims[1],1)+' m'}:{}),
       ...(A.depth!=null?{adancime:fmt(A.depth,1)+' m',raport_deschidere_adancime:'1 : '+fmt(A.depth/Math.max(A.fronts[0].len,1),1)}:{}),
-      pozitie:A.fronts.filter(x=>x.road).length>=2?'parcelă de colț, cu '+A.fronts.filter(x=>x.road).length+' fronturi':A.fronts.length?'parcelă interioară, cu un singur front':'fără front la stradă identificat',
+      pozitie:A.fronts.filter(x=>x.road).length>=2?'parcelă de colț, cu '+A.fronts.filter(x=>x.road).length+' fronturi':A.fronts.length?'parcelă interioară, cu un singur front':(A.libere.length?'neidentificată automat [de verificat]':'fără acces direct la stradă identificat [de verificat]'),
       ...(A.orient?{orientarea_frontului:'spre '+A.orient}:{})};
     f.constructii_din_plan=A.bs.length?{lista:A.bs.map(b=>b.c+': '+fmt(b.a,0)+' mp la sol'),suprafata_construita_la_sol:fmt(A.built,0)+' mp',POT_existent:fmt(100*A.built/A.A,1)+'%'}:'nicio construcție în planul cadastral';
     f.vecinatati=Object.fromEntries(Object.entries(A.sides).map(([d,l])=>[d,l.join(', ')]));
@@ -689,6 +709,7 @@ function renderFacts(){
     if(A.fronts.length)rows.push(['Deschidere / adâncime',fmt(A.fronts[0].len,1)+(A.depth!=null?' / '+fmt(A.depth,1):'')+' m']);
     rows.push(['Formă',A.shape]);
     rows.push(['Construcții · POT',A.bs.length?A.bs.length+' · '+fmt(100*A.built/A.A,1)+'%':'niciuna'])}
+  if(!A&&manualAny())Object.entries(manualFacts()).forEach(([k,v])=>rows.push([MLABEL[k],v]));
   if(osm){if(osm.locality)rows.push(['Centrul '+osm.locality.name,fmtD(osm.locality.d)]);
     if(osm.city&&(!osm.locality||osm.city.name!==osm.locality.name))rows.push(['Centrul '+osm.city.name,fmtD(osm.city.d)]);
     rows.push(['Dotări ('+fmtD(S.radius)+')',catCounts().length+' categorii']);
@@ -799,6 +820,7 @@ function tables(){
     rows.push(['Construcții',A.bs.length?A.bs.map(b=>b.c+' '+fmt(b.a,0)+' mp').join(', '):'niciuna în plan']);
     if(A.bs.length)rows.push(['POT existent',fmt(100*A.built/A.A,1)+'%']);
     t.push(['Caracteristicile terenului',rows])}
+  if(!A&&manualAny())t.push(['Caracteristicile terenului (declarate)',Object.entries(manualFacts()).map(([k,v])=>[MLABEL[k]||k,v])]);
   if(osm){const rows=[];if(osm.locality)rows.push(['Centrul localității '+osm.locality.name,fmtD(osm.locality.d)]);
     if(osm.city&&(!osm.locality||osm.city.name!==osm.locality.name))rows.push(['Centrul '+osm.city.name,fmtD(osm.city.d)]);
     catCounts().forEach((c,i)=>rows.push([(i+1)+'. '+c.label,fmtD(c.near.d)+' · '+c.count+' în rază']));
@@ -864,7 +886,7 @@ async function buildPages(){
 }
 const CORS='Browserul a blocat compunerea imaginii din plăcile hărții. Reîncearcă peste câteva secunde.';
 function loadScript(src){return new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=()=>rej(new Error(src));document.head.appendChild(s)})}
-const fname=ext=>'analiza_amplasament_'+(S.p?S.p.id+'_'+S.uat.key:'adresa')+'_'+new Date().toISOString().slice(0,10)+'.'+ext;
+const fname=ext=>'analiza_amplasament_'+(S.p?S.p.id+'_'+(S.uat.key||'plan'):'adresa')+'_'+new Date().toISOString().slice(0,10)+'.'+ext;
 $('bPdf').addEventListener('click',async()=>{
   toast('Se generează PDF-ul…');
   try{if(!(window.jspdf&&window.jspdf.jsPDF))await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js')}catch(e){toast('Nu am putut încărca biblioteca PDF.');return}
@@ -901,7 +923,93 @@ $('bWord').addEventListener('click',async()=>{
   catch(e){toast('Eroare la generarea documentului Word.')}
 });
 
+
+/* ---------- planul de amplasament încărcat (citit cu AI) ---------- */
+const normN=t=>String(t||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/^(municipiul|orasul|oras|comuna|com\.|mun\.)\s+/,'').replace(/[^a-z0-9]+/g,' ').trim();
+function upHTML(){return'<label class="upz"><input type="file" accept="application/pdf,image/jpeg,image/png,image/webp" hidden><b>Încarcă planul de amplasament și delimitare</b><span>PDF sau poză clară · îl citim cu AI: coordonatele Stereo 70, suprafețele, construcțiile, vecinii</span></label>'}
+function mountUploads(){document.querySelectorAll('[data-up]').forEach(box=>{if(box.dataset.on)return;box.dataset.on='1';box.innerHTML=upHTML();const z=box.querySelector('.upz'),inp=box.querySelector('input');
+  inp.addEventListener('change',()=>{if(inp.files[0])uploadPlan(inp.files[0],z);inp.value=''});
+  z.addEventListener('dragover',e=>{e.preventDefault();z.classList.add('over')});z.addEventListener('dragleave',()=>z.classList.remove('over'));
+  z.addEventListener('drop',e=>{e.preventDefault();z.classList.remove('over');const f=e.dataTransfer.files[0];if(f)uploadPlan(f,z)})})}
+/* pozele mari se micșorează în browser (max. 3000 px), ca să ajungă repede și să fie acceptate */
+async function shrink(f){
+  if(!/^image\//.test(f.type)||(f.size<3.5e6&&f.type!=='image/webp'))return f;
+  const im=await new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=URL.createObjectURL(f)});
+  const k=Math.min(1,3000/Math.max(im.naturalWidth,im.naturalHeight)),cv=document.createElement('canvas');cv.width=Math.round(im.naturalWidth*k);cv.height=Math.round(im.naturalHeight*k);
+  cv.getContext('2d').drawImage(im,0,0,cv.width,cv.height);
+  return new Promise(res=>cv.toBlob(b=>res(new File([b],'plan.jpg',{type:'image/jpeg'})),'image/jpeg',.9));
+}
+async function uploadPlan(f,z){
+  if(!/^(application\/pdf|image\/(jpeg|png|webp))$/.test(f.type)){toast('Planul trebuie să fie PDF sau imagine (JPG, PNG).');return}
+  if(f.size>15*1024*1024&&f.type==='application/pdf'){toast('PDF-ul are peste 15 MB. Trimite doar pagina cu planul.');return}
+  const old=z.innerHTML;z.classList.add('busy');z.innerHTML='<span class="spin"></span><b>Citesc planul cu AI…</b><span>durează de obicei 20–60 de secunde</span>';
+  try{
+    const fd=new FormData();fd.append('file',await shrink(f));
+    const r=await fetch('/api/amplasament/plan',{method:'POST',body:fd});const j=await r.json().catch(()=>({}));
+    if(!r.ok){toast(j.error||'Planul nu a putut fi citit.',6000);return}
+    await fromPlan(j);
+  }catch(e){toast('Conexiunea a căzut. Încearcă din nou.',5000)}
+  finally{z.classList.remove('busy');z.innerHTML=old}
+}
+/* coordonatele citite → conturul în Stereo 70 [E, N]; dacă X și Y par inversate (punctul iese din România), le întoarce */
+function ringFrom(pts){
+  const ok=s=>{const c=centroid(s),ll=S70(c[0],c[1]);return ll[0]>43.5&&ll[0]<48.4&&ll[1]>20.1&&ll[1]<30};
+  let s=pts.map(p=>[+p.y,+p.x]).filter(q=>isFinite(q[0])&&isFinite(q[1]));
+  if(s.length>2&&s[0][0]===s[s.length-1][0]&&s[0][1]===s[s.length-1][1])s.pop();
+  if(s.length<3)return null;if(ok(s))return s;
+  const w=s.map(q=>[q[1],q[0]]);return ok(w)?w:null;
+}
+async function fromPlan(j){
+  if(!j||!/plan|amplasament|cadastr/i.test(j.tip_document||'')&&!(j.puncte||[]).length){toast('Documentul nu pare a fi un plan cadastral'+(j&&j.tip_document?' ('+j.tip_document+')':'')+'.',6000);return}
+  const s=ringFrom(j.puncte||[]);
+  const u0=UATS.find(u=>normN(u.name)===normN(j.uat)&&(!j.judet||normN(u.county)===normN(j.judet)));
+  const set=(k,v)=>{const el=$('extra').querySelector('[data-k='+k+']');if(el&&v!=null&&v!=='')el.value=v};
+  set('adresa',j.adresa);set('suprafata_din_act',j.suprafata_din_acte_mp?String(j.suprafata_din_acte_mp).replace('.',','):'');
+  if(j.intravilan!=null)set('incadrare',j.intravilan?'intravilan':'extravilan');
+  history.replaceState(null,'',location.pathname);S.texts={};
+  if(!s){ // fără coordonate: datele scrise pe plan intră în formular; zona după adresă
+    S.plan=null;S.manual={suprafata:j.suprafata_masurata_mp?String(j.suprafata_masurata_mp):'',constructii:(j.constructii||[]).map(c=>c.cod+(c.suprafata_la_sol_mp?' '+c.suprafata_la_sol_mp+' mp':'')).join('; ')};
+    toast('Nu am putut citi coordonatele din plan. Am completat ce am găsit; zona o caut după adresă.',7000);
+    if(j.adresa)await byAddress([j.adresa,j.uat,j.judet].filter(Boolean).join(', '),u0);else askAddress('Nu am găsit coordonatele','Planul nu are un inventar de coordonate lizibil și nici adresă. Scrie adresa imobilului.');
+    return}
+  loading('Refac parcela din coordonate…');
+  const p={id:j.nr_cadastral||'—',s,a:ringArea(s),n:[],t:[],ext:true};
+  p.extB=(j.constructii||[]).map(c=>{const r=c.puncte&&c.puncte.length>2?ringFrom(c.puncte):null;return{c:c.cod||'C',a:c.suprafata_la_sol_mp||(r?ringArea(r):0),s:r}}).filter(b=>b.a>0||b.s);
+  let D={parcels:[],B:[],byId:new Map(),src:'plan de amplasament încărcat'},u=u0||{key:null,name:j.uat||'',county:j.judet||''};
+  if(u0&&ME.plans){try{const R=await getData(u0);const same=R.byId.get(p.id)||[];
+    D={...R,parcels:R.parcels.filter(q=>!same.includes(q)),byId:new Map(R.byId),src:'plan de amplasament încărcat; vecinii din planul ANCPI'};D.byId.delete(p.id);
+    const bb=bbox(s);D.parcels.forEach(q=>{if(!boxNear(pBox(q),bb,1))return;if(q.s.some(v=>ringDist(v,s)<.8)||s.some(v=>ringDist(v,q.s)<.8))p.n.push(q.id)})}catch(e){}}
+  D.parcels=D.parcels.concat([p]);p.i=D.parcels.length-1;D.byId.set(p.id,[p]);
+  S.plan={...j,areaXY:p.a};
+  await analyse(u,D,p,{lat:0,lng:0,label:j.adresa||''});
+}
+function planBox(){
+  const j=S.plan;if(!j)return'';
+  const m=j.suprafata_masurata_mp,d=m?j.areaXY-m:null,okA=m?Math.abs(d)<=Math.max(1,m*.005):null;
+  return'<div class="planbox"><b>Din planul încărcat</b> ('+esc(j.tip_document||'plan')+')<br>'+
+    (j.nr_carte_funciara?'CF '+esc(j.nr_carte_funciara)+' · ':'')+(j.categorie_folosinta?esc(j.categorie_folosinta)+' · ':'')+(j.puncte||[]).length+' puncte de contur<br>'+
+    (m?'Suprafața din coordonate: <b>'+fmt(j.areaXY,2)+' mp</b>, pe plan: <b>'+fmt(m,2)+' mp</b> → '+(okA?'<span class="ok">✓ corespund</span>':'<span class="bad">diferență de '+fmt(d,2)+' mp: verifică coordonatele citite</span>'):'Suprafața din coordonate: <b>'+fmt(j.areaXY,2)+' mp</b> (planul nu are suprafața scrisă clar)')+
+    (j.vecini&&j.vecini.length?'<br>Vecini pe plan: '+j.vecini.map(v=>esc(v.latura)+' – '+esc(v.descriere)).join('; '):'')+
+    (j.observatii?'<br><i>'+esc(j.observatii)+'</i>':'')+
+    '<details class="pts"><summary>Coordonatele citite</summary><table><tr><th>Pct.</th><th>X (N)</th><th>Y (E)</th></tr>'+(j.puncte||[]).map(q=>'<tr><td>'+esc(q.nr)+'</td><td>'+fmt(q.x,3)+'</td><td>'+fmt(q.y,3)+'</td></tr>').join('')+'</table></details></div>';
+}
+
+/* ---------- date despre teren completate manual (fără plan) ---------- */
+const MLABEL={suprafata:'Suprafață măsurată',deschidere:'Deschidere la stradă',adancime:'Adâncime',forma:'Formă',pozitie:'Poziție',constructii:'Construcții (la sol)'};
+S.manual={};
+function manualAny(){return Object.values(S.manual||{}).some(v=>v&&String(v).trim())}
+function manualFacts(){const m=S.manual||{},o={},n=v=>String(v).replace(',','.');
+  if(m.suprafata)o.suprafata=fmt(+n(m.suprafata)||0,0)+' mp';if(m.deschidere)o.deschidere=fmt(+n(m.deschidere)||0,1)+' m';if(m.adancime)o.adancime=fmt(+n(m.adancime)||0,1)+' m';
+  if(m.forma)o.forma=m.forma;if(m.pozitie)o.pozitie=m.pozitie;if(m.constructii)o.constructii=m.constructii;return o}
+function manualForm(){const m=S.manual||{},v=k=>esc(m[k]||''),sel=(k,opts)=>'<select data-m="'+k+'"><option value="">—</option>'+opts.map(o=>'<option'+(m[k]===o?' selected':'')+'>'+o+'</option>').join('')+'</select>';
+  return'<div class="fgrid" id="manual"><label>Suprafață măsurată (mp)<input data-m="suprafata" inputmode="decimal" value="'+v('suprafata')+'"></label><label>Deschidere la stradă (m)<input data-m="deschidere" inputmode="decimal" value="'+v('deschidere')+'"></label>'+
+    '<label>Adâncime (m)<input data-m="adancime" inputmode="decimal" value="'+v('adancime')+'"></label><label>Formă'+sel('forma',['dreptunghiulară','trapezoidală','neregulată'])+'</label>'+
+    '<label class="w2">Poziție'+sel('pozitie',['parcelă interioară, un front','parcelă de colț, două fronturi','fără acces direct la stradă'])+'</label>'+
+    '<label class="w2">Construcții (cod și suprafață la sol)<input data-m="constructii" placeholder="ex. C1 142 mp; C2 18 mp" value="'+v('constructii')+'"></label></div>'}
+function wireManual(){const f=$('manual');if(!f)return;f.addEventListener('input',e=>{const k=e.target.dataset.m;if(k){S.manual[k]=e.target.value;renderFacts()}})}
+
 /* ---------- pornire ---------- */
+mountUploads();
 (()=>{
   const sp=new URLSearchParams(location.search);
   const key=sp.get('uat'),nr=sp.get('nr')||sp.get('q'),adr=sp.get('adr');
