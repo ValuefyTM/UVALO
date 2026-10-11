@@ -10,30 +10,30 @@ export function LocatorBand() {
         <path d="M0 24 L480 -12 M0 54 L480 18 M0 84 L480 48 M30 0 L46 78 M90 0 L106 78 M150 0 L166 78 M210 0 L226 78 M270 0 L286 78 M330 0 L346 78 M390 0 L406 78 M450 0 L466 78" />
       </g>
       <path d="M0 74 L480 38" stroke="#fff" strokeOpacity="0.08" strokeWidth="12" />
-      <path d="M196 22 L238 17 L244 52 L202 58 Z" fill="#f2a93b" fillOpacity="0.22" stroke="#f2a93b" strokeWidth="1.8" strokeLinejoin="round" />
-      <g fill="#f2a93b"><circle cx="196" cy="22" r="3" /><circle cx="238" cy="17" r="3" /><circle cx="244" cy="52" r="3" /><circle cx="202" cy="58" r="3" /></g>
-      <path d="M244 52 L266 46" stroke="#fff" strokeOpacity="0.5" strokeWidth="1" />
-      <rect x="266" y="36" width="84" height="20" rx="4" fill="#fff" />
-      <text x="273" y="49.5" fontFamily="ui-monospace, Menlo, monospace" fontSize="9" fontWeight="700" fill="#141414">413830 · 890 mp</text>
+      <path d="M160 22 L202 17 L208 52 L166 58 Z" fill="#f2a93b" fillOpacity="0.22" stroke="#f2a93b" strokeWidth="1.8" strokeLinejoin="round" />
+      <g fill="#f2a93b"><circle cx="160" cy="22" r="3" /><circle cx="202" cy="17" r="3" /><circle cx="208" cy="52" r="3" /><circle cx="166" cy="58" r="3" /></g>
+      <path d="M208 52 L230 46" stroke="#fff" strokeOpacity="0.5" strokeWidth="1" />
+      <rect x="230" y="36" width="92" height="20" rx="4" fill="#fff" />
+      <text x="276" y="49.5" fontFamily="ui-monospace, Menlo, monospace" fontSize="9" fontWeight="700" fill="#141414" textAnchor="middle">413830 · 890 mp</text>
     </svg>
   );
 }
 
 /** The site analysis: the parcel inside its radius, the numbered amenities around and a line of text (wide band). */
 export function SiteBand() {
-  const pois: [number, number][] = [[188, 24], [282, 20], [300, 58], [176, 56]];
+  const pois: [number, number][] = [[166, 22], [222, 18], [232, 58], [152, 56]];
   return (
     <svg className="toolBand" viewBox="0 0 480 78" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Parcela în zona ei, cu dotările din jur">
       <rect width="480" height="78" fill="#161616" />
       <g stroke="#fff" strokeOpacity="0.1"><path d="M0 40 L480 40 M0 12 L480 12 M0 68 L480 68 M120 0 L120 78 M236 0 L236 78 M352 0 L352 78" /></g>
-      <circle cx="236" cy="40" r="34" fill="none" stroke="#f2a93b" strokeOpacity="0.45" strokeDasharray="3 4" />
-      <path d="M228 33 L245 31 L246 47 L229 49 Z" fill="#c23a2e" stroke="#fff" strokeWidth="1.2" />
+      <circle cx="192" cy="40" r="34" fill="none" stroke="#f2a93b" strokeOpacity="0.45" strokeDasharray="3 4" />
+      <path d="M184 33 L201 31 L202 47 L185 49 Z" fill="#c23a2e" stroke="#fff" strokeWidth="1.2" />
       <g fontFamily="Verdana, sans-serif" fontSize="7" fontWeight="700" fill="#fff" textAnchor="middle">
         {pois.map(([x, y], i) => <g key={x}><circle cx={x} cy={y} r="5.5" fill="#1f6f63" /><text x={x} y={y + 2.5}>{i + 1}</text></g>)}
       </g>
-      <rect x="318" y="26" width="72" height="5" rx="2.5" fill="#fff" fillOpacity="0.5" />
-      <rect x="318" y="36" width="58" height="5" rx="2.5" fill="#fff" fillOpacity="0.3" />
-      <rect x="318" y="46" width="66" height="5" rx="2.5" fill="#f2a93b" fillOpacity="0.6" />
+      <rect x="256" y="28" width="72" height="5" rx="2.5" fill="#fff" fillOpacity="0.5" />
+      <rect x="256" y="38" width="58" height="5" rx="2.5" fill="#fff" fillOpacity="0.3" />
+      <rect x="256" y="48" width="66" height="5" rx="2.5" fill="#f2a93b" fillOpacity="0.6" />
     </svg>
   );
 }
@@ -52,8 +52,8 @@ export function ComparablesBand() {
       </g>
       <circle cx="236" cy="40" r="8.5" fill="#f2a93b" />
       <path d="M232 41 L236 37 L240 41 V44.5 H232 Z" fill="#141414" />
-      <rect x="250" y="22" width="34" height="13" rx="6.5" fill="rgba(255,255,255,0.14)" />
-      <text x="267" y="31" fontFamily="ui-monospace, Menlo, monospace" fontSize="7.5" fill="#fff" textAnchor="middle">680 m</text>
+      <rect x="222" y="51" width="34" height="13" rx="6.5" fill="rgba(255,255,255,0.14)" />
+      <text x="239" y="60" fontFamily="ui-monospace, Menlo, monospace" fontSize="7.5" fill="#fff" textAnchor="middle">680 m</text>
     </svg>
   );
 }
