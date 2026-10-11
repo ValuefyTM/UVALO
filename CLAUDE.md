@@ -105,9 +105,26 @@ Proprietar: VALUEFY (firmă de evaluări imobiliare, Timișoara). UVALO devine u
   La fiecare schimbare vizibilă se adaugă o intrare; `manifest: true` = s-au schimbat butoanele, cere reinstalare
   (și `MANIFEST_VERSION` crește).
 
+## UVALO pentru Chrome (`/chrome`, modulul `chrome`)
+
+- Extensia Chrome (Manifest V3) pentru capturi de anunțuri ca comparabile, preluată de la VALUEFY și rebranduită:
+  sursa în `extensions/chrome/` (sidepanel.js = captură CDP feliată pe A4, export Word/PDF; `uvalo.js` = contul UVALO,
+  statistici, „Trimite în Word”). Arhiva descărcabilă `public/chrome/uvalo-chrome.zip` se reface cu
+  `npm run chrome:zip` după orice schimbare (și crește `version` din `manifest.json` + `CHROME_VERSIONS` în `src/lib/chrome.ts`).
+- Instalare: „Încarcă extensia neîmpachetată” (fără Chrome Web Store deocamdată). Pagina `/chrome`: prezentare,
+  instalare, versiuni; capturi în `public/chrome/prezentare/`.
+- Contul: la deschiderea panoului `GET /api/chrome/status` cu cookie-ul `vf_tools` (401 → ecran „Conectează-te la UVALO”,
+  care deschide `/login?next=/chrome?conectat=1`; 403 plan; 503 mentenanță; fără rețea → merge local).
+- „Trimite în Word”: `POST /api/chrome/batch` (lista), `PUT /api/chrome/batch/<id>/<item>/<idx>` (fiecare imagine JPEG,
+  ≤ 1,9 MB, recomprimată în extensie), `POST …/<id>/done`. Stocare în D1 (`chrome_batches`, `chrome_slices`, migrația
+  0015), o trimitere per persoană, ștearsă după 7 zile. În Word: panoul `/word/chrome` („Comparabile din Chrome”, din
+  Instrumente și din panoul Comparabile) → `public/word/src/chrome-pane.js` inserează la cursor. Funcție separată
+  `word.chrome` în admin. Dacă volumul crește, imaginile se pot muta în R2.
+- Evenimente: `chrome` (`open`, `capture`, `export`, `send_word`), `word` (`chrome_open`, `insert_chrome`).
+
 ## Instrumente în admin (`/admin/instrumente`)
 
-- Listă cu fiecare instrument (localizare, amplasament, comparabile, word) + pagină `/admin/instrumente/<cheie>`: comutator
+- Listă cu fiecare instrument (localizare, amplasament, comparabile, word, chrome) + pagină `/admin/instrumente/<cheie>`: comutator
   activ/dezactivat, statistici pe 30 de zile (evenimentele din `events` cu `module = <cheie>`), activitate recentă.
 - Setările: `app_settings` cheia `tools` = `{off: [...], limits: {ai_text, ai_plan, total_text_day, total_plan_day,
   total_text_month, total_plan_month}}` (per utilizator / 24 h; plafoane pe platformă pe zi și lună calendaristică, 0 = fără);

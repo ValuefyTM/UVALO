@@ -7,6 +7,7 @@ const TOC: [string, string][] = [
   ["operator", "Cine prelucrează datele"],
   ["date", "Ce date prelucrăm"],
   ["word", "UVALO pentru Word"],
+  ["chrome", "UVALO pentru Chrome"],
   ["scopuri", "De ce le prelucrăm"],
   ["furnizori", "Cui le transmitem"],
   ["pastrare", "Cât timp le păstrăm"],
@@ -51,8 +52,18 @@ export default function Confidentialitate() {
         </ul>
       </section>
 
+      <section id="chrome">
+        <h2>4. UVALO pentru Chrome</h2>
+        <ul>
+          <li>Extensia capturează paginile anunțurilor pe care le alegi tu, în browserul tău, folosind sesiunea ta pe acele site-uri. Capturile și lista lor se păstrează <b>local</b>, în Chrome, până le ștergi („Golește lista” / „Reset”).</li>
+          <li>Pentru a captura pagina întreagă, extensia folosește permisiunea de depanare a Chrome doar pe tab-ul pe care îl deschide pentru anunț, pe durata capturii.</li>
+          <li>Extensia verifică la deschidere contul tău UVALO și trimite statistici de folosire (adresa anunțului capturat, exporturile făcute), fără imaginile capturate.</li>
+          <li><b>Doar când apeși „Trimite în Word”</b>, capturile alese și datele lor (nume, titlu, adresă, data capturii) se urcă în contul tău UVALO, ca să le poți insera din Word. Le vezi doar tu; se șterg automat după 7 zile sau la următoarea trimitere.</li>
+        </ul>
+      </section>
+
       <section id="scopuri">
-        <h2>4. De ce le prelucrăm</h2>
+        <h2>5. De ce le prelucrăm</h2>
         <ul>
           <li><b>Ca să-ți oferim serviciul</b> (contul, instrumentele, abonamentul firmei): executarea contractului, art. 6 alin. (1) lit. b) GDPR.</li>
           <li><b>Securitate și prevenirea abuzurilor</b> (sesiuni, IP, limite de utilizare, jurnal de activitate): interesul nostru legitim, lit. f).</li>
@@ -63,7 +74,7 @@ export default function Confidentialitate() {
       </section>
 
       <section id="furnizori">
-        <h2>5. Cui le transmitem</h2>
+        <h2>6. Cui le transmitem</h2>
         <p>Nu vindem și nu închiriem date. Le transmitem doar furnizorilor care ne ajută să facem serviciul să funcționeze, ca persoane împuternicite, cu contracte de prelucrare a datelor:</p>
         <ul>
           <li><b>Cloudflare</b>: găzduirea aplicației, baza de date și rețeaua (inclusiv protecția împotriva atacurilor).</li>
@@ -77,35 +88,36 @@ export default function Confidentialitate() {
       </section>
 
       <section id="pastrare">
-        <h2>6. Cât timp le păstrăm</h2>
+        <h2>7. Cât timp le păstrăm</h2>
         <ul>
           <li>Datele contului și ale firmei: cât timp contul este activ. După închiderea contului le ștergem sau le anonimizăm în cel mult 12 luni, cu excepția celor pe care legea ne obligă să le păstrăm mai mult (de exemplu documentele contabile).</li>
           <li>Codurile de autentificare expiră în 15 minute; sesiunile, în cel mult 60 de zile sau la deconectare.</li>
           <li>Jurnalul de activitate: cât timp contul este activ, apoi ca mai sus.</li>
           <li>Solicitările de cont respinse: cel mult 12 luni.</li>
           <li>Planurile încărcate pentru citire automată nu se păstrează după ce au fost citite.</li>
+          <li>Comparabilele trimise din UVALO pentru Chrome în Word: cel mult 7 zile, sau până la următoarea trimitere.</li>
         </ul>
       </section>
 
       <section id="cookie">
-        <h2>7. Cookie-uri și stocare locală</h2>
+        <h2>8. Cookie-uri și stocare locală</h2>
         <p>Folosim <b>un singur cookie</b>, strict necesar: cookie-ul de sesiune care te ține conectat (valabil cel mult 60 de zile). Nu folosim cookie-uri de publicitate sau de urmărire și nici servicii de analiză de la terți.</p>
         <p>Browserul (sau panoul din Word) păstrează local câteva preferințe, de exemplu straturile hărții, setările anexelor și lucrul în curs din add-in. Acestea rămân pe dispozitivul tău.</p>
       </section>
 
       <section id="securitate">
-        <h2>8. Securitate</h2>
+        <h2>9. Securitate</h2>
         <p>Toate conexiunile sunt criptate (HTTPS). Nu folosim parole: te conectezi cu un cod de unică folosință trimis pe email, iar codurile și tokenurile de sesiune se păstrează doar ca amprente criptografice. Accesul la date în echipa VALUEFY este limitat la persoanele care administrează platforma.</p>
       </section>
 
       <section id="drepturi">
-        <h2>9. Drepturile tale</h2>
+        <h2>10. Drepturile tale</h2>
         <p>Ai dreptul să ceri acces la datele tale, rectificarea sau ștergerea lor, restricționarea prelucrării, portabilitatea datelor și să te opui prelucrărilor bazate pe interesul legitim. Ne scrii la <a href={`mailto:${COMPANY.email}`}>{COMPANY.email}</a> și îți răspundem în cel mult o lună. Numele, telefonul și imaginea le poți schimba oricând din pagina „Contul meu”.</p>
         <p>Dacă ești nemulțumit, poți depune o plângere la Autoritatea Națională de Supraveghere a Prelucrării Datelor cu Caracter Personal (<a href="https://www.dataprotection.ro" target="_blank" rel="noreferrer">dataprotection.ro</a>).</p>
       </section>
 
       <section id="modificari">
-        <h2>10. Modificări și contact</h2>
+        <h2>11. Modificări și contact</h2>
         <p>Când schimbăm această politică actualizăm data de sus; schimbările importante le anunțăm în platformă sau pe email. Pentru orice întrebare: <a href={`mailto:${COMPANY.email}`}>{COMPANY.email}</a>.</p>
         <p>Vezi și <a href="/termeni">Termenii de utilizare</a>.</p>
       </section>

@@ -12,6 +12,7 @@ const ICON: Record<string, string> = {
   localizare: "M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z M12 12.2a2.6 2.6 0 1 0 0-5.2 2.6 2.6 0 0 0 0 5.2z",
   amplasament: "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z M12 12l6-6",
   comparabile: "M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z M9 4v14 M15 6v14",
+  chrome: "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z M12 8.5h8.5 M9 13.8l-4.6 5.4 M15 13.8l-1 7",
 };
 const esc = (s: string) => s.replace(/[<>&"]/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;" })[c]!);
 const card = (href: string, icon: string, name: string, desc: string, browser = false) =>
@@ -35,6 +36,9 @@ export async function GET(req: Request) {
       ? card("/word/anexe?mode=photo", "foto", "Anexă foto", offPart("photo") ?? "Pozele de la inspecție, ordonate, cu legende, câte vrei pe pagină.") +
         card("/word/anexe?mode=pdf", "pdf", "Anexă documente", offPart("pdf") ?? "Extras CF, releveu, autorizații: pagină cu pagină, cu titlu pe fiecare document.")
       : `<p>${esc(c?.block ?? "Abonamentul firmei tale nu include UVALO pentru Word.")} Scrie-ne la <a href="mailto:office@valuefy.ro">office@valuefy.ro</a>.</p>`,
+    word
+      ? card("/word/chrome", "chrome", "Comparabile din Chrome", offPart("chrome") ?? "Anunțurile capturate cu UVALO pentru Chrome și trimise cu „Trimite în Word”, inserate la cursor.")
+      : "",
     word && c?.modules.includes("comparabile")
       ? card("/word/comparabile", "comparabile", "Localizator de comparabile", offPart("comps") ?? "În fereastră mare, în Word; harta și tabelul se inserează în raport.")
       : "",

@@ -198,6 +198,6 @@ export const ACTION_LABEL: Record<string, string> = {
   export_pdf: "Export PDF", export_word: "Export Word", export_png: "Export PNG", export_kml: "Export KML", export: "Export", link: "Link copiat",
   analysis: "Analiză de amplasament", ai: "Text generat cu AI", ai_plan: "Plan de amplasament citit cu AI", copy: "Text copiat", notify: "„Anunță-mă” la un modul nou",
   pane: "Panou deschis în Word", insert_photo: "Anexă foto inserată în Word", insert_pdf: "Anexă documente inserată în Word", insert_comps: "Comparabile inserate în Word",
-  open: "Extensie deschisă", capture: "Anunț capturat (Chrome)",
+  open: "Extensie deschisă", send_word: "Comparabile trimise în Word (Chrome)", insert_chrome: "Comparabile din Chrome inserate în Word", chrome_open: "Trimitere din Chrome deschisă în Word", capture: "Anunț capturat (Chrome)",
 };
 export const actionLabel = (a: string) => ACTION_LABEL[a] ?? a;

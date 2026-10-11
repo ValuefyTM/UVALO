@@ -879,3 +879,12 @@ a.toolTile:hover { border-color: var(--acc); text-decoration: none; }
 .legalFoot { font-size: 12px; color: var(--muted); text-align: center; margin-top: 18px; }
 .legalLinks { margin: 4px 0 0; text-align: center; font-size: 12px; color: var(--muted); }
 .legalLinks a { color: var(--muted); }
+/* ---- /chrome ---- */
+.cpHero { grid-template-columns: minmax(0, 1fr) minmax(0, 240px); }
+.cpShot { position: relative; z-index: 1; width: 100%; max-height: 430px; object-fit: cover; object-position: top; border-radius: 10px; box-shadow: 0 14px 36px rgba(0, 0, 0, 0.45); }
+.cpSteps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; grid-column: 2; grid-row: 2 / span 2; }
+.cpSteps b { display: flex; align-items: center; gap: 8px; font-size: 14px; margin-bottom: 3px; }
+.cpSteps b span { width: 22px; height: 22px; border-radius: 50%; background: #141414; color: #E0AD4F; display: inline-grid; place-items: center; font-size: 11px; flex: none; }
+.cpSteps p { margin: 0 0 0 30px; color: var(--muted); font-size: 13px; line-height: 1.55; }
+@media (max-width: 1099px) { .cpHero { grid-template-columns: 1fr; } .cpShot { max-width: 260px; } .cpSteps { grid-column: 1; grid-row: auto; } }
+.cpWordShot { max-width: 300px; }

@@ -51,3 +51,73 @@ async function uvCheck() {
 
 document.addEventListener("DOMContentLoaded", uvCheck);
 window.addEventListener("focus", () => { if (!uvOk) uvCheck(); });
+
+/* ── „Trimite în Word”: comparabilele capturate ajung în contul UVALO, de unde add-in-ul Word le inserează ── */
+const UV_MAX = 1800000; // o imagine păstrată de UVALO are cel mult ~1,9 MB
+
+async function uvShrink(blob) {
+  // anunțurile foarte încărcate pot da felii prea mari: le recomprimăm (și micșorăm, la nevoie)
+  if (blob.size <= UV_MAX) return blob;
+  const bmp = await createImageBitmap(blob);
+  let scale = 1, q = 0.82, out = blob;
+  for (let k = 0; k < 6 && out.size > UV_MAX; k++) {
+    const c = document.createElement("canvas");
+    c.width = Math.round(bmp.width * scale); c.height = Math.round(bmp.height * scale);
+    c.getContext("2d").drawImage(bmp, 0, 0, c.width, c.height);
+    out = await new Promise((r) => c.toBlob(r, "image/jpeg", q));
+    if (k % 2) scale *= 0.85; else q = Math.max(0.6, q - 0.08);
+  }
+  bmp.close();
+  return out;
+}
+
+async function uvSendToWord() {
+  if (busy) return;
+  if (!uvOk) { await uvCheck(); if (!uvOk) return; }
+  const groups = state.groups
+    .map((g) => ({ name: g.name, items: g.items.filter((i) => i.status === "captured" && i.slices) }))
+    .filter((g) => g.items.length);
+  const items = groups.flatMap((g) => g.items);
+  if (!items.length) { alert("Nu ai încă nicio comparabilă capturată. Capturează anunțurile (📷), apoi trimite-le în Word."); return; }
+  busy = true;
+  try {
+    setProgress(true, "Se pregătește trimiterea în Word…", 0.02);
+    const body = { groups: groups.map((g) => ({ name: g.name, items: g.items.map((i) => ({ id: i.id, label: i.label || "", title: i.title || "", url: i.url, capturedAt: i.capturedAt || null, slices: i.slices })) })) };
+    const r = await fetch(UVALO + "/api/chrome/batch", { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(d.error || "UVALO nu a primit lista (" + r.status + ").");
+    const total = items.reduce((n, i) => n + i.slices, 0);
+    let done = 0;
+    for (const it of items) {
+      const blobs = await getSlices(it.id, it.slices);
+      if (blobs.length !== it.slices) throw new Error(`Capturile pentru „${it.label || it.title}” nu mai sunt complete. Re-capturează anunțul (📷).`);
+      for (let k = 0; k < blobs.length; k++) {
+        setProgress(true, `Se trimite în Word: ${shorten(it.label || it.title, 30)} · imaginea ${k + 1}/${blobs.length}`, 0.05 + 0.9 * (done / total));
+        const img = await uvShrink(blobs[k]);
+        const dims = await blobDims(img);
+        const u = `${UVALO}/api/chrome/batch/${d.id}/${encodeURIComponent(it.id)}/${k}?w=${dims.w}&h=${dims.h}`;
+        let ok = false, last = "";
+        for (let tr = 0; tr < 3 && !ok; tr++) {
+          const p = await fetch(u, { method: "PUT", credentials: "include", headers: { "Content-Type": img.type || "image/jpeg" }, body: img }).catch((e) => ({ ok: false, status: 0, json: async () => ({ error: e.message }) }));
+          ok = p.ok; if (!ok) { last = ((await p.json().catch(() => ({}))).error) || String(p.status); await sleep(800); }
+        }
+        if (!ok) throw new Error("O imagine nu a ajuns în UVALO: " + last);
+        done++;
+      }
+    }
+    const f = await fetch(`${UVALO}/api/chrome/batch/${d.id}/done`, { method: "POST", credentials: "include" });
+    if (!f.ok) throw new Error(((await f.json().catch(() => ({}))).error) || "Trimiterea nu s-a încheiat.");
+    setProgress(false);
+    alert(`Gata: ${items.length} ${items.length === 1 ? "comparabilă trimisă" : "comparabile trimise"} în Word.\n\nÎn Word: tab-ul UVALO → Instrumente → „Comparabile din Chrome” → Inserează.\nTrimiterea rămâne disponibilă 7 zile; o trimitere nouă o înlocuiește.`);
+  } catch (e) {
+    setProgress(false);
+    alert("Nu am putut trimite în Word: " + (e && e.message ? e.message : e));
+  } finally {
+    busy = false;
+  }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  const b = document.getElementById("btnSendWord");
+  if (b) b.addEventListener("click", uvSendToWord);
+});

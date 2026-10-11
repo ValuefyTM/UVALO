@@ -15,6 +15,9 @@ export const MANIFEST_VERSION = "1.1.0.0";
  * it is separate from MANIFEST_VERSION, which changes only with the buttons of the tab (and needs a new install).
  */
 export const WORD_VERSIONS: { v: string; date: string; manifest?: boolean; notes: string[] }[] = [
+  { v: "1.3.0", date: "11 oct. 2026", notes: [
+    "„Comparabile din Chrome” (Instrumente): anunțurile capturate cu UVALO pentru Chrome și trimise cu „Trimite în Word” se inserează la cursor, cu sursa și data capturii.",
+  ] },
   { v: "1.2.1", date: "11 oct. 2026", notes: [
     "Pagină de prezentare nouă pentru UVALO pentru Word, cu instrucțiunile de instalare și versiunile în tab-uri separate.",
   ] },
@@ -234,7 +237,7 @@ h1{margin:0;font-size:16px}p{margin:0;color:#4a4a4a}
 .card{display:flex;gap:12px;align-items:flex-start;background:#fff;border:1px solid #e6dfcf;border-radius:12px;padding:12px;color:inherit;text-decoration:none}
 a.card:hover{border-color:#E0AD4F}.card b{display:block;font-size:12.5px;margin-bottom:2px}.card small{display:block;color:#6b6b6b;font-size:11px;line-height:1.45}
 .ico{flex:none;width:36px;height:36px;border-radius:10px;background:#141414;display:grid;place-items:center}.ico svg{width:20px;height:20px;fill:none;stroke:#E0AD4F;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
-.btn{display:flex;align-items:center;justify-content:center;height:42px;border-radius:10px;border:0;background:#E0AD4F;color:#141414;font:700 12.5px Verdana,sans-serif;text-decoration:none;cursor:pointer}
+.btn{display:flex;width:100%;align-items:center;justify-content:center;height:42px;border-radius:10px;border:0;background:#E0AD4F;color:#141414;font:700 12.5px Verdana,sans-serif;text-decoration:none;cursor:pointer}
 .btn.ghost{background:#fff;border:1px solid #cfc6b3;font-weight:400}
 .sec{font-size:10.5px;font-weight:700;color:#6b6b6b;letter-spacing:.5px;text-transform:uppercase;margin-top:4px}
 .ver{text-align:center;font-size:10px;color:#8a8478;margin-top:4px}.me{font-size:11px;color:#6b6b6b;border-top:1px solid #e6dfcf;padding-top:10px}.me a{color:#9A5F00}

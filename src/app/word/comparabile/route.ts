@@ -33,6 +33,7 @@ export async function GET(req: Request) {
 <label class="card" style="align-items:center;cursor:pointer"><input type="checkbox" id="optTitle" checked> <span>Titlu deasupra hărții</span></label>
 <label class="card" style="align-items:center;cursor:pointer"><input type="checkbox" id="optTable" checked> <span>Tabelul comparabilelor, ca tabel Word</span></label>
 <p style="font-size:11px">Pune cursorul pe un rând gol, în afara tabelelor, înainte de inserare. Panoul trebuie să rămână deschis cât lucrezi în fereastra hărții.</p>
+<a class="btn ghost" href="/word/chrome">Anunțuri capturate în Chrome →</a>
 <a class="btn ghost" href="/word/instrumente">← Instrumentele UVALO</a>`;
   return new Response(panePage("Comparabile", body, `<script src="/word/src/comps-pane.js"></script>`), { headers: paneHeaders });
 }
