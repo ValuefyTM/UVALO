@@ -147,6 +147,9 @@
   details.pts summary{cursor:pointer;font-size:12px;color:var(--acc-text);font-weight:700}
   details.pts table{width:100%;border-collapse:collapse;font-size:11.5px;margin-top:6px;font-variant-numeric:tabular-nums}
   details.pts td,details.pts th{padding:3px 6px;border-bottom:1px solid var(--divider);text-align:right}
+  .req{color:var(--err);font-weight:700}
+  .fgrid .miss input,.fgrid .miss select{border-color:var(--err);background:var(--err-bg)}
+  .needs{font-size:12px;color:var(--err);line-height:1.5}
   .foot{font-size:11px;color:var(--muted2);line-height:1.6}
   .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);background:#141414;color:#fff;padding:11px 18px;border-radius:10px;font-size:13px;opacity:0;pointer-events:none;transition:.25s;z-index:5000;max-width:90vw;text-align:center}
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
@@ -267,21 +270,21 @@
           <div class="box">
             <div class="bh"><h3>Completările evaluatorului</h3></div>
             <div class="bb">
-              <div class="muted" style="font-size:11.5px">Ce nu se poate afla din hărți. Gol = rămâne marcat de completat în text.</div>
+              <div class="muted" style="font-size:11.5px">Ce nu se poate afla din hărți. Câmpurile cu <b style="color:var(--err)">*</b> sunt obligatorii pentru generarea textului.</div>
               <div class="fgrid" id="extra">
-                <label class="w2">Adresa<input data-k="adresa" placeholder="Str. …, nr. …"></label>
-                <label>Suprafață din act (mp)<input data-k="suprafata_din_act" inputmode="decimal" placeholder="ex. 600"></label>
-                <label>Suprafața folosită<select data-k="suprafata_folosita"><option value="">—</option><option>din act</option><option>din măsurătoare</option></select></label>
-                <label>Topografie<select data-k="topografie"><option value="">—</option><option>plană</option><option>în pantă ușoară</option><option>în pantă</option></select></label>
-                <label>Încadrare<select data-k="incadrare"><option value="">—</option><option>intravilan</option><option>extravilan</option></select></label>
-                <label>Funcțiunea zonei<input data-k="functiunea_zonei" placeholder="ex. rezidențială, case"></label>
-                <label class="w2">Utilități în zonă<input data-k="utilitati" placeholder="ex. electricitate, apă, canalizare, gaze"></label>
+                <label class="w2">Adresa <span class="req" aria-hidden="true">*</span><input data-k="adresa" required placeholder="Str. …, nr. …"></label>
+                <label>Suprafață din act (mp) <span class="req" aria-hidden="true">*</span><input data-k="suprafata_din_act" required inputmode="decimal" placeholder="ex. 600"></label>
+                <label>Suprafața folosită <span class="req" aria-hidden="true">*</span><select data-k="suprafata_folosita" required><option value="">—</option><option>din act</option><option>din măsurătoare</option></select></label>
+                <label>Topografie <span class="req" aria-hidden="true">*</span><select data-k="topografie" required><option value="">—</option><option>plană</option><option>în pantă ușoară</option><option>în pantă</option></select></label>
+                <label>Încadrare <span class="req" aria-hidden="true">*</span><select data-k="incadrare" required><option value="">—</option><option>intravilan</option><option>extravilan</option></select></label>
+                <label>Funcțiunea zonei <span class="req" aria-hidden="true">*</span><input data-k="functiunea_zonei" required placeholder="ex. rezidențială, case"></label>
+                <label class="w2">Utilități în zonă <span class="req" aria-hidden="true">*</span><input data-k="utilitati" required placeholder="ex. electricitate, apă, canalizare, gaze"></label>
                 <label class="w2">Alte observații<input data-k="observatii" placeholder="ex. stradă cu trafic redus"></label>
               </div>
             </div>
           </div>
-          <div class="box">
-            <div class="bh"><h3><label for="prompt">Promptul tău (opțional)</label></h3></div>
+          <div class="box" id="promptBox" hidden>
+            <div class="bh"><h3><label for="prompt">Promptul tău</label></h3></div>
             <div class="bb">
               <div class="muted" style="font-size:11.5px">Schimbă stilul, lungimea sau accentele. Datele de intrare rămân aceleași.</div>
               <textarea id="prompt" rows="4" maxlength="1500" placeholder="ex. Scrie la persoana a III-a, fără enumerări, maximum 150 de cuvinte. Pune accent pe accesibilitate."></textarea>
@@ -296,6 +299,7 @@
             <span class="src" id="words"></span>
           </div>
           <div id="out" contenteditable="false" aria-label="Textul generat" role="textbox" aria-multiline="true"></div>
+          <p class="needs" id="needs" hidden></p>
           <div class="legend"><mark>galben</mark> = de completat sau de confirmat de evaluator · <mark class="bad">roșu</mark> = cifră care nu apare în datele de intrare (verific-o). Textul se poate edita direct.</div>
           <div class="acts">
             <button class="btn gold" type="button" id="gen">Generează textul</button>
@@ -753,7 +757,8 @@ function renderFacts(){
     rows.push(['Factori negativi',osm.neg.length?osm.neg.length+' (cel mai apropiat '+fmtD(osm.neg[0].d)+')':'niciunul'])}
   $('facts').innerHTML=rows.map(r=>'<dt>'+esc(r[0])+'</dt><dd>'+esc(r[1])+'</dd>').join('');
 }
-$('extra').addEventListener('input',e=>{if(e.target.dataset.k==='suprafata_din_act'){renderA();}renderFacts()});
+$('extra').addEventListener('change',()=>{if($('extra').querySelector('.miss'))markMissing(true)});
+$('extra').addEventListener('input',e=>{if($('extra').querySelector('.miss'))markMissing(true);if(e.target.dataset.k==='suprafata_din_act'){renderA();}renderFacts()});
 
 /* ---------- textul (AI) ---------- */
 const STYLE_NAME={scurt:'Scurt',detaliat:'Detaliat',academic:'Academic',personalizat:'Personalizat'};
@@ -775,15 +780,22 @@ function outText(){
 }
 function renderText(){
   $('tabs').querySelectorAll('button').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.s===S.style)));
+  $('promptBox').hidden=S.style!=='personalizat';
   const t=S.texts[S.style], out=$('out');
-  if(!t){out.contentEditable='false';out.innerHTML='<p class="outEmpty">'+(S.style==='personalizat'?'Scrie promptul tău în stânga și apasă „Generează cu promptul meu”.':'Apasă „Generează textul” pentru varianta '+STYLE_NAME[S.style].toLowerCase()+'. Completează înainte ce știi din teren (adresa, suprafața din act, utilitățile): intră în text.')+'</p>';
+  if(!t){out.contentEditable='false';out.innerHTML='<p class="outEmpty">'+(S.style==='personalizat'?'Scrie în stânga cum vrei să fie textul (de exemplu „maximum 150 de cuvinte, la persoana a III-a”) și apasă „Generează cu promptul meu”.':'Apasă „Generează textul” pentru varianta '+STYLE_NAME[S.style].toLowerCase()+'. Completează înainte ce știi din teren (adresa, suprafața din act, utilitățile): intră în text.')+'</p>';
     $('badges').innerHTML='';$('words').textContent='';$('gen').textContent='Generează textul';$('gen').hidden=S.style==='personalizat';return}
   out.contentEditable='true';out.innerHTML=md(t.text,t.unverified);
   $('badges').innerHTML='<span class="badge ai">Generat cu AI · '+STYLE_NAME[S.style]+'</span>'+(t.unverified.length?'<span class="badge bad">'+t.unverified.length+' '+(t.unverified.length===1?'cifră nu apare':'cifre nu apar')+' în date: '+t.unverified.map(esc).join(', ')+'</span>':'<span class="badge ok">✓ Toate cifrele corespund datelor de intrare</span>');
   $('words').textContent='≈ '+t.text.split(/\s+/).filter(Boolean).length+' cuvinte';
   $('gen').textContent='Regenerează';$('gen').hidden=false;
 }
+const REQ={adresa:'adresa',suprafata_din_act:'suprafața din act',suprafata_folosita:'suprafața folosită',incadrare:'încadrarea',topografie:'topografia',functiunea_zonei:'funcțiunea zonei',utilitati:'utilitățile'};
+function missingExtras(){return Object.keys(REQ).filter(k=>{const el=$('extra').querySelector('[data-k='+k+']');return !el||!el.value.trim()})}
+function markMissing(show){const miss=missingExtras();$('extra').querySelectorAll('[data-k]').forEach(el=>{const bad=show&&miss.includes(el.dataset.k);el.parentElement.classList.toggle('miss',bad);el.setAttribute('aria-invalid',String(bad))});
+  const n=$('needs');if(n){n.hidden=!miss.length;n.textContent=miss.length?'Ca să generezi textul, completează: '+miss.map(k=>REQ[k]).join(', ')+'.':''}return miss}
 async function generate(custom){
+  const miss=markMissing(true);
+  if(miss.length){toast('Completează întâi datele evaluatorului: '+miss.map(k=>REQ[k]).join(', ')+'.',6000);const f=$('extra').querySelector('[data-k='+miss[0]+']');if(f){f.scrollIntoView({behavior:'smooth',block:'center'});setTimeout(()=>f.focus(),400)}return}
   if(S.busy)return;
   const prompt=$('prompt').value.trim();
   if(custom&&!prompt){toast('Scrie întâi promptul tău.');$('prompt').focus();return}
