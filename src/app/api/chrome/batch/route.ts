@@ -25,7 +25,12 @@ export async function GET() {
   await dropBatches(a.db);
   const row = await a.db.prepare("SELECT id, data, slices, created_at FROM chrome_batches WHERE user_id = ? AND done = 1 ORDER BY created_at DESC LIMIT 1")
     .bind(a.userId).first<{ id: string; data: string; slices: number; created_at: string }>();
-  if (!row) return Response.json({ ok: true, batch: null }, { headers: { "Cache-Control": "no-store" } });
+  if (!row) {
+    // nicio trimitere completă: spunem dacă a început una și unde s-a oprit, ca panoul din Word să explice
+    const p = await a.db.prepare("SELECT b.id, b.slices, b.created_at, (SELECT COUNT(*) FROM chrome_slices s WHERE s.batch_id = b.id) AS got FROM chrome_batches b WHERE b.user_id = ? ORDER BY b.created_at DESC LIMIT 1")
+      .bind(a.userId).first<{ id: string; slices: number; created_at: string; got: number }>();
+    return Response.json({ ok: true, batch: null, pending: p ? { slices: p.slices, got: p.got, created_at: p.created_at } : null, user: a.c.user.email }, { headers: { "Cache-Control": "no-store" } });
+  }
   await track(a.db, a.c, "word", "chrome_open", row.id);
   return Response.json({ ok: true, batch: { id: row.id, groups: JSON.parse(row.data), slices: row.slices, created_at: row.created_at } }, { headers: { "Cache-Control": "no-store" } });
 }

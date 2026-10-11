@@ -21,7 +21,12 @@
       if (!r.ok) throw new Error(d.error || r.status);
       batch = d.batch;
       if (!batch) {
-        $("list").innerHTML = '<div class="card" style="display:block"><b>Nimic trimis încă</b><small>În Chrome, în panoul UVALO pentru Chrome, capturează anunțurile (📷), apoi apasă <b>„Trimite în Word”</b>. Revino aici și apasă Reîncarcă.</small></div><button type="button" class="btn ghost" id="reload">Reîncarcă</button><a class="btn ghost" href="/chrome" data-browser="1">Ce este UVALO pentru Chrome?</a>';
+        var pend = d.pending;
+        $("list").innerHTML = (pend
+          ? '<div class="card" style="display:block;border-color:#d9534f"><b>Trimiterea din ' + esc(fmt(pend.created_at)) + ' nu s-a terminat</b><small>Au ajuns ' + pend.got + ' din ' + pend.slices + ' imagini. În Chrome apasă din nou <b>„⇢ Trimite în Word”</b> și așteaptă mesajul „Gata”.</small></div>'
+          : '<div class="card" style="display:block"><b>Nimic trimis încă din Chrome</b><small>1. În Chrome folosește extensia <b>UVALO pentru Chrome</b> (v2.0 sau mai nouă, de pe app.uvalo.ro/chrome); extensia veche VALUEFY nu are acest buton.<br>2. Capturează anunțurile (📷), apoi apasă <b>„⇢ Trimite în Word”</b> și așteaptă mesajul „Gata”.<br>3. Revino aici și apasă Reîncarcă.</small></div>') +
+          '<p style="font-size:11px">Conectat în Word ca <b>' + esc(d.user || "") + '</b>. În Chrome trebuie să fii conectat la UVALO cu același cont.</p>' +
+          '<button type="button" class="btn ghost" id="reload">Reîncarcă</button><a class="btn ghost" href="/chrome" data-browser="1">Descarcă UVALO pentru Chrome</a>';
         $("reload").onclick = load;
         return;
       }

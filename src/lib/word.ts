@@ -230,12 +230,12 @@ export function panePage(title: string, body: string, script = "") {
 <link rel="icon" href="/icon.svg" type="image/svg+xml">
 <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
 <style>
-*{box-sizing:border-box}body{margin:0;min-height:100vh;background:#f6f3ed;color:#141414;font:12px/1.55 Verdana,Geneva,sans-serif;display:flex;flex-direction:column}
+*{box-sizing:border-box}[hidden]{display:none!important}body{margin:0;min-height:100vh;background:#f6f3ed;color:#141414;font:12px/1.55 Verdana,Geneva,sans-serif;display:flex;flex-direction:column}
 .top{display:flex;align-items:center;gap:10px;padding:10px 12px;background:#141414;color:#d6d6d6}.top img{height:20px;display:block}.top span{padding-left:10px;border-left:1px solid rgba(255,255,255,.22)}
 main{padding:16px 14px;display:flex;flex-direction:column;gap:12px}
 h1{margin:0;font-size:16px}p{margin:0;color:#4a4a4a}
 .card{display:flex;gap:12px;align-items:flex-start;background:#fff;border:1px solid #e6dfcf;border-radius:12px;padding:12px;color:inherit;text-decoration:none}
-a.card:hover{border-color:#E0AD4F}.card b{display:block;font-size:12.5px;margin-bottom:2px}.card small{display:block;color:#6b6b6b;font-size:11px;line-height:1.45}
+a.card:hover{border-color:#E0AD4F}.card>span>b,.card>b{display:block;font-size:12.5px;margin-bottom:2px}.card small{display:block;color:#6b6b6b;font-size:11px;line-height:1.45}
 .ico{flex:none;width:36px;height:36px;border-radius:10px;background:#141414;display:grid;place-items:center}.ico svg{width:20px;height:20px;fill:none;stroke:#E0AD4F;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
 .btn{display:flex;width:100%;align-items:center;justify-content:center;height:42px;border-radius:10px;border:0;background:#E0AD4F;color:#141414;font:700 12.5px Verdana,sans-serif;text-decoration:none;cursor:pointer}
 .btn.ghost{background:#fff;border:1px solid #cfc6b3;font-weight:400}
