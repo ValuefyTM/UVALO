@@ -10,6 +10,28 @@ export const OLD_ADDIN_ID = "0a337985-8af2-4761-aa29-222a89928350";
 /** Raise it when the manifest changes (new button, new texts), so Word reloads it. */
 export const MANIFEST_VERSION = "1.1.0.0";
 
+/**
+ * The add-in's versions, newest first (shown in the panes and on /word). A new entry for every change people notice;
+ * it is separate from MANIFEST_VERSION, which changes only with the buttons of the tab (and needs a new install).
+ */
+export const WORD_VERSIONS: { v: string; date: string; manifest?: boolean; notes: string[] }[] = [
+  { v: "1.2.0", date: "11 oct. 2026", notes: [
+    "Anexă documente: paginile unui document se pot restrânge („Restrânge paginile”), ca să vezi doar lista documentelor.",
+    "Documentele se mută trăgându-le de mâner (⠿), și când sunt restrânse.",
+    "Versiunea add-in-ului apare în panouri.",
+  ] },
+  { v: "1.1.0", date: "11 oct. 2026", manifest: true, notes: [
+    "Buton nou „Comparabile”: localizatorul de comparabile în fereastră mare; „Inserează în raport” pune harta și tabelul la cursor.",
+    "Anexele păstrează pozele și actele 12 ore, și dacă închizi panoul sau Word.",
+    "Instalator cu verificări pas cu pas.",
+  ] },
+  { v: "1.0.0", date: "11 oct. 2026", manifest: true, notes: [
+    "Anexă foto și Anexă documente, încărcate din UVALO: fără Node.js și fără server local.",
+    "Tab-ul UVALO în Word, conectare cu contul UVALO, acces după abonament.",
+  ] },
+];
+export const WORD_VERSION = WORD_VERSIONS[0].v;
+
 const esc = (s: string) => s.replace(/[<>&"]/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;" })[c]!);
 
 /** The add-in manifest, with the URLs of this deployment (production, staging or local). */
@@ -212,10 +234,10 @@ a.card:hover{border-color:#E0AD4F}.card b{display:block;font-size:12.5px;margin-
 .btn{display:flex;align-items:center;justify-content:center;height:42px;border-radius:10px;border:0;background:#E0AD4F;color:#141414;font:700 12.5px Verdana,sans-serif;text-decoration:none;cursor:pointer}
 .btn.ghost{background:#fff;border:1px solid #cfc6b3;font-weight:400}
 .sec{font-size:10.5px;font-weight:700;color:#6b6b6b;letter-spacing:.5px;text-transform:uppercase;margin-top:4px}
-.me{font-size:11px;color:#6b6b6b;border-top:1px solid #e6dfcf;padding-top:10px}.me a{color:#9A5F00}
+.ver{text-align:center;font-size:10px;color:#8a8478;margin-top:4px}.me{font-size:11px;color:#6b6b6b;border-top:1px solid #e6dfcf;padding-top:10px}.me a{color:#9A5F00}
 </style></head><body>
 <header class="top"><img src="/uvalo-lockup.svg" alt="UVALO"><span>${esc(title)}</span></header>
-<main>${body}</main>${script}</body></html>`;
+<main>${body}<div class="ver">UVALO pentru Word v${WORD_VERSION}</div></main>${script}</body></html>`;
 }
 
 export const paneHeaders = { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "private, no-store", "X-Robots-Tag": "noindex, nofollow" };

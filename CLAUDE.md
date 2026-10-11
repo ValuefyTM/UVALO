@@ -93,6 +93,11 @@ Proprietar: VALUEFY (firmă de evaluări imobiliare, Timișoara). UVALO devine u
   + tabel Word, WordApi 1.3).
 - Anexele păstrează lucrul la închiderea panoului: fișierele și lista (ordine, bife, descrieri, titluri) în IndexedDB
   `uvalo-anexe` (per mod, 12 ore); „Golește” șterge tot.
+- Anexă documente: „Restrânge paginile / Arată paginile” și ▸/▾ pe fiecare document (`doc.folded`, păstrat în sesiune);
+  documentele se mută trăgându-le de mânerul ⠿.
+- **Versiuni**: `WORD_VERSIONS` în `src/lib/word.ts` (cea mai nouă prima; afișată în panouri și pe `/word#versiuni`).
+  La fiecare schimbare vizibilă se adaugă o intrare; `manifest: true` = s-au schimbat butoanele, cere reinstalare
+  (și `MANIFEST_VERSION` crește).
 
 ## Instrumente în admin (`/admin/instrumente`)
 

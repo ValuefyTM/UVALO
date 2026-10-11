@@ -210,3 +210,17 @@ input[type=range] { width: 80px; accent-color: var(--gold-2); }
 .page .dtt { font-weight: 700; color: #111; }
 .page .im { cursor: zoom-in; }
 
+
+/* ---- documente restrânse, mutate prin tragere; versiunea ---- */
+.pdf-only { display: none !important; }
+.mode-pdf .pdf-only { display: flex !important; }
+.dgrip { flex: none; cursor: grab; color: var(--muted); font-size: 15px; line-height: 1; padding: 2px 1px; user-select: none; }
+.dgrip:active { cursor: grabbing; }
+.dhead .dfold { width: 20px; font-size: 11px; color: var(--ink); }
+.dcard.folded { padding: 6px 8px; margin-bottom: 6px; }
+.dcard.folded .dmeta { display: flex; align-items: center; gap: 7px; margin: 4px 0 0 21px; }
+.dmini { width: 22px; height: 31px; object-fit: cover; border-radius: 2px; box-shadow: 0 0 0 1px var(--line); flex: none; }
+.dcard.dragging { opacity: .4; }
+.dcard.drop-above { box-shadow: 0 -3px 0 var(--gold); }
+.dcard.drop-below { box-shadow: 0 3px 0 var(--gold); }
+.ver { text-align: center; font-size: 10px; color: var(--muted); opacity: .8; }

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { page } from "@/lib/guard";
 import { origin } from "@/lib/site";
+import { WORD_VERSIONS } from "@/lib/word";
 import { AppShell } from "@/components/AppShell";
 
 export const metadata: Metadata = { title: "UVALO pentru Word | UVALO" };
@@ -60,6 +61,18 @@ export default async function Word() {
           <li>În Word: <b>Inserare → Add-in-urile mele</b> (sau <b>Pornire → Add-in-uri → Mai multe add-in-uri</b>) → secțiunea <b>Add-in-uri de dezvoltator</b> → <b>UVALO</b> → Adaugă.</li>
           <li>Dacă firma are calculatoare administrate de IT, add-in-urile instalate local pot fi blocate; atunci varianta potrivită e instalarea pentru toată firma, din Microsoft 365.</li>
         </ol>
+      </section>
+      <section className="card" id="versiuni">
+        <div className="cardHead"><h2>Versiuni</h2><span className="pill pillOk"><i />v{WORD_VERSIONS[0].v} · actuală</span></div>
+        <p className="hint">Versiunile noi ajung singure în Word. Doar cele marcate „cere reinstalare” (butoane noi în tab) au nevoie să rulezi din nou instalatorul.</p>
+        <ul className="wordVers">
+          {WORD_VERSIONS.map((r) => (
+            <li key={r.v}>
+              <div><b>v{r.v}</b> <span className="muted">· {r.date}</span>{r.manifest && <span className="pill pillWarn" style={{ marginLeft: 8 }}><i />cere reinstalare</span>}</div>
+              <ul>{r.notes.map((n) => <li key={n}>{n}</li>)}</ul>
+            </li>
+          ))}
+        </ul>
       </section>
     </AppShell>
   );

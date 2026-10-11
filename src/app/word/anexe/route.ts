@@ -1,6 +1,6 @@
 import { locatorAccess, locatorAsset } from "@/lib/locator";
 import { track } from "@/lib/track";
-import { panePage, paneHeaders } from "@/lib/word";
+import { panePage, paneHeaders, WORD_VERSION } from "@/lib/word";
 
 // /word/anexe?mode=photo|pdf — the Word pane "Anexă foto" / "Anexă documente" (UVALO pentru Word). Word opens it from the
 // UVALO tab; the page lives with the module pages (localizare-data/word-anexe.html), its scripts in public/word/.
@@ -23,5 +23,5 @@ export async function GET(req: Request) {
   const page = await locatorAsset("word-anexe.html", req);
   if (!page) return new Response("Pagina nu este disponibilă momentan.", { status: 503, headers: paneHeaders });
   await track(a.db, a.c, "word", "pane", mode);
-  return new Response(await page.text(), { headers: paneHeaders });
+  return new Response((await page.text()).replace("{{WORD_VERSION}}", WORD_VERSION), { headers: paneHeaders });
 }

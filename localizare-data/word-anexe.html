@@ -52,6 +52,10 @@
           <button id="selNone" title="Debifează toate">Niciuna</button>
           <button id="selInv" title="Inversează selecția">Inv.</button>
         </div>
+        <div class="seg pdf-only">
+          <button id="foldAll" title="Arată doar documentele, ca să le vezi ordinea și să le muți">Restrânge paginile</button>
+          <button id="unfoldAll" title="Arată toate paginile">Arată paginile</button>
+        </div>
         <div class="row between small">
           <label class="chk"><input id="onlySel" type="checkbox" /> doar bifate</label>
           <button id="removeUnsel" class="link">Elimină nebifatele</button>
@@ -195,6 +199,7 @@
     <div id="progress" class="progress" hidden><div class="bar"><i></i></div><span></span></div>
     <button id="btnInsert" class="btn primary big" disabled>Inserează în document</button>
     <div id="footInfo" class="muted small center"></div>
+    <div class="ver">UVALO pentru Word v{{WORD_VERSION}}</div>
   </footer>
 
   <div id="lightbox" class="lb" hidden>

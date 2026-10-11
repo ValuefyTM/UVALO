@@ -397,6 +397,8 @@
     var doc = g.items[0].doc || {};
     d.innerHTML =
       '<div class="dhead">' +
+      '<span class="dgrip" draggable="true" title="Trage ca să muți documentul">⠿</span>' +
+      '<button data-d="fold" class="dfold" title="' + (doc.folded ? "Arată paginile" : "Restrânge paginile") + '">' + (doc.folded ? "▸" : "▾") + "</button>" +
       '<input type="checkbox" data-d="tog"' + (all ? " checked" : "") + ' title="Bifează / debifează toate paginile"/>' +
       '<span class="dnum">' + (ns ? dnum : "–") + "</span>" +
       '<input type="text" class="dtitle" data-d="title" placeholder="Titlul documentului" value="' + escapeHtml(doc.title || "") + '"/>' +
@@ -404,6 +406,13 @@
       '<button data-d="down" title="Mută documentul mai jos"' + (idx === total - 1 ? " disabled" : "") + ">▼</button>" +
       '<button data-d="del" title="Scoate documentul">✕</button></div>' +
       '<div class="dmeta">' + escapeHtml(g.name) + " · " + plural(g.items.length, "pagină", "pagini") + (all ? "" : " · " + ns + " bifate") + "</div>";
+    if (doc.folded) {
+      // restrâns: doar prima pagină, mică, ca documentele să se vadă și să se poată muta ușor
+      d.classList.add("folded");
+      var th = g.items[0].thumb;
+      if (th) { var mini = document.createElement("img"); mini.className = "dmini"; mini.src = th; mini.alt = ""; d.querySelector(".dmeta").prepend(mini); }
+      return d;
+    }
     var strip = document.createElement("div"); strip.className = "strip";
     g.items.forEach(function (it) { if (!only || it.sel) strip.appendChild(cardHtml(it, nm[it.id])); });
     d.appendChild(strip);
@@ -423,8 +432,13 @@
     return dbp;
   }
   function reqP(r) { return new Promise(function (res, rej) { r.onsuccess = function () { res(r.result); }; r.onerror = function () { rej(r.error); }; }); }
-  function scheduleSave() { if (restoring) return; clearTimeout(saveT); saveT = setTimeout(saveSession, 700); }
+  function scheduleSave() { if (restoring) return; clearTimeout(saveT); saveT = setTimeout(saveSession, 300); }
+  // panoul se închide: salvează imediat ce era încă în așteptare
+  function flushSave() { if (saveT) { clearTimeout(saveT); saveT = null; saveSession(); } }
+  window.addEventListener("pagehide", flushSave);
+  document.addEventListener("visibilitychange", function () { if (document.visibilityState === "hidden") flushSave(); });
   async function saveSession() {
+    saveT = null;
     if (restoring) return;
     try {
       var db = await idb(), files = {}, docs = {};
@@ -626,7 +640,7 @@
     });
     drop.addEventListener("dragleave", function () { drop.classList.remove("over"); });
     drop.addEventListener("drop", async function (e) {
-      if (dragId != null) return;
+      if (dragId != null || !(e.dataTransfer && Array.prototype.indexOf.call(e.dataTransfer.types, "Files") >= 0)) return;
       e.preventDefault(); drop.classList.remove("over");
       var dt = e.dataTransfer, list = [];
       if (dt.items && dt.items.length && dt.items[0].webkitGetAsEntry) {
@@ -1090,6 +1104,8 @@
       gs.forEach(function (g, i) { if (g.key === row.dataset.k) gi = i; });
       if (gi < 0) return;
       var act = b.dataset.d;
+      if (act === "fold") { var dd = gs[gi].items[0].doc; if (dd) dd.folded = !dd.folded; render(); return; }
+      if (act === "grip") return;
       if (act === "tog") { var on = b.checked; gs[gi].items.forEach(function (x) { if (!x.bad) x.sel = on; }); }
       else if (act === "del") { gs.splice(gi, 1); }
       else if (act === "up" && gi > 0) { var t = gs[gi - 1]; gs[gi - 1] = gs[gi]; gs[gi] = t; }
@@ -1097,6 +1113,49 @@
       if (act !== "tog") { items = [].concat.apply([], gs.map(function (g) { return g.items; })); sortMode = "manual"; }
       render();
     });
+    $("foldAll").onclick = function () { setFold(true); };
+    $("unfoldAll").onclick = function () { setFold(false); };
+
+    // documentele se mută trăgându-le de mâner (⠿), și când sunt restrânse
+    var dragDoc = null;
+    grid.addEventListener("dragstart", function (e) {
+      var grip = e.target.closest && e.target.closest(".dgrip"); if (!grip) return;
+      var card = grip.closest(".dcard"); dragDoc = card.dataset.k; card.classList.add("dragging");
+      e.dataTransfer.effectAllowed = "move";
+      try { e.dataTransfer.setData("text/plain", dragDoc); e.dataTransfer.setDragImage(card, 20, 20); } catch (x) { }
+    });
+    grid.addEventListener("dragend", function () {
+      dragDoc = null;
+      grid.querySelectorAll(".dcard.dragging,.dcard.drop-above,.dcard.drop-below").forEach(function (c) { c.classList.remove("dragging", "drop-above", "drop-below"); });
+    });
+    grid.addEventListener("dragover", function (e) {
+      if (dragDoc == null) return;
+      e.preventDefault(); e.stopPropagation();
+      grid.querySelectorAll(".drop-above,.drop-below").forEach(function (c) { c.classList.remove("drop-above", "drop-below"); });
+      var card = e.target.closest(".dcard");
+      if (!card || card.dataset.k === dragDoc) return;
+      var r = card.getBoundingClientRect();
+      card.classList.add(e.clientY < r.top + r.height / 2 ? "drop-above" : "drop-below");
+    });
+    grid.addEventListener("drop", function (e) {
+      if (dragDoc == null) return;
+      e.preventDefault(); e.stopPropagation();
+      var card = e.target.closest(".dcard");
+      if (card && card.dataset.k !== dragDoc) {
+        var gs = docGroups(), from = -1;
+        gs.forEach(function (g, i) { if (g.key === dragDoc) from = i; });
+        var mv = gs.splice(from, 1)[0], to = -1;
+        gs.forEach(function (g, i) { if (g.key === card.dataset.k) to = i; });
+        var r = card.getBoundingClientRect();
+        gs.splice(e.clientY < r.top + r.height / 2 ? to : to + 1, 0, mv);
+        items = [].concat.apply([], gs.map(function (g) { return g.items; })); sortMode = "manual";
+      }
+      dragDoc = null; render();
+    });
+  }
+  function setFold(on) {
+    docGroups().forEach(function (g) { if (g.items[0].doc) g.items[0].doc.folded = on; });
+    render();
   }
 
   function applyModeUi() {

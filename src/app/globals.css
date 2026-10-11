@@ -801,3 +801,5 @@ a.toolTile:hover { border-color: var(--acc); text-decoration: none; }
 .wordSteps b, .wordList b { color: var(--ink); }
 .wordUrl { display: block; padding: 10px 12px; border-radius: 10px; background: #f6f3ed; border: 1px solid var(--line); font-family: var(--mono); font-size: 12.5px; overflow-wrap: anywhere; }
 .hint code { overflow-wrap: anywhere; font-size: 12px; }
+.wordVers { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; font-size: 13.5px; }
+.wordVers ul { margin: 6px 0 0; padding-left: 20px; color: var(--muted); line-height: 1.6; }
