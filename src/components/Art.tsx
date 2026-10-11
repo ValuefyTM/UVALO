@@ -48,6 +48,52 @@ export function CompsThumb() {
   );
 }
 
+/** Cadastral locator: parcels of a plan, one of them found (gold) with its pin. */
+export function LocThumb() {
+  return (
+    <svg className="toolThumb" viewBox="0 0 120 80" aria-hidden="true">
+      <rect width="120" height="80" rx="12" fill="#161616" />
+      <g stroke="#fff" strokeOpacity="0.16" fill="none"><path d="M10 22 L46 18 L48 40 L12 44 Z M48 18 L80 15 L82 37 L50 40 Z M82 15 L110 12 L112 34 L84 37 Z M12 46 L48 42 L50 66 L14 70 Z M84 39 L112 36 L114 60 L86 63 Z" /></g>
+      <path d="M50 42 L84 39 L86 63 L52 66 Z" fill="#f2a93b" fillOpacity="0.28" stroke="#f2a93b" strokeWidth="1.6" />
+      <path d="M68 22 c-5 0 -8 4 -8 8 c0 6 8 14 8 14 s8 -8 8 -14 c0 -4 -3 -8 -8 -8 Z" fill="#f2a93b" />
+      <circle cx="68" cy="30" r="3" fill="#161616" />
+    </svg>
+  );
+}
+
+/** UVALO for Word: a report page with a photo grid and the gold UVALO tab. */
+export function WordThumb() {
+  return (
+    <svg className="toolThumb" viewBox="0 0 120 80" aria-hidden="true">
+      <rect width="120" height="80" rx="12" fill="#161616" />
+      <rect x="30" y="10" width="60" height="64" rx="3" fill="#fff" />
+      <rect x="36" y="16" width="24" height="7" rx="2" fill="#f2a93b" />
+      <g fill="#cfc6b3"><rect x="36" y="27" width="22" height="16" rx="1.5" /><rect x="62" y="27" width="22" height="16" rx="1.5" /><rect x="36" y="47" width="22" height="16" rx="1.5" /><rect x="62" y="47" width="22" height="16" rx="1.5" /></g>
+      <g fill="#8aa1b5"><rect x="36" y="35" width="22" height="8" rx="1.5" /><rect x="62" y="35" width="22" height="8" rx="1.5" /></g>
+      <rect x="94" y="56" width="18" height="16" rx="3" fill="#f2a93b" />
+      <text x="103" y="67.5" fontFamily="Verdana, sans-serif" fontSize="9" fontWeight="700" fill="#141414" textAnchor="middle">W</text>
+    </svg>
+  );
+}
+
+/** UVALO for Chrome: a listing page cut into A4 slices, sent on to the report. */
+export function ChromeThumb() {
+  return (
+    <svg className="toolThumb" viewBox="0 0 120 80" aria-hidden="true">
+      <rect width="120" height="80" rx="12" fill="#161616" />
+      <rect x="12" y="10" width="46" height="62" rx="3" fill="#fff" />
+      <rect x="12" y="10" width="46" height="7" rx="3" fill="#cfc6b3" />
+      <rect x="16" y="21" width="38" height="18" rx="1.5" fill="#8aa1b5" />
+      <g fill="#cfc6b3"><rect x="16" y="43" width="30" height="3" /><rect x="16" y="49" width="38" height="3" /><rect x="16" y="55" width="34" height="3" /></g>
+      <path d="M8 40 H62" stroke="#f2a93b" strokeWidth="1.4" strokeDasharray="3 3" />
+      <path d="M68 41 H86 M80 35 L86 41 L80 47" stroke="#f2a93b" strokeWidth="2.2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+      <rect x="90" y="22" width="20" height="38" rx="2" fill="#fff" />
+      <rect x="93" y="26" width="14" height="10" rx="1" fill="#8aa1b5" />
+      <g fill="#cfc6b3"><rect x="93" y="40" width="14" height="2" /><rect x="93" y="45" width="14" height="2" /><rect x="93" y="50" width="10" height="2" /></g>
+    </svg>
+  );
+}
+
 /** Upcoming market analyses: a district map with prices per square metre and the price trend beside it. */
 export function MarketArt() {
   const tags: [number, number, string][] = [[92, 62, "1.450"], [176, 104, "1.620"], [70, 136, "1.380"]];

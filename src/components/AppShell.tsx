@@ -5,28 +5,23 @@ import { initials } from "@/lib/guard";
 import { LogoutButton, MenuButton, OrgSwitch } from "./ClientBits";
 import { Referral } from "./Referral";
 
-type Key = "home" | "localizare" | "amplasament" | "comparabile" | "word" | "chrome" | "firma" | "cont";
+type Key = "home" | "instrumente" | "localizare" | "amplasament" | "comparabile" | "word" | "chrome" | "firma" | "cont";
+// the tools' own pages light up "Instrumente" in the menu
+const TOOL_KEYS: Key[] = ["instrumente", "localizare", "amplasament", "comparabile", "word", "chrome"];
 
-/** Sidebar layout (VALUEFY design), with the menu the person is entitled to. */
+/** Sidebar layout (VALUEFY design): Acasă, Instrumente (all the tools on one page), În curând. */
 export async function AppShell(props: { c: Ctx; active: Key; title: string; subtitle?: string; actions?: React.ReactNode; children: React.ReactNode }) {
   const mnt = props.c.super ? await maintenanceOn() : false;
   const { c } = props;
-  // Main pages first, then the secondary tools (group "Instrumente"), then the modules still to come.
-  const nav0: { key: Key; label: string; href: string; tool?: boolean }[] = [
+  const nav: { key: Key; label: string; href: string }[] = [
     { key: "home", label: "Acasă", href: "/" },
-    { key: "localizare", label: "Localizator cadastral", href: "/localizare" },
-    { key: "amplasament", label: "Analiza amplasamentului", href: "/amplasament", tool: true },
-    { key: "comparabile", label: "Localizator de comparabile", href: "/comparabile", tool: true },
-    { key: "word", label: "UVALO pentru Word", href: "/word", tool: true },
-    { key: "chrome", label: "UVALO pentru Chrome", href: "/chrome", tool: true },
+    { key: "instrumente", label: "Instrumente", href: "/instrumente" },
     // "Firma mea" only for those who turned on "Lucrez ca birou de evaluare" in their account.
     ...(OFFICE_READY && c.org && canManageOrg(c) && c.user.is_office ? [{ key: "firma" as const, label: "Firma mea", href: "/firma" }] : []),
   ];
-  // tools turned off by the administration are hidden (super-admins still see them)
-  const nav = nav0.filter((i) => c.super || !c.off.includes(i.key));
-  // Phone: the main pages in the bottom menu, the rest (account, sign out…) behind "Meniu", the sidebar as a panel.
-  // (comparables are a desk tool: on the phone they stay on the home page and behind "Meniu")
-  const mobileNav = [...nav.filter((i) => i.key !== "comparabile" && i.key !== "amplasament" && i.key !== "word" && i.key !== "chrome"), { key: "cont" as const, label: "Contul meu", href: "/cont" }].slice(0, 3);
+  const current = (k: Key) => (k === "instrumente" ? TOOL_KEYS.includes(props.active) : props.active === k) ? "page" as const : undefined;
+  // Phone: Acasă, Instrumente and the account in the bottom menu; the rest behind "Meniu".
+  const mobileNav = [...nav.filter((i) => i.key !== "firma"), { key: "cont" as const, label: "Contul meu", href: "/cont" }].slice(0, 3);
   const sub = c.user.anevar_no ? `Legitimație ANEVAR ${c.user.anevar_no}` : c.org ? `${c.org.name} · ${c.role ? ROLE_LABEL[c.role] : ""}` : c.super ? "Administrator UVALO" : c.user.email;
   return (
     <div className="shell">
@@ -38,12 +33,8 @@ export async function AppShell(props: { c: Ctx; active: Key; title: string; subt
           </a>
         </div>
         <nav className="nav" aria-label="Meniu">
-          {nav.filter((i) => !i.tool).map((i) => (
-            <a key={i.key} href={i.href} aria-current={props.active === i.key ? "page" : undefined}>{i.label}</a>
-          ))}
-          <span className="navSec">Instrumente</span>
-          {nav.filter((i) => i.tool).map((i) => (
-            <a key={i.key} className="navTool" href={i.href} aria-current={props.active === i.key ? "page" : undefined}>{i.label}</a>
+          {nav.map((i) => (
+            <a key={i.key} href={i.href} aria-current={current(i.key)}>{i.label}</a>
           ))}
           <span className="navSec">În curând</span>
           <a aria-disabled="true" tabIndex={-1} className="navSoon">Analize de piață</a>
@@ -79,7 +70,7 @@ export async function AppShell(props: { c: Ctx; active: Key; title: string; subt
       </div>
       <nav className="bottomNav" aria-label="Meniu">
         {mobileNav.map((i) => (
-          <a key={i.key} href={i.href} aria-current={props.active === i.key ? "page" : undefined}>{i.label}</a>
+          <a key={i.key} href={i.href} aria-current={current(i.key)}>{i.label}</a>
         ))}
         <MenuButton />
       </nav>

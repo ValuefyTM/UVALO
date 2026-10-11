@@ -888,3 +888,15 @@ a.toolTile:hover { border-color: var(--acc); text-decoration: none; }
 .cpSteps p { margin: 0 0 0 30px; color: var(--muted); font-size: 13px; line-height: 1.55; }
 @media (max-width: 1099px) { .cpHero { grid-template-columns: 1fr; } .cpShot { max-width: 260px; } .cpSteps { grid-column: 1; grid-row: auto; } }
 .cpWordShot { max-width: 300px; }
+
+/* ---- /instrumente ---- */
+.instGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-bottom: 22px; }
+.instTile { padding: 14px 16px 14px 14px; align-items: center; }
+.instTile .toolThumb { width: 108px; height: 72px; }
+.instTile .toolText b { font-size: 15px; }
+.instTile .toolText span { font-size: 12.5px; }
+.instMain { grid-column: 1 / -1; background: #141414; border-color: #141414; color: #fff; }
+.instMain .toolText span { color: #cfcfcf; }
+.instMain .toolGo { color: #E0AD4F; }
+a.instMain:hover { border-color: #E0AD4F; }
+@media (max-width: 760px) { .instGrid { grid-template-columns: 1fr; } .instTile .toolThumb { width: 90px; height: 60px; } }
