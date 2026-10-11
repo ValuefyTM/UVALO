@@ -803,3 +803,51 @@ a.toolTile:hover { border-color: var(--acc); text-decoration: none; }
 .hint code { overflow-wrap: anywhere; font-size: 12px; }
 .wordVers { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; font-size: 13.5px; }
 .wordVers ul { margin: 6px 0 0; padding-left: 20px; color: var(--muted); line-height: 1.6; }
+
+/* ---- /word: prezentarea add-in-ului ---- */
+.wpHero { position: relative; overflow: hidden; background: #141414; color: #fff; border-radius: 24px; padding: clamp(24px, 4vw, 44px); display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: clamp(20px, 3vw, 40px); align-items: center; }
+.wpHero::after { content: ""; position: absolute; right: -180px; top: -200px; width: 560px; height: 560px; border-radius: 50%; background: radial-gradient(closest-side, rgba(224, 173, 79, 0.22), transparent); pointer-events: none; }
+.wpHeroText { position: relative; z-index: 1; display: flex; flex-direction: column; gap: 16px; }
+.wpHero h2 { margin: 0; font-size: clamp(24px, 2.6vw, 34px); line-height: 1.15; letter-spacing: -0.03em; }
+.wpHero p { margin: 0; color: #cfcfcf; font-size: 14.5px; line-height: 1.65; }
+.wpHero p b { color: #E0AD4F; }
+.wpEyebrow { font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #E0AD4F; }
+.wpEyebrow.dark { color: #9A5F00; }
+.wpCta { display: flex; flex-wrap: wrap; gap: 10px; }
+.wpGhost { background: transparent; color: #fff; border: 1px solid rgba(255, 255, 255, 0.3); }
+.wpGhost:hover { border-color: #E0AD4F; color: #E0AD4F; }
+.wpBadges { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.wpBadges li { font-size: 12px; color: #d9d9d9; border: 1px solid rgba(255, 255, 255, 0.16); border-radius: 99px; padding: 5px 11px; }
+.wpBadges li::before { content: "✓ "; color: #E0AD4F; font-weight: 700; }
+.wpHeroShot { position: relative; z-index: 1; width: 100%; height: auto; border-radius: 12px; box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45); transform: perspective(1600px) rotateY(-6deg); }
+.wpTabsWrap { margin-top: 26px; scroll-margin-top: 16px; }
+.wpTabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin-bottom: 22px; overflow-x: auto; }
+.wpTabs a { padding: 12px 18px; font-weight: 700; font-size: 14px; color: var(--muted); text-decoration: none; border-bottom: 3px solid transparent; white-space: nowrap; }
+.wpTabs a.on { color: var(--ink); border-bottom-color: #E0AD4F; }
+.wpPanel { display: flex; flex-direction: column; gap: 18px; }
+.wpTool { background: #fff; border: 1px solid var(--line); border-radius: 24px; padding: clamp(18px, 3vw, 32px); display: flex; flex-direction: column; gap: 22px; scroll-margin-top: 16px; }
+.wpToolHead { display: flex; gap: 16px; align-items: flex-start; }
+.wpToolHead img { border-radius: 12px; flex: none; }
+.wpToolHead h2 { margin: 2px 0 4px; font-size: 24px; letter-spacing: -0.02em; }
+.wpToolHead p { margin: 0; color: var(--muted); font-size: 14.5px; }
+.wpShot { width: 100%; height: auto; border-radius: 14px; box-shadow: 0 12px 34px rgba(20, 20, 20, 0.16); }
+.wpSteps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(14px, 2vw, 26px); }
+.wpSteps img { width: 100%; height: auto; border-radius: 14px; border: 1px solid var(--line); box-shadow: 0 10px 28px rgba(20, 20, 20, 0.1); background: #f6f3ed; }
+.wpSteps b { display: flex; align-items: center; gap: 9px; margin: 14px 0 6px; font-size: 15px; }
+.wpSteps b span { width: 26px; height: 26px; border-radius: 50%; background: #141414; color: #E0AD4F; display: inline-grid; place-items: center; font-size: 12px; flex: none; }
+.wpSteps p { margin: 0; color: var(--muted); font-size: 13.5px; line-height: 1.6; }
+.wpFacts { list-style: none; margin: 0; padding: 16px 0 0; border-top: 1px solid var(--line); display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 24px; font-size: 13.5px; color: var(--muted); }
+.wpFacts b { color: var(--ink); }
+.wpFacts li::before { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #E0AD4F; margin-right: 9px; vertical-align: middle; }
+.wpMore { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.wpMore > div { background: #fff; border: 1px solid var(--line); border-radius: 18px; padding: 18px; }
+.wpMore p { margin: 6px 0 0; color: var(--muted); font-size: 13.5px; line-height: 1.55; }
+.wpEnd { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; background: #141414; color: #fff; border-radius: 18px; padding: 18px 22px; font-size: 16px; }
+@media (max-width: 1099px) {
+  .wpHero { grid-template-columns: 1fr; }
+  .wpHeroShot { transform: none; }
+}
+@media (max-width: 760px) {
+  .wpSteps { grid-template-columns: 1fr; max-width: 360px; margin: 0 auto; }
+  .wpFacts, .wpMore { grid-template-columns: 1fr; }
+}

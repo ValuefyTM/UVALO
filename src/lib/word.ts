@@ -15,6 +15,9 @@ export const MANIFEST_VERSION = "1.1.0.0";
  * it is separate from MANIFEST_VERSION, which changes only with the buttons of the tab (and needs a new install).
  */
 export const WORD_VERSIONS: { v: string; date: string; manifest?: boolean; notes: string[] }[] = [
+  { v: "1.2.1", date: "11 oct. 2026", notes: [
+    "Pagină de prezentare nouă pentru UVALO pentru Word, cu instrucțiunile de instalare și versiunile în tab-uri separate.",
+  ] },
   { v: "1.2.0", date: "11 oct. 2026", notes: [
     "Anexă documente: paginile unui document se pot restrânge („Restrânge paginile”), ca să vezi doar lista documentelor.",
     "Documentele se mută trăgându-le de mâner (⠿), și când sunt restrânse.",

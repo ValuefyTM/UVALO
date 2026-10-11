@@ -3,19 +3,112 @@ import { page } from "@/lib/guard";
 import { origin } from "@/lib/site";
 import { WORD_VERSIONS } from "@/lib/word";
 import { AppShell } from "@/components/AppShell";
+import { WordTabs } from "@/components/WordTabs";
 
 export const metadata: Metadata = { title: "UVALO pentru Word | UVALO" };
 export const dynamic = "force-dynamic";
 
-/** UVALO pentru Word: what the add-in does and how to install it (Windows installer, firm-wide, Mac). */
+/** A tool of the add-in, presented with real screenshots of its pane (public/word/prezentare/). */
+const STEPS = {
+  foto: [
+    ["foto-1-lista", "Alegi pozele", "Tot folderul de la inspecție sau doar câteva. Bifezi ce intră, le tragi în ordinea dorită și scrii legenda sub fiecare."],
+    ["foto-2-aranjare", "Aranjezi pagina", "1–12 poze pe pagină, cu proporția păstrată sau decupate uniform, spațiu, chenar, legende numerotate, titlul anexei."],
+    ["foto-3-previzualizare", "Verifici și inserezi", "Vezi paginile exact cum ies, apoi un click le pune în raport. Pozele se micșorează la mărimea de tipar."],
+  ],
+  doc: [
+    ["doc-1-lista", "Adaugi actele", "Extras CF, releveu, certificat energetic, autorizații: PDF sau scanări. Fiecare pagină apare separat; o bifezi, o rotești sau o scoți."],
+    ["doc-2-restranse", "Pui documentele în ordine", "Restrângi paginile ca să vezi doar lista documentelor și le muți trăgându-le de mâner. Titlul fiecăruia se scrie direct în listă."],
+    ["doc-3-previzualizare", "Verifici și inserezi", "O pagină de document pe o pagină Word, cu titlu numerotat deasupra. Planurile landscape se rotesc singure."],
+  ],
+} as const;
+
+/** UVALO pentru Word: presentation of the add-in (tools with screenshots), installation and versions, in tabs. */
 export default async function Word() {
   const { c } = await page();
   const on = c.modules.includes("word");
   const o = await origin();
   return (
-    <AppShell c={c} active="word" title="UVALO pentru Word" subtitle="Anexa foto și anexa cu documente, direct în raportul Word">
+    <AppShell c={c} active="word" title="UVALO pentru Word" subtitle="Anexele raportului de evaluare, direct în Word">
       {!on && <div className="note">{c.off.includes("word") ? "UVALO pentru Word este dezactivat temporar. Revine în curând." : (c.block ?? "Abonamentul firmei tale nu include UVALO pentru Word.")} Scrie-ne la <a className="rowLink" href="mailto:office@valuefy.ro">office@valuefy.ro</a>.</div>}
-      <div className="cols">
+
+      <section className="wpHero">
+        <div className="wpHeroText">
+          <span className="wpEyebrow">Add-in pentru Microsoft Word · v{WORD_VERSIONS[0].v}</span>
+          <h2>Anexa foto și anexa cu acte, gata în câteva minute.</h2>
+          <p>Un tab <b>UVALO</b> în Word, cu instrumentele care așază pozele de la inspecție și documentele imobilului în raport: ordonate, cu legende și titluri, la mărimea potrivită.</p>
+          <div className="wpCta">
+            <a className="btn btnGold" href="#instalare">Instalează în Word</a>
+            <a className="btn wpGhost" href="#anexa-foto">Vezi cum funcționează</a>
+          </div>
+          <ul className="wpBadges">
+            <li>Se actualizează singur</li>
+            <li>Pozele rămân pe calculatorul tău</li>
+            <li>Lucrul se păstrează dacă închizi panoul</li>
+          </ul>
+        </div>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img className="wpHeroShot" src="/word/prezentare/hero-foto.webp" alt="Word cu tab-ul UVALO și panoul Anexă foto deschis lângă anexa inserată" width={1600} height={1000} />
+      </section>
+
+      <WordTabs tabs={[{ id: "prezentare", label: "Prezentare" }, { id: "instalare", label: "Instalare" }, { id: "versiuni", label: "Versiuni" }]}>
+        <div className="wpPanel">
+          <section className="wpTool" id="anexa-foto">
+            <div className="wpToolHead">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/word/assets/foto-80.png" alt="" width={48} height={48} />
+              <div><span className="wpEyebrow dark">Instrumentul 1</span><h2>Anexă foto</h2><p>Pozele de la inspecție, așezate în pagină fără să le muți una câte una prin Word.</p></div>
+            </div>
+            <ol className="wpSteps">
+              {STEPS.foto.map(([img, t, d], i) => (
+                <li key={img}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={`/word/prezentare/${img}.webp`} alt={t} width={570} height={1170} loading="lazy" />
+                  <b><span>{i + 1}</span>{t}</b><p>{d}</p>
+                </li>
+              ))}
+            </ol>
+            <ul className="wpFacts">
+              <li><b>Ordonare</b> manuală, după nume sau după data fotografierii</li>
+              <li><b>Legende</b> „Foto 3 – Bucătărie”, numerotate automat</li>
+              <li><b>Rotire</b> și mărire, din tastatură: ← → Space R</li>
+              <li><b>Inserezi din nou</b> fără dubluri: anexa existentă se înlocuiește</li>
+            </ul>
+          </section>
+
+          <section className="wpTool" id="anexa-documente">
+            <div className="wpToolHead">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/word/assets/doc-80.png" alt="" width={48} height={48} />
+              <div><span className="wpEyebrow dark">Instrumentul 2</span><h2>Anexă documente</h2><p>Actele imobilului, pagină cu pagină, fiecare cu titlul lui, în ordinea pe care o vrei.</p></div>
+            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img className="wpShot" src="/word/prezentare/hero-doc.webp" alt="Word cu panoul Anexă documente: documentele restrânse, lângă anexa inserată" width={1600} height={1000} loading="lazy" />
+            <ol className="wpSteps">
+              {STEPS.doc.map(([img, t, d], i) => (
+                <li key={img}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={`/word/prezentare/${img}.webp`} alt={t} width={570} height={1170} loading="lazy" />
+                  <b><span>{i + 1}</span>{t}</b><p>{d}</p>
+                </li>
+              ))}
+            </ol>
+            <ul className="wpFacts">
+              <li><b>Titluri</b> cu prefix numerotat: „Anexa 3.1 – Extras de carte funciară”</li>
+              <li><b>Stil Titlu 2/3</b>, ca documentele să apară în cuprins</li>
+              <li><b>Scanări JPG/PNG</b> merg alături de PDF-uri</li>
+              <li><b>Calitate</b> compactă, standard sau de tipar</li>
+            </ul>
+          </section>
+
+          <section className="wpMore">
+            <div><b>Comparabile</b><p>Localizatorul de comparabile într-o fereastră mare, în Word; harta și tabelul intră în raport la cursor.</p></div>
+            <div><b>Lucrul nu se pierde</b><p>Dacă închizi panoul sau Word, pozele și actele te așteaptă 12 ore, cu ordinea și legendele.</p></div>
+            <div><b>Totul local</b><p>Pozele și PDF-urile se prelucrează pe calculatorul tău; nu se trimit pe server.</p></div>
+          </section>
+          <div className="wpEnd"><b>Îl încerci?</b><a className="btn btnGold" href="#instalare">Instalare în 2 minute →</a></div>
+        </div>
+
+        <div className="wpPanel">
         <section className="card">
           <h2>Instalare pe Windows</h2>
           <ol className="wordSteps">
@@ -30,17 +123,6 @@ export default async function Word() {
           </div>
           <p className="hint">Actualizările vin automat: panourile se încarcă din UVALO, deci nu reinstalezi nimic la o versiune nouă. Instalatorul se rulează din nou doar dacă îți spunem noi (când apare un buton nou în tab).</p>
         </section>
-        <section className="card">
-          <h2>Ce face</h2>
-          <ul className="wordList">
-            <li><b>Anexă foto</b>: alegi folderul cu pozele de la inspecție, bifezi, ordonezi, scrii legendele și alegi câte poze pe pagină. Pozele se micșorează la mărimea de tipar, ca raportul să rămână mic.</li>
-            <li><b>Anexă documente</b>: extras CF, releveu, autorizații (PDF sau scanări). Fiecare pagină se poate bifa, roti sau scoate; fiecare document primește titlu, cu numerotare automată.</li>
-            <li><b>Comparabile</b>: localizatorul de comparabile într-o fereastră mare, în Word; „Inserează în raport” pune harta și tabelul comparabilelor la cursor.</li>
-            <li><b>Inserează din nou</b> fără dubluri: anexa e un bloc marcat, pe care UVALO îl înlocuiește. Merg și anexele făcute cu vechiul add-in VALUEFY.</li>
-          </ul>
-          <p className="hint">Pozele și PDF-urile se prelucrează pe calculatorul tău, în Word; nu se trimit pe server.</p>
-        </section>
-      </div>
       <div className="cols">
         <section className="card">
           <h2>Pentru toată firma (Microsoft 365)</h2>
@@ -62,7 +144,10 @@ export default async function Word() {
           <li>Dacă firma are calculatoare administrate de IT, add-in-urile instalate local pot fi blocate; atunci varianta potrivită e instalarea pentru toată firma, din Microsoft 365.</li>
         </ol>
       </section>
-      <section className="card" id="versiuni">
+        </div>
+
+        <div className="wpPanel">
+      <section className="card">
         <div className="cardHead"><h2>Versiuni</h2><span className="pill pillOk"><i />v{WORD_VERSIONS[0].v} · actuală</span></div>
         <p className="hint">Versiunile noi ajung singure în Word. Doar cele marcate „cere reinstalare” (butoane noi în tab) au nevoie să rulezi din nou instalatorul.</p>
         <ul className="wordVers">
@@ -74,6 +159,8 @@ export default async function Word() {
           ))}
         </ul>
       </section>
+        </div>
+      </WordTabs>
     </AppShell>
   );
 }
