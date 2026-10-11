@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 /** "Anunță-mă" for an upcoming module: remembered on the account, so it stays pressed. */
-export function NotifyButton({ k, done: initial }: { k: string; done: boolean }) {
+export function NotifyButton({ k, done: initial, label = "Anunță-mă" }: { k: string; done: boolean; label?: string }) {
   const [done, setDone] = useState(initial);
   const [busy, setBusy] = useState(false);
   const go = async () => {
@@ -15,6 +15,6 @@ export function NotifyButton({ k, done: initial }: { k: string; done: boolean })
   return done ? (
     <span className="soonBtn on" role="status">✓ Te anunțăm</span>
   ) : (
-    <button type="button" className="soonBtn" onClick={go} disabled={busy}>{busy ? "Se salvează…" : "Anunță-mă"}</button>
+    <button type="button" className="soonBtn" onClick={go} disabled={busy}>{busy ? "Se salvează…" : label}</button>
   );
 }

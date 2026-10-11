@@ -31,7 +31,7 @@ function read(text: string, uats: Uat[]) {
  * ("413830 Giroc", "413830, Giroc, Timiș"): the bar finds the UAT and county in the text and says so; without them it
  * asks for them. An address or coordinates go to the locator's address search.
  */
-export function QuickSearch({ uats, amp = false }: { uats: Uat[]; amp?: boolean }) {
+export function QuickSearch({ uats, amp = false, dark = false }: { uats: Uat[]; amp?: boolean; dark?: boolean }) {
   const [text, setText] = useState("");
   const [tried, setTried] = useState(false);
   const r = useMemo(() => read(text, uats), [text, uats]);
@@ -54,7 +54,7 @@ export function QuickSearch({ uats, amp = false }: { uats: Uat[]; amp?: boolean 
   };
 
   return (
-    <form className="quickMain" onSubmit={go} noValidate>
+    <form className={dark ? "quickMain onDark" : "quickMain"} onSubmit={go} noValidate>
       <label className="quickLbl" htmlFor="quickQ">Caută un imobil</label>
       <div className="quickRow">
         <input id="quickQ" className="quickInput" name="q" value={text} onChange={(e) => { setText(e.target.value); setTried(false); }}

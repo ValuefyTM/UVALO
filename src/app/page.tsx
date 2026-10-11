@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { firstName, page } from "@/lib/guard";
 import { uats } from "@/lib/cadastre";
 import { AppShell } from "@/components/AppShell";
-import { CollabIcon, ComparablesBand, LocatorBand, MarketIcon, SiteBand } from "@/components/Art";
+import { CollabArt, CompsThumb, HeroArt, MarketArt, SiteThumb } from "@/components/Art";
 import { NotifyButton } from "@/components/NotifyButton";
 import { QuickSearch } from "@/components/QuickSearch";
 import { Referral } from "@/components/Referral";
@@ -10,14 +10,14 @@ import { Referral } from "@/components/Referral";
 export const metadata: Metadata = { title: "UVALO" };
 export const dynamic = "force-dynamic";
 
+// Secondary tools (the cadastral locator is the main one, at the top) and the upcoming main modules.
 const TOOLS = [
-  { key: "localizare", href: "/localizare", name: "Localizator cadastral", desc: "Parcele, Stereo 70, fișă PDF", Band: LocatorBand, isNew: false },
-  { key: "amplasament", href: "/amplasament", name: "Analiza amplasamentului", desc: "Fișa amplasamentului și textul pentru raport, cu AI", Band: SiteBand, isNew: true },
-  { key: "comparabile", href: "/comparabile", name: "Comparabile", desc: "Subiectul și comparabilele pe hartă, cu distanțe", Band: ComparablesBand, isNew: true },
+  { key: "amplasament", href: "/amplasament", name: "Analiza amplasamentului", desc: "Fișa zonei și textul pentru raport, din planul cadastral și OpenStreetMap", Thumb: SiteThumb },
+  { key: "comparabile", href: "/comparabile", name: "Localizator de comparabile", desc: "Subiectul și comparabilele pe hartă, cu distanțe, gata de raport", Thumb: CompsThumb },
 ];
 const SOON = [
-  { key: "analize", Icon: MarketIcon, name: "Analize de piață", desc: "Prețuri, tranzacții, tendințe" },
-  { key: "colaborari", Icon: CollabIcon, name: "Colaborări", desc: "Inspecții, angajări, proiecte" },
+  { key: "analize", Art: MarketArt, name: "Analize de piață", desc: "Prețuri, tranzacții și tendințe pe zone, pentru justificarea valorilor din raport." },
+  { key: "colaborari", Art: CollabArt, name: "Colaborări", desc: "Inspecții, angajări și colaborări între evaluatori: cauți pe cineva pentru o inspecție sau oferi o colaborare, direct în platformă." },
 ];
 
 const TZ = "Europe/Bucharest";
@@ -34,6 +34,7 @@ export default async function Home() {
   const { db, c } = await page();
   const first = await firstName(db, c.user.name, c.user.anevar_no);
   const loc = c.modules.includes("localizare");
+  const amp = c.modules.includes("amplasament");
   const day = new Date().toLocaleDateString("ro-RO", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: TZ });
   const sub = [day.charAt(0).toUpperCase() + day.slice(1), c.user.county].filter(Boolean).join(" · ");
 
@@ -42,7 +43,7 @@ export default async function Home() {
   const parcels = list.reduce((s, u) => s + u.n, 0);
   const counties = [...new Set(list.map((u) => u.county).filter(Boolean))];
   const keyOf = new Map(list.map((u) => [u.name, u.key]));
-  const recent: { nr: string; uat: string; area: number | null; at: string; href: string }[] = [];
+  const recent: { nr: string; uat: string; key: string; area: number | null; at: string; href: string }[] = [];
   if (loc) {
     const { results } = await db.prepare("SELECT target, meta, at FROM events WHERE user_id = ? AND module = 'localizare' AND action = 'parcel' AND target IS NOT NULL ORDER BY id DESC LIMIT 60")
       .bind(c.user.id).all<{ target: string; meta: string | null; at: string }>();
@@ -51,7 +52,7 @@ export default async function Home() {
       try { m = JSON.parse(e.meta ?? "{}"); } catch {}
       const key = m.uat ? keyOf.get(m.uat) : undefined;
       if (!key || recent.some((r) => r.nr === e.target && r.uat === m.uat)) continue;
-      recent.push({ nr: e.target, uat: m.uat!, area: typeof m.a === "number" ? m.a : null, at: e.at, href: `/localizare#${key}-${encodeURIComponent(e.target)}` });
+      recent.push({ nr: e.target, uat: m.uat!, key, area: typeof m.a === "number" ? m.a : null, at: e.at, href: `/localizare#${key}-${encodeURIComponent(e.target)}` });
       if (recent.length === 5) break;
     }
   }
@@ -62,61 +63,82 @@ export default async function Home() {
       {c.block && !c.super && <div className="note">{c.block} Scrie-ne la <a className="rowLink" href="mailto:office@valuefy.ro">office@valuefy.ro</a> ca să reactivăm accesul.</div>}
 
       <div className="home">
-        <section className="homeWork" aria-label="Caută un imobil">
+        <section className="homeHero" aria-label="Localizator cadastral">
+          <HeroArt />
+          <div className="heroText">
+            <h2>Localizator cadastral</h2>
+            <p>Găsește orice imobil din planurile ANCPI: număr cadastral, topo, adresă sau poziția ta pe teren. Coordonate Stereo 70, vecini, construcții, fișă PDF.</p>
+          </div>
           {loc ? (
-            <>
-              <QuickSearch uats={list.map((u) => ({ key: u.key, name: u.name, county: u.county ?? "Timiș" }))} amp={c.modules.includes("amplasament")} />
-              <h2 className="homeSec">Ultimele imobile căutate</h2>
+            <QuickSearch uats={list.map((u) => ({ key: u.key, name: u.name, county: u.county ?? "Timiș" }))} amp={amp} dark />
+          ) : (
+            <p className="heroNote">Abonamentul firmei tale nu include localizatorul cadastral.</p>
+          )}
+          {parcels > 0 && (
+            <p className="heroTotals">
+              <span><b>{parcels.toLocaleString("ro-RO")}</b> imobile în {counties.length === 1 ? counties[0] : `${counties.length} județe`} · <b>{list.length}</b> UAT</span>
+              <a href="/localizare">Deschide harta →</a>
+            </p>
+          )}
+        </section>
+
+        <div className="homeRow">
+          {loc && (
+            <section className="recentBox" aria-labelledby="recentT">
+              <h2 id="recentT" className="boxHead">Ultimele imobile căutate</h2>
               {recent.length ? (
                 <ul className="recent">
                   {recent.map((r) => (
                     <li key={r.href}>
-                      <a href={r.href}>
+                      <a className="recentMain" href={r.href}>
                         <span className="recentPin" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M8 1.5a4.5 4.5 0 0 0-4.5 4.5c0 3.4 4.5 8.5 4.5 8.5s4.5-5.1 4.5-8.5A4.5 4.5 0 0 0 8 1.5Zm0 6.2a1.7 1.7 0 1 1 0-3.4 1.7 1.7 0 0 1 0 3.4Z" fill="currentColor" /></svg></span>
-                        <b>{r.nr}</b>
-                        <span className="recentMeta">{[r.uat, r.area != null ? `${r.area.toLocaleString("ro-RO")} mp` : null, when(r.at)].filter(Boolean).join(" · ")}</span>
-                        <span className="recentGo">Deschide →</span>
+                        <span className="recentText">
+                          <b>{r.nr}</b>
+                          <span className="recentMeta">{[r.uat, r.area != null ? `${r.area.toLocaleString("ro-RO")} mp` : null, when(r.at)].filter(Boolean).join(" · ")}</span>
+                        </span>
                       </a>
+                      {amp && <a className="recentAct" href={`/amplasament?uat=${encodeURIComponent(r.key)}&nr=${encodeURIComponent(r.nr)}`}>Amplasament</a>}
                     </li>
                   ))}
                 </ul>
               ) : (
                 <p className="recentEmpty">Imobilele pe care le deschizi în localizator apar aici, ca să revii la ele dintr-un click.</p>
               )}
-              {parcels > 0 && <p className="homeTotals">{parcels.toLocaleString("ro-RO")} imobile în {counties.length === 1 ? counties[0] : `${counties.length} județe`} · {list.length} UAT</p>}
-            </>
-          ) : (
-            <p className="recentEmpty">Abonamentul firmei tale nu include localizatorul cadastral.</p>
+            </section>
           )}
-        </section>
 
-        <aside className="homeSide" aria-label="Instrumente">
-          {TOOLS.map(({ key, href, name, desc, Band, isNew }) => {
-            const on = c.modules.includes(key);
-            const body = (
-              <>
-                <Band />
-                <div className="toolBody">
-                  <h3>{name}{isNew && <span className="newTag">Nou</span>}</h3>
+          <section className="toolsCol" aria-labelledby="toolsT">
+            <h2 id="toolsT" className="homeSec">Instrumente</h2>
+            {TOOLS.map(({ key, href, name, desc, Thumb }) => {
+              const on = c.modules.includes(key);
+              const body = (
+                <>
+                  <Thumb />
+                  <span className="toolText"><b>{name}</b><span>{on ? desc : "Nu e inclus în abonament"}</span></span>
+                  {on && <span className="toolGo" aria-hidden="true">→</span>}
+                </>
+              );
+              return on ? <a key={key} className="toolTile" href={href}>{body}</a> : <div key={key} className="toolTile off">{body}</div>;
+            })}
+          </section>
+        </div>
+
+        <section aria-labelledby="soonT">
+          <h2 id="soonT" className="homeSec">În curând în UVALO</h2>
+          <div className="soonGrid">
+            {SOON.map(({ key, Art, name, desc }) => (
+              <div key={key} className="soonBig">
+                <Art />
+                <div className="soonBody">
+                  <span className="soonTag">Lansare în curând</span>
+                  <h3>{name}</h3>
                   <p>{desc}</p>
-                  <div className="toolFoot">
-                    <span className={on ? "avail" : "avail no"}>{on ? "Disponibil" : "Nu e inclus"}</span>
-                    {on && <span className="go">Deschide →</span>}
-                  </div>
+                  <NotifyButton k={key} done={asked.has(key)} label="Anunță-mă la lansare" />
                 </div>
-              </>
-            );
-            return on ? <a key={key} className="toolCard" href={href}>{body}</a> : <div key={key} className="toolCard off">{body}</div>;
-          })}
-          <h2 className="homeSec">În curând</h2>
-          {SOON.map(({ key, Icon, name, desc }) => (
-            <div key={key} className="soonCard">
-              <Icon />
-              <div className="soonText"><h3>{name}</h3><p>{desc}</p></div>
-              <NotifyButton k={key} done={asked.has(key)} />
-            </div>
-          ))}
-        </aside>
+              </div>
+            ))}
+          </div>
+        </section>
       </div>
 
       <div className="mobileOnly" style={{ marginTop: 16 }}><Referral variant="card" /></div>

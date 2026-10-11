@@ -11,11 +11,12 @@ type Key = "home" | "localizare" | "amplasament" | "comparabile" | "firma" | "co
 export async function AppShell(props: { c: Ctx; active: Key; title: string; subtitle?: string; actions?: React.ReactNode; children: React.ReactNode }) {
   const mnt = props.c.super ? await maintenanceOn() : false;
   const { c } = props;
-  const nav: { key: Key; label: string; href: string; soon?: boolean }[] = [
+  // Main pages first, then the secondary tools (group "Instrumente"), then the modules still to come.
+  const nav: { key: Key; label: string; href: string; tool?: boolean }[] = [
     { key: "home", label: "Acasă", href: "/" },
     { key: "localizare", label: "Localizator cadastral", href: "/localizare" },
-    { key: "amplasament", label: "Analiza amplasamentului", href: "/amplasament" },
-    { key: "comparabile", label: "Localizator de comparabile", href: "/comparabile" },
+    { key: "amplasament", label: "Analiza amplasamentului", href: "/amplasament", tool: true },
+    { key: "comparabile", label: "Localizator de comparabile", href: "/comparabile", tool: true },
     // "Firma mea" only for those who turned on "Lucrez ca birou de evaluare" in their account.
     ...(OFFICE_READY && c.org && canManageOrg(c) && c.user.is_office ? [{ key: "firma" as const, label: "Firma mea", href: "/firma" }] : []),
   ];
@@ -33,11 +34,16 @@ export async function AppShell(props: { c: Ctx; active: Key; title: string; subt
           </a>
         </div>
         <nav className="nav" aria-label="Meniu">
-          {nav.map((i) => (
+          {nav.filter((i) => !i.tool).map((i) => (
             <a key={i.key} href={i.href} aria-current={props.active === i.key ? "page" : undefined}>{i.label}</a>
           ))}
-          <a aria-disabled="true" tabIndex={-1} style={{ opacity: 0.6, cursor: "default" }}>Analize de piață <span className="soon">în curând</span></a>
-          <a aria-disabled="true" tabIndex={-1} style={{ opacity: 0.6, cursor: "default" }}>Colaborări <span className="soon">în curând</span></a>
+          <span className="navSec">Instrumente</span>
+          {nav.filter((i) => i.tool).map((i) => (
+            <a key={i.key} className="navTool" href={i.href} aria-current={props.active === i.key ? "page" : undefined}>{i.label}</a>
+          ))}
+          <span className="navSec">În curând</span>
+          <a aria-disabled="true" tabIndex={-1} className="navSoon">Analize de piață</a>
+          <a aria-disabled="true" tabIndex={-1} className="navSoon">Colaborări</a>
         </nav>
         <div className="me">
           {c.super && <a className="sideLink" href="/admin">Portal admin →</a>}

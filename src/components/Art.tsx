@@ -1,84 +1,113 @@
-// Illustrations of the home page tool cards (low bands over a dark plan) and of the upcoming modules (small icons).
+// Illustrations of the home page: the cadastral plan behind the locator's search, the small pictures of the tools and
+// the pictures of the upcoming modules. Plain SVG in the UVALO colours (dark plan, gold parcel, red subject, teal points).
 
-/** The cadastral locator: a gold parcel on the plan, its corners, the label with its number and area (wide band;
- *  the middle stays in view when a narrow card crops the sides). */
-export function LocatorBand() {
+/** Behind the locator's search: a dark cadastral plan with one gold parcel on the right (decor). */
+export function HeroArt() {
   return (
-    <svg className="toolBand" viewBox="0 0 480 78" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Parcelă găsită pe planul cadastral">
-      <rect width="480" height="78" fill="#161616" />
-      <g stroke="#fff" strokeOpacity="0.12">
-        <path d="M0 24 L480 -12 M0 54 L480 18 M0 84 L480 48 M30 0 L46 78 M90 0 L106 78 M150 0 L166 78 M210 0 L226 78 M270 0 L286 78 M330 0 L346 78 M390 0 L406 78 M450 0 L466 78" />
+    <svg className="heroArt" viewBox="0 0 1000 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+      <g stroke="#fff" strokeOpacity="0.08" fill="none">
+        <path d="M0 80 L1000 30 M0 160 L1000 110 M0 240 L1000 190 M120 0 L150 300 M260 0 L290 300 M400 0 L430 300 M540 0 L570 300 M680 0 L710 300 M820 0 L850 300 M960 0 L990 300" />
       </g>
-      <path d="M0 74 L480 38" stroke="#fff" strokeOpacity="0.08" strokeWidth="12" />
-      <path d="M160 22 L202 17 L208 52 L166 58 Z" fill="#f2a93b" fillOpacity="0.22" stroke="#f2a93b" strokeWidth="1.8" strokeLinejoin="round" />
-      <g fill="#f2a93b"><circle cx="160" cy="22" r="3" /><circle cx="202" cy="17" r="3" /><circle cx="208" cy="52" r="3" /><circle cx="166" cy="58" r="3" /></g>
-      <path d="M208 52 L230 46" stroke="#fff" strokeOpacity="0.5" strokeWidth="1" />
-      <rect x="230" y="36" width="92" height="20" rx="4" fill="#fff" />
-      <text x="276" y="49.5" fontFamily="ui-monospace, Menlo, monospace" fontSize="9" fontWeight="700" fill="#141414" textAnchor="middle">413830 · 890 mp</text>
+      <path d="M0 290 L1000 230" stroke="#fff" strokeOpacity="0.06" strokeWidth="22" />
+      <path d="M748 92 L812 84 L820 146 L756 154 Z" fill="#f2a93b" fillOpacity="0.22" stroke="#f2a93b" strokeWidth="2.5" strokeLinejoin="round" />
+      <g fill="#f2a93b"><circle cx="748" cy="92" r="4" /><circle cx="812" cy="84" r="4" /><circle cx="820" cy="146" r="4" /><circle cx="756" cy="154" r="4" /></g>
     </svg>
   );
 }
 
-/** The site analysis: the parcel inside its radius, the numbered amenities around and a line of text (wide band). */
-export function SiteBand() {
-  const pois: [number, number][] = [[166, 22], [222, 18], [232, 58], [152, 56]];
+/** Site analysis: the parcel inside its radius, with the numbered amenities around. */
+export function SiteThumb() {
+  const pois: [number, number][] = [[34, 20], [86, 16], [92, 60], [28, 60]];
   return (
-    <svg className="toolBand" viewBox="0 0 480 78" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Parcela în zona ei, cu dotările din jur">
-      <rect width="480" height="78" fill="#161616" />
-      <g stroke="#fff" strokeOpacity="0.1"><path d="M0 40 L480 40 M0 12 L480 12 M0 68 L480 68 M120 0 L120 78 M236 0 L236 78 M352 0 L352 78" /></g>
-      <circle cx="192" cy="40" r="34" fill="none" stroke="#f2a93b" strokeOpacity="0.45" strokeDasharray="3 4" />
-      <path d="M184 33 L201 31 L202 47 L185 49 Z" fill="#c23a2e" stroke="#fff" strokeWidth="1.2" />
+    <svg className="toolThumb" viewBox="0 0 120 80" aria-hidden="true">
+      <rect width="120" height="80" rx="12" fill="#161616" />
+      <g stroke="#fff" strokeOpacity="0.1"><path d="M0 40 H120 M0 14 H120 M0 66 H120 M30 0 V80 M60 0 V80 M90 0 V80" /></g>
+      <circle cx="60" cy="40" r="28" fill="none" stroke="#f2a93b" strokeOpacity="0.55" strokeDasharray="3 4" />
+      <path d="M52 33 L68 31 L69 47 L53 49 Z" fill="#c23a2e" stroke="#fff" strokeWidth="1.2" />
       <g fontFamily="Verdana, sans-serif" fontSize="7" fontWeight="700" fill="#fff" textAnchor="middle">
-        {pois.map(([x, y], i) => <g key={x}><circle cx={x} cy={y} r="5.5" fill="#1f6f63" /><text x={x} y={y + 2.5}>{i + 1}</text></g>)}
+        {pois.map(([x, y], i) => <g key={x}><circle cx={x} cy={y} r="6" fill="#1f6f63" /><text x={x} y={y + 2.5}>{i + 1}</text></g>)}
       </g>
-      <rect x="256" y="28" width="72" height="5" rx="2.5" fill="#fff" fillOpacity="0.5" />
-      <rect x="256" y="38" width="58" height="5" rx="2.5" fill="#fff" fillOpacity="0.3" />
-      <rect x="256" y="48" width="66" height="5" rx="2.5" fill="#f2a93b" fillOpacity="0.6" />
     </svg>
   );
 }
 
-/** The comparables tool: the subject (house) linked to numbered comparables, with a distance (wide band). */
-export function ComparablesBand() {
-  const comps: [number, number][] = [[176, 20], [296, 18], [314, 60], [158, 60]];
+/** Comparables: the subject (house) linked to numbered comparables. */
+export function CompsThumb() {
+  const comps: [number, number][] = [[24, 18], [96, 16], [100, 62], [20, 62]];
   return (
-    <svg className="toolBand" viewBox="0 0 480 78" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Proprietatea subiect și comparabilele pe hartă">
-      <rect width="480" height="78" fill="#161616" />
-      <g stroke="#fff" strokeOpacity="0.1"><path d="M0 30 L480 14 M0 64 L480 48 M100 0 L114 78 M200 0 L214 78 M300 0 L314 78 M400 0 L414 78" /></g>
-      <ellipse cx="236" cy="40" rx="92" ry="30" fill="none" stroke="#f2a93b" strokeOpacity="0.35" strokeDasharray="3 4" />
-      <g stroke="#f2a93b" strokeDasharray="3 4" strokeWidth="1.2">{comps.map(([x, y]) => <path key={x} d={`M236 40 L${x} ${y}`} />)}</g>
+    <svg className="toolThumb" viewBox="0 0 120 80" aria-hidden="true">
+      <rect width="120" height="80" rx="12" fill="#161616" />
+      <g stroke="#fff" strokeOpacity="0.1"><path d="M0 30 L120 18 M0 60 L120 48 M40 0 L46 80 M80 0 L86 80" /></g>
+      <g stroke="#f2a93b" strokeDasharray="3 3" strokeWidth="1.2">{comps.map(([x, y]) => <path key={x} d={`M60 40 L${x} ${y}`} />)}</g>
       <g fontFamily="Verdana, sans-serif" fontSize="7" fontWeight="700" fill="#141414" textAnchor="middle">
-        {comps.map(([x, y], i) => <g key={x}><circle cx={x} cy={y} r="5.5" fill="#fff" /><text x={x} y={y + 2.5}>{i + 1}</text></g>)}
+        {comps.map(([x, y], i) => <g key={x}><circle cx={x} cy={y} r="6" fill="#fff" /><text x={x} y={y + 2.5}>{i + 1}</text></g>)}
       </g>
-      <circle cx="236" cy="40" r="8.5" fill="#f2a93b" />
-      <path d="M232 41 L236 37 L240 41 V44.5 H232 Z" fill="#141414" />
-      <rect x="222" y="51" width="34" height="13" rx="6.5" fill="rgba(255,255,255,0.14)" />
-      <text x="239" y="60" fontFamily="ui-monospace, Menlo, monospace" fontSize="7.5" fill="#fff" textAnchor="middle">680 m</text>
+      <circle cx="60" cy="40" r="10" fill="#f2a93b" />
+      <path d="M55 41.5 L60 36.5 L65 41.5 V45.5 H55 Z" fill="#141414" />
     </svg>
   );
 }
 
-/** Upcoming: market analyses (bars and a trend line). */
-export function MarketIcon() {
+/** Upcoming market analyses: a district map with prices per square metre and the price trend beside it. */
+export function MarketArt() {
+  const tags: [number, number, string][] = [[92, 62, "1.450"], [176, 104, "1.620"], [70, 136, "1.380"]];
   return (
-    <svg className="soonIcon" viewBox="0 0 40 40" aria-hidden="true">
-      <rect width="40" height="40" rx="8" fill="#f1efe8" />
-      <rect x="8" y="22" width="5" height="10" rx="1.5" fill="#b4b2a9" /><rect x="16" y="17" width="5" height="15" rx="1.5" fill="#b4b2a9" />
-      <rect x="24" y="20" width="5" height="12" rx="1.5" fill="#b4b2a9" /><rect x="32" y="9" width="5" height="23" rx="1.5" fill="#ef9f27" />
-      <path d="M9 18 L18 13 L26 16 L34 6" fill="none" stroke="#854f0b" strokeWidth="1.2" />
+    <svg className="soonArt" viewBox="0 0 480 190" role="img" aria-label="Prețuri pe metru pătrat pe hartă și evoluția lor">
+      <rect width="480" height="190" fill="#f3eee3" />
+      <g stroke="#fff" strokeWidth="9" strokeLinecap="round"><path d="M0 92 L250 70 M120 0 L140 190 M0 170 L250 150" /></g>
+      <g fill="#e6dccb"><rect x="22" y="18" width="80" height="44" rx="6" /><rect x="152" y="14" width="80" height="46" rx="6" /><rect x="20" y="104" width="94" height="52" rx="6" /><rect x="154" y="82" width="78" height="56" rx="6" /></g>
+      <g fontFamily="Verdana, sans-serif" fontSize="11" fontWeight="700" textAnchor="middle">
+        {tags.map(([x, y, t]) => (
+          <g key={t}>
+            <rect x={x - 34} y={y - 15} width="68" height="22" rx="11" fill="#141414" />
+            <text x={x} y={y} fill="#fff">{t} €</text>
+            <path d={`M${x - 5} ${y + 7} L${x} ${y + 13} L${x + 5} ${y + 7} Z`} fill="#141414" />
+          </g>
+        ))}
+      </g>
+      <rect x="268" y="18" width="192" height="154" rx="14" fill="#fff" />
+      <g fill="#d8cfbd"><rect x="290" y="112" width="18" height="40" rx="3" /><rect x="318" y="98" width="18" height="54" rx="3" /><rect x="346" y="104" width="18" height="48" rx="3" /><rect x="374" y="84" width="18" height="68" rx="3" /></g>
+      <rect x="402" y="62" width="18" height="90" rx="3" fill="#f2a93b" />
+      <path d="M290 92 L326 80 L356 86 L384 62 L430 40" fill="none" stroke="#c23a2e" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="430" cy="40" r="5" fill="#c23a2e" />
+      <text x="288" y="40" fontFamily="Verdana, sans-serif" fontSize="11" fontWeight="700" fill="#141414">€/mp</text>
     </svg>
   );
 }
 
-/** Upcoming: collaborations (valuers linked). */
-export function CollabIcon() {
+/** Upcoming collaborations: an inspection (house, checklist) handed from one valuer to another. */
+export function CollabArt() {
   return (
-    <svg className="soonIcon" viewBox="0 0 40 40" aria-hidden="true">
-      <rect width="40" height="40" rx="8" fill="#f1efe8" />
-      <path d="M11 12 L28 16 L19 29" fill="none" stroke="#b4b2a9" strokeDasharray="2 2" />
-      <circle cx="11" cy="12" r="4" fill="#fff" stroke="#b4b2a9" />
-      <circle cx="28" cy="16" r="5" fill="#2c2c2a" stroke="#ef9f27" strokeWidth="1.5" />
-      <circle cx="19" cy="29" r="4.5" fill="#2c2c2a" stroke="#ef9f27" strokeWidth="1.5" />
+    <svg className="soonArt" viewBox="0 0 480 190" role="img" aria-label="Doi evaluatori care colaborează la o inspecție">
+      <rect width="480" height="190" fill="#f3eee3" />
+      <path d="M0 160 H480" stroke="#e6dccb" strokeWidth="2" />
+      {/* the house being inspected, with the checklist */}
+      <path d="M190 160 V96 L240 58 L290 96 V160 Z" fill="#fff" stroke="#141414" strokeWidth="3" strokeLinejoin="round" />
+      <rect x="226" y="122" width="28" height="38" fill="#f2a93b" />
+      <rect x="202" y="104" width="18" height="16" fill="#e6dccb" /><rect x="260" y="104" width="18" height="16" fill="#e6dccb" />
+      <g transform="translate(300 74)">
+        <rect width="64" height="80" rx="8" fill="#fff" stroke="#141414" strokeWidth="2.5" />
+        <rect x="20" y="-6" width="24" height="12" rx="4" fill="#141414" />
+        <g stroke="#1f6f63" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" fill="none"><path d="M12 24 l5 5 9-10" /><path d="M12 46 l5 5 9-10" /></g>
+        <g stroke="#d8cfbd" strokeWidth="4" strokeLinecap="round"><path d="M34 26 H52" /><path d="M34 48 H52" /><path d="M14 66 H50" /></g>
+      </g>
+      {/* two valuers, linked */}
+      <g>
+        <circle cx="86" cy="76" r="18" fill="#141414" />
+        <path d="M54 150 C54 118 118 118 118 150 Z" fill="#141414" />
+        <circle cx="404" cy="76" r="18" fill="#f2a93b" />
+        <path d="M372 150 C372 118 436 118 436 150 Z" fill="#f2a93b" />
+      </g>
+      <path d="M124 92 C150 60 168 60 184 74" fill="none" stroke="#c23a2e" strokeWidth="2.5" strokeDasharray="5 5" />
+      <path d="M386 98 C372 120 372 130 368 136" fill="none" stroke="#c23a2e" strokeWidth="2.5" strokeDasharray="5 5" />
+      <g transform="translate(104 24)">
+        <rect width="78" height="26" rx="13" fill="#fff" stroke="#e2d8c4" />
+        <text x="39" y="17" fontFamily="Verdana, sans-serif" fontSize="10.5" fontWeight="700" fill="#141414" textAnchor="middle">Inspecție</text>
+      </g>
+      <g transform="translate(376 24)">
+        <rect width="70" height="26" rx="13" fill="#fff" stroke="#e2d8c4" />
+        <text x="35" y="17" fontFamily="Verdana, sans-serif" fontSize="10.5" fontWeight="700" fill="#141414" textAnchor="middle">Angajare</text>
+      </g>
     </svg>
   );
 }
