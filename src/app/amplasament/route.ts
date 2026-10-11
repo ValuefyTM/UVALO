@@ -15,7 +15,7 @@ export async function GET(req: Request) {
   if ("status" in a) {
     if (a.status === 401) return Response.redirect(new URL("/login", req.url), 303);
     if ("maintenance" in a && a.maintenance) return Response.redirect(new URL("/mentenanta", req.url), 303);
-    const why = a.c?.block ?? "Abonamentul firmei tale nu include analiza amplasamentului.";
+    const why = a.c?.off.includes("amplasament") ? "Instrumentul este dezactivat temporar de administratorii UVALO. Revine în curând." : a.c?.block ?? "Abonamentul firmei tale nu include analiza amplasamentului.";
     return new Response(blocked(why), { status: a.status, headers: { "Content-Type": "text/html; charset=utf-8", ...PRIVATE } });
   }
   const [page, list] = await Promise.all([locatorAsset("amplasament.html", req), uats(req)]);

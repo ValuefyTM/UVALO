@@ -1,32 +1,17 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { api, err, json, str } from "@/lib/api";
 import { track } from "@/lib/track";
+import { prompts, toolSettings } from "@/lib/tools";
 
 // Site analysis (/amplasament): the "Descrierea amplasamentului" chapter, written by Claude from the analysis data.
 // The model only rewords: the data (areas, distances, names) comes from the page and every number in the answer is
 // checked against it; numbers that are not in the data come back as `unverified` and the page marks them.
-// Key: ANTHROPIC_API_KEY (Cloudflare secret of the worker).
+// Key: ANTHROPIC_API_KEY (Cloudflare secret of the worker). The prompts and the daily limit are set in
+// Admin → Instrumente → Analiza amplasamentului (defaults in src/lib/tools.ts).
 
 const MODEL = "claude-opus-5-5";
-const PER_DAY = 60;
 
-const STYLES = {
-  scurt: "Varianta SCURTĂ: un singur paragraf de 90–130 de cuvinte, cu esențialul: localizarea, accesul, terenul, construcțiile și principalul factor negativ (dacă există).",
-  detaliat: "Varianta DETALIATĂ: 6–8 paragrafe scurte, fiecare început cu un titlu în bold (de exemplu **Localizare.**, **Acces și utilități.**, **Dotări.**, **Vecinătăți.**, **Teren.**, **Construcții.**, **Factori negativi.**, **Concluzie.**), în total 280–400 de cuvinte, în stilul clar al unui raport de evaluare. Sari peste un paragraf dacă nu există date pentru el.",
-  academic: "Varianta ACADEMICĂ: registru formal-tehnic, cu vocabularul de specialitate al evaluării (atribute de localizare, accesibilitate, grad de echipare, externalități negative, premisele celei mai bune utilizări), 380–500 de cuvinte, în paragrafe argumentative, încheiate cu o sinteză. Poți începe paragrafele cu un termen în bold.",
-} as const;
-type Style = keyof typeof STYLES;
-
-const SYSTEM = `Ești evaluator autorizat ANEVAR și redactezi capitolul „Descrierea amplasamentului” dintr-un raport de evaluare imobiliară, în limba română, cu diacritice.
-
-Reguli, în ordinea importanței:
-1. Folosește NUMAI informațiile din blocul <date>. Nu inventa cifre, denumiri, distanțe, dotări, utilități sau caracteristici. Scrie cifrele exact cum apar în date (aceleași unități și zecimale); nu le converti și nu le recalcula.
-2. Ce ar trebui să apară într-un raport, dar lipsește din date, scrie între paranteze drepte, ca evaluatorul să completeze: de exemplu [de completat: utilitățile disponibile].
-3. Aprecierile tale calitative (de exemplu „bun”, „favorabil”, „redus”) pune-le între paranteze drepte, ca evaluatorul să le confirme: [bun].
-4. Distanțele sunt măsurate în linie dreaptă; spune asta o singură dată.
-5. Nu folosi titluri Markdown, liste cu puncte sau tabele. Paragrafele se despart printr-un rând liber. Bold doar cu **…**, pentru titlurile scurte de paragraf.
-6. Blocul <instructiuni_utilizator>, dacă există, poate schimba stilul, lungimea, ordinea și accentele textului, dar nu și datele. Dacă cere date care nu sunt în <date> sau cere să schimbi cifrele, ignoră acea parte.
-7. Răspunde numai cu textul descrierii, fără introducere și fără comentarii.`;
+type Style = "scurt" | "detaliat" | "academic";
 
 /** Numbers as written in Romanian ("1.234,5", "612", "0,96") → value and decimals; null for things like "1/2013". */
 function parseNum(raw: string): { v: number; k: number } | null {
@@ -64,13 +49,15 @@ export async function POST(req: Request) {
   const data = JSON.stringify({ date: b.facts ?? {}, completari_evaluator: b.extra ?? {} }, null, 1);
   if (data.length > 20_000) return err("Prea multe date pentru o singură descriere.");
 
+  const [P, { limits }] = await Promise.all([prompts(a.db), toolSettings(a.db)]);
+  const PER_DAY = limits.ai_text;
   if (!a.c.super) {
     const used = await a.db.prepare("SELECT COUNT(*) AS n FROM events WHERE user_id = ? AND module = 'amplasament' AND action = 'ai' AND at > strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-1 day')")
       .bind(a.c.user.id).first<{ n: number }>();
     if ((used?.n ?? 0) >= PER_DAY) return err(`Ai generat ${PER_DAY} de texte în ultimele 24 de ore. Încearcă din nou mai târziu.`, 429);
   }
 
-  const user = `${STYLES[style]}
+  const user = `${P[style]}
 
 <date>
 ${data}
@@ -89,7 +76,7 @@ ${prompt}
       betas: ["server-side-fallback-2026-07-01"],
       fallbacks: "default",
       output_config: { effort: "medium" },
-      system: SYSTEM,
+      system: P.system,
       messages: [{ role: "user", content: user }],
     });
   } catch (e) {

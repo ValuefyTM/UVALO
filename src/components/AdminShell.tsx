@@ -3,7 +3,7 @@ import { maintenanceOn } from "@/lib/maintenance";
 import { initials } from "@/lib/guard";
 import { LogoutButton, MenuButton } from "./ClientBits";
 
-export type AdminKey = "panou" | "solicitari" | "recomandari" | "tablou" | "utilizatori" | "firme" | "activitate" | "planuri";
+export type AdminKey = "panou" | "solicitari" | "recomandari" | "tablou" | "utilizatori" | "firme" | "activitate" | "instrumente";
 
 /** VALUEFY administration portal: its own menu, separate from the tools the valuers use. */
 export async function AdminShell(props: { c: Ctx; active: AdminKey; pending?: number; title: string; subtitle?: string; actions?: React.ReactNode; children: React.ReactNode }) {
@@ -11,7 +11,7 @@ export async function AdminShell(props: { c: Ctx; active: AdminKey; pending?: nu
   const { c } = props;
   const nav: [AdminKey, string, string][] = [
     ["panou", "Panou", "/admin"], ["solicitari", "Solicitări de cont", "/admin/solicitari"], ["recomandari", "Recomandări", "/admin/recomandari"], ["tablou", "Tablou ANEVAR", "/admin/tablou"],
-    ["utilizatori", "Utilizatori", "/admin/utilizatori"], ["firme", "Firme și abonamente", "/admin/firme"], ["activitate", "Activitate", "/admin/activitate"], ["planuri", "Planuri cadastrale", "/admin/planuri"],
+    ["utilizatori", "Utilizatori", "/admin/utilizatori"], ["firme", "Firme și abonamente", "/admin/firme"], ["activitate", "Activitate", "/admin/activitate"], ["instrumente", "Instrumente", "/admin/instrumente"],
   ];
   return (
     <div className="shell">

@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { api, err } from "@/lib/api";
 import { track } from "@/lib/track";
+import { prompts, toolSettings } from "@/lib/tools";
 
 // Site analysis (/amplasament) without a cadastral plan in the locator: the valuer uploads the "plan de amplasament și
 // delimitare" (PDF or photo) and Claude reads it into data: cadastral number, areas, the Stereo 70 coordinate inventory,
@@ -8,7 +9,6 @@ import { track } from "@/lib/track";
 // against the one written on the plan. Nothing is stored: the file goes to the model and back.
 
 const MODEL = "claude-opus-5-5";
-const PER_DAY = 30;
 const MAX = 15 * 1024 * 1024;
 const TYPES: Record<string, "application/pdf" | "image/jpeg" | "image/png" | "image/webp"> = {
   "application/pdf": "application/pdf", "image/jpeg": "image/jpeg", "image/png": "image/png", "image/webp": "image/webp",
@@ -48,11 +48,6 @@ const SCHEMA = {
   },
 };
 
-const SYSTEM = `Citești documente cadastrale din România (în special „plan de amplasament și delimitare a imobilului”, întocmit pentru OCPI / ANCPI) și extragi datele exact cum sunt scrise.
-- Nu inventa nimic. Ce lipsește sau nu se citește sigur este null (sau listă goală), iar nesiguranța o explici în „observatii”.
-- Inventarul de coordonate: copiază toate punctele terenului, cu toate zecimalele, în ordinea din tabel. În sistemul Stereo 70, X este coordonata nord și Y coordonata est. Punctele construcțiilor nu intră la teren; pune-le la construcția respectivă, dacă sunt în document.
-- Suprafețele în metri pătrați, ca numere (fără separatori de mii).
-- Dacă documentul nu este un plan cadastral, spune ce este în „tip_document” și lasă restul gol.`;
 
 export async function POST(req: Request) {
   const a = await api();
@@ -68,6 +63,8 @@ export async function POST(req: Request) {
   if (!type) return err("Planul trebuie să fie PDF sau imagine (JPG, PNG).");
   if (file.size > MAX) return err("Fișierul are peste 15 MB. Trimite doar pagina cu planul.");
 
+  const [P, { limits }] = await Promise.all([prompts(a.db), toolSettings(a.db)]);
+  const PER_DAY = limits.ai_plan;
   if (!a.c.super) {
     const used = await a.db.prepare("SELECT COUNT(*) AS n FROM events WHERE user_id = ? AND module = 'amplasament' AND action = 'ai_plan' AND at > strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-1 day')")
       .bind(a.c.user.id).first<{ n: number }>();
@@ -88,7 +85,7 @@ export async function POST(req: Request) {
       betas: ["server-side-fallback-2026-07-01"],
       fallbacks: "default",
       output_config: { effort: "high", format: { type: "json_schema", schema: SCHEMA } },
-      system: SYSTEM,
+      system: P.plan,
       messages: [{ role: "user", content: [doc, { type: "text", text: "Extrage datele imobilului din acest document." }] }],
     });
   } catch (e) {

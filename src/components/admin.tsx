@@ -96,3 +96,100 @@ export function MaintenanceCard({ on: on0, message: m0, placeholder }: { on: boo
     </section>
   );
 }
+
+/** Turns a tool on or off for everyone (UVALO administrators keep using it). */
+export function ToolSwitch({ k, name, on: on0 }: { k: string; name: string; on: boolean }) {
+  const [on, setOn] = useState(on0);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState("");
+  const go = async () => {
+    if (on && !confirm(`Dezactivezi „${name}”? Utilizatorii nu îl vor mai vedea până îl activezi din nou.`)) return;
+    setBusy(true); setMsg("");
+    const e = await post("/api/admin/tools", { key: k, on: !on });
+    setBusy(false);
+    if (e) return setMsg(e);
+    setOn(!on);
+  };
+  return (
+    <section className="card" style={{ borderColor: on ? undefined : "#e8b25c", background: on ? undefined : "#fdf6ea" }}>
+      <div className="cardHead">
+        <h2>Stare</h2>
+        <span className={`pill ${on ? "pillOk" : "pillWarn"}`}><i />{on ? "Activ · disponibil utilizatorilor" : "Dezactivat · ascuns utilizatorilor"}</span>
+      </div>
+      <p className="hint">Dezactivat, instrumentul dispare din meniu și de pe pagina de start, iar pagina lui afișează „dezactivat temporar”. Administratorii UVALO îl folosesc în continuare, ca să-l poată verifica.</p>
+      {msg && <div role="alert" className="error">{msg}</div>}
+      <div className="actions" style={{ justifyContent: "flex-start" }}>
+        <button type="button" className={`btn btnSm ${on ? "btnGhost" : "btnNavy"}`} disabled={busy} onClick={go}>{busy ? "…" : on ? "Dezactivează" : "Activează"}</button>
+      </div>
+    </section>
+  );
+}
+
+/** Daily AI limits per person (texts generated, plans read). */
+export function AiLimits({ text, plan }: { text: number; plan: number }) {
+  const [f, setF] = useState({ ai_text: text, ai_plan: plan });
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState("");
+  const save = async () => {
+    setBusy(true); setMsg("");
+    const e = await post("/api/admin/tools", { limits: f });
+    setBusy(false);
+    setMsg(e ?? "Limitele au fost salvate.");
+  };
+  return (
+    <section className="card">
+      <h2>Limite zilnice pe utilizator</h2>
+      <p className="hint">Câte cereri AI poate face o persoană în 24 de ore. Administratorii UVALO nu au limită.</p>
+      <div className="cols">
+        <label className="field">Texte generate<input className="input" type="number" min={1} max={1000} value={f.ai_text} onChange={(e) => setF({ ...f, ai_text: +e.target.value })} /></label>
+        <label className="field">Planuri de amplasament citite<input className="input" type="number" min={1} max={1000} value={f.ai_plan} onChange={(e) => setF({ ...f, ai_plan: +e.target.value })} /></label>
+      </div>
+      {msg && <div role="status" className={msg.startsWith("Limitele") ? "okMsg" : "error"}>{msg}</div>}
+      <div className="actions" style={{ justifyContent: "flex-start" }}>
+        <button type="button" className="btn btnNavy btnSm" disabled={busy} onClick={save}>{busy ? "…" : "Salvează limitele"}</button>
+      </div>
+    </section>
+  );
+}
+
+/** The AI prompts in use, editable; "Revino la textul implicit" restores the one written in the code. */
+export function PromptEditor({ items }: { items: { key: string; name: string; desc: string; value: string; def: string }[] }) {
+  const [vals, setVals] = useState(Object.fromEntries(items.map((i) => [i.key, i.value])) as Record<string, string>);
+  const [saved, setSaved] = useState(Object.fromEntries(items.map((i) => [i.key, i.value])) as Record<string, string>);
+  const [busy, setBusy] = useState("");
+  const [msg, setMsg] = useState<Record<string, string>>({});
+  const save = async (k: string, v: string, def: string) => {
+    setBusy(k); setMsg({ ...msg, [k]: "" });
+    const e = await post("/api/admin/prompts", { [k]: v });
+    setBusy("");
+    if (e) return setMsg({ ...msg, [k]: e });
+    const now = v.trim() ? v.trim() : def;
+    setSaved({ ...saved, [k]: now }); setVals({ ...vals, [k]: now });
+    setMsg({ ...msg, [k]: "Salvat. Se folosește de la următoarea generare." });
+  };
+  return (
+    <>
+      {items.map((i) => {
+        const v = vals[i.key], dirty = v !== saved[i.key], custom = saved[i.key] !== i.def;
+        return (
+          <section key={i.key} className="card">
+            <div className="cardHead">
+              <h2>{i.name}</h2>
+              <span className={`pill ${custom ? "pillWarn" : "pillOk"}`}><i />{custom ? "Modificat" : "Implicit"}</span>
+            </div>
+            <p className="hint">{i.desc}</p>
+            <label className="field"><span className="sr-only">{i.name}</span>
+              <textarea className="textarea" rows={Math.min(18, Math.max(4, v.split("\n").length + 1))} value={v} onChange={(e) => setVals({ ...vals, [i.key]: e.target.value })} style={{ fontFamily: "var(--mono)", fontSize: 12.5, lineHeight: 1.55 }} />
+            </label>
+            {msg[i.key] && <div role="status" className={msg[i.key].startsWith("Salvat") ? "okMsg" : "error"}>{msg[i.key]}</div>}
+            <div className="actions" style={{ justifyContent: "flex-start" }}>
+              <button type="button" className="btn btnNavy btnSm" disabled={!dirty || busy === i.key} onClick={() => save(i.key, v, i.def)}>{busy === i.key ? "…" : "Salvează"}</button>
+              {dirty && <button type="button" className="btn btnGhost btnSm" onClick={() => setVals({ ...vals, [i.key]: saved[i.key] })}>Renunță la modificări</button>}
+              {custom && <button type="button" className="btn btnGhost btnSm" disabled={busy === i.key} onClick={() => { if (confirm("Revii la textul implicit?")) save(i.key, "", i.def); }}>Revino la textul implicit</button>}
+            </div>
+          </section>
+        );
+      })}
+    </>
+  );
+}

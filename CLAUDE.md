@@ -71,7 +71,18 @@ Proprietar: VALUEFY (firmă de evaluări imobiliare, Timișoara). UVALO devine u
   laturile fără vecin înscris și dreptunghiul încadrator (nu se ghicește frontul).
 - Index UAT-uri (`_localizare/c/index.json`) conține acum și `v` (versiunea datelor) și `bb`.
 
-## Planuri cadastrale din admin (`/admin/planuri`)
+## Instrumente în admin (`/admin/instrumente`)
+
+- Listă cu fiecare instrument (localizare, amplasament, comparabile) + pagină `/admin/instrumente/<cheie>`: comutator
+  activ/dezactivat, statistici pe 30 de zile (evenimentele din `events` cu `module = <cheie>`), activitate recentă.
+- Setările: `app_settings` cheia `tools` = `{off: [...], limits: {ai_text, ai_plan}}`; prompturile analizei de
+  amplasament în `prompts:amplasament` (doar cele schimbate; implicitele în `src/lib/tools.ts` → `PROMPT_DEFAULTS`).
+- Un instrument dezactivat e scos din `c.modules` pentru toți, mai puțin super-adminii (`context()` în `access.ts`);
+  pagina lui afișează „dezactivat temporar”, iar din meniu și de pe Acasă dispare.
+- Planurile cadastrale sunt acum pe pagina Localizatorului cadastral (`/admin/instrumente/localizare#planuri`);
+  `/admin/planuri` redirecționează acolo.
+
+## Planuri cadastrale din admin (`/admin/instrumente/localizare`)
 
 1. Browserul comprimă fișierul (gzip, CompressionStream) și îl trimite la `/api/admin/plans`.
 2. Workerul îl pune ca asset în release-ul draft `plan-uploads` din GitHub și pornește `.github/workflows/plan.yml`

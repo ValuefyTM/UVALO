@@ -12,7 +12,7 @@ export async function AppShell(props: { c: Ctx; active: Key; title: string; subt
   const mnt = props.c.super ? await maintenanceOn() : false;
   const { c } = props;
   // Main pages first, then the secondary tools (group "Instrumente"), then the modules still to come.
-  const nav: { key: Key; label: string; href: string; tool?: boolean }[] = [
+  const nav0: { key: Key; label: string; href: string; tool?: boolean }[] = [
     { key: "home", label: "Acasă", href: "/" },
     { key: "localizare", label: "Localizator cadastral", href: "/localizare" },
     { key: "amplasament", label: "Analiza amplasamentului", href: "/amplasament", tool: true },
@@ -20,6 +20,8 @@ export async function AppShell(props: { c: Ctx; active: Key; title: string; subt
     // "Firma mea" only for those who turned on "Lucrez ca birou de evaluare" in their account.
     ...(OFFICE_READY && c.org && canManageOrg(c) && c.user.is_office ? [{ key: "firma" as const, label: "Firma mea", href: "/firma" }] : []),
   ];
+  // tools turned off by the administration are hidden (super-admins still see them)
+  const nav = nav0.filter((i) => c.super || !c.off.includes(i.key));
   // Phone: the main pages in the bottom menu, the rest (account, sign out…) behind "Meniu", the sidebar as a panel.
   // (comparables are a desk tool: on the phone they stay on the home page and behind "Meniu")
   const mobileNav = [...nav.filter((i) => i.key !== "comparabile" && i.key !== "amplasament"), { key: "cont" as const, label: "Contul meu", href: "/cont" }].slice(0, 3);

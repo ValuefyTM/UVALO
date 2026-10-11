@@ -1,4 +1,5 @@
 // Server-only: who the signed-in person is, which firm they work in and what that firm's subscription allows.
+import { toolSettings } from "./tools";
 import { now } from "./db";
 import { currentSession, type Session, type User } from "./auth";
 
@@ -32,8 +33,10 @@ export function orgBlock(o: Pick<Org, "status" | "valid_until">) {
 export type Ctx = {
   user: User; session: Session; super: boolean;
   orgs: Membership[]; org: Org | null; role: Role | null;
-  /** Modules the person may use now (super-admins: all). */
+  /** Modules the person may use now (super-admins: all, even the ones turned off). */
   modules: string[]; block: string | null;
+  /** Tools turned off by the administration (Admin → Instrumente). */
+  off: string[];
 };
 
 export async function context(db: D1Database): Promise<Ctx | null> {
@@ -54,8 +57,9 @@ export async function context(db: D1Database): Promise<Ctx | null> {
   const role = (orgs.find((o) => o.org_id === orgId)?.role as Role) ?? null;
   const sup = !!user.is_superadmin;
   const block = org ? orgBlock(org) : sup ? null : "Contul tău nu face parte din nicio firmă cu abonament.";
-  const modules = sup ? MODULES.map((m) => m.key) : org && !block ? org.modules.split(",").map((x) => x.trim()) : [];
-  return { user, session, super: sup, orgs, org, role, modules, block };
+  const { off } = await toolSettings(db);
+  const modules = sup ? MODULES.map((m) => m.key) : org && !block ? org.modules.split(",").map((x) => x.trim()).filter((m) => !off.includes(m)) : [];
+  return { user, session, super: sup, orgs, org, role, modules, block, off };
 }
 
 /** "Birou de evaluare" (Firma mea: colleagues, seats) opens together with the subscriptions; until then it shows "În curând". */

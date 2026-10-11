@@ -792,3 +792,5 @@ a.toolTile:hover { border-color: var(--acc); text-decoration: none; }
   .recent li { padding-right: 12px; }
   .toolThumb { width: 88px; height: 59px; }
 }
+/* admin: section titles on the settings page of a tool */
+.secTitle { margin: 18px 2px 0; font-size: 12px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted-2); }

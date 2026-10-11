@@ -72,7 +72,7 @@ export default async function Home() {
           {loc ? (
             <QuickSearch uats={list.map((u) => ({ key: u.key, name: u.name, county: u.county ?? "Timiș" }))} amp={amp} dark />
           ) : (
-            <p className="heroNote">Abonamentul firmei tale nu include localizatorul cadastral.</p>
+            <p className="heroNote">{c.off.includes("localizare") ? "Localizatorul cadastral este dezactivat temporar. Revine în curând." : "Abonamentul firmei tale nu include localizatorul cadastral."}</p>
           )}
           {parcels > 0 && (
             <p className="heroTotals">
@@ -114,7 +114,7 @@ export default async function Home() {
               const body = (
                 <>
                   <Thumb />
-                  <span className="toolText"><b>{name}</b><span>{on ? desc : "Nu e inclus în abonament"}</span></span>
+                  <span className="toolText"><b>{name}</b><span>{on ? desc : c.off.includes(key) ? "Dezactivat temporar" : "Nu e inclus în abonament"}</span></span>
                   {on && <span className="toolGo" aria-hidden="true">→</span>}
                 </>
               );

@@ -180,11 +180,12 @@ export async function topTargets(db: D1Database, days: number, action: string, o
 
 export type EventRow = { id: number; at: string; module: string; action: string; target: string | null; meta: string | null; user_name: string | null; email: string | null; org_name: string | null };
 
-export async function recentEvents(db: D1Database, f: { orgId?: string; userId?: string; action?: string; limit?: number }) {
+export async function recentEvents(db: D1Database, f: { orgId?: string; userId?: string; action?: string; module?: string; limit?: number }) {
   const w: string[] = [], p: unknown[] = [];
   if (f.orgId) { w.push("e.org_id = ?"); p.push(f.orgId); }
   if (f.userId) { w.push("e.user_id = ?"); p.push(f.userId); }
   if (f.action) { w.push("e.action = ?"); p.push(f.action); }
+  if (f.module) { w.push("e.module = ?"); p.push(f.module); }
   const { results } = await db.prepare(`SELECT e.id, e.at, e.module, e.action, e.target, e.meta, NULLIF(u.name, '') AS user_name, u.email, o.name AS org_name
       FROM events e LEFT JOIN users u ON u.id = e.user_id LEFT JOIN orgs o ON o.id = e.org_id ${w.length ? `WHERE ${w.join(" AND ")}` : ""} ORDER BY e.id DESC LIMIT ?`)
     .bind(...p, f.limit ?? 200).all<EventRow>();
@@ -195,5 +196,6 @@ export const ACTION_LABEL: Record<string, string> = {
   login: "Autentificare", page: "Pagină deschisă", uat_open: "Plan UAT încărcat", search: "Căutare nr. cadastral / topo", search_multi: "Căutare multiplă",
   parcel: "Parcelă deschisă", building: "Construcție deschisă", address: "Căutare adresă / coordonate", gps_start: "Locația mea (GPS)", compass: "Busolă",
   export_pdf: "Export PDF", export_word: "Export Word", export_png: "Export PNG", export_kml: "Export KML", export: "Export", link: "Link copiat",
+  analysis: "Analiză de amplasament", ai: "Text generat cu AI", ai_plan: "Plan de amplasament citit cu AI", copy: "Text copiat", notify: "„Anunță-mă” la un modul nou",
 };
 export const actionLabel = (a: string) => ACTION_LABEL[a] ?? a;
