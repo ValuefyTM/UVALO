@@ -52,6 +52,14 @@ export default async function Word() {
           <p className="hint">Word în browser (Office pe web) nu e încă suportat.</p>
         </section>
       </div>
+      <section className="card">
+        <h2>Nu apare tab-ul UVALO?</h2>
+        <ol className="wordSteps">
+          <li>Închide Word de tot (și din bara de jos) și rulează din nou instalatorul. Fiecare pas afișează <b>[OK]</b> sau <b>[!!]</b> cu motivul; dacă apare <b>[!!]</b>, trimite-ne o captură a ferestrei.</li>
+          <li>În Word: <b>Inserare → Add-in-urile mele</b> (sau <b>Pornire → Add-in-uri → Mai multe add-in-uri</b>) → secțiunea <b>Add-in-uri de dezvoltator</b> → <b>UVALO</b> → Adaugă.</li>
+          <li>Dacă firma are calculatoare administrate de IT, add-in-urile instalate local pot fi blocate; atunci varianta potrivită e instalarea pentru toată firma, din Microsoft 365.</li>
+        </ol>
+      </section>
     </AppShell>
   );
 }

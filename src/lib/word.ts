@@ -117,36 +117,62 @@ ${icons}
  * A .cmd that runs the PowerShell part written after the #PS# line.
  */
 export function installer(origin: string) {
+  // Every step says [OK] or [!!] with the reason, so a screenshot of the window is enough to find the problem.
   const ps = `
 $ErrorActionPreference = "Stop"
+function ok($t) { Write-Host "[OK] $t" -ForegroundColor Green }
+function bad($t) { Write-Host "[!!] $t" -ForegroundColor Red }
 Write-Host "== UVALO pentru Word - instalare ==" -ForegroundColor Yellow
-if (Get-Process WINWORD -ErrorAction SilentlyContinue) {
-  Write-Host "Word este deschis. Salveaza documentele si inchide Word, apoi apasa Enter." -ForegroundColor Yellow
-  Read-Host | Out-Null
-  Get-Process WINWORD -ErrorAction SilentlyContinue | Stop-Process -Force
-  Start-Sleep 2
+try {
+  $off = Get-ItemProperty "HKLM:\\SOFTWARE\\Microsoft\\Office\\ClickToRun\\Configuration" -ErrorAction SilentlyContinue
+  if ($off) { ok ("Office " + $off.VersionToReport + " (" + $off.Platform + ")") }
+  if (-not (Test-Path "HKCU:\\Software\\Microsoft\\Office\\16.0")) { bad "Nu gasesc Office 2016 / 2019 / 2021 / Microsoft 365 pe acest calculator. UVALO cere una dintre aceste versiuni." }
+  if (Get-Process WINWORD -ErrorAction SilentlyContinue) {
+    Write-Host "Word este deschis. Salveaza documentele, apoi apasa Enter ca sa-l inchid." -ForegroundColor Yellow
+    Read-Host | Out-Null
+    Get-Process WINWORD -ErrorAction SilentlyContinue | Stop-Process -Force
+    Start-Sleep 2
+  }
+  ok "Word este inchis"
+  $dir = Join-Path $env:LOCALAPPDATA "UVALO\\Word"
+  New-Item -ItemType Directory -Force -Path $dir | Out-Null
+  $manifest = Join-Path $dir "manifest.xml"
+  [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+  $tmp = Join-Path $dir "manifest.tmp"
+  Invoke-WebRequest -UseBasicParsing -UserAgent "UVALO-Word-Installer" -Uri "${origin}/word/manifest.xml" -OutFile $tmp
+  $xml = [IO.File]::ReadAllText($tmp)
+  Remove-Item $tmp -ErrorAction SilentlyContinue
+  if ($xml -notlike "*<OfficeApp*" -or $xml -notlike "*${ADDIN_ID}*") {
+    bad "Manifestul descarcat nu este cel corect. Primele randuri:"
+    Write-Host ($xml.Substring(0, [Math]::Min(400, $xml.Length)))
+    throw "manifest invalid"
+  }
+  [IO.File]::WriteAllText($manifest, $xml, (New-Object Text.UTF8Encoding $false))
+  ok "Manifest descarcat: $manifest"
+  $key = "HKCU:\\Software\\Microsoft\\Office\\16.0\\WEF\\Developer"
+  if (-not (Test-Path $key)) { New-Item -Path $key -Force | Out-Null }
+  Set-ItemProperty -Path $key -Name "${ADDIN_ID}" -Value $manifest
+  if ((Get-ItemProperty -Path $key)."${ADDIN_ID}" -eq $manifest) { ok "UVALO inregistrat in Word" } else { bad "Nu am putut scrie in registru ($key)" }
+  # add-in-ul vechi VALUEFY Anexe (server local pe portul 3001)
+  if ((Get-ItemProperty -Path $key -ErrorAction SilentlyContinue)."${OLD_ADDIN_ID}") {
+    Remove-ItemProperty -Path $key -Name "${OLD_ADDIN_ID}" -ErrorAction SilentlyContinue
+    Remove-Item (Join-Path ([Environment]::GetFolderPath("Startup")) "VALUEFY Anexa foto.lnk") -ErrorAction SilentlyContinue
+    Get-CimInstance Win32_Process -Filter "Name='node.exe'" -ErrorAction SilentlyContinue | Where-Object { $_.CommandLine -like "*server.js*" -and $_.CommandLine -like "*anexa*" } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+    ok "Add-in-ul vechi VALUEFY Anexe a fost scos"
+  }
+  $wef = Join-Path $env:LOCALAPPDATA "Microsoft\\Office\\16.0\\Wef"
+  if (Test-Path $wef) { Get-ChildItem $wef | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue; ok "Cache-ul de add-in-uri Office a fost golit" }
+  foreach ($pol in @("HKCU:\\Software\\Policies\\Microsoft\\Office\\16.0\\WEF", "HKLM:\\Software\\Policies\\Microsoft\\Office\\16.0\\WEF")) {
+    if (Test-Path $pol) { bad "Exista politici de firma pentru add-in-uri ($pol). Pot bloca UVALO:"; Get-ItemProperty $pol | Format-List | Out-String | Write-Host }
+  }
+  Write-Host ""
+  Write-Host "GATA. Deschide Word: tab-ul UVALO -> Anexa foto / Anexa documente." -ForegroundColor Green
+  Write-Host "Daca tab-ul nu apare: Inserare (Insert) -> Add-in-urile mele (My Add-ins) -> Add-in-uri de dezvoltator -> UVALO."
+  Write-Host "La prima folosire te conectezi cu contul UVALO, in panoul din dreapta."
+} catch {
+  bad ("Instalarea s-a oprit: " + $_.Exception.Message)
+  Write-Host "Trimite o captura a acestei ferestre la office@valuefy.ro."
 }
-$dir = Join-Path $env:LOCALAPPDATA "UVALO\\Word"
-New-Item -ItemType Directory -Force -Path $dir | Out-Null
-$manifest = Join-Path $dir "manifest.xml"
-[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-Invoke-WebRequest -UseBasicParsing -Uri "${origin}/word/manifest.xml" -OutFile $manifest
-$key = "HKCU:\\Software\\Microsoft\\Office\\16.0\\WEF\\Developer"
-if (-not (Test-Path $key)) { New-Item -Path $key -Force | Out-Null }
-Set-ItemProperty -Path $key -Name "${ADDIN_ID}" -Value $manifest
-Write-Host "[OK] UVALO inregistrat in Word" -ForegroundColor Green
-# add-in-ul vechi VALUEFY Anexe (server local pe portul 3001)
-if ((Get-ItemProperty -Path $key -ErrorAction SilentlyContinue)."${OLD_ADDIN_ID}") {
-  Remove-ItemProperty -Path $key -Name "${OLD_ADDIN_ID}" -ErrorAction SilentlyContinue
-  Remove-Item (Join-Path ([Environment]::GetFolderPath("Startup")) "VALUEFY Anexa foto.lnk") -ErrorAction SilentlyContinue
-  Get-CimInstance Win32_Process -Filter "Name='node.exe'" | Where-Object { $_.CommandLine -like "*server.js*" -and $_.CommandLine -like "*anexa*" } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
-  Write-Host "[OK] Add-in-ul vechi VALUEFY Anexe a fost scos" -ForegroundColor Green
-}
-$wef = Join-Path $env:LOCALAPPDATA "Microsoft\\Office\\16.0\\Wef"
-if (Test-Path $wef) { Get-ChildItem $wef | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue }
-Write-Host ""
-Write-Host "GATA. Deschide Word: tab-ul UVALO -> Anexa foto / Anexa documente." -ForegroundColor Green
-Write-Host "La prima folosire te conectezi cu contul UVALO, in panoul din dreapta."
 `;
   return cmd(ps);
 }
