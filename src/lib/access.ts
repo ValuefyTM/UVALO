@@ -17,6 +17,7 @@ export const MODULES = [
   { key: "localizare", name: "Localizator cadastral", href: "/localizare", desc: "Număr cadastral, topo, adresă sau locația ta pe teren, pe planurile cadastrale din Timiș." },
   { key: "amplasament", name: "Analiza amplasamentului", href: "/amplasament", desc: "Fișa amplasamentului din planul cadastral și OpenStreetMap, cu text pentru raport generat cu AI." },
   { key: "comparabile", name: "Localizator de comparabile", href: "/comparabile", desc: "Pune subiectul și comparabilele pe hartă, cu distanța până la fiecare. Gata de inserat în raport." },
+  { key: "word", name: "UVALO pentru Word", href: "/word", desc: "Anexa foto și anexa cu documente PDF, direct în raportul Word, dintr-un tab UVALO." },
 ] as const;
 
 export const ORG_SQL = `SELECT o.*, p.name AS plan_name, p.modules FROM orgs o JOIN plans p ON p.id = o.plan_id`;

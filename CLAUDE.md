@@ -71,6 +71,21 @@ Proprietar: VALUEFY (firmă de evaluări imobiliare, Timișoara). UVALO devine u
   laturile fără vecin înscris și dreptunghiul încadrator (nu se ghicește frontul).
 - Index UAT-uri (`_localizare/c/index.json`) conține acum și `v` (versiunea datelor) și `bb`.
 
+## UVALO pentru Word (`/word`, modulul `word`)
+
+- Add-in Word instalat **fără Microsoft Store** (preluat din add-in-ul VALUEFY Anexe, care mergea pe server local
+  `https://localhost:3001`). Tab „UVALO” în Word: **Anexă foto**, **Anexă documente**, **Instrumente**.
+- Panourile: `/word/anexe?mode=photo|pdf` (HTML în `localizare-data/word-anexe.html`, scripturile + pdf.js în
+  `public/word/`), `/word/instrumente` (listă de instrumente, cele web se deschid în browser). Acces = `locatorAccess("word")`;
+  nelogat → `/login?next=…` chiar în panou (cookie-ul `vf_tools` merge în Word desktop; Word pe web nu e suportat).
+- `src/lib/word.ts`: `ADDIN_ID` (nu se schimbă), manifestul generat cu originea curentă (`/word/manifest.xml`),
+  instalatorul Windows `/word/instaleaza.cmd` (descarcă manifestul în `%LOCALAPPDATA%\UVALO\Word`, îl înregistrează în
+  `HKCU\…\WEF\Developer`, scoate add-in-ul vechi VALUEFY) și `/word/dezinstaleaza.cmd`. Pentru o firmă întreagă:
+  Microsoft 365 admin center → Aplicații integrate → manifestul. Mac: manifestul în `…/com.microsoft.Word/Data/Documents/wef`.
+- Schimbările din panouri ajung imediat la toți; un buton nou în tab = manifest nou (`MANIFEST_VERSION`) și reinstalare.
+- Blocurile inserate păstrează etichetele vechi `valuefy-anexa-*`, ca „Înlocuiește anexa existentă” să le recunoască.
+- Folosire în `events` (`module = 'word'`: `pane`, `insert_photo`, `insert_pdf`); în toate planurile prin migrația 0013.
+
 ## Instrumente în admin (`/admin/instrumente`)
 
 - Listă cu fiecare instrument (localizare, amplasament, comparabile) + pagină `/admin/instrumente/<cheie>`: comutator

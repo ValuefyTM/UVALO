@@ -7,6 +7,7 @@ export const TOOLS = [
   { key: "localizare", name: "Localizator cadastral", href: "/localizare", desc: "Planurile ANCPI: căutare după număr cadastral, topo, adresă, GPS; exporturi." },
   { key: "amplasament", name: "Analiza amplasamentului", href: "/amplasament", desc: "Fișa amplasamentului și textul pentru raport, generat cu AI." },
   { key: "comparabile", name: "Localizator de comparabile", href: "/comparabile", desc: "Subiectul și comparabilele pe hartă, cu distanțe." },
+  { key: "word", name: "UVALO pentru Word", href: "/word", desc: "Add-in-ul din Word: Anexă foto și Anexă documente, instalat fără Microsoft Store." },
 ] as const;
 export type ToolKey = (typeof TOOLS)[number]["key"];
 export const toolByKey = (k: string) => TOOLS.find((t) => t.key === k) ?? null;

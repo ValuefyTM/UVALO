@@ -7,9 +7,12 @@ import { LoginForm } from "@/components/LoginForm";
 export const metadata: Metadata = { title: "Autentificare | UVALO" };
 export const dynamic = "force-dynamic";
 
-export default async function Login({ searchParams }: { searchParams: Promise<{ link?: string }> }) {
+export default async function Login({ searchParams }: { searchParams: Promise<{ link?: string; next?: string }> }) {
+  const sp = await searchParams;
+  // where to go after signing in (only a page of this app, e.g. the Word pane /word/anexe?mode=pdf)
+  const next = sp.next && /^\/(?![/\\])[^\s\\]*$/.test(sp.next) ? sp.next : "/";
   const db = await getDb();
-  if (db && (await currentSession(db))) redirect("/");
+  if (db && (await currentSession(db))) redirect(next);
   return (
     <div className="authPage">
       <aside className="authSide">
@@ -35,7 +38,7 @@ export default async function Login({ searchParams }: { searchParams: Promise<{ 
           <span className="authEyebrow dark">Autentificare</span>
           <h1>Bine ai revenit</h1>
           <p>Introdu adresa de email a contului tău UVALO. Îți trimitem un cod de acces, fără parolă.</p>
-          <LoginForm expired={(await searchParams).link === "expired"} />
+          <LoginForm expired={sp.link === "expired"} next={next} />
           <div className="authAlt">
             <div><b>Nu ai cont?</b><span>Este gratuit pentru membrii titulari ANEVAR: îl soliciți cu numărul legitimației.</span></div>
             <a className="btn btnGhost btnSm" href="/solicita-cont">Solicită cont gratuit →</a>
