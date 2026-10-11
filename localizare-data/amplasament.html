@@ -410,7 +410,7 @@ async function byNumber(key,nr){
   const u=UATS.find(x=>x.key===key);
   if(!u){toast('Alege localitatea (UAT-ul).');return}
   if(!ME.plans){askAddress('Abonamentul firmei tale nu include planurile cadastrale.','Scrie adresa imobilului și fac analiza zonei după adresă.');return}
-  loading('Se încarcă planul cadastral '+u.name+'…');
+  loading('Deschid planul cadastral pentru '+u.name+'…');
   let D;try{D=await getData(u)}catch(e){show('empty');toast('Planul pentru '+u.name+' nu s-a putut încărca. Reîncearcă.');return}
   const id=String(nr).trim().replace(/^0+/,'');
   const list=D.byId.get(id)||D.byId.get(String(nr).trim());
@@ -439,7 +439,7 @@ async function byAddress(q,hintUat){
     const cands=UATS.filter(u=>u.bb&&g.lat>=u.bb[0]-.01&&g.lat<=u.bb[2]+.01&&g.lng>=u.bb[1]-.01&&g.lng<=u.bb[3]+.01);
     if(hintUat&&!cands.includes(hintUat))cands.unshift(hintUat);
     for(const u of cands.slice(0,4)){
-      loading('Caut parcela în planul '+u.name+'…');
+      loading('Caut imobilul în '+u.name+'…');
       try{const D=await getData(u);const p=parcelAt(D,EN);if(p){await analyse(u,D,p,{lat:g.lat,lng:g.lng,label:g.label,byAddr:true});return}}catch(e){}
     }
   }
@@ -535,7 +535,7 @@ async function loadOsm(lat,lng){
   let j=null,why='';
   try{const r=await fetch('/api/amplasament/osm?lat='+lat+'&lng='+lng);j=await r.json().catch(()=>null);if(r.ok&&j&&!j.error)return j;why=(j&&j.detail)||('HTTP '+r.status)}catch(e){why='conexiune'}
   if(j&&j.query){
-    if(!$('loading').hidden)loading('Serverul nu a primit răspuns de la OpenStreetMap; încerc direct din browser…');
+    if(!$('loading').hidden)loading('Analizez zona din jur… durează puțin mai mult decât de obicei.');
     for(const [i,url] of OVERPASS.entries()){
       if(i===2)await new Promise(r=>setTimeout(r,3000));
       try{const ctl=new AbortController(),t=setTimeout(()=>ctl.abort(),70000);
@@ -548,7 +548,7 @@ async function loadOsm(lat,lng){
     }
   }
   console.warn('OpenStreetMap:',why);S.osmWhy=why;
-  toast('OpenStreetMap nu a răspuns ('+why.slice(0,140)+'). Analiza zonei lipsește; reîncearcă peste un minut.',9000);
+  toast('Datele despre zonă nu sunt disponibile acum. Restul analizei e gata; poți reîncerca din secțiunea Localizare.',7000);
   return null;
 }
 async function analyse(u,D,p,pt){
@@ -556,13 +556,13 @@ async function analyse(u,D,p,pt){
   let ll;
   if(p){const c=centroid(p.s);ll=S70(c[0],c[1])}else ll=[pt.lat,pt.lng];
   S.pt={lat:ll[0],lng:ll[1],label:pt&&pt.label||'',byAddr:!!(pt&&pt.byAddr)};
-  loading('Caut în OpenStreetMap ce este în jur…');
+  loading('Analizez zona din jur…');
   let osm=null;
   osm=await loadOsm(ll[0],ll[1]);
   S.osm=osm;
   const roads=(osm&&osm.roads||[]).map(r=>({...r,label:roadLabel(r),en:r.geom.map(g=>toS70(g[0],g[1]))}));
   S.roads=roads;
-  if(p){loading('Calculez forma, deschiderea și adâncimea…');await new Promise(r=>setTimeout(r,20));S.A=analyseParcel(D,p,roads)}
+  if(p){loading('Calculez dimensiunile terenului…');await new Promise(r=>setTimeout(r,20));S.A=analyseParcel(D,p,roads)}
   render();
   track('analysis',p?p.id:(pt&&pt.label)||'',{uat:u&&u.name,mode:p?'parcel':'point'});
 }
@@ -619,7 +619,7 @@ function catCounts(){
 }
 function renderB(){
   const o=S.osm, el=$('secB');
-  if(!o){el.innerHTML='<div class="chead"><h2>B · Localizare</h2></div><p class="muted">Datele OpenStreetMap nu au putut fi aduse acum (serverele Overpass sunt ocupate sau au refuzat cererea).</p>'+(S.osmWhy?'<p class="muted" style="font-size:11px;word-break:break-word">Detalii: '+esc(S.osmWhy)+'</p>':'')+'<button class="btn" type="button" id="osmRetry">Reîncearcă</button>';
+  if(!o){el.innerHTML='<div class="chead"><h2>B · Localizare</h2></div><p class="muted">Datele despre zonă (dotări, acces, factori negativi) nu sunt disponibile momentan. Restul analizei e gata; reîncearcă peste un minut.</p>'+(S.osmWhy?'<details style="font-size:11px;color:var(--muted2)"><summary style="cursor:pointer">Detalii pentru suport</summary><p style="margin:6px 0 0;word-break:break-word">'+esc(S.osmWhy)+'</p></details>':'')+'<button class="btn" type="button" id="osmRetry">Reîncearcă</button>';
     $('osmRetry').onclick=async()=>{const b=$('osmRetry');b.disabled=true;b.textContent='Se încarcă…';const o2=await loadOsm(S.pt.lat,S.pt.lng);if(!o2){b.disabled=false;b.textContent='Reîncearcă';return}
       S.osm=o2;S.roads=(o2.roads||[]).map(r=>({...r,label:roadLabel(r),en:r.geom.map(g=>toS70(g[0],g[1]))}));if(S.p)S.A=analyseParcel(S.D,S.p,S.roads);S.texts={};render()};return}
   const cs=catCounts();
@@ -997,7 +997,7 @@ async function fromPlan(j){
     toast('Nu am putut citi coordonatele din plan. Am completat ce am găsit; zona o caut după adresă.',7000);
     if(j.adresa)await byAddress([j.adresa,j.uat,j.judet].filter(Boolean).join(', '),u0);else askAddress('Nu am găsit coordonatele','Planul nu are un inventar de coordonate lizibil și nici adresă. Scrie adresa imobilului.');
     return}
-  loading('Refac parcela din coordonate…');
+  loading('Desenez parcela din plan…');
   const p={id:j.nr_cadastral||'—',s,a:ringArea(s),n:[],t:[],ext:true};
   p.extB=(j.constructii||[]).map(c=>{const r=c.puncte&&c.puncte.length>2?ringFrom(c.puncte):null;return{c:c.cod||'C',a:c.suprafata_la_sol_mp||(r?ringArea(r):0),s:r}}).filter(b=>b.a>0||b.s);
   let D={parcels:[],B:[],byId:new Map(),src:'plan de amplasament încărcat'},u=u0||{key:null,name:j.uat||'',county:j.judet||''};
