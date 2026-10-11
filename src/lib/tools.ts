@@ -11,6 +11,11 @@ export const TOOLS = [
 ] as const;
 export type ToolKey = (typeof TOOLS)[number]["key"];
 export const toolByKey = (k: string) => TOOLS.find((t) => t.key === k) ?? null;
+/** Parts of a tool that can be turned off on their own (key "<tool>.<part>" in the same `off` list). */
+export const FEATURES = [
+  { key: "word.photo", tool: "word", name: "Anexă foto", desc: "Butonul „Anexă foto” din tab-ul UVALO din Word." },
+  { key: "word.pdf", tool: "word", name: "Anexă documente", desc: "Butonul „Anexă documente” din tab-ul UVALO din Word." },
+] as const;
 
 // Limits: per person per 24 hours (ai_text, ai_plan; a person can have an exception), and platform caps per calendar
 // day and month for everyone together (total_*; 0 = no cap), so the AI cost stays under control.

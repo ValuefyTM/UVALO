@@ -125,6 +125,42 @@ export function ToolSwitch({ k, name, on: on0 }: { k: string; name: string; on: 
   );
 }
 
+/** On/off for the parts of a tool (e.g. Anexă foto and Anexă documente in UVALO pentru Word). */
+export function FeatureSwitches({ items }: { items: { key: string; name: string; desc: string; on: boolean }[] }) {
+  const [state, setState] = useState(() => Object.fromEntries(items.map((i) => [i.key, i.on])));
+  const [busy, setBusy] = useState("");
+  const [msg, setMsg] = useState("");
+  const go = async (i: { key: string; name: string }) => {
+    const on = state[i.key];
+    if (on && !confirm(`Dezactivezi „${i.name}”? Utilizatorii văd „dezactivat temporar” până îl activezi din nou.`)) return;
+    setBusy(i.key); setMsg("");
+    const e = await post("/api/admin/tools", { key: i.key, on: !on });
+    setBusy("");
+    if (e) return setMsg(e);
+    setState((s) => ({ ...s, [i.key]: !on }));
+  };
+  return (
+    <section className="card">
+      <div className="cardHead"><h2>Funcții</h2></div>
+      <p className="hint">Fiecare funcție se poate opri separat. Administratorii UVALO le folosesc în continuare, ca să le poată verifica.</p>
+      {msg && <div role="alert" className="error">{msg}</div>}
+      <div className="tableWrap">
+        <table className="table">
+          <tbody>
+            {items.map((i) => (
+              <tr key={i.key}>
+                <td><b>{i.name}</b><div className="muted" style={{ fontSize: 12 }}>{i.desc}</div></td>
+                <td><span className={`pill ${state[i.key] ? "pillOk" : "pillWarn"}`}><i />{state[i.key] ? "Activă" : "Dezactivată"}</span></td>
+                <td className="r"><button type="button" className={`btn btnSm ${state[i.key] ? "btnGhost" : "btnNavy"}`} disabled={!!busy} onClick={() => go(i)}>{busy === i.key ? "…" : state[i.key] ? "Dezactivează" : "Activează"}</button></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
+
 type LimitVals = { ai_text: number; ai_plan: number; total_text_day: number; total_plan_day: number; total_text_month: number; total_plan_month: number };
 
 /** AI limits: per person per 24 hours, and platform caps per day and month (0 = no cap), with today's and this month's use. */

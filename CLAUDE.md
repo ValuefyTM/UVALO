@@ -85,10 +85,12 @@ Proprietar: VALUEFY (firmă de evaluări imobiliare, Timișoara). UVALO devine u
 - Schimbările din panouri ajung imediat la toți; un buton nou în tab = manifest nou (`MANIFEST_VERSION`) și reinstalare.
 - Blocurile inserate păstrează etichetele vechi `valuefy-anexa-*`, ca „Înlocuiește anexa existentă” să le recunoască.
 - Folosire în `events` (`module = 'word'`: `pane`, `insert_photo`, `insert_pdf`); în toate planurile prin migrația 0013.
+- Admin → Instrumente → UVALO pentru Word: comutator pentru tot add-in-ul + „Funcții” (Anexă foto / Anexă documente
+  separat; cheile `word.photo` / `word.pdf` în `off`, lista `FEATURES` din `src/lib/tools.ts`).
 
 ## Instrumente în admin (`/admin/instrumente`)
 
-- Listă cu fiecare instrument (localizare, amplasament, comparabile) + pagină `/admin/instrumente/<cheie>`: comutator
+- Listă cu fiecare instrument (localizare, amplasament, comparabile, word) + pagină `/admin/instrumente/<cheie>`: comutator
   activ/dezactivat, statistici pe 30 de zile (evenimentele din `events` cu `module = <cheie>`), activitate recentă.
 - Setările: `app_settings` cheia `tools` = `{off: [...], limits: {ai_text, ai_plan, total_text_day, total_plan_day,
   total_text_month, total_plan_month}}` (per utilizator / 24 h; plafoane pe platformă pe zi și lună calendaristică, 0 = fără);

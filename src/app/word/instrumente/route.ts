@@ -26,13 +26,14 @@ export async function GET(req: Request) {
   }
   const c = "c" in a ? a.c : undefined;
   const word = !("status" in a);
+  const offPart = (p: string) => (c && !c.super && c.off.includes(`word.${p}`) ? "Dezactivat temporar." : null);
   const web = MODULES.filter((m) => m.key !== "word" && c?.modules.includes(m.key));
   const body = [
     `<h1>Instrumentele UVALO</h1>`,
     `<div class="sec">În Word</div>`,
     word
-      ? card("/word/anexe?mode=photo", "foto", "Anexă foto", "Pozele de la inspecție, ordonate, cu legende, câte vrei pe pagină.") +
-        card("/word/anexe?mode=pdf", "pdf", "Anexă documente", "Extras CF, releveu, autorizații: pagină cu pagină, cu titlu pe fiecare document.")
+      ? card("/word/anexe?mode=photo", "foto", "Anexă foto", offPart("photo") ?? "Pozele de la inspecție, ordonate, cu legende, câte vrei pe pagină.") +
+        card("/word/anexe?mode=pdf", "pdf", "Anexă documente", offPart("pdf") ?? "Extras CF, releveu, autorizații: pagină cu pagină, cu titlu pe fiecare document.")
       : `<p>${esc(c?.block ?? "Abonamentul firmei tale nu include UVALO pentru Word.")} Scrie-ne la <a href="mailto:office@valuefy.ro">office@valuefy.ro</a>.</p>`,
     web.length ? `<div class="sec">Se deschid în browser</div>` + web.map((m) => card(m.href, m.key, m.name, m.desc, true)).join("") : "",
     c ? `<div class="me">Conectat ca <b>${esc(c.user.name || c.user.email)}</b>${c.org ? ` · ${esc(c.org.name)}` : ""}<br><a href="/word" data-browser="1">Ajutor și instalare</a></div>` : "",

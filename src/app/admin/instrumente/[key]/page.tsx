@@ -3,10 +3,10 @@ import { notFound } from "next/navigation";
 import { superPage } from "@/lib/guard";
 import { countyOfUats, githubReady, listUploads, refresh, uats } from "@/lib/plans";
 import { recentEvents } from "@/lib/orgs";
-import { aiTotals, aiUsage, userLimits, PROMPT_DEFAULTS, PROMPT_LABELS, type PromptKey, prompts, toolByKey, toolSettings, toolUsage } from "@/lib/tools";
+import { aiTotals, aiUsage, FEATURES, userLimits, PROMPT_DEFAULTS, PROMPT_LABELS, type PromptKey, prompts, toolByKey, toolSettings, toolUsage } from "@/lib/tools";
 import { roDate } from "@/lib/plan-format";
 import { AdminShell } from "@/components/AdminShell";
-import { AiLimits, PromptEditor, ToolSwitch, UserLimits } from "@/components/admin";
+import { AiLimits, FeatureSwitches, PromptEditor, ToolSwitch, UserLimits } from "@/components/admin";
 import { CountTable, UatCountTable } from "@/components/Charts";
 import { PlanList, PlanUploader } from "@/components/plans";
 import { ToolAnalytics } from "@/components/ToolAnalytics";
@@ -93,9 +93,11 @@ export default async function Instrument({ params }: { params: Promise<{ key: st
     );
   }
 
+  const features = FEATURES.filter((f) => f.tool === key).map((f) => ({ key: f.key, name: f.name, desc: f.desc, on: !off.includes(f.key) }));
   return (
     <AdminShell c={c} active="instrumente" pending={pending} title={tool.name} subtitle="Statistici și stare" actions={<a className="btn btnGhost btnSm" href="/admin/instrumente">← Instrumente</a>}>
       {switchCard}
+      {features.length > 0 && <FeatureSwitches items={features} />}
       <h2 className="secTitle">Statistici</h2>
       <ToolAnalytics u={u} events={events} />
     </AdminShell>
