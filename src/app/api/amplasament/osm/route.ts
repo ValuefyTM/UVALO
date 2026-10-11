@@ -123,7 +123,7 @@ async function overpass(q: string) {
         const j = (await res.json().catch(() => null)) as { elements?: El[]; remark?: string } | null;
         if (j?.elements && !(j.remark && /runtime error|timed out|out of memory/i.test(j.remark))) return j.elements;
         fails.push(`${host}: ${j?.remark?.slice(0, 80) ?? "răspuns invalid"}`);
-      } else fails.push(`${host}: ${res.status}`);
+      } else fails.push(`${host}: ${res.status} ${(await res.text().catch(() => "")).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 160)}`);
     } catch (e) {
       fails.push(`${host}: ${e instanceof Error && e.name === "TimeoutError" ? "timeout" : String(e).slice(0, 80)}`);
     }

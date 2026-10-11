@@ -539,14 +539,14 @@ async function loadOsm(lat,lng){
     for(const url of OVERPASS){
       try{const ctl=new AbortController(),t=setTimeout(()=>ctl.abort(),30000);
         const r=await fetch(url,{method:'POST',body:new URLSearchParams({data:j.query}),signal:ctl.signal});clearTimeout(t);
-        if(!r.ok){why+='; '+new URL(url).host+' (browser): '+r.status;continue}
+        if(!r.ok){const tx=(await r.text().catch(()=>'')).replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim().slice(0,120);why+='; '+new URL(url).host+' (browser): '+r.status+(tx?' '+tx:'');continue}
         const d=await r.json();
         const p=await fetch('/api/amplasament/osm',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({lat,lng,elements:d.elements||[]})});
         const o=await p.json().catch(()=>null);if(p.ok&&o&&!o.error)return o;why+='; prelucrare: '+p.status}
-      catch(e){why+='; '+new URL(url).host+' (browser): '+(e.name==='AbortError'?'timeout':'eroare')}
+      catch(e){why+='; '+new URL(url).host+' (browser): '+(e.name==='AbortError'?'timeout':(e.message||'eroare'))}
     }
   }
-  console.warn('OpenStreetMap:',why);
+  console.warn('OpenStreetMap:',why);S.osmWhy=why;
   toast('OpenStreetMap nu a răspuns ('+why.slice(0,140)+'). Analiza zonei lipsește; reîncearcă peste un minut.',9000);
   return null;
 }
@@ -618,7 +618,7 @@ function catCounts(){
 }
 function renderB(){
   const o=S.osm, el=$('secB');
-  if(!o){el.innerHTML='<div class="chead"><h2>B · Localizare</h2></div><p class="muted">Datele OpenStreetMap nu au putut fi aduse acum (serverele Overpass sunt ocupate sau au refuzat cererea).</p><button class="btn" type="button" id="osmRetry">Reîncearcă</button>';
+  if(!o){el.innerHTML='<div class="chead"><h2>B · Localizare</h2></div><p class="muted">Datele OpenStreetMap nu au putut fi aduse acum (serverele Overpass sunt ocupate sau au refuzat cererea).</p>'+(S.osmWhy?'<p class="muted" style="font-size:11px;word-break:break-word">Detalii: '+esc(S.osmWhy)+'</p>':'')+'<button class="btn" type="button" id="osmRetry">Reîncearcă</button>';
     $('osmRetry').onclick=async()=>{const b=$('osmRetry');b.disabled=true;b.textContent='Se încarcă…';const o2=await loadOsm(S.pt.lat,S.pt.lng);if(!o2){b.disabled=false;b.textContent='Reîncearcă';return}
       S.osm=o2;S.roads=(o2.roads||[]).map(r=>({...r,label:roadLabel(r),en:r.geom.map(g=>toS70(g[0],g[1]))}));if(S.p)S.A=analyseParcel(S.D,S.p,S.roads);S.texts={};render()};return}
   const cs=catCounts();
