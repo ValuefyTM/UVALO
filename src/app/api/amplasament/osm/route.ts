@@ -7,11 +7,12 @@ import { locatorAccess } from "@/lib/locator";
 // Overpass limits requests per IP and Cloudflare's outgoing IPs are shared by many: when every server refuses the worker,
 // the answer carries the query and the page asks Overpass itself (the viewer's own IP), then POSTs the elements here.
 
-const ENDPOINTS = () => [process.env.OVERPASS_URL, "https://overpass-api.de/api/interpreter", "https://overpass.private.coffee/api/interpreter",
-  "https://overpass.kumi.systems/api/interpreter"]
+const ENDPOINTS = () => [process.env.OVERPASS_URL, "https://overpass-api.de/api/interpreter", "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
+  "https://overpass.private.coffee/api/interpreter", "https://overpass.kumi.systems/api/interpreter"]
   .filter((u): u is string => !!u);
 
-type El = { type: "node" | "way" | "relation"; id: number; lat?: number; lon?: number; center?: { lat: number; lon: number }; geometry?: { lat: number; lon: number }[]; tags?: Record<string, string> };
+type Pt = { lat: number; lon: number };
+type El = { type: "node" | "way" | "relation"; id: number; lat?: number; lon?: number; center?: Pt; geometry?: (Pt | null)[]; tags?: Record<string, string> };
 
 /** Categories of points of interest, in the order the page shows them. */
 const CATS: { key: string; label: string; test: (t: Record<string, string>) => boolean }[] = [
@@ -48,32 +49,35 @@ const ROAD_KIND: Record<string, string> = {
   residential: "stradă rezidențială", unclassified: "drum local", living_street: "stradă rezidențială", service: "drum de serviciu / acces", track: "drum de pământ",
 };
 
+// Kept light for the public servers: tag filter first, then the distance; the geometry of long ways and large areas
+// is cut to a box of about 3 km around the point (only the part near the parcel matters for the distances).
 function query(lat: number, lng: number) {
   const at = (r: number) => `(around:${r},${lat},${lng})`;
-  return `[out:json][timeout:25];
+  const dy = 3000 / 111_320, dx = 3000 / (111_320 * Math.cos((lat * Math.PI) / 180));
+  const box = `(${(lat - dy).toFixed(5)},${(lng - dx).toFixed(5)},${(lat + dy).toFixed(5)},${(lng + dx).toFixed(5)})`;
+  return `[out:json][timeout:60];
 (
-  nwr${at(1500)}[amenity~"^(school|kindergarten|pharmacy|hospital|clinic|doctors|bank|post_office|place_of_worship|restaurant|cafe|fast_food|fuel|university|college)$"];
-  nwr${at(1500)}[shop~"^(supermarket|convenience|bakery|butcher|greengrocer|mall)$"];
-  nwr${at(1500)}[leisure~"^(park|playground|sports_centre|pitch|fitness_centre|stadium)$"];
-  node${at(1500)}[highway=bus_stop];
-  node${at(1500)}[public_transport=platform];
-  node${at(2500)}[railway~"^(tram_stop|station|halt)$"];
+  nwr["amenity"~"^(school|kindergarten|pharmacy|hospital|clinic|doctors|bank|post_office|place_of_worship|restaurant|cafe|fast_food|fuel|university|college)$"]${at(1500)};
+  nwr["shop"~"^(supermarket|convenience|bakery|butcher|greengrocer|mall)$"]${at(1500)};
+  nwr["leisure"~"^(park|playground|sports_centre|pitch|fitness_centre|stadium)$"]${at(1500)};
+  node["highway"="bus_stop"]${at(1500)};
+  node["railway"~"^(tram_stop|station|halt)$"]${at(2500)};
 );
 out tags center qt;
-way${at(120)}[highway][highway!~"^(footway|path|cycleway|steps|corridor|bridleway|proposed|construction|platform)$"];
-out tags geom qt;
-way${at(2000)}[highway~"^(motorway|trunk|primary|secondary)$"];
-out tags geom qt;
+way["highway"]["highway"!~"^(footway|path|cycleway|steps|corridor|bridleway|proposed|construction|platform)$"]${at(120)};
+out tags geom${box} qt;
+way["highway"~"^(motorway|trunk|primary|secondary)$"]${at(2000)};
+out tags geom${box} qt;
 (
-  way${at(1500)}[power=line];
-  way${at(1500)}[railway=rail];
-  way${at(1500)}[landuse~"^(industrial|cemetery)$"];
-  way${at(1000)}[amenity=grave_yard];
-  way${at(2000)}[man_made=wastewater_plant];
-  way${at(3000)}[landuse=landfill];
+  way["power"="line"]${at(1500)};
+  way["railway"="rail"]${at(1500)};
+  way["landuse"~"^(industrial|cemetery)$"]${at(1500)};
+  way["amenity"="grave_yard"]${at(1000)};
+  way["man_made"="wastewater_plant"]${at(2000)};
+  way["landuse"="landfill"]${at(3000)};
 );
-out tags geom qt;
-node${at(30000)}[place~"^(city|town|village)$"];
+out tags geom${box} qt;
+node["place"~"^(city|town|village)$"]${at(25000)};
 out tags qt;`;
 }
 
@@ -117,7 +121,7 @@ async function overpass(q: string) {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded", Accept: "application/json", "User-Agent": "UVALO/1.0 (https://app.uvalo.ro; analiza amplasamentului)" },
         body: "data=" + encodeURIComponent(q),
-        signal: AbortSignal.timeout(15_000),
+        signal: AbortSignal.timeout(25_000),
       });
       if (res.ok) {
         const j = (await res.json().catch(() => null)) as { elements?: El[]; remark?: string } | null;
@@ -153,9 +157,15 @@ function analyse(lat: number, lng: number, els: El[]) {
       pois.push({ cat: cat.key, name: t.name ?? "", lat: c.lat, lng: c.lon, d: Math.round(hav(lat, lng, c.lat, c.lon)) });
       continue;
     }
-    if (!e.geometry?.length) continue;
-    const closed = e.geometry.length > 3 && e.geometry[0].lat === e.geometry[e.geometry.length - 1].lat && e.geometry[0].lon === e.geometry[e.geometry.length - 1].lon;
-    const d = Math.round(distTo(lat, lng, e.geometry, closed));
+    // geometry cut to the box around the point: points outside come as null, so the way is split into pieces
+    const g = e.geometry ?? [];
+    const parts: Pt[][] = [[]];
+    for (const q of g) if (q && Number.isFinite(q.lat)) parts[parts.length - 1].push(q); else if (parts[parts.length - 1].length) parts.push([]);
+    const pieces = parts.filter((x) => x.length);
+    if (!pieces.length) continue;
+    const first = g[0], last = g[g.length - 1];
+    const closed = pieces.length === 1 && g.length > 3 && !!first && !!last && first.lat === last.lat && first.lon === last.lon;
+    const d = Math.round(Math.min(...pieces.map((x) => distTo(lat, lng, x, closed))));
     const n = NEG.find((k) => k.test(t));
     if (n && d <= n.max) {
       const was = neg.get(n.key);
@@ -170,7 +180,7 @@ function analyse(lat: number, lng: number, els: El[]) {
     if (t.highway && d <= 120 && !seenRoad.has(e.id)) {
       seenRoad.add(e.id);
       near.push({ name: t.name ?? "", ref: t.ref ?? "", kind: ROAD_KIND[t.highway] ?? "drum", highway: t.highway, surface: t.surface ?? "", lanes: t.lanes ?? "", d,
-        geom: e.geometry.map((p) => [Math.round(p.lat * 1e6) / 1e6, Math.round(p.lon * 1e6) / 1e6]) });
+        geom: pieces.sort((x, y) => y.length - x.length)[0].map((p) => [Math.round(p.lat * 1e6) / 1e6, Math.round(p.lon * 1e6) / 1e6]) });
     }
   }
 
