@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>UVALO · Comparabile</title>
+  <link rel="stylesheet" href="sidepanel.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <img class="brand-logo" src="icons/uvalo-lockup.svg" alt="UVALO" />
+      <div class="brand-text">
+        <strong>Comparabile</strong>
+        <span>capturi pentru raport</span>
+      </div>
+    </div>
+    <div class="gen-btns">
+      <button id="btnWord" class="btn btn-primary" title="Generează documentul Word cu toate capturile, în ordinea din listă">Word</button>
+      <button id="btnPdf" class="btn btn-primary" title="Generează documentul PDF cu toate capturile, în ordinea din listă">PDF</button>
+      <button id="btnBoth" class="btn btn-primary" title="Generează ambele documente (Word și PDF) cu toate capturile">W+PDF</button>
+    </div>
+  </header>
+
+  <div class="actions">
+    <button id="btnAddCurrent" class="btn btn-accent">＋ Adaugă pagina curentă</button>
+    <button id="btnAddUrl" class="btn btn-ghost" title="Adaugă un anunț introducând adresa manual">＋ URL</button>
+    <button id="btnAddGroup" class="btn btn-ghost">＋ Grup</button>
+    <button id="btnCaptureAll" class="btn btn-dark" title="Deschide pe rând fiecare anunț necapturat și îl fotografiază complet">📷 Capturează tot</button>
+    <button id="btnReset" class="btn btn-ghost btn-reset" title="Șterge toată lista și toate capturile salvate">🗑 Reset</button>
+  </div>
+
+  <label class="setting" title="Înainte de captură, extensia apasă butoanele de tip „Afișează numărul” / „Vezi telefon”, ca datele de contact să apară în dovadă. Pentru site-urile care cer cont (ex. OLX), loghează-te în browser înainte.">
+    <input type="checkbox" id="chkReveal" checked />
+    <span>Afișează datele de contact înainte de captură</span>
+  </label>
+
+  <label class="setting" title="După capturarea anunțului, extensia apasă butonul „Vezi harta”, așteaptă încărcarea hărții și o adaugă ca ultimă pagină a comparabilei.">
+    <input type="checkbox" id="chkMap" checked />
+    <span>Capturează și harta localizării (dacă există)</span>
+  </label>
+
+  <div id="progress" class="progress hidden">
+    <div class="progress-text" id="progressText">Se capturează…</div>
+    <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+    <button id="btnStop" class="btn btn-ghost btn-small">Oprește</button>
+  </div>
+
+  <main id="groups" class="groups"></main>
+
+  <div id="empty" class="empty hidden">
+    <p><strong>Lista e goală.</strong></p>
+    <p>Deschide un anunț imobiliar, apoi apasă <em>„＋ Adaugă pagina curentă”</em>. Organizează anunțurile în grupuri, apoi capturează-le pe toate și generează dosarul Word.</p>
+  </div>
+
+  <footer class="foot">
+    <span id="stats"></span>
+    <span class="uv-foot" id="uvFoot"></span>
+    <button id="btnClear" class="link-danger">Golește lista</button>
+  </footer>
+
+  <script src="uvalo.js"></script>
+  <script src="vendor/docx.umd.js"></script>
+  <script src="vendor/jspdf.umd.js"></script>
+  <script src="vendor/pdf-fonts.js"></script>
+  <script src="sidepanel.js"></script>
+</body>
+</html>

@@ -1,0 +1,38 @@
+{
+  "manifest_version": 3,
+  "name": "UVALO pentru Chrome — Comparabile",
+  "version": "2.0.0",
+  "description": "Capturează anunțuri imobiliare complete, feliate pe pagini A4, și generează dosarul Word/PDF cu comparabilele pentru raportul de evaluare. Necesită cont UVALO.",
+  "permissions": [
+    "debugger",
+    "tabs",
+    "storage",
+    "unlimitedStorage",
+    "scripting",
+    "sidePanel"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "action": {
+    "default_title": "UVALO · Comparabile",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "short_name": "UVALO",
+  "homepage_url": "https://app.uvalo.ro/chrome"
+}

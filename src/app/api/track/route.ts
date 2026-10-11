@@ -1,7 +1,7 @@
 import { api, json } from "@/lib/api";
 import { track } from "@/lib/track";
 
-const MODULES = new Set(["localizare", "comparabile", "amplasament", "word"]);
+const MODULES = new Set(["localizare", "comparabile", "amplasament", "word", "chrome"]);
 
 /** Usage events from the module pages (batches of up to 50). */
 export async function POST(req: Request) {
