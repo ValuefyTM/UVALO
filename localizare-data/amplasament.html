@@ -530,24 +530,34 @@ function roadLabel(r){return r.name||(r.ref?r.kind+' '+r.ref:r.kind+' fără num
 /* ---------- analiza (parcelă și / sau punct) ---------- */
 /* Zona din OpenStreetMap: întâi prin server (cu cache); dacă serverele Overpass refuză workerul (IP-uri Cloudflare
    partajate), browserul întreabă Overpass direct și trimite răspunsul serverului, care îl prelucrează la fel. */
-const OVERPASS=['https://overpass-api.de/api/interpreter','https://maps.mail.ru/osm/tools/overpass/api/interpreter','https://overpass-api.de/api/interpreter'];
+const OVERPASS=['https://overpass-api.de/api/interpreter','https://maps.mail.ru/osm/tools/overpass/api/interpreter'];
+const PART_NAME={dotari:'dotările din jur',strazi:'străzile',zona:'factorii negativi și localitățile'};
+async function partFromBrowser(q,log){
+  for(const url of OVERPASS.concat(OVERPASS)){
+    try{const ctl=new AbortController(),t=setTimeout(()=>ctl.abort(),30000);
+      const r=await fetch(url,{method:'POST',body:new URLSearchParams({data:q}),signal:ctl.signal});clearTimeout(t);
+      if(r.ok){const d=await r.json();if(d&&Array.isArray(d.elements))return d.elements}
+      log.push(new URL(url).host+' (browser): '+r.status)}
+    catch(e){log.push(new URL(url).host+' (browser): '+(e.name==='AbortError'?'timeout':(e.message||'eroare')))}
+    await new Promise(r=>setTimeout(r,1500));
+  }
+  return null;
+}
 async function loadOsm(lat,lng){
-  let j=null,why='';
-  try{const r=await fetch('/api/amplasament/osm?lat='+lat+'&lng='+lng);j=await r.json().catch(()=>null);if(r.ok&&j&&!j.error)return j;why=(j&&j.detail)||('HTTP '+r.status)}catch(e){why='conexiune'}
-  if(j&&j.query){
+  let j=null;const log=[];
+  try{const r=await fetch('/api/amplasament/osm?lat='+lat+'&lng='+lng);j=await r.json().catch(()=>null);if(r.ok&&j&&!j.error)return j;log.push((j&&j.detail)||('HTTP '+r.status))}catch(e){log.push('conexiune')}
+  if(j&&j.queries){
     if(!$('loading').hidden)loading('Analizez zona din jur… durează puțin mai mult decât de obicei.');
-    for(const [i,url] of OVERPASS.entries()){
-      if(i===2)await new Promise(r=>setTimeout(r,3000));
-      try{const ctl=new AbortController(),t=setTimeout(()=>ctl.abort(),70000);
-        const r=await fetch(url,{method:'POST',body:new URLSearchParams({data:j.query}),signal:ctl.signal});clearTimeout(t);
-        if(!r.ok){const tx=(await r.text().catch(()=>'')).replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim().slice(0,120);why+='; '+new URL(url).host+' (browser): '+r.status+(tx?' '+tx:'');continue}
-        const d=await r.json();
-        const p=await fetch('/api/amplasament/osm',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({lat,lng,elements:d.elements||[]})});
-        const o=await p.json().catch(()=>null);if(p.ok&&o&&!o.error)return o;why+='; prelucrare: '+p.status}
-      catch(e){why+='; '+new URL(url).host+' (browser): '+(e.name==='AbortError'?'timeout':(e.message||'eroare'))}
+    const names=Object.keys(j.queries),got=await Promise.all(names.map(n=>partFromBrowser(j.queries[n],log)));
+    const missing=names.filter((n,i)=>!got[i]);
+    const elements=(j.elements||[]).concat(...got.filter(Boolean));
+    if(missing.length<3||(j.elements||[]).length){
+      try{const p=await fetch('/api/amplasament/osm',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({lat,lng,elements,missing})});
+        const o=await p.json().catch(()=>null);if(p.ok&&o&&!o.error){if(missing.length){S.osmWhy=log.join('; ');toast('O parte din datele despre zonă nu a venit ('+missing.map(m=>PART_NAME[m]).join(', ')+'). Poți reîncerca din secțiunea Localizare.',7000)}return o}
+        log.push('prelucrare: '+p.status)}catch(e){log.push('prelucrare: conexiune')}
     }
   }
-  console.warn('OpenStreetMap:',why);S.osmWhy=why;
+  const why=log.join('; ');console.warn('OpenStreetMap:',why);S.osmWhy=why;
   toast('Datele despre zonă nu sunt disponibile acum. Restul analizei e gata; poți reîncerca din secțiunea Localizare.',7000);
   return null;
 }
@@ -617,14 +627,15 @@ function catCounts(){
   const o=S.osm;if(!o)return[];
   return o.cats.map(c=>{const all=o.pois.filter(x=>x.cat===c.key);const inR=all.filter(x=>x.d<=S.radius);return{...c,near:all[0]||null,count:inR.length}}).filter(c=>c.near&&c.near.d<=1500);
 }
+async function retryOsm(b){b.disabled=true;b.textContent='Se încarcă…';const o2=await loadOsm(S.pt.lat,S.pt.lng);if(!o2){b.disabled=false;b.textContent='Reîncearcă';return}
+  S.osm=o2;S.roads=(o2.roads||[]).map(r=>({...r,label:roadLabel(r),en:r.geom.map(g=>toS70(g[0],g[1]))}));if(S.p)S.A=analyseParcel(S.D,S.p,S.roads);S.texts={};render()}
 function renderB(){
   const o=S.osm, el=$('secB');
   if(!o){el.innerHTML='<div class="chead"><h2>B · Localizare</h2></div><p class="muted">Datele despre zonă (dotări, acces, factori negativi) nu sunt disponibile momentan. Restul analizei e gata; reîncearcă peste un minut.</p>'+(S.osmWhy?'<details style="font-size:11px;color:var(--muted2)"><summary style="cursor:pointer">Detalii pentru suport</summary><p style="margin:6px 0 0;word-break:break-word">'+esc(S.osmWhy)+'</p></details>':'')+'<button class="btn" type="button" id="osmRetry">Reîncearcă</button>';
-    $('osmRetry').onclick=async()=>{const b=$('osmRetry');b.disabled=true;b.textContent='Se încarcă…';const o2=await loadOsm(S.pt.lat,S.pt.lng);if(!o2){b.disabled=false;b.textContent='Reîncearcă';return}
-      S.osm=o2;S.roads=(o2.roads||[]).map(r=>({...r,label:roadLabel(r),en:r.geom.map(g=>toS70(g[0],g[1]))}));if(S.p)S.A=analyseParcel(S.D,S.p,S.roads);S.texts={};render()};return}
+    $('osmRetry').onclick=()=>retryOsm($('osmRetry'));return}
   const cs=catCounts();
   const acc=(o.roads||[]).filter(r=>r.d<=30).slice(0,3).map(r=>esc(roadLabel(r))+(r.surface&&SURF[r.surface]?' ('+SURF[r.surface]+')':'')).join('; ');
-  el.innerHTML='<div class="chead"><h2>B · Localizare</h2><span class="src">OpenStreetMap · rază '+fmtD(S.radius)+'</span></div>'+
+  el.innerHTML='<div class="chead"><h2>B · Localizare</h2><span class="src">OpenStreetMap · rază '+fmtD(S.radius)+'</span></div>'+(o.missing&&o.missing.length?'<div class="diff" style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;justify-content:space-between"><span>Lipsesc încă: '+o.missing.map(m=>PART_NAME[m]).join(', ')+'.</span><button class="btn" type="button" id="osmRetry2" style="height:36px">Reîncearcă</button></div>':'')+
     '<dl class="kv">'+
     (o.locality?'<dt>Centrul localității '+esc(o.locality.name)+'</dt><dd><b>'+fmtD(o.locality.d)+'</b></dd>':'')+
     (o.city&&(!o.locality||o.city.name!==o.locality.name)?'<dt>Centrul '+esc(o.city.name)+'</dt><dd><b>'+fmtD(o.city.d)+'</b></dd>':'')+
@@ -653,6 +664,7 @@ function renderMap(){
     L.marker([k.near.lat,k.near.lng],{icon:pinIcon(i+1),title:k.label}).bindTooltip(k.label+(k.near.name?': '+k.near.name:'')+' · '+fmtD(k.near.d)).addTo(S.layers)});
   setTimeout(()=>{S.map.invalidateSize();S.map.fitBounds(L.latLng(c).toBounds(S.radius*2.15))},30);
 }
+$('secB').addEventListener('click',e=>{if(e.target.id==='osmRetry2')retryOsm(e.target)});
 $('radii').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;S.radius=+b.dataset.r;$('radii').querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));renderB();renderMap();renderFacts()});
 
 /* ---------- planul de situație (SVG desenat din plan) ---------- */

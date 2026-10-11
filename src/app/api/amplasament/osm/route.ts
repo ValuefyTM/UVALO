@@ -8,7 +8,7 @@ import { locatorAccess } from "@/lib/locator";
 // the answer carries the query and the page asks Overpass itself (the viewer's own IP), then POSTs the elements here.
 
 const ENDPOINTS = () => [process.env.OVERPASS_URL, "https://overpass-api.de/api/interpreter", "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
-  "https://overpass.private.coffee/api/interpreter", "https://overpass.kumi.systems/api/interpreter"]
+  "https://overpass.private.coffee/api/interpreter"]
   .filter((u): u is string => !!u);
 
 type Pt = { lat: number; lon: number };
@@ -49,13 +49,17 @@ const ROAD_KIND: Record<string, string> = {
   residential: "stradă rezidențială", unclassified: "drum local", living_street: "stradă rezidențială", service: "drum de serviciu / acces", track: "drum de pământ",
 };
 
-// Kept light for the public servers: tag filter first, then the distance; the geometry of long ways and large areas
-// is cut to a box of about 3 km around the point (only the part near the parcel matters for the distances).
-function query(lat: number, lng: number) {
+// Kept light for the public servers, which refuse big requests when busy (504): three small queries sent in parallel,
+// each declaring small limits (20 s, 32 MB); tag filter first, then the distance; the geometry of long ways and large
+// areas cut to a box of about 3 km around the point (only the part near the parcel matters for the distances).
+const HEAD = "[out:json][timeout:20][maxsize:33554432];";
+function queries(lat: number, lng: number) {
   const at = (r: number) => `(around:${r},${lat},${lng})`;
   const dy = 3000 / 111_320, dx = 3000 / (111_320 * Math.cos((lat * Math.PI) / 180));
   const box = `(${(lat - dy).toFixed(5)},${(lng - dx).toFixed(5)},${(lat + dy).toFixed(5)},${(lng + dx).toFixed(5)})`;
-  return `[out:json][timeout:60];
+  return {
+    // amenities around
+    dotari: `${HEAD}
 (
   nwr["amenity"~"^(school|kindergarten|pharmacy|hospital|clinic|doctors|bank|post_office|place_of_worship|restaurant|cafe|fast_food|fuel|university|college)$"]${at(1500)};
   nwr["shop"~"^(supermarket|convenience|bakery|butcher|greengrocer|mall)$"]${at(1500)};
@@ -63,11 +67,15 @@ function query(lat: number, lng: number) {
   node["highway"="bus_stop"]${at(1500)};
   node["railway"~"^(tram_stop|station|halt)$"]${at(2500)};
 );
-out tags center qt;
+out tags center qt;`,
+    // the streets at the parcel and the main roads
+    strazi: `${HEAD}
 way["highway"]["highway"!~"^(footway|path|cycleway|steps|corridor|bridleway|proposed|construction|platform)$"]${at(120)};
 out tags geom${box} qt;
 way["highway"~"^(motorway|trunk|primary|secondary)$"]${at(2000)};
-out tags geom${box} qt;
+out tags geom${box} qt;`,
+    // what can lower the value, and the localities around
+    zona: `${HEAD}
 (
   way["power"="line"]${at(1500)};
   way["railway"="rail"]${at(1500)};
@@ -78,7 +86,8 @@ out tags geom${box} qt;
 );
 out tags geom${box} qt;
 node["place"~"^(city|town|village)$"]${at(25000)};
-out tags qt;`;
+out tags qt;`,
+  };
 }
 
 // Distances on a local plane (metres), accurate enough within a few kilometres.
@@ -121,7 +130,7 @@ async function overpass(q: string) {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded", Accept: "application/json", "User-Agent": "UVALO/1.0 (https://app.uvalo.ro; analiza amplasamentului)" },
         body: "data=" + encodeURIComponent(q),
-        signal: AbortSignal.timeout(25_000),
+        signal: AbortSignal.timeout(22_000),
       });
       if (res.ok) {
         const j = (await res.json().catch(() => null)) as { elements?: El[]; remark?: string } | null;
@@ -221,18 +230,21 @@ export async function GET(req: Request) {
   const { lat, lng } = pt;
 
   const cache = (globalThis as { caches?: { default?: Cache } }).caches?.default;
-  const key = new Request(`https://cache.uvalo.local/amplasament/osm/v1/${lat}/${lng}`);
+  const key = new Request(`https://cache.uvalo.local/amplasament/osm/v2/${lat}/${lng}`);
   const hit = await cache?.match(key).catch(() => undefined);
   if (hit) return json(await hit.text());
 
-  let els: El[];
-  try {
-    els = await overpass(query(lat, lng));
-  } catch (e) {
-    const detail = e instanceof Error ? e.message : String(e);
+  // the three parts in parallel; what fails is asked again by the page, from the browser
+  const qs = queries(lat, lng);
+  const parts = await Promise.all(Object.entries(qs).map(async ([name, q]) => {
+    try { return { name, els: await overpass(q) }; } catch (e) { return { name, err: e instanceof Error ? e.message : String(e) }; }
+  }));
+  const els = parts.flatMap((x) => ("els" in x ? x.els ?? [] : []));
+  const failed = parts.filter((x) => "err" in x);
+  if (failed.length) {
+    const detail = failed.map((x) => `${x.name}: ${"err" in x ? x.err : ""}`).join(" | ");
     console.error("[amplasament/osm]", detail);
-    // the page retries from the browser with this query
-    return Response.json({ error: "Serverele OpenStreetMap nu au răspuns.", detail, query: query(lat, lng) }, { status: 502 });
+    return Response.json({ error: "Serverele OpenStreetMap nu au răspuns.", detail, queries: Object.fromEntries(failed.map((x) => [x.name, qs[x.name as keyof typeof qs]])), elements: els }, { status: 502 });
   }
   const body = result(lat, lng, els);
   await cache?.put(key, new Response(body, { headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=604800" } })).catch(() => {});
@@ -245,10 +257,12 @@ export async function POST(req: Request) {
   if ("status" in a) return new Response(a.status === 401 ? "Autentifică-te din nou." : "Fără acces.", { status: a.status });
   const raw = await req.text();
   if (raw.length > 8_000_000) return Response.json({ error: "Prea multe date." }, { status: 413 });
-  let b: { lat?: number; lng?: number; elements?: unknown };
+  let b: { lat?: number; lng?: number; elements?: unknown; missing?: unknown };
   try { b = JSON.parse(raw); } catch { return Response.json({ error: "Date invalide." }, { status: 400 }); }
   const pt = point(Number(b.lat), Number(b.lng));
   if (!pt || !Array.isArray(b.elements)) return Response.json({ error: "Date invalide." }, { status: 400 });
   const els = (b.elements as El[]).filter((e) => e && typeof e === "object" && (e.type === "node" || e.type === "way" || e.type === "relation")).slice(0, 20_000);
-  return json(result(pt.lat, pt.lng, els));
+  const missing = Array.isArray(b.missing) ? b.missing.filter((x): x is string => typeof x === "string" && /^(dotari|strazi|zona)$/.test(x)) : [];
+  const body = JSON.parse(result(pt.lat, pt.lng, els));
+  return json(JSON.stringify(missing.length ? { ...body, missing } : body));
 }
