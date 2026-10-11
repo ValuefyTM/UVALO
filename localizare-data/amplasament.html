@@ -185,7 +185,7 @@
     <ul>
       <li>Planul cadastral: exporturile ANCPI din localizator.</li>
       <li>Zona: OpenStreetMap; distanțele sunt în linie dreaptă.</li>
-      <li>Textul: Claude (AI), doar din datele de pe pagină; cifrele se verifică automat.</li>
+      <li>Textul: generat de UVALO cu AI, doar din datele de pe pagină; cifrele se verifică automat.</li>
     </ul>
     <div data-up></div>
   </section>
@@ -778,7 +778,7 @@ async function generate(custom){
   const style=custom?'personalizat':S.style;
   if(custom){S.style='personalizat'}
   S.busy=true;['gen','genCustom'].forEach(id=>$(id).disabled=true);
-  $('badges').innerHTML='';$('words').textContent='';$('out').contentEditable='false';$('out').innerHTML='<div class="loadrow"><span class="spin"></span><span>Claude scrie varianta '+STYLE_NAME[style].toLowerCase()+'… (10–40 de secunde)</span></div>';
+  $('badges').innerHTML='';$('words').textContent='';$('out').contentEditable='false';$('out').innerHTML='<div class="loadrow"><span class="spin"></span><span>UVALO generează textul, varianta '+STYLE_NAME[style].toLowerCase()+'… (10–40 de secunde)</span></div>';
   $('tabs').querySelectorAll('button').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.s===S.style)));
   const ex=extras();if(actArea())ex.suprafata_din_act=fmt(actArea(),0)+' mp';
   try{
