@@ -20,7 +20,7 @@ export default async function Word() {
           <ol className="wordSteps">
             <li><b>Descarcă instalatorul</b> și deschide-l (dublu-click). Dacă Windows întreabă, alege <i>Mai multe informații → Rulează oricum</i>.</li>
             <li>Instalatorul închide Word, înregistrează UVALO și scoate add-in-ul vechi <i>VALUEFY Anexe</i>, dacă îl ai. Nu cere drepturi de administrator și nu instalează nimic altceva.</li>
-            <li>Deschide Word: apare tab-ul <b>UVALO</b> cu <b>Anexă foto</b>, <b>Anexă documente</b> și <b>Instrumente</b>.</li>
+            <li>Deschide Word. Prima dată, dacă tab-ul nu apare singur: <b>Inserare → Add-in-urile mele → Add-in-uri de dezvoltator → UVALO</b> (o singură dată pe calculator). Apoi tab-ul <b>UVALO</b> cu <b>Anexă foto</b>, <b>Anexă documente</b> și <b>Instrumente</b> rămâne la fiecare pornire.</li>
             <li>La prima folosire te conectezi în panoul din dreapta cu contul UVALO (email + cod), o singură dată pe calculator.</li>
           </ol>
           <div className="actions" style={{ justifyContent: "flex-start" }}>
