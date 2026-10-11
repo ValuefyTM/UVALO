@@ -58,6 +58,8 @@ export default async function Word() {
               <img src="/word/assets/foto-80.png" alt="" width={48} height={48} />
               <div><span className="wpEyebrow dark">Instrumentul 1</span><h2>Anexă foto</h2><p>Pozele de la inspecție, așezate în pagină fără să le muți una câte una prin Word.</p></div>
             </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img className="wpShot wpPageShot" src="/word/prezentare/foto-pagina.webp" alt="Anexa foto inserată în raport: patru poze pe pagină, cu legende numerotate" width={800} height={701} loading="lazy" />
             <ol className="wpSteps">
               {STEPS.foto.map(([img, t, d], i) => (
                 <li key={img}>

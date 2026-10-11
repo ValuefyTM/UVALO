@@ -834,6 +834,7 @@ a.toolTile:hover { border-color: var(--acc); text-decoration: none; }
 .wpShot { grid-column: 1; grid-row: 2; width: 100%; height: auto; border-radius: 8px; box-shadow: 0 8px 22px rgba(20, 20, 20, 0.14); }
 .wpSteps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 150px)); gap: 12px; grid-column: 2; grid-row: 2 / span 2; justify-content: end; }
 .wpTool:has(.wpShot) .wpFacts { grid-row: 3; }
+.wpPageShot { max-width: 380px; border: 1px solid var(--line); box-shadow: 0 6px 18px rgba(20, 20, 20, 0.1); }
 .wpSteps img { width: 100%; height: auto; border-radius: 8px; border: 1px solid var(--line); box-shadow: 0 6px 16px rgba(20, 20, 20, 0.08); background: #f6f3ed; }
 .wpSteps b { display: flex; align-items: center; gap: 6px; margin: 8px 0 3px; font-size: 12px; }
 .wpSteps b span { width: 18px; height: 18px; border-radius: 50%; background: #141414; color: #E0AD4F; display: inline-grid; place-items: center; font-size: 10px; flex: none; }
