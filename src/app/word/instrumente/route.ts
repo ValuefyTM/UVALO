@@ -35,7 +35,12 @@ export async function GET(req: Request) {
       ? card("/word/anexe?mode=photo", "foto", "Anexă foto", offPart("photo") ?? "Pozele de la inspecție, ordonate, cu legende, câte vrei pe pagină.") +
         card("/word/anexe?mode=pdf", "pdf", "Anexă documente", offPart("pdf") ?? "Extras CF, releveu, autorizații: pagină cu pagină, cu titlu pe fiecare document.")
       : `<p>${esc(c?.block ?? "Abonamentul firmei tale nu include UVALO pentru Word.")} Scrie-ne la <a href="mailto:office@valuefy.ro">office@valuefy.ro</a>.</p>`,
-    web.length ? `<div class="sec">Se deschid în browser</div>` + web.map((m) => card(m.href, m.key, m.name, m.desc, true)).join("") : "",
+    word && c?.modules.includes("comparabile")
+      ? card("/word/comparabile", "comparabile", "Localizator de comparabile", offPart("comps") ?? "În fereastră mare, în Word; harta și tabelul se inserează în raport.")
+      : "",
+    web.filter((m) => !(word && m.key === "comparabile")).length
+      ? `<div class="sec">Se deschid în browser</div>` + web.filter((m) => !(word && m.key === "comparabile")).map((m) => card(m.href, m.key, m.name, m.desc, true)).join("")
+      : "",
     c ? `<div class="me">Conectat ca <b>${esc(c.user.name || c.user.email)}</b>${c.org ? ` · ${esc(c.org.name)}` : ""}<br><a href="/word" data-browser="1">Ajutor și instalare</a></div>` : "",
   ].join("");
   // Platform pages open in the browser (Office.context.ui.openBrowserWindow), not in the narrow pane.

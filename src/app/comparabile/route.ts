@@ -22,7 +22,10 @@ export async function GET(req: Request) {
   const org = a.c.org && a.c.org.name.trim().toLowerCase() !== a.c.user.name.trim().toLowerCase() ? a.c.org.name : "";
   const me = { name: a.c.user.name, company: org || a.c.user.name, subtitle: a.c.user.anevar_no ? `Evaluator autorizat ANEVAR · legitimația ${a.c.user.anevar_no}` : "" };
   const html = (await page.text()).replace("</head>", `<link rel="icon" href="/icon.svg" type="image/svg+xml"><script>window.UVALO_USER=${JSON.stringify(me).replace(/</g, "\\u003c")}</script></head>`);
-  return new Response(html, { headers: { "Content-Type": "text/html; charset=utf-8", ...PRIVATE } });
+  // ?word=1: opened in a large Word window from UVALO pentru Word (button "Inserează în raport", public/word/src/comps-bridge.js)
+  const inWord = new URL(req.url).searchParams.get("word") === "1";
+  const out = inWord ? html.replace("</head>", `<script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script></head>`).replace(/<\/body>(?![\s\S]*<\/body>)/, `<script src="/word/src/comps-bridge.js"></script></body>`) : html;
+  return new Response(out, { headers: { "Content-Type": "text/html; charset=utf-8", ...PRIVATE } });
 }
 
 function blocked(why: string) {

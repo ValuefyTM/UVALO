@@ -411,6 +411,78 @@
     return d;
   }
 
+
+  /* ---- sesiunea: pozele / actele rămân când panoul se închide și se redeschide (IndexedDB, 12 ore) ---- */
+  var SESSION_TTL = 12 * 3600e3, saveT = null, restoring = false, dbp = null, savedFiles = {};
+  function idb() {
+    if (!dbp) dbp = new Promise(function (res, rej) {
+      var r = indexedDB.open("uvalo-anexe", 1);
+      r.onupgradeneeded = function () { r.result.createObjectStore("sessions"); r.result.createObjectStore("files"); };
+      r.onsuccess = function () { res(r.result); }; r.onerror = function () { rej(r.error); };
+    });
+    return dbp;
+  }
+  function reqP(r) { return new Promise(function (res, rej) { r.onsuccess = function () { res(r.result); }; r.onerror = function () { rej(r.error); }; }); }
+  function scheduleSave() { if (restoring) return; clearTimeout(saveT); saveT = setTimeout(saveSession, 700); }
+  async function saveSession() {
+    if (restoring) return;
+    try {
+      var db = await idb(), files = {}, docs = {};
+      var meta = items.map(function (it) {
+        if (!it.fk) it.fk = mode + ":" + (it.file.webkitRelativePath || it.file.name) + "|" + it.file.size + "|" + it.file.lastModified;
+        files[it.fk] = it.file;
+        var o = {};
+        for (var k in it) if (k !== "file" && k !== "doc") o[k] = it[k];
+        if (it.doc) {
+          o.docId = it.doc.id;
+          var d = {}; for (var j in it.doc) if (j !== "pdf") d[j] = it.doc[j];
+          docs[it.doc.id] = d;
+        }
+        return o;
+      });
+      var t = db.transaction(["sessions", "files"], "readwrite"), fs = t.objectStore("files");
+      Object.keys(files).forEach(function (k) { if (!savedFiles[k]) { fs.put(files[k], k); savedFiles[k] = 1; } });
+      Object.keys(savedFiles).forEach(function (k) { if (k.indexOf(mode + ":") === 0 && !files[k]) { fs.delete(k); delete savedFiles[k]; } });
+      t.objectStore("sessions").put({ at: Date.now(), sortMode: sortMode, items: meta, docs: docs, uid: uid, docUid: docUid }, mode);
+      await new Promise(function (res, rej) { t.oncomplete = res; t.onerror = t.onabort = function () { rej(t.error); }; });
+    } catch (e) { console.warn("Sesiunea anexei nu a putut fi salvată", e); }
+  }
+  async function restoreSession() {
+    if (items.length) return;
+    restoring = true; clearTimeout(saveT); // nicio salvare (a listei goale) cât se reface sesiunea
+    try {
+      var db = await idb();
+      var s = await reqP(db.transaction("sessions").objectStore("sessions").get(mode));
+      if (!s || !s.items || !s.items.length) return;
+      if (Date.now() - s.at > SESSION_TTL) { restoring = false; items = []; await saveSession(); return; }
+      var fs = db.transaction("files").objectStore("files"), files = {};
+      var keys = s.items.map(function (o) { return o.fk; }).filter(function (k, i, a) { return k && a.indexOf(k) === i; });
+      await Promise.all(keys.map(function (k) { return reqP(fs.get(k)).then(function (f) { if (f) { files[k] = f; savedFiles[k] = 1; } }); }));
+      var docs = {};
+      Object.keys(s.docs || {}).forEach(function (id) { docs[id] = Object.assign({}, s.docs[id], { pdf: null }); });
+      var out = [];
+      s.items.forEach(function (o) {
+        if (!files[o.fk]) return;
+        var it = Object.assign({}, o, { file: files[o.fk], doc: o.docId != null ? docs[o.docId] || null : null });
+        delete it.docId; out.push(it);
+      });
+      // PDF-urile se redeschid din fișierul păstrat
+      for (var id in docs) {
+        var first = out.filter(function (it) { return it.doc === docs[id] && it.kind === "pdf"; })[0];
+        if (!first) continue;
+        try { docs[id].pdf = await openPdf(first.file); }
+        catch (e) { out = out.filter(function (it) { return it.doc !== docs[id]; }); }
+      }
+      if (items.length || !out.length) return; // între timp s-au adăugat fișiere noi
+      items = out;
+      uid = Math.max(uid, s.uid || 0); docUid = Math.max(docUid, s.docUid || 0);
+      sortMode = s.sortMode || "manual"; try { $("sortSel").value = sortMode; } catch (e) { }
+      render();
+      toast("Am păstrat lucrul de dinainte: " + plural(items.length, M().unit[0], M().unit[1]) + ". „Golește” începe de la zero.", "ok", 5000);
+    } catch (e) { console.warn("Sesiunea anexei nu a putut fi refăcută", e); }
+    finally { restoring = false; }
+  }
+
   function render() {
     var nm = numberMap(), only = $("onlySel").checked;
     grid.innerHTML = "";
@@ -1054,6 +1126,7 @@
     items = bags[m].items; sortMode = bags[m].sortMode;
     S = loadSettings(); hasExisting = false;
     applyModeUi(); syncForm(); render();
+    restoreSession();
     if (inWord) { detectPage(true); checkExisting(); }
   }
 
@@ -1089,7 +1162,14 @@
     };
     window.addEventListener("resize", function () { if ($("tab-preview").classList.contains("on")) renderPreview(); });
     render();
+    restoreSession();
   }
+
+  // fiecare schimbare (listă, ordine, bife, descrieri, titluri) se păstrează
+  var render0 = render;
+  render = function () { render0(); scheduleSave(); };
+  document.addEventListener("input", scheduleSave, true);
+  document.addEventListener("change", scheduleSave, true);
 
   // expus pentru teste
   window.AnexaApp = {

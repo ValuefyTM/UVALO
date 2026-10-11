@@ -8,7 +8,7 @@ export const ADDIN_ID = "0f7fa373-18aa-4d09-a7ce-0b54909593a7";
 /** The add-in made before UVALO (VALUEFY Anexe, served from a local server); the installer replaces it. */
 export const OLD_ADDIN_ID = "0a337985-8af2-4761-aa29-222a89928350";
 /** Raise it when the manifest changes (new button, new texts), so Word reloads it. */
-export const MANIFEST_VERSION = "1.0.0.0";
+export const MANIFEST_VERSION = "1.1.0.0";
 
 const esc = (s: string) => s.replace(/[<>&"]/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;" })[c]!);
 
@@ -22,7 +22,7 @@ export function manifest(origin: string) {
                   <Icon><bt:Image size="16" resid="${icon}.16" /><bt:Image size="32" resid="${icon}.32" /><bt:Image size="80" resid="${icon}.80" /></Icon>
                   <Action xsi:type="ShowTaskpane"><TaskpaneId>${pane}</TaskpaneId><SourceLocation resid="${url}" /></Action>
                 </Control>`;
-  const icons = ["Icon", "Foto", "Doc", "Tools"].flatMap((k) => [16, 32, 80].map((s) =>
+  const icons = ["Icon", "Foto", "Doc", "Comps", "Tools"].flatMap((k) => [16, 32, 80].map((s) =>
     `        <bt:Image id="${k}.${s}" DefaultValue="${o}/word/assets/${k.toLowerCase()}-${s}.png" />`)).join("\n");
   return `<?xml version="1.0" encoding="UTF-8"?>
 <OfficeApp xmlns="http://schemas.microsoft.com/office/appforoffice/1.1"
@@ -35,7 +35,7 @@ export function manifest(origin: string) {
   <ProviderName>UVALO</ProviderName>
   <DefaultLocale>ro-RO</DefaultLocale>
   <DisplayName DefaultValue="UVALO" />
-  <Description DefaultValue="Instrumentele UVALO pentru rapoartele de evaluare: anexa foto și anexa cu documente PDF, direct în Word." />
+  <Description DefaultValue="Instrumentele UVALO pentru rapoartele de evaluare: anexa foto, anexa cu documente PDF și comparabilele pe hartă, direct în Word." />
   <IconUrl DefaultValue="${o}/word/assets/icon-32.png" />
   <HighResolutionIconUrl DefaultValue="${o}/word/assets/icon-64.png" />
   <SupportUrl DefaultValue="${o}/word" />
@@ -72,7 +72,7 @@ export function manifest(origin: string) {
               </Group>
               <Group id="Uvalo.Cont">
                 <Label resid="Cont.Label" />
-                <Icon><bt:Image size="16" resid="Tools.16" /><bt:Image size="32" resid="Tools.32" /><bt:Image size="80" resid="Tools.80" /></Icon>${btn("Tools", "Instrumente UVALO", "Toate instrumentele UVALO și contul tău.", "Tools", "UvaloInstrumente", "Tools.Url")}
+                <Icon><bt:Image size="16" resid="Tools.16" /><bt:Image size="32" resid="Tools.32" /><bt:Image size="80" resid="Tools.80" /></Icon>${btn("Comps", "Comparabile", "", "Comps", "UvaloComparabile", "Comps.Url")}${btn("Tools", "Instrumente UVALO", "Toate instrumentele UVALO și contul tău.", "Tools", "UvaloInstrumente", "Tools.Url")}
               </Group>
               <Label resid="Tab.Label" />
             </CustomTab>
@@ -88,13 +88,15 @@ ${icons}
         <bt:Url id="GetStarted.Url" DefaultValue="${o}/word" />
         <bt:Url id="Foto.Url" DefaultValue="${o}/word/anexe?mode=photo" />
         <bt:Url id="Doc.Url" DefaultValue="${o}/word/anexe?mode=pdf" />
+        <bt:Url id="Comps.Url" DefaultValue="${o}/word/comparabile" />
         <bt:Url id="Tools.Url" DefaultValue="${o}/word/instrumente" />
       </bt:Urls>
       <bt:ShortStrings>
         <bt:String id="GetStarted.Title" DefaultValue="UVALO e gata în Word" />
         <bt:String id="Tab.Label" DefaultValue="UVALO" />
         <bt:String id="Anexe.Label" DefaultValue="Anexe" />
-        <bt:String id="Cont.Label" DefaultValue="UVALO" />
+        <bt:String id="Cont.Label" DefaultValue="Instrumente" />
+        <bt:String id="Comps.Label" DefaultValue="Comparabile" />
         <bt:String id="Foto.Label" DefaultValue="Anexă foto" />
         <bt:String id="Doc.Label" DefaultValue="Anexă documente" />
         <bt:String id="Tools.Label" DefaultValue="Instrumente" />
@@ -103,6 +105,7 @@ ${icons}
         <bt:String id="GetStarted.Description" DefaultValue="Deschide tab-ul UVALO: Anexă foto, Anexă documente și celelalte instrumente." />
         <bt:String id="Foto.Tip" DefaultValue="Pozele de la inspecție: alegi folderul, ordonezi, pui legende și câte poze pe pagină." />
         <bt:String id="Doc.Tip" DefaultValue="Documente PDF (extras CF, releveu, autorizații): sortezi, elimini pagini, pui titlu pe fiecare document." />
+        <bt:String id="Comps.Tip" DefaultValue="Localizatorul de comparabile într-o fereastră mare; harta și tabelul se inserează în raport." />
         <bt:String id="Tools.Tip" DefaultValue="Toate instrumentele UVALO și contul tău." />
       </bt:LongStrings>
     </Resources>

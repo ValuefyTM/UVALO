@@ -85,8 +85,14 @@ Proprietar: VALUEFY (firmă de evaluări imobiliare, Timișoara). UVALO devine u
 - Schimbările din panouri ajung imediat la toți; un buton nou în tab = manifest nou (`MANIFEST_VERSION`) și reinstalare.
 - Blocurile inserate păstrează etichetele vechi `valuefy-anexa-*`, ca „Înlocuiește anexa existentă” să le recunoască.
 - Folosire în `events` (`module = 'word'`: `pane`, `insert_photo`, `insert_pdf`); în toate planurile prin migrația 0013.
-- Admin → Instrumente → UVALO pentru Word: comutator pentru tot add-in-ul + „Funcții” (Anexă foto / Anexă documente
-  separat; cheile `word.photo` / `word.pdf` în `off`, lista `FEATURES` din `src/lib/tools.ts`).
+- Admin → Instrumente → UVALO pentru Word: comutator pentru tot add-in-ul + „Funcții” (Anexă foto / Anexă documente /
+  Comparabile separat; cheile `word.photo` / `word.pdf` / `word.comps` în `off`, lista `FEATURES` din `src/lib/tools.ts`).
+- Butonul **Comparabile** (manifest 1.1): panoul `/word/comparabile` deschide `/comparabile?word=1` într-o fereastră mare
+  (Office dialog). Acolo `public/word/src/comps-bridge.js` adaugă „Inserează în raport”: harta PNG + rândurile tabelului
+  trimise prin `messageParent` pe bucăți de 30 000 de caractere; panoul (`comps-pane.js`) le inserează la cursor (imagine
+  + tabel Word, WordApi 1.3).
+- Anexele păstrează lucrul la închiderea panoului: fișierele și lista (ordine, bife, descrieri, titluri) în IndexedDB
+  `uvalo-anexe` (per mod, 12 ore); „Golește” șterge tot.
 
 ## Instrumente în admin (`/admin/instrumente`)
 

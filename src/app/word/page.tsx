@@ -20,7 +20,7 @@ export default async function Word() {
           <ol className="wordSteps">
             <li><b>Descarcă instalatorul</b> și deschide-l (dublu-click). Dacă Windows întreabă, alege <i>Mai multe informații → Rulează oricum</i>.</li>
             <li>Instalatorul închide Word, înregistrează UVALO și scoate add-in-ul vechi <i>VALUEFY Anexe</i>, dacă îl ai. Nu cere drepturi de administrator și nu instalează nimic altceva.</li>
-            <li>Deschide Word. Prima dată, dacă tab-ul nu apare singur: <b>Inserare → Add-in-urile mele → Add-in-uri de dezvoltator → UVALO</b> (o singură dată pe calculator). Apoi tab-ul <b>UVALO</b> cu <b>Anexă foto</b>, <b>Anexă documente</b> și <b>Instrumente</b> rămâne la fiecare pornire.</li>
+            <li>Deschide Word. Dacă tab-ul <b>UVALO</b> nu apare (sau dispare după ce repornești Word): <b>Inserare → Add-in-urile mele → Add-in-uri de dezvoltator → UVALO</b>. Pentru un tab care rămâne mereu, fără acest pas, folosește instalarea pentru toată firma din Microsoft 365 (mai jos).</li>
             <li>La prima folosire te conectezi în panoul din dreapta cu contul UVALO (email + cod), o singură dată pe calculator.</li>
           </ol>
           <div className="actions" style={{ justifyContent: "flex-start" }}>
@@ -34,6 +34,7 @@ export default async function Word() {
           <ul className="wordList">
             <li><b>Anexă foto</b>: alegi folderul cu pozele de la inspecție, bifezi, ordonezi, scrii legendele și alegi câte poze pe pagină. Pozele se micșorează la mărimea de tipar, ca raportul să rămână mic.</li>
             <li><b>Anexă documente</b>: extras CF, releveu, autorizații (PDF sau scanări). Fiecare pagină se poate bifa, roti sau scoate; fiecare document primește titlu, cu numerotare automată.</li>
+            <li><b>Comparabile</b>: localizatorul de comparabile într-o fereastră mare, în Word; „Inserează în raport” pune harta și tabelul comparabilelor la cursor.</li>
             <li><b>Inserează din nou</b> fără dubluri: anexa e un bloc marcat, pe care UVALO îl înlocuiește. Merg și anexele făcute cu vechiul add-in VALUEFY.</li>
           </ul>
           <p className="hint">Pozele și PDF-urile se prelucrează pe calculatorul tău, în Word; nu se trimit pe server.</p>

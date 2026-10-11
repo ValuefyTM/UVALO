@@ -15,6 +15,7 @@ export const toolByKey = (k: string) => TOOLS.find((t) => t.key === k) ?? null;
 export const FEATURES = [
   { key: "word.photo", tool: "word", name: "Anexă foto", desc: "Butonul „Anexă foto” din tab-ul UVALO din Word." },
   { key: "word.pdf", tool: "word", name: "Anexă documente", desc: "Butonul „Anexă documente” din tab-ul UVALO din Word." },
+  { key: "word.comps", tool: "word", name: "Comparabile în Word", desc: "Butonul „Comparabile”: localizatorul de comparabile în fereastră mare, cu inserare în raport." },
 ] as const;
 
 // Limits: per person per 24 hours (ai_text, ai_plan; a person can have an exception), and platform caps per calendar
