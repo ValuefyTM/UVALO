@@ -63,7 +63,7 @@ export function manifest(origin: string) {
   <Description DefaultValue="Instrumentele UVALO pentru rapoartele de evaluare: anexa foto, anexa cu documente PDF și comparabilele pe hartă, direct în Word." />
   <IconUrl DefaultValue="${o}/word/assets/icon-32.png" />
   <HighResolutionIconUrl DefaultValue="${o}/word/assets/icon-64.png" />
-  <SupportUrl DefaultValue="${o}/word" />
+  <SupportUrl DefaultValue="${o}/termeni#contact" />
   <AppDomains>
     <AppDomain>${o}</AppDomain>
   </AppDomains>
@@ -240,7 +240,7 @@ a.card:hover{border-color:#E0AD4F}.card b{display:block;font-size:12.5px;margin-
 .ver{text-align:center;font-size:10px;color:#8a8478;margin-top:4px}.me{font-size:11px;color:#6b6b6b;border-top:1px solid #e6dfcf;padding-top:10px}.me a{color:#9A5F00}
 </style></head><body>
 <header class="top"><img src="/uvalo-lockup.svg" alt="UVALO"><span>${esc(title)}</span></header>
-<main>${body}<div class="ver">UVALO pentru Word v${WORD_VERSION}</div></main>${script}</body></html>`;
+<main>${body}<div class="ver">UVALO pentru Word v${WORD_VERSION} · <a href="/confidentialitate" style="color:inherit">Confidențialitate</a></div></main>${script}</body></html>`;
 }
 
 export const paneHeaders = { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "private, no-store", "X-Robots-Tag": "noindex, nofollow" };

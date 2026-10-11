@@ -43,6 +43,7 @@ export default async function Login({ searchParams }: { searchParams: Promise<{ 
             <div><b>Nu ai cont?</b><span>Este gratuit pentru membrii titulari ANEVAR: îl soliciți cu numărul legitimației.</span></div>
             <a className="btn btnGhost btnSm" href="/solicita-cont">Solicită cont gratuit →</a>
           </div>
+          <p className="legalLinks"><a href="/termeni">Termeni de utilizare</a> · <a href="/confidentialitate">Confidențialitate</a></p>
         </div>
       </main>
     </div>

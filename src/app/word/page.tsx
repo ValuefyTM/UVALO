@@ -108,6 +108,7 @@ export default async function Word() {
             <div><b>Totul local</b><p>Pozele și PDF-urile se prelucrează pe calculatorul tău; nu se trimit pe server.</p></div>
           </section>
           <div className="wpEnd"><b>Îl încerci?</b><a className="btn btnGold" href="#instalare">Instalare în 2 minute →</a></div>
+          <p className="legalLinks"><a href="/termeni">Termeni de utilizare</a> · <a href="/confidentialitate">Politica de confidențialitate</a> · Pozele și documentele rămân pe calculatorul tău.</p>
         </div>
 
         <div className="wpPanel">

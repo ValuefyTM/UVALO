@@ -98,6 +98,9 @@ Proprietar: VALUEFY (firmă de evaluări imobiliare, Timișoara). UVALO devine u
 - Pagina `/word`: prezentare (hero + cele două unelte cu capturi din `public/word/prezentare/*.webp`), tab-uri
   Prezentare / Instalare / Versiuni (`src/components/WordTabs.tsx`, `#instalare`, `#versiuni`). Capturile se refac cu
   Playwright din panourile reale, cu poze și PDF-uri demonstrative (fără date reale).
+- Pagini publice (fără cont, merg și în mentenanță): `/confidentialitate` și `/termeni` (`src/components/LegalPage.tsx`,
+  datele firmei în `COMPANY`). Legate din login, invitație, `/word`, panourile Word; `SupportUrl` din manifest =
+  `/termeni#contact`. Le cere Microsoft Marketplace. La o schimbare de prelucrare (furnizor nou, date noi) se actualizează.
 - **Versiuni**: `WORD_VERSIONS` în `src/lib/word.ts` (cea mai nouă prima; afișată în panouri și pe `/word#versiuni`).
   La fiecare schimbare vizibilă se adaugă o intrare; `manifest: true` = s-au schimbat butoanele, cere reinstalare
   (și `MANIFEST_VERSION` crește).

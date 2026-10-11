@@ -29,7 +29,7 @@ export function AcceptForm({ token, name: n0, phone: p0, legit, county }: { toke
       <label className="field"><span>Telefon mobil</span><input className="input" type="tel" placeholder="07xx xxx xxx" required value={phone} onChange={(e) => setPhone(e.target.value)} autoComplete="tel" /></label>
       {!legit && <label className="field"><span>Nr. legitimație ANEVAR <small>(opțional)</small></span><input className="input" inputMode="numeric" value={anevar} onChange={(e) => setAnevar(e.target.value)} /></label>}
       <label className="check"><input type="checkbox" checked={terms} onChange={(e) => setTerms(e.target.checked)} />
-        <span>Accept termenii de utilizare: contul este personal și nu se împarte cu alte persoane; activitatea din platformă este înregistrată pentru securitate și statistici; datele cadastrale au caracter orientativ.</span>
+        <span>Accept termenii de utilizare: contul este personal și nu se împarte cu alte persoane; activitatea din platformă este înregistrată pentru securitate și statistici; datele cadastrale au caracter orientativ. Detalii în <a href="/termeni" target="_blank">Termeni</a> și <a href="/confidentialitate" target="_blank">Confidențialitate</a>.</span>
       </label>
       {msg && <div role="alert" className="error">{msg}</div>}
       <button type="submit" className="btn btnNavy" style={{ height: 52 }} disabled={busy}>{busy ? "Se activează…" : "Activează contul"}</button>
