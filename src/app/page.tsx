@@ -53,7 +53,7 @@ export default async function Home() {
       const key = m.uat ? keyOf.get(m.uat) : undefined;
       if (!key || recent.some((r) => r.nr === e.target && r.uat === m.uat)) continue;
       recent.push({ nr: e.target, uat: m.uat!, key, area: typeof m.a === "number" ? m.a : null, at: e.at, href: `/localizare#${key}-${encodeURIComponent(e.target)}` });
-      if (recent.length === 5) break;
+      if (recent.length === 3) break;
     }
   }
   const asked = new Set((await db.prepare("SELECT DISTINCT target FROM events WHERE user_id = ? AND module = 'home' AND action = 'notify'").bind(c.user.id).all<{ target: string }>()).results.map((r) => r.target));
@@ -66,7 +66,7 @@ export default async function Home() {
         <section className="homeHero" aria-label="Localizator cadastral">
           <HeroArt />
           <div className="heroText">
-            <h2>Localizator cadastral</h2>
+            <h2>Localizator cadastral{counties.length > 0 && <small> ({counties.length === 1 ? `jud. ${counties[0]}` : counties.map((x) => `jud. ${x}`).join(", ")})</small>}</h2>
             <p>Găsește orice imobil din planurile ANCPI: număr cadastral, topo, adresă sau poziția ta pe teren. Coordonate Stereo 70, vecini, construcții, fișă PDF.</p>
           </div>
           {loc ? (
