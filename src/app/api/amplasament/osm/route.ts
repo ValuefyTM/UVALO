@@ -4,8 +4,11 @@ import { locatorAccess } from "@/lib/locator";
 // Points of interest within 1.5 km, the streets that touch the parcel, the main roads, the things that can lower
 // the value (power lines, railway, industry, cemeteries…) and the localities around. Distances in straight line.
 // Answers are kept a week in the worker's cache (per point, about 10 m apart), so Overpass is asked once.
+// Overpass limits requests per IP and Cloudflare's outgoing IPs are shared by many: when every server refuses the worker,
+// the answer carries the query and the page asks Overpass itself (the viewer's own IP), then POSTs the elements here.
 
-const ENDPOINTS = () => [process.env.OVERPASS_URL, "https://overpass-api.de/api/interpreter", "https://overpass.kumi.systems/api/interpreter"]
+const ENDPOINTS = () => [process.env.OVERPASS_URL, "https://overpass-api.de/api/interpreter", "https://overpass.private.coffee/api/interpreter",
+  "https://overpass.kumi.systems/api/interpreter"]
   .filter((u): u is string => !!u);
 
 type El = { type: "node" | "way" | "relation"; id: number; lat?: number; lon?: number; center?: { lat: number; lon: number }; geometry?: { lat: number; lon: number }[]; tags?: Record<string, string> };
@@ -59,7 +62,7 @@ function query(lat: number, lng: number) {
 out tags center qt;
 way${at(120)}[highway][highway!~"^(footway|path|cycleway|steps|corridor|bridleway|proposed|construction|platform)$"];
 out tags geom qt;
-way${at(3000)}[highway~"^(motorway|trunk|primary|secondary)$"];
+way${at(2000)}[highway~"^(motorway|trunk|primary|secondary)$"];
 out tags geom qt;
 (
   way${at(1500)}[power=line];
@@ -106,21 +109,26 @@ const hav = (a: number, b: number, c: number, d: number) => {
 };
 
 async function overpass(q: string) {
-  let last = "";
+  const fails: string[] = [];
   for (const url of ENDPOINTS()) {
+    const host = new URL(url).host;
     try {
       const res = await fetch(url, {
         method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded", "User-Agent": "UVALO/1.0 (app.uvalo.ro; analiza amplasamentului)" },
+        headers: { "Content-Type": "application/x-www-form-urlencoded", Accept: "application/json", "User-Agent": "UVALO/1.0 (https://app.uvalo.ro; analiza amplasamentului)" },
         body: "data=" + encodeURIComponent(q),
+        signal: AbortSignal.timeout(15_000),
       });
-      if (res.ok) return ((await res.json()) as { elements: El[] }).elements;
-      last = `${res.status}`;
+      if (res.ok) {
+        const j = (await res.json().catch(() => null)) as { elements?: El[]; remark?: string } | null;
+        if (j?.elements && !(j.remark && /runtime error|timed out|out of memory/i.test(j.remark))) return j.elements;
+        fails.push(`${host}: ${j?.remark?.slice(0, 80) ?? "răspuns invalid"}`);
+      } else fails.push(`${host}: ${res.status}`);
     } catch (e) {
-      last = String(e);
+      fails.push(`${host}: ${e instanceof Error && e.name === "TimeoutError" ? "timeout" : String(e).slice(0, 80)}`);
     }
   }
-  throw new Error(`Overpass: ${last}`);
+  throw new Error(fails.join("; "));
 }
 
 function analyse(lat: number, lng: number, els: El[]) {
@@ -186,27 +194,51 @@ function analyse(lat: number, lng: number, els: El[]) {
   };
 }
 
+const json = (body: string) => new Response(body, { headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "private, max-age=3600" } });
+function point(lat: number, lng: number) {
+  lat = Math.round(lat * 1e4) / 1e4; lng = Math.round(lng * 1e4) / 1e4;
+  // Romania, roughly
+  return lat > 43.5 && lat < 48.4 && lng > 20.1 && lng < 30 ? { lat, lng } : null;
+}
+const result = (lat: number, lng: number, els: El[]) => JSON.stringify({ at: [lat, lng], date: new Date().toISOString().slice(0, 10), ...analyse(lat, lng, els) });
+
 export async function GET(req: Request) {
   const a = await locatorAccess("amplasament");
   if ("status" in a) return new Response(a.status === 401 ? "Autentifică-te din nou." : "Fără acces.", { status: a.status });
   const sp = new URL(req.url).searchParams;
-  const lat = Math.round(+(sp.get("lat") ?? NaN) * 1e4) / 1e4, lng = Math.round(+(sp.get("lng") ?? NaN) * 1e4) / 1e4;
-  // Romania, roughly
-  if (!(lat > 43.5 && lat < 48.4 && lng > 20.1 && lng < 30)) return Response.json({ error: "Punctul nu este în România." }, { status: 400 });
+  const pt = point(+(sp.get("lat") ?? NaN), +(sp.get("lng") ?? NaN));
+  if (!pt) return Response.json({ error: "Punctul nu este în România." }, { status: 400 });
+  const { lat, lng } = pt;
 
   const cache = (globalThis as { caches?: { default?: Cache } }).caches?.default;
   const key = new Request(`https://cache.uvalo.local/amplasament/osm/v1/${lat}/${lng}`);
   const hit = await cache?.match(key).catch(() => undefined);
-  if (hit) return new Response(hit.body, { headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "private, max-age=3600" } });
+  if (hit) return json(await hit.text());
 
   let els: El[];
   try {
     els = await overpass(query(lat, lng));
   } catch (e) {
-    console.error("[amplasament/osm]", e);
-    return Response.json({ error: "Serviciul OpenStreetMap nu a răspuns. Încearcă din nou peste un minut." }, { status: 502 });
+    const detail = e instanceof Error ? e.message : String(e);
+    console.error("[amplasament/osm]", detail);
+    // the page retries from the browser with this query
+    return Response.json({ error: "Serverele OpenStreetMap nu au răspuns.", detail, query: query(lat, lng) }, { status: 502 });
   }
-  const body = JSON.stringify({ at: [lat, lng], date: new Date().toISOString().slice(0, 10), ...analyse(lat, lng, els) });
+  const body = result(lat, lng, els);
   await cache?.put(key, new Response(body, { headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=604800" } })).catch(() => {});
-  return new Response(body, { headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "private, max-age=3600" } });
+  return json(body);
+}
+
+/** The elements the page got from Overpass itself (when the worker was refused): analysed here, not cached (they come from the browser). */
+export async function POST(req: Request) {
+  const a = await locatorAccess("amplasament");
+  if ("status" in a) return new Response(a.status === 401 ? "Autentifică-te din nou." : "Fără acces.", { status: a.status });
+  const raw = await req.text();
+  if (raw.length > 8_000_000) return Response.json({ error: "Prea multe date." }, { status: 413 });
+  let b: { lat?: number; lng?: number; elements?: unknown };
+  try { b = JSON.parse(raw); } catch { return Response.json({ error: "Date invalide." }, { status: 400 }); }
+  const pt = point(Number(b.lat), Number(b.lng));
+  if (!pt || !Array.isArray(b.elements)) return Response.json({ error: "Date invalide." }, { status: 400 });
+  const els = (b.elements as El[]).filter((e) => e && typeof e === "object" && (e.type === "node" || e.type === "way" || e.type === "relation")).slice(0, 20_000);
+  return json(result(pt.lat, pt.lng, els));
 }

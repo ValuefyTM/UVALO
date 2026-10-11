@@ -528,6 +528,28 @@ const SURF={asphalt:'asfalt',paved:'pavată',concrete:'beton',paving_stones:'pav
 function roadLabel(r){return r.name||(r.ref?r.kind+' '+r.ref:r.kind+' fără nume')}
 
 /* ---------- analiza (parcelă și / sau punct) ---------- */
+/* Zona din OpenStreetMap: întâi prin server (cu cache); dacă serverele Overpass refuză workerul (IP-uri Cloudflare
+   partajate), browserul întreabă Overpass direct și trimite răspunsul serverului, care îl prelucrează la fel. */
+const OVERPASS=['https://overpass-api.de/api/interpreter','https://overpass.private.coffee/api/interpreter','https://overpass.kumi.systems/api/interpreter'];
+async function loadOsm(lat,lng){
+  let j=null,why='';
+  try{const r=await fetch('/api/amplasament/osm?lat='+lat+'&lng='+lng);j=await r.json().catch(()=>null);if(r.ok&&j&&!j.error)return j;why=(j&&j.detail)||('HTTP '+r.status)}catch(e){why='conexiune'}
+  if(j&&j.query){
+    if(!$('loading').hidden)loading('Serverul nu a primit răspuns de la OpenStreetMap; încerc direct din browser…');
+    for(const url of OVERPASS){
+      try{const ctl=new AbortController(),t=setTimeout(()=>ctl.abort(),30000);
+        const r=await fetch(url,{method:'POST',body:new URLSearchParams({data:j.query}),signal:ctl.signal});clearTimeout(t);
+        if(!r.ok){why+='; '+new URL(url).host+' (browser): '+r.status;continue}
+        const d=await r.json();
+        const p=await fetch('/api/amplasament/osm',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({lat,lng,elements:d.elements||[]})});
+        const o=await p.json().catch(()=>null);if(p.ok&&o&&!o.error)return o;why+='; prelucrare: '+p.status}
+      catch(e){why+='; '+new URL(url).host+' (browser): '+(e.name==='AbortError'?'timeout':'eroare')}
+    }
+  }
+  console.warn('OpenStreetMap:',why);
+  toast('OpenStreetMap nu a răspuns ('+why.slice(0,140)+'). Analiza zonei lipsește; reîncearcă peste un minut.',9000);
+  return null;
+}
 async function analyse(u,D,p,pt){
   S.uat=u;S.D=D;S.p=p;S.A=null;S.texts={};
   let ll;
@@ -535,7 +557,7 @@ async function analyse(u,D,p,pt){
   S.pt={lat:ll[0],lng:ll[1],label:pt&&pt.label||'',byAddr:!!(pt&&pt.byAddr)};
   loading('Caut în OpenStreetMap ce este în jur…');
   let osm=null;
-  try{const r=await fetch('/api/amplasament/osm?lat='+ll[0]+'&lng='+ll[1]);osm=await r.json();if(!r.ok){toast(osm.error||'OpenStreetMap nu a răspuns.',5000);osm=null}}catch(e){toast('OpenStreetMap nu a răspuns. Analiza zonei lipsește; reîncearcă mai târziu.',5000)}
+  osm=await loadOsm(ll[0],ll[1]);
   S.osm=osm;
   const roads=(osm&&osm.roads||[]).map(r=>({...r,label:roadLabel(r),en:r.geom.map(g=>toS70(g[0],g[1]))}));
   S.roads=roads;
@@ -596,7 +618,9 @@ function catCounts(){
 }
 function renderB(){
   const o=S.osm, el=$('secB');
-  if(!o){el.innerHTML='<div class="chead"><h2>B · Localizare</h2></div><p class="muted">Datele OpenStreetMap nu sunt disponibile acum. Reîncarcă pagina peste un minut.</p>';return}
+  if(!o){el.innerHTML='<div class="chead"><h2>B · Localizare</h2></div><p class="muted">Datele OpenStreetMap nu au putut fi aduse acum (serverele Overpass sunt ocupate sau au refuzat cererea).</p><button class="btn" type="button" id="osmRetry">Reîncearcă</button>';
+    $('osmRetry').onclick=async()=>{const b=$('osmRetry');b.disabled=true;b.textContent='Se încarcă…';const o2=await loadOsm(S.pt.lat,S.pt.lng);if(!o2){b.disabled=false;b.textContent='Reîncearcă';return}
+      S.osm=o2;S.roads=(o2.roads||[]).map(r=>({...r,label:roadLabel(r),en:r.geom.map(g=>toS70(g[0],g[1]))}));if(S.p)S.A=analyseParcel(S.D,S.p,S.roads);S.texts={};render()};return}
   const cs=catCounts();
   const acc=(o.roads||[]).filter(r=>r.d<=30).slice(0,3).map(r=>esc(roadLabel(r))+(r.surface&&SURF[r.surface]?' ('+SURF[r.surface]+')':'')).join('; ');
   el.innerHTML='<div class="chead"><h2>B · Localizare</h2><span class="src">OpenStreetMap · rază '+fmtD(S.radius)+'</span></div>'+
