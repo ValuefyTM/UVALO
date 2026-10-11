@@ -125,9 +125,11 @@ export function ToolSwitch({ k, name, on: on0 }: { k: string; name: string; on: 
   );
 }
 
-/** Daily AI limits per person (texts generated, plans read). */
-export function AiLimits({ text, plan }: { text: number; plan: number }) {
-  const [f, setF] = useState({ ai_text: text, ai_plan: plan });
+type LimitVals = { ai_text: number; ai_plan: number; total_text_day: number; total_plan_day: number; total_text_month: number; total_plan_month: number };
+
+/** AI limits: per person per 24 hours, and platform caps per day and month (0 = no cap), with today's and this month's use. */
+export function AiLimits({ limits, used }: { limits: LimitVals; used: { text_day: number; plan_day: number; text_month: number; plan_month: number } }) {
+  const [f, setF] = useState(limits);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
   const save = async () => {
@@ -136,18 +138,75 @@ export function AiLimits({ text, plan }: { text: number; plan: number }) {
     setBusy(false);
     setMsg(e ?? "Limitele au fost salvate.");
   };
+  const num = (k: keyof LimitVals, label: string, note?: string) => (
+    <label className="field">{label}{note && <small className="muted"> {note}</small>}
+      <input className="input" type="number" min={k.startsWith("total") ? 0 : 1} max={100000} value={f[k]} onChange={(e) => setF({ ...f, [k]: +e.target.value })} />
+    </label>
+  );
   return (
     <section className="card">
-      <h2>Limite zilnice pe utilizator</h2>
-      <p className="hint">Câte cereri AI poate face o persoană în 24 de ore. Administratorii UVALO nu au limită.</p>
+      <h2>Limite AI</h2>
+      <p className="hint">Pe utilizator: câte cereri poate face o persoană în 24 de ore (cine are o excepție, mai jos, o folosește pe aceea). Pe platformă: câte cereri se pot face în total, de toți, într-o zi și într-o lună calendaristică; 0 = fără plafon. Administratorii UVALO nu au limită.</p>
+      <h3 style={{ margin: "6px 0 0", fontSize: 13 }}>Pe utilizator, în 24 de ore</h3>
+      <div className="cols">{num("ai_text", "Texte generate")}{num("ai_plan", "Planuri de amplasament citite")}</div>
+      <h3 style={{ margin: "6px 0 0", fontSize: 13 }}>Total pe platformă</h3>
       <div className="cols">
-        <label className="field">Texte generate<input className="input" type="number" min={1} max={1000} value={f.ai_text} onChange={(e) => setF({ ...f, ai_text: +e.target.value })} /></label>
-        <label className="field">Planuri de amplasament citite<input className="input" type="number" min={1} max={1000} value={f.ai_plan} onChange={(e) => setF({ ...f, ai_plan: +e.target.value })} /></label>
+        {num("total_text_day", "Texte pe zi", `· azi: ${used.text_day}`)}
+        {num("total_plan_day", "Planuri pe zi", `· azi: ${used.plan_day}`)}
+        {num("total_text_month", "Texte pe lună", `· luna aceasta: ${used.text_month}`)}
+        {num("total_plan_month", "Planuri pe lună", `· luna aceasta: ${used.plan_month}`)}
       </div>
       {msg && <div role="status" className={msg.startsWith("Limitele") ? "okMsg" : "error"}>{msg}</div>}
       <div className="actions" style={{ justifyContent: "flex-start" }}>
         <button type="button" className="btn btnNavy btnSm" disabled={busy} onClick={save}>{busy ? "…" : "Salvează limitele"}</button>
       </div>
+    </section>
+  );
+}
+
+/** Exceptions per person to the daily limits: list, change, remove, add by email. */
+export function UserLimits({ rows, general }: { rows: { id: string; name: string; email: string; ai_text?: number; ai_plan?: number }[]; general: { ai_text: number; ai_plan: number } }) {
+  const [f, setF] = useState({ email: "", ai_text: "", ai_plan: "" });
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState("");
+  const send = async (body: Record<string, unknown>) => {
+    setBusy(true); setMsg("");
+    const e = await post("/api/admin/limits", body);
+    setBusy(false);
+    if (e) return setMsg(e);
+    location.reload();
+  };
+  return (
+    <section className="card">
+      <h2>Excepții pe utilizator</h2>
+      <p className="hint">Limită proprie, în 24 de ore, pentru o persoană anume. Câmp gol = limita generală ({general.ai_text} texte, {general.ai_plan} planuri).</p>
+      {rows.length > 0 && (
+        <div className="tableWrap">
+          <table className="table">
+            <thead><tr><th>Utilizator</th><th className="r">Texte</th><th className="r">Planuri</th><th /></tr></thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr key={r.id}>
+                  <td><b>{r.name}</b><div className="muted" style={{ fontSize: 12 }}>{r.email}</div></td>
+                  <td className="r mono">{r.ai_text ?? <span className="muted">{general.ai_text}</span>}</td>
+                  <td className="r mono">{r.ai_plan ?? <span className="muted">{general.ai_plan}</span>}</td>
+                  <td className="r">
+                    <button type="button" className="linkBtn" onClick={() => setF({ email: r.email, ai_text: r.ai_text?.toString() ?? "", ai_plan: r.ai_plan?.toString() ?? "" })}>Modifică</button>{" · "}
+                    <button type="button" className="linkBtn" disabled={busy} onClick={() => { if (confirm(`Scoți excepția pentru ${r.name}?`)) send({ userId: r.id }); }}>Scoate</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      <form style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "flex-end" }} onSubmit={(e) => { e.preventDefault(); send({ email: f.email, ai_text: f.ai_text, ai_plan: f.ai_plan }); }}>
+        <label className="field" style={{ flex: "2 1 240px" }}>Emailul utilizatorului<input className="input" type="email" required value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} placeholder="nume@firma.ro" /></label>
+        <label className="field" style={{ flex: "1 1 120px" }}>Texte / 24 h<input className="input" type="number" min={0} value={f.ai_text} onChange={(e) => setF({ ...f, ai_text: e.target.value })} placeholder={String(general.ai_text)} /></label>
+        <label className="field" style={{ flex: "1 1 120px" }}>Planuri / 24 h<input className="input" type="number" min={0} value={f.ai_plan} onChange={(e) => setF({ ...f, ai_plan: e.target.value })} placeholder={String(general.ai_plan)} /></label>
+        <button type="submit" className="btn btnNavy btnSm" disabled={busy}>{busy ? "…" : "Salvează excepția"}</button>
+      </form>
+      {msg && <div role="alert" className="error">{msg}</div>}
     </section>
   );
 }

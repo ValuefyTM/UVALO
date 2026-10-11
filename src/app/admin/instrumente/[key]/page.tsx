@@ -3,10 +3,10 @@ import { notFound } from "next/navigation";
 import { superPage } from "@/lib/guard";
 import { countyOfUats, githubReady, listUploads, refresh, uats } from "@/lib/plans";
 import { recentEvents } from "@/lib/orgs";
-import { aiUsage, PROMPT_DEFAULTS, PROMPT_LABELS, type PromptKey, prompts, toolByKey, toolSettings, toolUsage } from "@/lib/tools";
+import { aiTotals, aiUsage, userLimits, PROMPT_DEFAULTS, PROMPT_LABELS, type PromptKey, prompts, toolByKey, toolSettings, toolUsage } from "@/lib/tools";
 import { roDate } from "@/lib/plan-format";
 import { AdminShell } from "@/components/AdminShell";
-import { AiLimits, PromptEditor, ToolSwitch } from "@/components/admin";
+import { AiLimits, PromptEditor, ToolSwitch, UserLimits } from "@/components/admin";
 import { CountTable, UatCountTable } from "@/components/Charts";
 import { PlanList, PlanUploader } from "@/components/plans";
 import { ToolAnalytics } from "@/components/ToolAnalytics";
@@ -68,7 +68,10 @@ export default async function Instrument({ params }: { params: Promise<{ key: st
   }
 
   if (key === "amplasament") {
-    const [P, ai] = await Promise.all([prompts(db), aiUsage(db)]);
+    const [P, ai, totals, exc] = await Promise.all([prompts(db), aiUsage(db), aiTotals(db), userLimits(db)]);
+    const ids = Object.keys(exc);
+    const people = ids.length ? (await db.prepare(`SELECT id, COALESCE(NULLIF(name, ''), email) AS name, email FROM users WHERE id IN (${ids.map(() => "?").join(",")})`).bind(...ids).all<{ id: string; name: string; email: string }>()).results : [];
+    const excRows = people.map((p) => ({ ...p, ...exc[p.id] })).sort((x, y) => x.name.localeCompare(y.name, "ro"));
     const items = (Object.keys(PROMPT_DEFAULTS) as PromptKey[]).map((k) => ({ key: k, ...PROMPT_LABELS[k], value: P[k], def: PROMPT_DEFAULTS[k] }));
     return (
       <AdminShell c={c} active="instrumente" pending={pending} title={tool.name} subtitle="Statistici, prompturile AI și limitele" actions={<a className="btn btnGhost btnSm" href="/admin/instrumente">← Instrumente</a>}>
@@ -76,7 +79,8 @@ export default async function Instrument({ params }: { params: Promise<{ key: st
         <h2 className="secTitle">Prompturile AI</h2>
         <p className="hint">Textele trimise la AI pentru fiecare tip de generare. Modificările se aplică imediat; „Revino la textul implicit” readuce varianta din aplicație. La fiecare text se adaugă automat datele analizei și completările evaluatorului; la „Personalizat”, și promptul utilizatorului.</p>
         <PromptEditor items={items} />
-        <AiLimits text={limits.ai_text} plan={limits.ai_plan} />
+        <AiLimits limits={limits} used={totals} />
+        <UserLimits rows={excRows} general={{ ai_text: limits.ai_text, ai_plan: limits.ai_plan }} />
         <h2 className="secTitle">Statistici</h2>
         <div className="kpis">
           <div className="kpi"><small>Texte generate · 30 zile</small><b>{ai.texts}</b></div>

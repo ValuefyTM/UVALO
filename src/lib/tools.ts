@@ -11,8 +11,11 @@ export const TOOLS = [
 export type ToolKey = (typeof TOOLS)[number]["key"];
 export const toolByKey = (k: string) => TOOLS.find((t) => t.key === k) ?? null;
 
-export type ToolSettings = { off: string[]; limits: { ai_text: number; ai_plan: number } };
-const DEFAULT: ToolSettings = { off: [], limits: { ai_text: 60, ai_plan: 30 } };
+// Limits: per person per 24 hours (ai_text, ai_plan; a person can have an exception), and platform caps per calendar
+// day and month for everyone together (total_*; 0 = no cap), so the AI cost stays under control.
+export type Limits = { ai_text: number; ai_plan: number; total_text_day: number; total_plan_day: number; total_text_month: number; total_plan_month: number };
+export type ToolSettings = { off: string[]; limits: Limits };
+const DEFAULT: ToolSettings = { off: [], limits: { ai_text: 60, ai_plan: 30, total_text_day: 0, total_plan_day: 0, total_text_month: 0, total_plan_month: 0 } };
 
 let cache: { at: number; v: ToolSettings } | null = null;
 
@@ -33,24 +36,79 @@ async function write(db: D1Database, key: string, actor: string, value: unknown)
 /** On/off and limits (a few seconds of cache per worker instance, like maintenance). */
 export async function toolSettings(db: D1Database): Promise<ToolSettings> {
   if (cache && Date.now() - cache.at < 5000) return cache.v;
-  const d = await read<Partial<ToolSettings>>(db, "tools");
+  const d = await read<{ off?: unknown; limits?: Partial<Record<keyof Limits, unknown>> }>(db, "tools");
+  const n = (k: keyof Limits, min: number) => (Number.isFinite(Number(d?.limits?.[k])) && Number(d?.limits?.[k]) >= min ? Number(d!.limits![k]) : DEFAULT.limits[k]);
   const v: ToolSettings = {
-    off: Array.isArray(d?.off) ? d!.off.filter((k) => typeof k === "string") : [],
-    limits: { ai_text: Number(d?.limits?.ai_text) > 0 ? Number(d!.limits!.ai_text) : DEFAULT.limits.ai_text, ai_plan: Number(d?.limits?.ai_plan) > 0 ? Number(d!.limits!.ai_plan) : DEFAULT.limits.ai_plan },
+    off: Array.isArray(d?.off) ? (d!.off as unknown[]).filter((k): k is string => typeof k === "string") : [],
+    limits: { ai_text: n("ai_text", 1), ai_plan: n("ai_plan", 1), total_text_day: n("total_text_day", 0), total_plan_day: n("total_plan_day", 0), total_text_month: n("total_text_month", 0), total_plan_month: n("total_plan_month", 0) },
   };
   cache = { at: Date.now(), v };
   return v;
 }
 
-export async function setToolSettings(db: D1Database, actor: string, change: { key?: string; on?: boolean; limits?: Partial<ToolSettings["limits"]> }) {
+export async function setToolSettings(db: D1Database, actor: string, change: { key?: string; on?: boolean; limits?: Partial<Limits> }) {
   const cur = await toolSettings(db);
   const off = new Set(cur.off);
   if (change.key && typeof change.on === "boolean") (change.on ? off.delete(change.key) : off.add(change.key));
-  const lim = (v: unknown, d: number) => (Number.isFinite(Number(v)) && Number(v) >= 1 && Number(v) <= 1000 ? Math.round(Number(v)) : d);
-  const v: ToolSettings = { off: [...off], limits: { ai_text: lim(change.limits?.ai_text, cur.limits.ai_text), ai_plan: lim(change.limits?.ai_plan, cur.limits.ai_plan) } };
+  const lim = (k: keyof Limits) => {
+    const v = change.limits?.[k], min = k.startsWith("total") ? 0 : 1;
+    return v !== undefined && Number.isFinite(Number(v)) && Number(v) >= min && Number(v) <= 100000 ? Math.round(Number(v)) : cur.limits[k];
+  };
+  const v: ToolSettings = { off: [...off], limits: Object.fromEntries((Object.keys(DEFAULT.limits) as (keyof Limits)[]).map((k) => [k, lim(k)])) as Limits };
   await write(db, "tools", actor, v);
   cache = { at: Date.now(), v };
   return v;
+}
+
+/* ---------- per-person exceptions to the daily limits ---------- */
+
+export type UserLimit = { ai_text?: number; ai_plan?: number };
+export async function userLimits(db: D1Database): Promise<Record<string, UserLimit>> {
+  return (await read<Record<string, UserLimit>>(db, "limits:users")) ?? {};
+}
+/** Sets (or, with both empty, removes) the exception of one person. */
+export async function setUserLimit(db: D1Database, actor: string, userId: string, l: { ai_text?: unknown; ai_plan?: unknown }) {
+  const all = await userLimits(db);
+  const ok = (v: unknown) => (v !== "" && v !== null && v !== undefined && Number.isFinite(Number(v)) && Number(v) >= 0 && Number(v) <= 100000 ? Math.round(Number(v)) : undefined);
+  const e: UserLimit = { ai_text: ok(l.ai_text), ai_plan: ok(l.ai_plan) };
+  if (e.ai_text === undefined && e.ai_plan === undefined) delete all[userId];
+  else all[userId] = Object.fromEntries(Object.entries(e).filter(([, v]) => v !== undefined));
+  await write(db, "limits:users", actor, all);
+  return all;
+}
+
+/* ---------- checking the limits before an AI call ---------- */
+
+const ISO = (d: Date) => d.toISOString();
+const dayStart = () => { const d = new Date(); d.setUTCHours(0, 0, 0, 0); return ISO(d); };
+const monthStart = () => { const d = new Date(); d.setUTCDate(1); d.setUTCHours(0, 0, 0, 0); return ISO(d); };
+
+/** How many AI calls of a kind (texts: action "ai", plans: "ai_plan") the whole platform made today and this month. */
+export async function aiTotals(db: D1Database) {
+  const r = await db.prepare(`SELECT
+      SUM(CASE WHEN action = 'ai' AND at >= ?1 THEN 1 ELSE 0 END) AS text_day, SUM(CASE WHEN action = 'ai_plan' AND at >= ?1 THEN 1 ELSE 0 END) AS plan_day,
+      SUM(CASE WHEN action = 'ai' THEN 1 ELSE 0 END) AS text_month, SUM(CASE WHEN action = 'ai_plan' THEN 1 ELSE 0 END) AS plan_month
+    FROM events WHERE module = 'amplasament' AND action IN ('ai', 'ai_plan') AND at >= ?2`).bind(dayStart(), monthStart())
+    .first<{ text_day: number | null; plan_day: number | null; text_month: number | null; plan_month: number | null }>();
+  return { text_day: r?.text_day ?? 0, plan_day: r?.plan_day ?? 0, text_month: r?.text_month ?? 0, plan_month: r?.plan_month ?? 0 };
+}
+
+/** Null when the person may make one more AI call of this kind; otherwise the message to show. Super-admins: no limit. */
+export async function aiLimitError(db: D1Database, c: { super: boolean; user: { id: string } }, kind: "text" | "plan") {
+  if (c.super) return null;
+  const [{ limits }, users, totals] = await Promise.all([toolSettings(db), userLimits(db), aiTotals(db)]);
+  const day = kind === "text" ? limits.total_text_day : limits.total_plan_day, month = kind === "text" ? limits.total_text_month : limits.total_plan_month;
+  if (day > 0 && (kind === "text" ? totals.text_day : totals.plan_day) >= day) return "Generarea cu AI este indisponibilă temporar pentru azi. Revine mâine.";
+  if (month > 0 && (kind === "text" ? totals.text_month : totals.plan_month) >= month) return "Generarea cu AI este indisponibilă temporar până la începutul lunii viitoare.";
+  const own = users[c.user.id]?.[kind === "text" ? "ai_text" : "ai_plan"];
+  const per = own ?? (kind === "text" ? limits.ai_text : limits.ai_plan);
+  const used = await db.prepare(`SELECT COUNT(*) AS n FROM events WHERE user_id = ? AND module = 'amplasament' AND action = ? AND at > strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-1 day')`)
+    .bind(c.user.id, kind === "text" ? "ai" : "ai_plan").first<{ n: number }>();
+  if (per === 0) return kind === "text" ? "Contul tău nu are acces la generarea textelor cu AI. Scrie-ne dacă ai nevoie de ea." : "Contul tău nu are acces la citirea planurilor cu AI. Scrie-ne dacă ai nevoie de ea.";
+  if ((used?.n ?? 0) >= per) return kind === "text"
+    ? `Ai generat ${per} ${per === 1 ? "text" : "de texte"} în ultimele 24 de ore, cât permite contul tău. Încearcă din nou mai târziu.`
+    : `Ai citit ${per} ${per === 1 ? "plan" : "de planuri"} în ultimele 24 de ore, cât permite contul tău. Încearcă din nou mai târziu.`;
+  return null;
 }
 
 /* ---------- the prompts of the site analysis ---------- */

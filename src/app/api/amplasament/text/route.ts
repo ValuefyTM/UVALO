@@ -1,7 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { api, err, json, str } from "@/lib/api";
 import { track } from "@/lib/track";
-import { prompts, toolSettings } from "@/lib/tools";
+import { aiLimitError, prompts } from "@/lib/tools";
 
 // Site analysis (/amplasament): the "Descrierea amplasamentului" chapter, written by Claude from the analysis data.
 // The model only rewords: the data (areas, distances, names) comes from the page and every number in the answer is
@@ -49,13 +49,9 @@ export async function POST(req: Request) {
   const data = JSON.stringify({ date: b.facts ?? {}, completari_evaluator: b.extra ?? {} }, null, 1);
   if (data.length > 20_000) return err("Prea multe date pentru o singură descriere.");
 
-  const [P, { limits }] = await Promise.all([prompts(a.db), toolSettings(a.db)]);
-  const PER_DAY = limits.ai_text;
-  if (!a.c.super) {
-    const used = await a.db.prepare("SELECT COUNT(*) AS n FROM events WHERE user_id = ? AND module = 'amplasament' AND action = 'ai' AND at > strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-1 day')")
-      .bind(a.c.user.id).first<{ n: number }>();
-    if ((used?.n ?? 0) >= PER_DAY) return err(`Ai generat ${PER_DAY} de texte în ultimele 24 de ore. Încearcă din nou mai târziu.`, 429);
-  }
+  const P = await prompts(a.db);
+  const limit = await aiLimitError(a.db, a.c, "text");
+  if (limit) return err(limit, 429);
 
   const user = `${P[style]}
 

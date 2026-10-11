@@ -61,7 +61,7 @@ Proprietar: VALUEFY (firmă de evaluări imobiliare, Timișoara). UVALO devine u
   localități; cache în worker o săptămână. Var opțională `OVERPASS_URL`.
 - `/api/amplasament/text`: textul „Descrierea amplasamentului” cu Claude (`@anthropic-ai/sdk`, `claude-opus-5-5`,
   fallback server-side), variante scurt/detaliat/academic + promptul utilizatorului; cifrele din răspuns sunt verificate
-  față de date (`unverified`). Secret worker: **`ANTHROPIC_API_KEY`**. Limită 60 texte/zi/utilizator.
+  față de date (`unverified`). Secret worker: **`ANTHROPIC_API_KEY`**. Limitele se setează în Admin → Instrumente.
 - Fără plan în localizator: `/api/amplasament/plan` — evaluatorul încarcă planul de amplasament și delimitare (PDF/poză,
   max. 15 MB; pozele se micșorează în browser), Claude îl citește cu structured output (nr. cadastral, CF, suprafețe,
   inventar de coordonate Stereo 70, construcții, vecini, adresă). Pagina reface parcela din coordonate (X=N, Y=E; le
@@ -75,7 +75,9 @@ Proprietar: VALUEFY (firmă de evaluări imobiliare, Timișoara). UVALO devine u
 
 - Listă cu fiecare instrument (localizare, amplasament, comparabile) + pagină `/admin/instrumente/<cheie>`: comutator
   activ/dezactivat, statistici pe 30 de zile (evenimentele din `events` cu `module = <cheie>`), activitate recentă.
-- Setările: `app_settings` cheia `tools` = `{off: [...], limits: {ai_text, ai_plan}}`; prompturile analizei de
+- Setările: `app_settings` cheia `tools` = `{off: [...], limits: {ai_text, ai_plan, total_text_day, total_plan_day,
+  total_text_month, total_plan_month}}` (per utilizator / 24 h; plafoane pe platformă pe zi și lună calendaristică, 0 = fără);
+  excepții pe utilizator în `limits:users` = `{<userId>: {ai_text?, ai_plan?}}`; verificarea în `aiLimitError()`; prompturile analizei de
   amplasament în `prompts:amplasament` (doar cele schimbate; implicitele în `src/lib/tools.ts` → `PROMPT_DEFAULTS`).
 - Un instrument dezactivat e scos din `c.modules` pentru toți, mai puțin super-adminii (`context()` în `access.ts`);
   pagina lui afișează „dezactivat temporar”, iar din meniu și de pe Acasă dispare.

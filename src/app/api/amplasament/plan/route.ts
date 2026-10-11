@@ -1,7 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { api, err } from "@/lib/api";
 import { track } from "@/lib/track";
-import { prompts, toolSettings } from "@/lib/tools";
+import { aiLimitError, prompts } from "@/lib/tools";
 
 // Site analysis (/amplasament) without a cadastral plan in the locator: the valuer uploads the "plan de amplasament și
 // delimitare" (PDF or photo) and Claude reads it into data: cadastral number, areas, the Stereo 70 coordinate inventory,
@@ -63,13 +63,9 @@ export async function POST(req: Request) {
   if (!type) return err("Planul trebuie să fie PDF sau imagine (JPG, PNG).");
   if (file.size > MAX) return err("Fișierul are peste 15 MB. Trimite doar pagina cu planul.");
 
-  const [P, { limits }] = await Promise.all([prompts(a.db), toolSettings(a.db)]);
-  const PER_DAY = limits.ai_plan;
-  if (!a.c.super) {
-    const used = await a.db.prepare("SELECT COUNT(*) AS n FROM events WHERE user_id = ? AND module = 'amplasament' AND action = 'ai_plan' AND at > strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-1 day')")
-      .bind(a.c.user.id).first<{ n: number }>();
-    if ((used?.n ?? 0) >= PER_DAY) return err(`Ai citit ${PER_DAY} de planuri în ultimele 24 de ore. Încearcă din nou mai târziu.`, 429);
-  }
+  const P = await prompts(a.db);
+  const limit = await aiLimitError(a.db, a.c, "plan");
+  if (limit) return err(limit, 429);
 
   const data = Buffer.from(await file.arrayBuffer()).toString("base64");
   const doc: Anthropic.Beta.BetaContentBlockParam = type === "application/pdf"
