@@ -16,22 +16,24 @@ export async function AppShell(props: { c: Ctx; active: Key; title: string; subt
   const mnt = props.c.super ? await maintenanceOn() : false;
   const { c } = props;
   // Colaborări: the posts in this person's zones they have not answered yet, next to the menu item
-  let collabN = 0;
+  // (not activated yet: a "NOU" label instead)
+  let collabN = 0, collabNew = false;
   if (c.modules.includes("colaborari")) {
     const db = await getDb();
-    collabN = db ? await relevantCount(db, c.user.id).catch(() => 0) : 0;
+    collabNew = !!db && !(await db.prepare("SELECT 1 FROM collab_profiles WHERE user_id = ?").bind(c.user.id).first().catch(() => true));
+    collabN = db && !collabNew ? await relevantCount(db, c.user.id).catch(() => 0) : 0;
   }
-  const nav: { key: Key; label: string; href: string; count?: number }[] = [
+  const nav: { key: Key; label: string; href: string; count?: number; isNew?: boolean }[] = [
     { key: "home", label: "Acasă", href: "/" },
     { key: "instrumente", label: "Instrumente", href: "/instrumente" },
     // Colaborări: only for those allowed in its current mode (Test: the chosen people; Activ: everyone).
-    ...(c.modules.includes("colaborari") ? [{ key: "colaborari" as const, label: "Colaborări", href: "/colaborari", count: collabN }] : []),
+    ...(c.modules.includes("colaborari") ? [{ key: "colaborari" as const, label: "Colaborări", href: "/colaborari", count: collabN, isNew: collabNew }] : []),
     // "Firma mea" only for those who turned on "Lucrez ca birou de evaluare" in their account.
     ...(OFFICE_READY && c.org && canManageOrg(c) && c.user.is_office ? [{ key: "firma" as const, label: "Firma mea", href: "/firma" }] : []),
   ];
   const current = (k: Key) => (k === "instrumente" ? TOOL_KEYS.includes(props.active) : props.active === k) ? "page" as const : undefined;
-  // Phone: Acasă, Instrumente and the account in the bottom menu; the rest behind "Meniu".
-  const mobileNav = [...nav.filter((i) => i.key !== "firma"), { key: "cont" as const, label: "Contul meu", href: "/cont" }].slice(0, 3);
+  // Phone: Acasă, Instrumente, Colaborări (when open to this person) and the account in the bottom menu; the rest behind "Meniu".
+  const mobileNav = [...nav.filter((i) => i.key !== "firma"), { key: "cont" as const, label: "Contul meu", href: "/cont" }].slice(0, 4);
   const sub = c.user.anevar_no ? `Legitimație ANEVAR ${c.user.anevar_no}` : c.org ? `${c.org.name} · ${c.role ? ROLE_LABEL[c.role] : ""}` : c.super ? "Administrator UVALO" : c.user.email;
   return (
     <div className="shell">
@@ -46,6 +48,7 @@ export async function AppShell(props: { c: Ctx; active: Key; title: string; subt
           {nav.map((i) => (
             <a key={i.key} href={i.href} aria-current={current(i.key)}>
               {i.label}
+              {i.isNew && <span className="navNew">NOU</span>}
               {!!i.count && <span className="navCount" aria-label={`${i.count} ${i.count === 1 ? "anunț activ" : "anunțuri active"} în zonele tale`} title={`${i.count === 1 ? "Un anunț activ" : `${i.count} anunțuri active`} în zonele tale`}>{i.count > 99 ? "99+" : i.count}</span>}
             </a>
           ))}
@@ -83,7 +86,11 @@ export async function AppShell(props: { c: Ctx; active: Key; title: string; subt
       </div>
       <nav className="bottomNav" aria-label="Meniu">
         {mobileNav.map((i) => (
-          <a key={i.key} href={i.href} aria-current={current(i.key)}>{i.label}</a>
+          <a key={i.key} href={i.href} aria-current={current(i.key)}>
+            {i.label}
+            {"count" in i && !!i.count && <span className="navDot" aria-label={`${i.count} în zonele tale`}>{i.count > 99 ? "99+" : i.count}</span>}
+            {"isNew" in i && i.isNew && <span className="navDot new">NOU</span>}
+          </a>
         ))}
         <MenuButton />
       </nav>

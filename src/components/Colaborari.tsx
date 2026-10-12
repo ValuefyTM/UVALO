@@ -7,7 +7,7 @@ import { COUNTIES, KINDS, POST_SPECS, PROPS, SKILL_SUGGESTIONS, YEARS, type Coll
 
 type State = CollabState & { mode: CollabMode };
 type FeedPost = State["feed"][number];
-type View = "feed" | "mine" | "chat" | "settings";
+export type View = "feed" | "mine" | "chat" | "settings";
 
 /* ---------- small helpers ---------- */
 
@@ -53,17 +53,19 @@ const KindTag = ({ k }: { k: Kind }) => <span className={`cbTag cbTag-${k}`}>{k 
 
 /* ---------- the module ---------- */
 
-export function Colaborari({ initial, splash, firmsAsked = false, post }: { initial: State; splash: boolean; firmsAsked?: boolean; post?: string }) {
+export function Colaborari({ initial, splash, firmsAsked = false, post, start, startConv, compose = false }: {
+  initial: State; splash: boolean; firmsAsked?: boolean; post?: string; start?: View; startConv?: string; compose?: boolean;
+}) {
   const [s, setS] = useState(initial);
-  const [view, setView] = useState<View>("feed");
+  const [view, setView] = useState<View>(start ?? "feed"); // ?view= from the home page
   const [zone, setZone] = useState<"colegi" | "firme">("colegi");
   const [mineTab, setMineTab] = useState<"posts" | "req">("posts");
-  const [conv, setConv] = useState<string | null>(initial.convs[0]?.id ?? null);
+  const [conv, setConv] = useState<string | null>(startConv ?? initial.convs[0]?.id ?? null);
   const [hl, setHl] = useState<string | null>(post ?? null); // ?post= (link from the email) highlights that post
   const [toast, setToast] = useState("");
   const [notifOpen, setNotifOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
-  const [composeOpen, setComposeOpen] = useState(false);
+  const [composeOpen, setComposeOpen] = useState(compose);
 
   const reload = useCallback(async () => {
     const r = await fetch("/api/colaborari", { cache: "no-store" }).catch(() => null);

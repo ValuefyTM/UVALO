@@ -6,7 +6,8 @@ import { CollabArt, CompsThumb, HeroArt, MarketArt, SiteThumb } from "@/componen
 import { NotifyButton } from "@/components/NotifyButton";
 import { QuickSearch } from "@/components/QuickSearch";
 import { Referral } from "@/components/Referral";
-import { CollabSplash } from "@/components/Colaborari";
+import { CollabHome, CollabLaunch } from "@/components/HomeCollab";
+import { collabLaunch, collabState } from "@/lib/collab";
 
 export const metadata: Metadata = { title: "UVALO" };
 export const dynamic = "force-dynamic";
@@ -57,9 +58,10 @@ export default async function Home() {
       if (recent.length === 3) break;
     }
   }
-  // Colaborări: the "Nou în UVALO" announcement for those who may use it and have not activated it yet
+  // Colaborări: a preview for those who activated it, the launch banner for those who may use it and have not yet
   const collab = c.modules.includes("colaborari");
-  const collabNew = collab && !(await db.prepare("SELECT 1 FROM collab_profiles WHERE user_id = ?").bind(c.user.id).first().catch(() => null));
+  const cs = collab ? await collabState(db, c.user).catch(() => null) : null;
+  const launch = collab && cs && !cs.profile ? await collabLaunch(db, { id: c.user.id, county: c.user.county }).catch(() => null) : null;
   const asked = new Set((await db.prepare("SELECT DISTINCT target FROM events WHERE user_id = ? AND module = 'home' AND action = 'notify'").bind(c.user.id).all<{ target: string }>()).results.map((r) => r.target));
 
   return (
@@ -67,6 +69,7 @@ export default async function Home() {
       {c.block && !c.super && <div className="note">{c.block} Scrie-ne la <a className="rowLink" href="mailto:office@uvalo.ro">office@uvalo.ro</a> ca să reactivăm accesul.</div>}
 
       <div className="home">
+        {launch && <CollabLaunch l={launch} />}
         <section className="homeHero" aria-label="Localizator cadastral">
           <HeroArt />
           <div className="heroText">
@@ -86,6 +89,7 @@ export default async function Home() {
           )}
         </section>
 
+        {cs?.profile && <CollabHome s={cs} />}
         <div className="homeRow">
           {loc && (
             <section className="recentBox" aria-labelledby="recentT">
@@ -130,25 +134,14 @@ export default async function Home() {
         <section aria-labelledby="soonT">
           <h2 id="soonT" className="homeSec">În curând în UVALO</h2>
           <div className="soonGrid">
-            {SOON.map(({ key, Art, name, desc }) => (
+            {SOON.filter((x) => !(x.key === "colaborari" && collab)).map(({ key, Art, name, desc }) => (
               <div key={key} className="soonBig">
                 <Art />
                 <div className="soonBody">
-                  {key === "colaborari" && collab ? (
-                    <>
-                      <span className="soonTag">{c.collab === "on" ? "Nou" : "În test"}</span>
-                      <h3>{name}</h3>
-                      <p>{desc}</p>
-                      <a className="btn btnGold btnSm" href="/colaborari" style={{ alignSelf: "flex-start" }}>Deschide Colaborări →</a>
-                    </>
-                  ) : (
-                    <>
-                      <span className="soonTag">Lansare în curând</span>
-                      <h3>{name}</h3>
-                      <p>{desc}</p>
-                      <NotifyButton k={key} done={asked.has(key)} label="Anunță-mă la lansare" />
-                    </>
-                  )}
+                  <span className="soonTag">Lansare în curând</span>
+                  <h3>{name}</h3>
+                  <p>{desc}</p>
+                  <NotifyButton k={key} done={asked.has(key)} label="Anunță-mă la lansare" />
                 </div>
               </div>
             ))}
@@ -157,7 +150,6 @@ export default async function Home() {
       </div>
 
       <div className="mobileOnly" style={{ marginTop: 16 }}><Referral variant="card" /></div>
-      {collabNew && <CollabSplash />}
     </AppShell>
   );
 }

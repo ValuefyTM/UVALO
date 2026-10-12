@@ -241,6 +241,18 @@ export async function collabState(db: D1Database, me: { id: string }) {
 
 export type CollabState = Awaited<ReturnType<typeof collabState>>;
 
+/** Home page banner for those who have not activated Colaborări: active posts in their county (else everywhere) and the newest one. */
+export async function collabLaunch(db: D1Database, me: { id: string; county: string | null }) {
+  const w = me.county ? "AND county = ?2" : "";
+  const p = me.county ? [me.id, me.county] : [me.id];
+  const [n, latest] = await Promise.all([
+    db.prepare(`SELECT COUNT(*) AS n FROM collab_posts WHERE status = 'active' AND user_id <> ?1 ${w}`).bind(...p).first<{ n: number }>(),
+    db.prepare(`SELECT kind, title, city, county, budget, created_at FROM collab_posts WHERE status = 'active' AND user_id <> ?1 ${w} ORDER BY created_at DESC LIMIT 1`).bind(...p)
+      .first<{ kind: Kind; title: string; city: string; county: string; budget: number | null; created_at: string }>(),
+  ]);
+  return { count: n?.n ?? 0, county: me.county, latest: latest ?? null };
+}
+
 /* ---------- actions ---------- */
 
 type Me = { id: string; name: string; email: string };

@@ -202,6 +202,11 @@ Proprietar: VALUEFY (firmă de evaluări imobiliare, Timișoara). UVALO devine u
   profilurile din zonă cu `email_notif = 1` (migrația 0020, comutator în „Zone de acoperire”), trimis prin `sendEmails` (Resend batch, 100/apel).
   Butonul = `magicLink()` din `auth.ts`: rând în `auth_codes` cu `ip = 'notify'` (nu intră în limita de 5 coduri/oră), valabil 3 zile, o singură dată,
   `/login/link?token=…&next=/colaborari?post=<id>` (deja autentificat → doar deschide pagina); `?post=` evidențiază anunțul în feed.
+- **Acasă** (`src/components/HomeCollab.tsx`): cu profil → secțiunea „Lucrări de la colegi, în zonele tale” sub localizator (`CollabHome`, din
+  `collabState`: ultimele 3 anunțuri din zone, anunțul propriu activ/în lucru cu cererile, mesajele, notificările); fără profil → bannerul de
+  lansare „NOU ÎN UVALO” deasupra localizatorului (`CollabLaunch`, `collabLaunch()`: anunțurile active din județul persoanei și cel mai nou).
+  Fereastra `CollabSplash` nu mai apare pe Acasă (doar în pagina Colaborări). Meniul: „NOU” până la activare, apoi contorul roșu; pe telefon
+  Colaborări intră în meniul de jos. `/colaborari` primește `?view=mine|chat|settings`, `?conv=`, `?compose=1`, `?post=`.
 - Evenimente `colaborari`: `page`, `profile`, `post`, `request`, `open_chat`, `pick`, `post_status` (meta `{test:1}` în test).
 
 ## Instrumente în admin (`/admin/instrumente`)
