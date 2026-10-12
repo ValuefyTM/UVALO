@@ -58,6 +58,7 @@ export async function AdminShell(props: { c: Ctx; active: AdminKey; pending?: nu
         {nav.slice(0, 3).map(([k, l, h]) => <a key={k} href={h} aria-current={props.active === k ? "page" : undefined}>{l}</a>)}
         <MenuButton />
       </nav>
+      <script src="/presence.js" async />
     </div>
   );
 }

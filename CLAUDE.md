@@ -136,6 +136,13 @@ Proprietar: VALUEFY (firmă de evaluări imobiliare, Timișoara). UVALO devine u
   salvat în tabelul `feedback` (migrația 0017), email către super-admini. Admin → Feedback (`/admin/feedback`): filtre,
   stare nou / citit / rezolvat, notă internă, „Răspunde” pe email; contorul de noi în meniul admin.
 
+## Cine e online (Admin → Panou)
+
+- `public/presence.js` (în `AppShell`, `AdminShell` și injectat lângă `feedback.js` în localizator / amplasament /
+  comparabile): un `POST /api/ping` pe minut cât pagina e vizibilă → `sessions.last_seen_at` + `sessions.last_page`
+  (migrația 0018) și `users.last_seen_at`. Panoul: „Online acum” = sesiuni cu semnal în ultimele 3 minute, grupate pe
+  persoană, cu pagina (UAT și nr. cadastral în localizator), dispozitivul și orașul; plus ultimele 15 minute și azi.
+
 ## Unirea a două conturi (Admin → Utilizatori → „Unește două conturi”)
 
 - `src/lib/merge.ts` (`/api/admin/users/merge`): contul care rămâne își păstrează emailul și preia de la celălalt numele,

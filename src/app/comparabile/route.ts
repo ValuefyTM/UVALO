@@ -25,7 +25,7 @@ export async function GET(req: Request) {
   const inWord = new URL(req.url).searchParams.get("word") === "1";
   const out = inWord ? html.replace("</head>", `<script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script></head>`).replace(/<\/body>(?![\s\S]*<\/body>)/, `<script src="/word/src/comps-bridge.js"></script></body>`) : html;
   // feedback button, not inside the Word window
-  const page2 = inWord ? out : out.replace(/<\/body>(?![\s\S]*<\/body>)/, `<script src="/feedback.js" defer></script></body>`);
+  const page2 = inWord ? out : out.replace(/<\/body>(?![\s\S]*<\/body>)/, `<script src="/presence.js" defer></script><script src="/feedback.js" defer></script></body>`);
   return new Response(page2, { headers: { "Content-Type": "text/html; charset=utf-8", ...PRIVATE } });
 }
 
