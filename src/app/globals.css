@@ -47,6 +47,7 @@ button, input, select, textarea { font-family: inherit; }
 .nav a.navTool { height: 38px; font-weight: 400; color: var(--on-navy); }
 .nav a.navSoon { height: 36px; font-weight: 400; color: #8f8f8f; cursor: default; }
 .nav a.navSoon:hover { background: none; color: #8f8f8f; }
+.navCount { min-width: 22px; height: 22px; padding: 0 7px; border-radius: 999px; background: var(--acc); color: var(--ink); font-size: 11px; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; }
 .nav .soon { font-size: 10px; font-weight: 700; padding: 3px 7px; border-radius: 999px; background: rgba(242, 169, 59, 0.18); color: var(--acc-light); }
 .me { margin-top: auto; display: flex; flex-direction: column; gap: 12px; }
 .meCard { display: flex; gap: 10px; align-items: center; padding: 12px; border-radius: 14px; background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.1); }

@@ -2,6 +2,8 @@ import type { Ctx } from "@/lib/access";
 import { maintenanceOn } from "@/lib/maintenance";
 import { canManageOrg, OFFICE_READY, ROLE_LABEL } from "@/lib/access";
 import { initials } from "@/lib/guard";
+import { getDb } from "@/lib/db";
+import { relevantCount } from "@/lib/collab";
 import { LogoutButton, MenuButton, OrgSwitch } from "./ClientBits";
 import { Referral } from "./Referral";
 
@@ -13,11 +15,17 @@ const TOOL_KEYS: Key[] = ["instrumente", "localizare", "amplasament", "comparabi
 export async function AppShell(props: { c: Ctx; active: Key; title: string; subtitle?: string; actions?: React.ReactNode; children: React.ReactNode }) {
   const mnt = props.c.super ? await maintenanceOn() : false;
   const { c } = props;
-  const nav: { key: Key; label: string; href: string }[] = [
+  // Colaborări: the posts in this person's zones they have not answered yet, next to the menu item
+  let collabN = 0;
+  if (c.modules.includes("colaborari")) {
+    const db = await getDb();
+    collabN = db ? await relevantCount(db, c.user.id).catch(() => 0) : 0;
+  }
+  const nav: { key: Key; label: string; href: string; count?: number }[] = [
     { key: "home", label: "Acasă", href: "/" },
     { key: "instrumente", label: "Instrumente", href: "/instrumente" },
     // Colaborări: only for those allowed in its current mode (Test: the chosen people; Activ: everyone).
-    ...(c.modules.includes("colaborari") ? [{ key: "colaborari" as const, label: "Colaborări", href: "/colaborari" }] : []),
+    ...(c.modules.includes("colaborari") ? [{ key: "colaborari" as const, label: "Colaborări", href: "/colaborari", count: collabN }] : []),
     // "Firma mea" only for those who turned on "Lucrez ca birou de evaluare" in their account.
     ...(OFFICE_READY && c.org && canManageOrg(c) && c.user.is_office ? [{ key: "firma" as const, label: "Firma mea", href: "/firma" }] : []),
   ];
@@ -36,7 +44,10 @@ export async function AppShell(props: { c: Ctx; active: Key; title: string; subt
         </div>
         <nav className="nav" aria-label="Meniu">
           {nav.map((i) => (
-            <a key={i.key} href={i.href} aria-current={current(i.key)}>{i.label}</a>
+            <a key={i.key} href={i.href} aria-current={current(i.key)}>
+              {i.label}
+              {!!i.count && <span className="navCount" aria-label={`${i.count} ${i.count === 1 ? "anunț nou" : "anunțuri noi"} în zona ta`}>{i.count > 99 ? "99+" : i.count}</span>}
+            </a>
           ))}
           <span className="navSec">În curând</span>
           <a aria-disabled="true" tabIndex={-1} className="navSoon">Analize de piață</a>

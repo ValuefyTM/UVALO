@@ -248,6 +248,7 @@ function Feed({ s, zone, setZone, hl, composeOpen, setComposeOpen, reload, flash
 
 function PostCard({ p, s, hl, outZone, reload, flash, toMine }: { p: FeedPost; s: State; hl: boolean; outZone: boolean; reload: () => Promise<void>; flash: (m: string) => void; toMine: () => void }) {
   const [composing, setComposing] = useState(false);
+  const [askAvail, setAskAvail] = useState(false);
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -282,9 +283,10 @@ function PostCard({ p, s, hl, outZone, reload, flash, toMine }: { p: FeedPost; s
         ) : p.myRequest ? (
           <span className="cbDone"><b>✓ {p.myRequest === "contactat" || p.myRequest === "ales" ? "Autorul te-a contactat" : "Detalii cerute"}</b><small>{p.myRequest === "nou" ? "Autorul te va contacta" : "vezi Mesaje"}</small></span>
         ) : !composing && (
-          <button type="button" className="btn btnGold btnSm" onClick={() => setComposing(true)}>Vreau detalii</button>
+          <button type="button" className="btn btnGold btnSm" onClick={() => (z.available ? setComposing(true) : setAskAvail(true))}>Vreau detalii</button>
         )}
       </div>
+      {askAvail && <AvailModal s={s} onClose={() => setAskAvail(false)} onDone={async () => { setAskAvail(false); await reload(); setComposing(true); flash("Ești disponibil pentru colaborări. Acum poți cere detalii."); }} />}
       {composing && (
         <div className="cbApply">
           <ProfilePreview s={s} z={z} />
@@ -300,6 +302,52 @@ function PostCard({ p, s, hl, outZone, reload, flash, toMine }: { p: FeedPost; s
         </div>
       )}
     </article>
+  );
+}
+
+/** "Doar mă uit" profiles: asking for details first turns on the availability and sets the zone. */
+function AvailModal({ s, onClose, onDone }: { s: State; onClose: () => void; onDone: () => Promise<void> }) {
+  const [f, setF] = useZoneForm(s);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  useEffect(() => {
+    const k = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", k);
+    return () => window.removeEventListener("keydown", k);
+  }, [onClose]);
+  const save = async () => {
+    if (!f.city.trim()) return setError("Scrie localitatea de bază, ca să-ți calculăm zona.");
+    setBusy(true); setError("");
+    const r = await call({ action: "profile", ...f, available: true, kinds: f.kinds.length ? f.kinds : ["inspectie", "raport"] });
+    setBusy(false);
+    if (r.error) return setError(r.error);
+    await onDone();
+  };
+  return (
+    <div className="cbModal" role="dialog" aria-modal="true" aria-labelledby="cbAvailT" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="cbModalBox" style={{ maxWidth: 620 }}>
+        <div className="cbModalHead"><span className="cbWho"><b id="cbAvailT">Activează-ți disponibilitatea</b><small>Ca să ceri detalii la un anunț, trebuie să fii disponibil pentru colaborări și să ai o zonă de lucru.</small></span><button type="button" className="cbX" aria-label="Închide" onClick={onClose}>×</button></div>
+        <div className="cbModalBody">
+          <p className="cbNote">La activare ai ales „Deocamdată doar mă uit”. Setează-ți zona: de aici se calculează distanțele, iar notificările pentru lucrările noi din zonă le primești în aplicație.</p>
+          <div className="cbGrid3">
+            <label className="field">Adresă de bază <small>(opțional)</small><input className="input" value={f.address} maxLength={160} onChange={(e) => setF({ ...f, address: e.target.value })} placeholder="ex. Str. Paris 12" /></label>
+            <label className="field">Localitate<input className="input" value={f.city} maxLength={80} onChange={(e) => setF({ ...f, city: e.target.value })} placeholder="ex. Timișoara" /></label>
+            <label className="field">Județ<select className="select" value={f.county} onChange={(e) => setF({ ...f, county: e.target.value, extra: f.extra.filter((x) => x !== e.target.value) })}>{COUNTIES.map((c) => <option key={c}>{c}</option>)}</select></label>
+          </div>
+          <div className="cbSeg">
+            <button type="button" aria-pressed={f.zone_mode === "raza"} onClick={() => setF({ ...f, zone_mode: "raza" })}>Rază în jurul adresei</button>
+            <button type="button" aria-pressed={f.zone_mode === "judet"} onClick={() => setF({ ...f, zone_mode: "judet" })}>Tot județul {f.county}</button>
+          </div>
+          {f.zone_mode === "raza" && <Radius value={f.radius} onChange={(v) => setF({ ...f, radius: v })} />}
+          <div className="field">Alte județe <small>(opțional)</small><ExtraCounties home={f.county} value={f.extra} onChange={(extra) => setF({ ...f, extra })} /></div>
+        </div>
+        <div className="cbModalFoot">
+          <span className={error ? "error" : "cbMuted"}>{error || "Le poți schimba oricând din „Zone de acoperire”."}</span>
+          <button type="button" className="linkBtn" onClick={onClose}>Anulează</button>
+          <button type="button" className="btn btnGold btnSm" disabled={busy} onClick={save}>{busy ? "Se salvează…" : "Activează și cere detalii"}</button>
+        </div>
+      </div>
+    </div>
   );
 }
 

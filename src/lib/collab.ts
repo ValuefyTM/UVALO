@@ -152,6 +152,16 @@ export function inZone(p: Pick<PostRow, "kind" | "county" | "lat" | "lng">, z: P
   return z.extra.includes(p.county);
 }
 
+/** For the menu: active posts in the person's zones, not their own and not asked about yet. */
+export async function relevantCount(db: D1Database, userId: string) {
+  const z = await getProfile(db, userId);
+  if (!z || !z.available) return 0;
+  const { results } = await db.prepare(`SELECT kind, county, lat, lng FROM collab_posts p WHERE p.status = 'active' AND p.user_id <> ?1
+      AND NOT EXISTS (SELECT 1 FROM collab_requests r WHERE r.post_id = p.id AND r.user_id = ?1 AND r.status <> 'retras') LIMIT 500`)
+    .bind(userId).all<Pick<PostRow, "kind" | "county" | "lat" | "lng">>();
+  return results.filter((p) => inZone(p, z)).length;
+}
+
 /* ---------- the page's data ---------- */
 
 export async function collabState(db: D1Database, me: { id: string }) {

@@ -142,6 +142,9 @@ Proprietar: VALUEFY (firmă de evaluări imobiliare, Timișoara). UVALO devine u
   Geocoding (`GOOGLE_MAPS_KEY`); fără cheie, distanțele lipsesc. Onorariu implicit „de stabilit”, sumă = „Buget”.
   Telefonul/emailul apar doar după ce autorul deschide conversația. „Alege pentru lucrare” → `inlucru` (iese din feed),
   apoi Arhivează / Restaurează. Specializările vin din `users.specs` (Tablou ANEVAR), nu se editează.
+- Profil „doar mă uit” (`available = 0`) + „Vreau detalii” → fereastra `AvailModal`: activează disponibilitatea și cere
+  zona, apoi deschide cererea. Meniul arată la „Colaborări” un contor (`relevantCount`): anunțuri active din zonele
+  persoanei, fără ale ei și fără cele la care a cerut deja detalii (0 pentru „doar mă uit”).
 - Evenimente `colaborari`: `page`, `profile`, `post`, `request`, `open_chat`, `pick`, `post_status` (meta `{test:1}` în test).
 
 ## Instrumente în admin (`/admin/instrumente`)
