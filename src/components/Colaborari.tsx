@@ -283,6 +283,7 @@ function Feed({ s, firmsAsked, zone, setZone, hl, composeOpen, setComposeOpen, r
 function PostCard({ p, s, hl, outZone, reload, flash, toMine }: { p: FeedPost; s: State; hl: boolean; outZone: boolean; reload: () => Promise<void>; flash: (m: string) => void; toMine: () => void }) {
   const [composing, setComposing] = useState(false);
   const [askAvail, setAskAvail] = useState(false);
+  const [warnOut, setWarnOut] = useState(false);
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -294,12 +295,20 @@ function PostCard({ p, s, hl, outZone, reload, flash, toMine }: { p: FeedPost; s
     if (r.error) return setError(r.error);
     setComposing(false); await reload(); flash("Cererea a fost trimisă. Autorul îți vede profilul și te contactează în Mesaje.");
   };
+  // outside the zones: ask first, and offer to add the county to the zones (then notifications come from there too)
+  const addCounty = async () => {
+    setBusy(true); setError("");
+    const r = await call({ action: "profile", extra: [...new Set([...(z.extra ?? []), p.county])] });
+    setBusy(false);
+    if (r.error) return setError(r.error);
+    setWarnOut(false); setComposing(true); await reload(); flash(`Județul ${p.county} a fost adăugat în zonele tale. Primești notificări și de acolo.`);
+  };
   return (
     <article id={`p-${p.id}`} className={`cbPost${hl ? " hl" : ""}`}>
       <div className="cbPostHead">
         <Av p={p.author} />
         <span className="cbWho"><b>{p.author.name}</b><small>{p.author.sub ? `${p.author.sub} · ` : ""}<Ago iso={p.created_at} /></small></span>
-        {outZone && <span className="cbOut">În afara zonei</span>}
+        {outZone && <span className="cbOut" title="Pentru anunțurile din afara zonelor tale nu primești notificări">În afara zonei</span>}
         <KindTag k={p.kind} />
       </div>
       <div className="cbPostBody"><h3>{p.title}</h3><p>{p.note}</p></div>
@@ -317,9 +326,21 @@ function PostCard({ p, s, hl, outZone, reload, flash, toMine }: { p: FeedPost; s
         ) : p.myRequest ? (
           <span className="cbDone"><b>✓ {p.myRequest === "contactat" || p.myRequest === "ales" ? "Autorul te-a contactat" : "Detalii cerute"}</b><small>{p.myRequest === "nou" ? "Autorul te va contacta" : "vezi Mesaje"}</small></span>
         ) : !composing && (
-          <button type="button" className="btn btnGold btnSm" onClick={() => (z.available ? setComposing(true) : setAskAvail(true))}>Vreau detalii</button>
+          !warnOut && <button type="button" className="btn btnGold btnSm" onClick={() => (!z.available ? setAskAvail(true) : outZone ? setWarnOut(true) : setComposing(true))}>Vreau detalii</button>
         )}
       </div>
+      {warnOut && !composing && (
+        <div className="cbWarnOut" role="alertdialog" aria-labelledby={`wo-${p.id}`}>
+          <b id={`wo-${p.id}`}>Ești sigur că vrei să ceri detalii?</b>
+          <p>În zonele tale nu ai selectat acoperire în județul <b>{p.county}</b>. Pentru anunțurile din afara zonelor nu primești notificări.</p>
+          {error && <div role="alert" className="error">{error}</div>}
+          <div className="cbWarnActs">
+            <button type="button" className="linkBtn" onClick={() => setWarnOut(false)}>Anulează</button>
+            <button type="button" className="btn btnGhost btnSm" disabled={busy} onClick={addCounty}>{busy ? "Se salvează…" : `Adaugă județul ${p.county} în zone`}</button>
+            <button type="button" className="btn btnGold btnSm" onClick={() => { setWarnOut(false); setComposing(true); }}>Da, cer detalii</button>
+          </div>
+        </div>
+      )}
       {askAvail && <AvailModal s={s} onClose={() => setAskAvail(false)} onDone={async () => { setAskAvail(false); await reload(); setComposing(true); flash("Ești disponibil pentru colaborări. Acum poți cere detalii."); }} />}
       {composing && (
         <div className="cbApply">

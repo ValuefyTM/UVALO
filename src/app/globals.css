@@ -1017,7 +1017,11 @@ a.instMain:hover { border-color: #E0AD4F; }
 .cbPost { background: #fff; border: 1.5px solid var(--line); border-radius: 14px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; }
 .cbPost.hl { border-color: var(--acc); box-shadow: 0 0 0 3px var(--acc-soft); }
 .cbPostHead { display: flex; align-items: center; gap: 10px; }
-.cbOut { flex: none; font-size: 10px; font-weight: 700; padding: 4px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted-2); }
+.cbOut { flex: none; font-size: 10px; font-weight: 800; padding: 4px 9px; border-radius: 999px; border: 1px solid #F1B5B2; background: #FDECEB; color: #C4322B; }
+.cbWarnOut { padding: 14px 16px; border-radius: 12px; border: 1px solid #F1B5B2; background: #FDF3F2; display: flex; flex-direction: column; gap: 6px; }
+.cbWarnOut > b { color: #C4322B; font-size: 14px; }
+.cbWarnOut p { margin: 0; font-size: 13px; line-height: 1.55; color: var(--ink); }
+.cbWarnActs { display: flex; gap: 10px; justify-content: flex-end; align-items: center; flex-wrap: wrap; margin-top: 6px; }
 .cbPostBody h3, .cbMine h3 { margin: 0 0 4px; font-size: 15px; text-wrap: pretty; }
 .cbPostBody p { margin: 0; font-size: 13px; line-height: 1.55; color: var(--muted); white-space: pre-line; text-wrap: pretty; }
 .cbFacts { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
