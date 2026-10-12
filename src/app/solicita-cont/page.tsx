@@ -5,7 +5,15 @@ import { RequestForm } from "./RequestForm";
 import { getDb } from "@/lib/db";
 import { referralByToken } from "@/lib/referrals";
 
-export const metadata: Metadata = { title: "Cont gratuit pentru evaluatori | UVALO" };
+const OG_TITLE = "Cont gratuit UVALO pentru evaluatori";
+const OG_DESC = "Localizator cadastral pentru județul Timiș: orice imobil după număr cadastral, topo sau adresă, cu vecinii, construcțiile și coordonatele Stereo 70. Fișa în PDF și Word.";
+export const metadata: Metadata = {
+  title: "Cont gratuit pentru evaluatori | UVALO",
+  description: OG_DESC,
+  openGraph: { type: "website", siteName: "UVALO", locale: "ro_RO", url: "/solicita-cont", title: OG_TITLE, description: OG_DESC,
+    images: [{ url: "/og-uvalo.jpg", width: 1200, height: 630, alt: "UVALO: localizator cadastral pentru evaluatori" }] },
+  twitter: { card: "summary_large_image", title: OG_TITLE, description: OG_DESC, images: ["/og-uvalo.jpg"] },
+};
 export const dynamic = "force-dynamic";
 
 export default async function RequestAccount({ searchParams }: { searchParams: Promise<{ r?: string }> }) {
