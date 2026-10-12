@@ -199,5 +199,7 @@ export const ACTION_LABEL: Record<string, string> = {
   analysis: "Analiză de amplasament", ai: "Text generat cu AI", ai_plan: "Plan de amplasament citit cu AI", copy: "Text copiat", notify: "„Anunță-mă” la un modul nou",
   pane: "Panou deschis în Word", insert_photo: "Anexă foto inserată în Word", insert_pdf: "Anexă documente inserată în Word", insert_comps: "Comparabile inserate în Word",
   open: "Extensie deschisă", send_word: "Comparabile trimise în Word (Chrome)", insert_chrome: "Comparabile din Chrome inserate în Word", chrome_open: "Trimitere din Chrome deschisă în Word", capture: "Anunț capturat (Chrome)",
+  profile: "Profil Colaborări salvat", post: "Anunț publicat (Colaborări)", request: "Detalii cerute la un anunț", open_chat: "Conversație începută (Colaborări)",
+  pick: "Coleg ales pentru lucrare", post_status: "Anunț arhivat / restaurat", collab_mode: "Mod Colaborări schimbat", collab_purge: "Date de test Colaborări șterse",
 };
 export const actionLabel = (a: string) => ACTION_LABEL[a] ?? a;

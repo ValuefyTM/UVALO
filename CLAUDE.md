@@ -33,7 +33,7 @@ Proprietar: VALUEFY (firmă de evaluări imobiliare, Timișoara). UVALO devine u
 
 ## Structură
 
-- Meniul (`AppShell`): doar **Acasă**, **Instrumente** (`/instrumente`, toate instrumentele pe o pagină, grupate „Pe platformă”
+- Meniul (`AppShell`): doar **Acasă**, **Instrumente** (+ **Colaborări** pentru cine are acces în modul curent) (`/instrumente`, toate instrumentele pe o pagină, grupate „Pe platformă”
   și „În Word și în browser”; paginile instrumentelor aprind „Instrumente”) și **În curând**. Pe telefon: Acasă, Instrumente, Contul meu.
 - `src/app/` — pagini: `login`, `solicita-cont`, `invitatie`, `cont`, `firma` (panoul firmei), `admin/*`
   (firme, utilizatori, solicitări, recomandări, activitate, tablou ANEVAR, planuri), `mentenanta`, `localizare`.
@@ -124,9 +124,29 @@ Proprietar: VALUEFY (firmă de evaluări imobiliare, Timișoara). UVALO devine u
   `word.chrome` în admin. Dacă volumul crește, imaginile se pot muta în R2.
 - Evenimente: `chrome` (`open`, `capture`, `export`, `send_word`), `word` (`chrome_open`, `insert_chrome`).
 
+## Colaborări (`/colaborari`, modulul `colaborari`)
+
+- Lucrări ocazionale între evaluatori (inspecție / raport + inspecție), după mockup-ul din canvas „UVALO — Colaborări”.
+  Tab-ul „Angajare” (anunțuri de la firme) afișează doar „În curând”.
+- **Moduri** (Admin → Instrumente → Colaborări, `app_settings` cheia `collab` = `{mode, users}`): `off` (implicit; doar
+  super-adminii), `test` (super-adminii + `users`, indiferent de abonament), `on` (toți cei fără blocaj). Nu e în planuri:
+  `context()` adaugă `colaborari` în `c.modules` după mod; `c.collab` = modul.
+- **Date de test**: tot ce se scrie cât timp modul ≠ `on` are `test = 1` (tabelele `collab_*`, migrația 0016); butonul
+  „Șterge datele de test” (`/api/admin/colaborari`, `purgeTest`) le șterge, cu tot ce depinde de ele. Evenimentele rămân.
+- Logica în `src/lib/collab.ts` (+ `collab-shared.ts` pentru browser), API unic `/api/colaborari` (GET = starea paginii,
+  `?conv=` = mesajele; POST `{action}`: profile, post, request, withdraw, open_chat, pick, status, message, read),
+  pagina `src/components/Colaborari.tsx` (feed, Anunțurile mele, Mesaje cu polling 6 s, Zone de acoperire, profil,
+  activare în 3 pași, splash „Nou în UVALO” `CollabSplash` pe Acasă și în pagină, o dată per browser — localStorage).
+- Reguli: anunț nou → notificări doar în aplicație pentru profilurile cu zona potrivită (`inZone`: județul de bază cu rază
+  sau tot județul, plus județele suplimentare; fără coordonate contează tot județul). Coordonatele vin din Google
+  Geocoding (`GOOGLE_MAPS_KEY`); fără cheie, distanțele lipsesc. Onorariu implicit „de stabilit”, sumă = „Buget”.
+  Telefonul/emailul apar doar după ce autorul deschide conversația. „Alege pentru lucrare” → `inlucru` (iese din feed),
+  apoi Arhivează / Restaurează. Specializările vin din `users.specs` (Tablou ANEVAR), nu se editează.
+- Evenimente `colaborari`: `page`, `profile`, `post`, `request`, `open_chat`, `pick`, `post_status` (meta `{test:1}` în test).
+
 ## Instrumente în admin (`/admin/instrumente`)
 
-- Listă cu fiecare instrument (localizare, amplasament, comparabile, word, chrome) + pagină `/admin/instrumente/<cheie>`: comutator
+- Listă cu fiecare instrument (localizare, amplasament, comparabile, word, chrome, colaborari — acesta cu moduri, nu on/off) + pagină `/admin/instrumente/<cheie>`: comutator
   activ/dezactivat, statistici pe 30 de zile (evenimentele din `events` cu `module = <cheie>`), activitate recentă.
 - Setările: `app_settings` cheia `tools` = `{off: [...], limits: {ai_text, ai_plan, total_text_day, total_plan_day,
   total_text_month, total_plan_month}}` (per utilizator / 24 h; plafoane pe platformă pe zi și lună calendaristică, 0 = fără);

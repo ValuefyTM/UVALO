@@ -288,3 +288,113 @@ export function PromptEditor({ items }: { items: { key: string; name: string; de
     </>
   );
 }
+
+type CollabMode = "off" | "test" | "on";
+type Counts = Record<string, { all: number; test: number }>;
+const COUNT_LABEL: Record<string, string> = { profiles: "Profiluri", posts: "Anunțuri", requests: "Cereri de detalii", convs: "Conversații", messages: "Mesaje", notifs: "Notificări" };
+
+/** Colaborări: mode (Dezactivat / Test / Activ), the people in the test group, deleting the test data. */
+export function CollabAdmin({ mode: m0, users: u0, counts: c0 }: { mode: CollabMode; users: { id: string; name: string; email: string; anevar: string | null }[]; counts: Counts }) {
+  const [mode, setMode] = useState(m0);
+  const [users, setUsers] = useState(u0);
+  const [counts, setCounts] = useState(c0);
+  const [email, setEmail] = useState("");
+  const [busy, setBusy] = useState("");
+  const [msg, setMsg] = useState("");
+  const [ok, setOk] = useState("");
+  const send = async (body: Record<string, unknown>) => {
+    const r = await fetch("/api/admin/colaborari", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }).catch(() => null);
+    const d = ((await r?.json().catch(() => ({}))) ?? {}) as Record<string, unknown> & { error?: string };
+    return r?.ok ? d : { error: d.error || "Nu am putut salva. Încearcă din nou." };
+  };
+  const run = async (key: string, body: Record<string, unknown>, done: (d: Record<string, unknown>) => void) => {
+    setBusy(key); setMsg(""); setOk("");
+    const d = await send(body);
+    setBusy("");
+    if (d.error) return setMsg(String(d.error));
+    done(d);
+  };
+  const MODES: [CollabMode, string, string][] = [
+    ["off", "Dezactivat", "Doar administratorii UVALO văd modulul (în meniu, ca să-l poată verifica)."],
+    ["test", "Test", "Administratorii UVALO și persoanele din grupul de test de mai jos."],
+    ["on", "Activ", "Toți utilizatorii cu acces la platformă. Datele noi nu mai sunt marcate ca test."],
+  ];
+  const testTotal = Object.values(counts).reduce((s, x) => s + x.test, 0);
+  return (
+    <>
+      <section className="card" style={{ borderColor: mode === "on" ? undefined : "#e8b25c", background: mode === "on" ? undefined : "#fdf6ea" }}>
+        <div className="cardHead">
+          <h2>Mod de lucru</h2>
+          <span className={`pill ${mode === "on" ? "pillOk" : "pillWarn"}`}><i />{MODES.find((x) => x[0] === mode)![1]}</span>
+        </div>
+        <p className="hint">Cât timp modulul nu e „Activ”, tot ce se introduce (profiluri, anunțuri, cereri, mesaje, notificări) e marcat ca <b>date de test</b> și se poate șterge cu butonul de mai jos.</p>
+        <div className="tableWrap">
+          <table className="table" style={{ minWidth: 0 }}>
+            <tbody>
+              {MODES.map(([k, l, d]) => (
+                <tr key={k}>
+                  <td><b>{l}</b><div className="muted" style={{ fontSize: 12 }}>{d}</div></td>
+                  <td className="r">
+                    {mode === k ? <span className="pill pillOk"><i />Modul curent</span> : (
+                      <button type="button" className={`btn btnSm ${k === "on" ? "btnNavy" : "btnGhost"}`} disabled={!!busy}
+                        onClick={() => (k !== "on" || confirm(testTotal ? `Activezi Colaborările pentru toți utilizatorii? Există ${testTotal} înregistrări de test care vor rămâne vizibile până le ștergi.` : "Activezi Colaborările pentru toți utilizatorii?"))
+                          && run(`m-${k}`, { action: "mode", mode: k }, () => { setMode(k); setOk(`Modul este acum „${l}”.`); })}>
+                        {busy === `m-${k}` ? "…" : `Treci pe ${l}`}
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {msg && <div role="alert" className="error">{msg}</div>}
+        {ok && <div role="status" className="hint" style={{ color: "var(--ok-text)", fontWeight: 700 }}>{ok}</div>}
+      </section>
+
+      <div className="cols">
+        <section className="card">
+          <div className="cardHead"><h2>Grupul de test</h2><span className="pill"><i />{users.length === 1 ? "1 persoană" : `${users.length} persoane`}</span></div>
+          <p className="hint">În modul Test, Colaborările le apar doar acestor persoane (plus administratorilor UVALO), indiferent de abonament. Adaugi după emailul contului UVALO.</p>
+          <form className="actions" style={{ justifyContent: "flex-start", flexWrap: "wrap" }} onSubmit={(e) => { e.preventDefault(); if (email.trim()) run("add", { action: "add", email }, (d) => { const u = d.user as (typeof users)[number]; setUsers((x) => x.some((y) => y.id === u.id) ? x : [...x, u]); setEmail(""); setOk(`${u.name} a fost adăugat în grupul de test.`); }); }}>
+            <input className="input" type="email" aria-label="Emailul contului" placeholder="email@firma.ro" value={email} onChange={(e) => setEmail(e.target.value)} style={{ flex: "1 1 220px" }} />
+            <button type="submit" className="btn btnNavy btnSm" disabled={!!busy || !email.trim()}>{busy === "add" ? "…" : "Adaugă în test"}</button>
+          </form>
+          {users.length > 0 ? (
+            <div className="tableWrap">
+              <table className="table" style={{ minWidth: 0 }}>
+                <tbody>
+                  {users.map((u) => (
+                    <tr key={u.id}>
+                      <td><b>{u.name}</b><div className="muted" style={{ fontSize: 12 }}>{u.email}{u.anevar ? ` · ANEVAR ${u.anevar}` : ""}</div></td>
+                      <td className="r"><button type="button" className="linkBtn danger" disabled={!!busy} onClick={() => run(`r-${u.id}`, { action: "remove", user_id: u.id }, () => setUsers((x) => x.filter((y) => y.id !== u.id)))}>Scoate</button></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : <p className="hint">Nicio persoană în grupul de test.</p>}
+        </section>
+
+        <section className="card">
+          <div className="cardHead"><h2>Date de test</h2><span className={`pill ${testTotal ? "pillWarn" : ""}`}><i />{testTotal} înregistrări</span></div>
+          <div className="tableWrap">
+            <table className="table" style={{ minWidth: 0 }}>
+              <thead><tr><th>Ce</th><th>Test</th><th>Total</th></tr></thead>
+              <tbody>
+                {Object.entries(counts).map(([k, v]) => <tr key={k}><td>{COUNT_LABEL[k] ?? k}</td><td><b>{v.test}</b></td><td>{v.all}</td></tr>)}
+              </tbody>
+            </table>
+          </div>
+          <p className="hint">Șterge tot ce s-a introdus cât timp modulul nu era „Activ”: profilurile, anunțurile, cererile, conversațiile, mesajele și notificările de test. Persoanele din test vor trece din nou prin activare. Statisticile de folosire rămân.</p>
+          <div className="actions" style={{ justifyContent: "flex-start" }}>
+            <button type="button" className="btn btnDanger btnSm" disabled={!!busy || !testTotal}
+              onClick={() => confirm(`Ștergi definitiv cele ${testTotal} înregistrări de test din Colaborări? Nu se poate anula.`) && run("purge", { action: "purge" }, (d) => { setCounts(d.counts as Counts); setOk(`Am șters ${d.deleted} înregistrări de test.`); })}>
+              {busy === "purge" ? "Se șterge…" : "Șterge datele de test"}
+            </button>
+          </div>
+        </section>
+      </div>
+    </>
+  );
+}

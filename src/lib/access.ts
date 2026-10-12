@@ -1,5 +1,7 @@
 // Server-only: who the signed-in person is, which firm they work in and what that firm's subscription allows.
 import { toolSettings } from "./tools";
+import { collabAllowed, collabSettings } from "./collab";
+import type { CollabMode } from "./collab-shared";
 import { now } from "./db";
 import { currentSession, type Session, type User } from "./auth";
 
@@ -39,6 +41,8 @@ export type Ctx = {
   modules: string[]; block: string | null;
   /** Tools turned off by the administration (Admin → Instrumente). */
   off: string[];
+  /** Colaborări: Dezactivat / Test / Activ (in "modules" only for the people allowed in the current mode). */
+  collab: CollabMode;
 };
 
 export async function context(db: D1Database): Promise<Ctx | null> {
@@ -61,7 +65,10 @@ export async function context(db: D1Database): Promise<Ctx | null> {
   const block = org ? orgBlock(org) : sup ? null : "Contul tău nu face parte din nicio firmă cu abonament.";
   const { off } = await toolSettings(db);
   const modules = sup ? MODULES.map((m) => m.key) : org && !block ? org.modules.split(",").map((x) => x.trim()).filter((m) => !off.includes(m)) : [];
-  return { user, session, super: sup, orgs, org, role, modules, block, off };
+  // Colaborări is in every plan; who sees it depends on its mode (Admin → Instrumente → Colaborări).
+  const cs = await collabSettings(db);
+  if (collabAllowed(cs, { super: sup, userId: user.id, hasAccess: !!org && !block })) modules.push("colaborari");
+  return { user, session, super: sup, orgs, org, role, modules, block, off, collab: cs.mode };
 }
 
 /** "Birou de evaluare" (Firma mea: colleagues, seats) opens together with the subscriptions; until then it shows "În curând". */

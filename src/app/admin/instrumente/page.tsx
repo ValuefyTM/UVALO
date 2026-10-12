@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { superPage } from "@/lib/guard";
 import { TOOLS, toolSettings, toolUsage } from "@/lib/tools";
 import { AdminShell } from "@/components/AdminShell";
+import { collabSettings } from "@/lib/collab";
+import { MODE_LABEL } from "@/lib/collab-shared";
 
 export const metadata: Metadata = { title: "Instrumente | UVALO Admin" };
 export const dynamic = "force-dynamic";
@@ -9,17 +11,19 @@ export const dynamic = "force-dynamic";
 /** The tools of the platform: state, use in the last 30 days, link to the settings of each. */
 export default async function Instrumente() {
   const { db, c, pending } = await superPage();
-  const [{ off }, ...uses] = await Promise.all([toolSettings(db), ...TOOLS.map((t) => toolUsage(db, t.key))]);
+  const [{ off }, cs, ...uses] = await Promise.all([toolSettings(db), collabSettings(db), ...TOOLS.map((t) => toolUsage(db, t.key))]);
   return (
     <AdminShell c={c} active="instrumente" pending={pending} title="Instrumente" subtitle="Setări și statistici pentru fiecare instrument">
       <div className="cols">
         {TOOLS.map((t, i) => {
-          const on = !off.includes(t.key), u = uses[i];
+          // Colaborări has three modes (Dezactivat / Test / Activ) instead of on/off
+          const on = t.key === "colaborari" ? cs.mode === "on" : !off.includes(t.key), u = uses[i];
+          const label = t.key === "colaborari" ? MODE_LABEL[cs.mode] + (cs.mode === "test" ? ` · ${cs.users.length} ${cs.users.length === 1 ? "persoană" : "persoane"}` : "") : on ? "Activ" : "Dezactivat";
           return (
             <section key={t.key} className="card">
               <div className="cardHead">
                 <h2>{t.name}</h2>
-                <span className={`pill ${on ? "pillOk" : "pillWarn"}`}><i />{on ? "Activ" : "Dezactivat"}</span>
+                <span className={`pill ${on ? "pillOk" : "pillWarn"}`}><i />{label}</span>
               </div>
               <p className="hint">{t.desc}</p>
               <div className="kpis">

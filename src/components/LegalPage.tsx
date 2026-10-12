@@ -1,7 +1,7 @@
 /** Public legal pages (privacy, terms): no sign-in, readable during maintenance too (Microsoft Marketplace links them). */
 export const COMPANY = {
   name: "VALUEFY S.R.L.", cui: "38250411", reg: "J35/3816/2017", seat: "Giroc, județul Timiș, România",
-  email: "office@valuefy.ro", updated: "11 octombrie 2026",
+  email: "office@valuefy.ro", updated: "12 octombrie 2026",
 };
 
 export function LegalPage({ title, lead, toc, children }: { title: string; lead: string; toc: [string, string][]; children: React.ReactNode }) {

@@ -5,7 +5,7 @@ import { initials } from "@/lib/guard";
 import { LogoutButton, MenuButton, OrgSwitch } from "./ClientBits";
 import { Referral } from "./Referral";
 
-type Key = "home" | "instrumente" | "localizare" | "amplasament" | "comparabile" | "word" | "chrome" | "firma" | "cont";
+type Key = "home" | "instrumente" | "colaborari" | "localizare" | "amplasament" | "comparabile" | "word" | "chrome" | "firma" | "cont";
 // the tools' own pages light up "Instrumente" in the menu
 const TOOL_KEYS: Key[] = ["instrumente", "localizare", "amplasament", "comparabile", "word", "chrome"];
 
@@ -16,6 +16,8 @@ export async function AppShell(props: { c: Ctx; active: Key; title: string; subt
   const nav: { key: Key; label: string; href: string }[] = [
     { key: "home", label: "Acasă", href: "/" },
     { key: "instrumente", label: "Instrumente", href: "/instrumente" },
+    // Colaborări: only for those allowed in its current mode (Test: the chosen people; Activ: everyone).
+    ...(c.modules.includes("colaborari") ? [{ key: "colaborari" as const, label: "Colaborări", href: "/colaborari" }] : []),
     // "Firma mea" only for those who turned on "Lucrez ca birou de evaluare" in their account.
     ...(OFFICE_READY && c.org && canManageOrg(c) && c.user.is_office ? [{ key: "firma" as const, label: "Firma mea", href: "/firma" }] : []),
   ];
@@ -38,7 +40,7 @@ export async function AppShell(props: { c: Ctx; active: Key; title: string; subt
           ))}
           <span className="navSec">În curând</span>
           <a aria-disabled="true" tabIndex={-1} className="navSoon">Analize de piață</a>
-          <a aria-disabled="true" tabIndex={-1} className="navSoon">Colaborări</a>
+          {!c.modules.includes("colaborari") && <a aria-disabled="true" tabIndex={-1} className="navSoon">Colaborări</a>}
         </nav>
         <div className="me">
           {c.super && <a className="sideLink" href="/admin">Portal admin →</a>}

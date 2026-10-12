@@ -6,6 +6,7 @@ import { CollabArt, CompsThumb, HeroArt, MarketArt, SiteThumb } from "@/componen
 import { NotifyButton } from "@/components/NotifyButton";
 import { QuickSearch } from "@/components/QuickSearch";
 import { Referral } from "@/components/Referral";
+import { CollabSplash } from "@/components/Colaborari";
 
 export const metadata: Metadata = { title: "UVALO" };
 export const dynamic = "force-dynamic";
@@ -56,6 +57,9 @@ export default async function Home() {
       if (recent.length === 3) break;
     }
   }
+  // Colaborări: the "Nou în UVALO" announcement for those who may use it and have not activated it yet
+  const collab = c.modules.includes("colaborari");
+  const collabNew = collab && !(await db.prepare("SELECT 1 FROM collab_profiles WHERE user_id = ?").bind(c.user.id).first().catch(() => null));
   const asked = new Set((await db.prepare("SELECT DISTINCT target FROM events WHERE user_id = ? AND module = 'home' AND action = 'notify'").bind(c.user.id).all<{ target: string }>()).results.map((r) => r.target));
 
   return (
@@ -130,10 +134,21 @@ export default async function Home() {
               <div key={key} className="soonBig">
                 <Art />
                 <div className="soonBody">
-                  <span className="soonTag">Lansare în curând</span>
-                  <h3>{name}</h3>
-                  <p>{desc}</p>
-                  <NotifyButton k={key} done={asked.has(key)} label="Anunță-mă la lansare" />
+                  {key === "colaborari" && collab ? (
+                    <>
+                      <span className="soonTag">{c.collab === "on" ? "Nou" : "În test"}</span>
+                      <h3>{name}</h3>
+                      <p>{desc}</p>
+                      <a className="btn btnGold btnSm" href="/colaborari" style={{ alignSelf: "flex-start" }}>Deschide Colaborări →</a>
+                    </>
+                  ) : (
+                    <>
+                      <span className="soonTag">Lansare în curând</span>
+                      <h3>{name}</h3>
+                      <p>{desc}</p>
+                      <NotifyButton k={key} done={asked.has(key)} label="Anunță-mă la lansare" />
+                    </>
+                  )}
                 </div>
               </div>
             ))}
@@ -142,6 +157,7 @@ export default async function Home() {
       </div>
 
       <div className="mobileOnly" style={{ marginTop: 16 }}><Referral variant="card" /></div>
+      {collabNew && <CollabSplash />}
     </AppShell>
   );
 }

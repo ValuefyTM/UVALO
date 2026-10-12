@@ -6,7 +6,8 @@ import { recentEvents } from "@/lib/orgs";
 import { aiTotals, aiUsage, FEATURES, userLimits, PROMPT_DEFAULTS, PROMPT_LABELS, type PromptKey, prompts, toolByKey, toolSettings, toolUsage } from "@/lib/tools";
 import { roDate } from "@/lib/plan-format";
 import { AdminShell } from "@/components/AdminShell";
-import { AiLimits, FeatureSwitches, PromptEditor, ToolSwitch, UserLimits } from "@/components/admin";
+import { AiLimits, CollabAdmin, FeatureSwitches, PromptEditor, ToolSwitch, UserLimits } from "@/components/admin";
+import { collabCounts, collabSettings, testUsers } from "@/lib/collab";
 import { CountTable, UatCountTable } from "@/components/Charts";
 import { PlanList, PlanUploader } from "@/components/plans";
 import { ToolAnalytics } from "@/components/ToolAnalytics";
@@ -89,6 +90,18 @@ export default async function Instrument({ params }: { params: Promise<{ key: st
         </div>
         <ToolAnalytics u={u} events={events} targetLabel="Imobile analizate" />
         <CountTable title="Texte generate, pe variante (30 de zile)" rows={ai.byStyle.map(([s, n]) => [s, n])} head={["Variantă", "Texte"]} empty="Niciun text generat încă." />
+      </AdminShell>
+    );
+  }
+
+  if (key === "colaborari") {
+    const cs = await collabSettings(db);
+    const [users, counts] = await Promise.all([testUsers(db, cs.users), collabCounts(db)]);
+    return (
+      <AdminShell c={c} active="instrumente" pending={pending} title={tool.name} subtitle="Mod de lucru, grupul de test și statistici" actions={<a className="btn btnGhost btnSm" href="/admin/instrumente">← Instrumente</a>}>
+        <CollabAdmin mode={cs.mode} users={users} counts={counts} />
+        <h2 className="secTitle">Statistici</h2>
+        <ToolAnalytics u={u} events={events} />
       </AdminShell>
     );
   }
