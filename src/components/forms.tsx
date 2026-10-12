@@ -55,7 +55,7 @@ export function MembersPanel({ org, members, invites, seats, used, canOwner, adm
           <tbody>
             {members.map((m) => (
               <tr key={m.user_id}>
-                <td><b className="block">{m.name || m.email}{m.me && <span className="muted"> (tu)</span>}</b><span className="muted">{m.email}</span>{m.status !== "active" && <span className={`pill ${m.status === "disabled" ? "pillErr" : "pillWarn"}`} style={{ marginLeft: 8 }}><i />{m.status === "disabled" ? "Dezactivat" : "Invitat"}</span>}</td>
+                <td><b className="block">{m.name || m.email}{m.me && <span className="muted"> (tu)</span>}</b><span className="muted">{m.email}</span>{m.status !== "active" && <span className={`pill ${m.status === "disabled" ? "pillErr" : m.status === "closed" ? "pillMuted" : "pillWarn"}`} style={{ marginLeft: 8 }}><i />{m.status === "disabled" ? "Dezactivat" : m.status === "closed" ? "A renunțat" : "Invitat"}</span>}</td>
                 <td>
                   {m.me || (m.role === "owner" && !canOwner) ? ROLES.find(([k]) => k === m.role)?.[1] : (
                     <select className="select" style={{ height: 36 }} value={m.role} disabled={busy} aria-label={`Rolul lui ${m.name || m.email}`}
@@ -195,7 +195,7 @@ export function UserActions({ id, status, isSuper, me, email }: { id: string; st
   };
   return (
     <span className="actions" style={{ justifyContent: "flex-end", gap: 12 }}>
-      {status === "disabled"
+      {status === "disabled" || status === "closed"
         ? <button type="button" className="linkBtn" onClick={() => go("enable")}>Reactivează</button>
         : <button type="button" className="linkBtn danger" onClick={() => go("disable", "Dezactivezi contul? Persoana este deconectată imediat de pe toate dispozitivele.")}>Dezactivează</button>}
       <button type="button" className="linkBtn" onClick={() => go("logout_all", "Deconectezi persoana de pe toate dispozitivele?")}>Deconectează</button>
@@ -236,7 +236,7 @@ function PickUser({ label, users, value, onChange, exclude }: { label: string; u
     <div className="field">{label}
       <input className="input" type="search" placeholder="Caută după nume, email sau legitimație" aria-label={`${label}: caută`} value={q} onChange={(e) => setQ(e.target.value)} />
       <select className="select" size={6} aria-label={label} value={value} onChange={(e) => onChange(e.target.value)} style={{ height: "auto" }}>
-        {list.map((u) => <option key={u.id} value={u.id}>{u.name || u.email} · {u.email}{u.anevar_no ? ` · leg. ${u.anevar_no}` : ""}{u.status !== "active" ? ` · ${u.status === "disabled" ? "dezactivat" : "invitat"}` : ""}</option>)}
+        {list.map((u) => <option key={u.id} value={u.id}>{u.name || u.email} · {u.email}{u.anevar_no ? ` · leg. ${u.anevar_no}` : ""}{u.status !== "active" ? ` · ${u.status === "disabled" ? "dezactivat" : u.status === "closed" ? "a renunțat" : "invitat"}` : ""}</option>)}
       </select>
     </div>
   );

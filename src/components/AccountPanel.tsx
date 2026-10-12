@@ -146,38 +146,47 @@ export function OfficeToggle(p: { ready: boolean; on: boolean; can: boolean; org
   );
 }
 
-/** "Șterge contul": the person deletes their own account, after typing its email. */
-export function DeleteAccount({ email }: { email: string }) {
+/** "Închide contul": the person closes their own account (nothing is deleted), after typing its email; the reason is optional. */
+export function CloseAccount({ email, reasons }: { email: string; reasons: [string, string][] }) {
   const [open, setOpen] = useState(false);
   const [val, setVal] = useState("");
+  const [reason, setReason] = useState("");
+  const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const ok = val.trim().toLowerCase() === email.toLowerCase();
   const go = async () => {
     setBusy(true); setErr("");
-    const r = await fetch("/api/account", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ confirm: val }) }).catch(() => null);
+    const r = await fetch("/api/account", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ confirm: val, reason, note }) }).catch(() => null);
     const d = (await r?.json().catch(() => ({}))) as { error?: string } | undefined;
-    if (!r?.ok) { setBusy(false); return setErr(d?.error || "Nu am putut șterge contul. Încearcă din nou."); }
-    location.href = "/login?sters=1";
+    if (!r?.ok) { setBusy(false); return setErr(d?.error || "Nu am putut închide contul. Încearcă din nou."); }
+    location.href = "/login?inchis=1";
   };
   return (
     <section className="card">
-      <div className="cardHead"><h2>Șterge contul</h2></div>
+      <div className="cardHead"><h2>Închide contul</h2></div>
       {!open ? (
         <div className="actions" style={{ justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
-          <p className="hint" style={{ margin: 0, flex: "1 1 320px" }}>Contul și datele tale din UVALO se șterg definitiv. Poți cere oricând un cont nou.</p>
-          <button type="button" className="btn btnDanger btnSm" onClick={() => setOpen(true)}>Șterge contul…</button>
+          <p className="hint" style={{ margin: 0, flex: "1 1 320px" }}>Nu mai vrei să folosești UVALO? Îți poți închide contul. Dacă revii, îl redeschizi solicitând din nou cont.</p>
+          <button type="button" className="btn btnDanger btnSm" onClick={() => setOpen(true)}>Închide contul…</button>
         </div>
       ) : (
         <form onSubmit={(e) => { e.preventDefault(); if (ok && !busy) go(); }}>
           <p className="hint" style={{ marginTop: 0 }}>
-            Se șterg definitiv: contul, sesiunile de pe toate dispozitivele, firma ta individuală (dacă nu are alți colegi), capturile din Chrome
-            și datele din Colaborări (profil, anunțuri, conversații). Ștergerea nu se poate anula.
+            Vei fi deconectat de pe toate dispozitivele și nu te vei mai putea autentifica. În Colaborări nu mai primești notificări, iar anunțurile tale active se arhivează.
+            Dacă revii, soliciți din nou cont cu aceeași adresă de email.
           </p>
-          <label className="field">Scrie {email} ca să confirmi<input className="input" type="email" autoComplete="off" value={val} onChange={(e) => setVal(e.target.value)} autoFocus /></label>
+          <label className="field">De ce pleci? (opțional)
+            <select className="input" value={reason} onChange={(e) => setReason(e.target.value)}>
+              <option value="">Alege un motiv</option>
+              {reasons.map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+            </select>
+          </label>
+          <label className="field">Ce ar trebui să îmbunătățim? (opțional)<textarea className="input" rows={3} maxLength={500} value={note} onChange={(e) => setNote(e.target.value)} /></label>
+          <label className="field">Scrie {email} ca să confirmi<input className="input" type="email" autoComplete="off" value={val} onChange={(e) => setVal(e.target.value)} /></label>
           {err && <div role="alert" className="error">{err}</div>}
           <div className="actions" style={{ gap: 10, marginTop: 12 }}>
-            <button type="submit" className="btn btnDanger" disabled={!ok || busy}>{busy ? "Se șterge…" : "Șterge definitiv contul"}</button>
+            <button type="submit" className="btn btnDanger" disabled={!ok || busy}>{busy ? "Se închide…" : "Închide contul"}</button>
             <button type="button" className="btn btnGhost" onClick={() => { setOpen(false); setVal(""); setErr(""); }}>Renunță</button>
           </div>
         </form>

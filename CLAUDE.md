@@ -160,8 +160,11 @@ Proprietar: VALUEFY (firmă de evaluări imobiliare, Timișoara). UVALO devine u
 - `deleteUser` în `src/lib/merge.ts` (`DELETE /api/admin/users/<id>`), pentru email greșit: șterge sesiunile, codurile de autentificare,
   apartenențele, invitațiile deschise, Chrome, datele din Colaborări și firma individuală (dacă nu are alți membri/invitații), apoi contul;
   persoana poate cere din nou cont (legitimația devine liberă). Nu merge pe super-admini și pe propriul cont. Un tabel nou cu `REFERENCES users` → și aici.
-- Ștergere de către persoană: „Contul meu” → „Șterge contul” (`DeleteAccount`, `DELETE /api/account` cu `{confirm: email}`, `deleteUser(..., self=true)`):
-  refuzat pentru super-admini și pentru administratorul unic al unei firme cu colegi; șterge cookie-ul → `/login?sters=1`; audit `user.delete_self`.
+- Persoana NU își șterge contul, ci îl **închide**: „Contul meu” → „Închide contul” (`CloseAccount`, `DELETE /api/account` cu
+  `{confirm: email, reason, note}` → `closeAccount` în `merge.ts`): `users.status = 'closed'`, `closed_at`, `close_reason` (migrația 0019),
+  sesiunile revocate (nu șterse), istoricul rămâne, locul din firmă se eliberează, în Colaborări fără notificări și anunțurile active arhivate.
+  Refuzat pentru super-admini și administratorul unic al unei firme cu colegi. Admin → Utilizatori, Stare „Au renunțat” (și în Tablou);
+  „Reactivează” sau o nouă solicitare de cont cu același email îl fac din nou activ. `status 'closed'` se tratează ca `disabled` la locuri/solicitări.
 
 ## Colaborări (`/colaborari`, modulul `colaborari`)
 

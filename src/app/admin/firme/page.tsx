@@ -16,7 +16,7 @@ export default async function AdminFirms() {
   const { db, c, pending } = await superPage();
   const [{ results: orgs }, kp, days, uats, { results: plans }] = await Promise.all([
     db.prepare(`${ORG_SQL.replace("SELECT o.*", `SELECT o.*,
-        (SELECT COUNT(*) FROM memberships m JOIN users u ON u.id = m.user_id WHERE m.org_id = o.id AND m.status = 'active' AND u.status <> 'disabled') AS used,
+        (SELECT COUNT(*) FROM memberships m JOIN users u ON u.id = m.user_id WHERE m.org_id = o.id AND m.status = 'active' AND u.status NOT IN ('disabled', 'closed')) AS used,
         (SELECT COUNT(DISTINCT e.user_id) FROM events e WHERE e.org_id = o.id AND e.at > ?1) AS active_30,
         (SELECT COUNT(*) FROM events e WHERE e.org_id = o.id AND e.at > ?1) AS events_30,
         (SELECT MAX(e.at) FROM events e WHERE e.org_id = o.id) AS last_at`)} ORDER BY o.status = 'active' DESC, o.name`)

@@ -152,6 +152,7 @@ a.kpi:hover { border-color: var(--acc); transform: translateY(-2px); }
 .pillInfo { background: var(--info-bg); color: var(--info-text); }
 .pillWarn { background: var(--acc-soft); color: var(--acc-text); }
 .pillErr { background: var(--err-bg); color: var(--err); }
+.pillMuted { background: var(--neutral-bg); color: var(--neutral-text); }
 
 .toolbar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
 .search { flex: 1; min-width: 200px; height: 42px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--cream); font-size: 15px; outline: none; }

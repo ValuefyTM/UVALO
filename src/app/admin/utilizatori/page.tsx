@@ -9,11 +9,13 @@ export const metadata: Metadata = { title: "Utilizatori | UVALO" };
 export const dynamic = "force-dynamic";
 
 type F = { q?: string; judet?: string; stare?: string; tip?: string; firma?: string; act?: string; sort?: string; grup?: string };
-const STARE: [string, string][] = [["", "Toate"], ["active", "Active"], ["invited", "Invitate"], ["disabled", "Dezactivate"]];
+const STARE: [string, string][] = [["", "Toate"], ["active", "Active"], ["invited", "Invitate"], ["disabled", "Dezactivate"], ["closed", "Au renunțat"]];
 const TIP: [string, string][] = [["", "Toți"], ["legit", "Cu legitimație ANEVAR"], ["fara", "Fără legitimație"], ["admin", "Administratori UVALO"]];
 const FIRMA: [string, string][] = [["", "Oricare"], ["cu", "Într-o firmă"], ["fara", "Fără firmă"]];
 const ACT: [string, string][] = [["", "Oricând"], ["online", "Online acum"], ["7", "Activi în ultimele 7 zile"], ["30", "Activi în ultimele 30 de zile"], ["inactivi", "Inactivi 30 de zile"], ["niciodata", "Niciodată autentificați"]];
 const SORT: [string, string][] = [["", "Ultima activitate"], ["nume", "Nume"], ["judet", "Județ"], ["nou", "Cele mai noi conturi"], ["actiuni", "Acțiuni 30 zile"]];
+
+const STATUS: Record<string, [string, string]> = { active: ["Activ", "pillOk"], invited: ["Invitat", "pillWarn"], disabled: ["Dezactivat", "pillErr"], closed: ["A renunțat", "pillMuted"] };
 
 const since = (d: number) => new Date(Date.now() - d * 864e5).toISOString();
 
@@ -24,7 +26,7 @@ export default async function AdminUsers({ searchParams }: { searchParams: Promi
   const q = (f.q ?? "").trim();
   if (q) { w.push("(u.name LIKE ? OR u.email LIKE ? OR u.anevar_no LIKE ? OR u.phone LIKE ?)"); const l = `%${q.replace(/[%_]/g, "")}%`; p.push(l, l, `${q}%`, l); }
   if (f.judet === "-") w.push("u.county IS NULL"); else if (f.judet) { w.push("u.county = ?"); p.push(f.judet); }
-  if (f.stare && ["active", "invited", "disabled"].includes(f.stare)) { w.push("u.status = ?"); p.push(f.stare); }
+  if (f.stare && ["active", "invited", "disabled", "closed"].includes(f.stare)) { w.push("u.status = ?"); p.push(f.stare); }
   if (f.tip === "legit") w.push("u.anevar_no IS NOT NULL AND u.anevar_no <> ''");
   if (f.tip === "fara") w.push("(u.anevar_no IS NULL OR u.anevar_no = '')");
   if (f.tip === "admin") w.push("u.is_superadmin = 1");
@@ -44,13 +46,13 @@ export default async function AdminUsers({ searchParams }: { searchParams: Promi
   const order = f.grup === "judet" ? `u.county IS NULL, u.county, ${inner}` : inner;
 
   const [{ results }, { results: all }, { results: js }, { results: firms }] = await Promise.all([
-    db.prepare(`SELECT u.id, u.email, u.name, u.anevar_no, u.county, u.status, u.is_superadmin, u.last_seen_at, u.created_at, u.activated_at,
+    db.prepare(`SELECT u.id, u.email, u.name, u.anevar_no, u.county, u.status, u.is_superadmin, u.last_seen_at, u.created_at, u.activated_at, u.closed_at, u.close_reason,
         (SELECT GROUP_CONCAT(o.name || '|' || m.role || '|' || o.id, ';;') FROM memberships m JOIN orgs o ON o.id = m.org_id WHERE m.user_id = u.id AND m.status = 'active') AS orgs,
         (SELECT COUNT(*) FROM events e WHERE e.user_id = u.id AND e.at > ?) AS events_30,
         (SELECT COUNT(*) FROM sessions s WHERE s.user_id = u.id AND s.revoked_at IS NULL AND s.expires_at > ?) AS devices
       FROM users u ${where} ORDER BY ${order} LIMIT 2000`)
       .bind(since(30), new Date().toISOString(), ...p)
-      .all<{ id: string; email: string; name: string; anevar_no: string | null; county: string | null; status: string; is_superadmin: number; last_seen_at: string | null; created_at: string; activated_at: string | null; orgs: string | null; events_30: number; devices: number }>(),
+      .all<{ id: string; email: string; name: string; anevar_no: string | null; county: string | null; status: string; is_superadmin: number; last_seen_at: string | null; created_at: string; activated_at: string | null; closed_at: string | null; close_reason: string | null; orgs: string | null; events_30: number; devices: number }>(),
     // every account, for "Unește două conturi" (not affected by the filters)
     db.prepare(`SELECT u.id, u.email, u.name, u.anevar_no, u.county, u.status, u.is_superadmin,
         (SELECT GROUP_CONCAT(o.name || '|' || m.role || '|' || o.id, ';;') FROM memberships m JOIN orgs o ON o.id = m.org_id WHERE m.user_id = u.id AND m.status = 'active') AS orgs
@@ -113,7 +115,8 @@ export default async function AdminUsers({ searchParams }: { searchParams: Promi
                     <tr>
                       <td><b className="block">{u.name || u.email}</b><span className="muted">{u.email}{u.anevar_no ? ` · leg. ${u.anevar_no}` : ""}{u.county ? ` · ${u.county}` : ""}</span>{u.is_superadmin ? <span className="pill pillInfo" style={{ marginLeft: 8 }}><i />Admin UVALO</span> : null}</td>
                       <td>{u.orgs ? u.orgs.split(";;").map((x) => { const [n, r, id] = x.split("|"); return <a key={id} className="rowLink block" href={`/admin/firme/${id}`}>{n} <span className="muted">· {ROLE_LABEL[r as Role] ?? r}</span></a>; }) : <span className="muted">—</span>}</td>
-                      <td><span className={`pill ${u.status === "active" ? "pillOk" : u.status === "disabled" ? "pillErr" : "pillWarn"}`}><i />{u.status === "active" ? "Activ" : u.status === "disabled" ? "Dezactivat" : "Invitat"}</span></td>
+                      <td><span className={`pill ${STATUS[u.status]?.[1] ?? "pillWarn"}`}><i />{STATUS[u.status]?.[0] ?? u.status}</span>
+                        {u.status === "closed" && <span className="muted block" style={{ marginTop: 4, fontSize: 12 }}>{u.closed_at ? fmtDate(u.closed_at) : ""}{u.close_reason ? ` · ${u.close_reason}` : ""}</span>}</td>
                       <td>{u.last_seen_at ? fmtDate(u.last_seen_at, true) : "—"}</td>
                       <td className="r mono"><a className="rowLink" href={`/admin/activitate?user=${u.id}`}>{u.events_30}</a></td>
                       <td className="r mono">{u.devices}</td>

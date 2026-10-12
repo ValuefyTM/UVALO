@@ -12,6 +12,7 @@ function status(r: { user_status: string | null; last_seen_at: string | null; re
   if (r.user_status === "active") return r.last_seen_at && Date.now() - new Date(r.last_seen_at).getTime() < 30 * 864e5 ? ["Activ", "pillOk"] : ["Cont, inactiv", "pillWarn"];
   if (r.user_status === "invited") return ["Invitat", "pillWarn"];
   if (r.user_status === "disabled") return ["Dezactivat", "pillErr"];
+  if (r.user_status === "closed") return ["A renunțat", "pillMuted"];
   if (r.request === "pending") return ["Solicitare", "pillInfo"];
   if (r.request === "rejected") return ["Respins", "pillErr"];
   return ["Fără cont", ""];

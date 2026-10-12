@@ -1,15 +1,15 @@
 import { NextResponse } from "next/server";
 import { api, err, json, str } from "@/lib/api";
 import { COOKIE } from "@/lib/auth";
-import { deleteUser } from "@/lib/merge";
+import { closeAccount } from "@/lib/merge";
 
-/** The person deletes their own account; `{ confirm }` must be the account's email. Signs out on every device. */
+/** The person closes their own account (`{ confirm: email, reason, note }`): status 'closed', signed out everywhere, nothing deleted. */
 export async function DELETE(req: Request) {
   const a = await api();
   if ("res" in a) return a.res;
-  const confirm = str((await json(req)).confirm, 200).trim().toLowerCase();
-  if (confirm !== a.c.user.email.toLowerCase()) return err("Scrie adresa de email a contului, ca să confirmi ștergerea.");
-  const r = await deleteUser(a.db, a.c.user, a.c.user.id, true);
+  const b = await json(req);
+  if (str(b.confirm, 200).trim().toLowerCase() !== a.c.user.email.toLowerCase()) return err("Scrie adresa de email a contului, ca să confirmi.");
+  const r = await closeAccount(a.db, a.c.user, str(b.reason, 40), str(b.note, 500));
   if ("error" in r) return err(r.error!);
   const res = NextResponse.json({ ok: true });
   res.cookies.set({ name: COOKIE, value: "", path: "/", maxAge: 0 });

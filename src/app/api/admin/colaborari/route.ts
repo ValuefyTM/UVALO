@@ -35,7 +35,7 @@ export async function POST(req: Request) {
       const email = normEmail(str(b.email, 200));
       const u = email ? await a.db.prepare("SELECT id, name, email, anevar_no, status FROM users WHERE email = ?").bind(email).first<{ id: string; name: string; email: string; anevar_no: string | null; status: string }>() : null;
       if (!u) return err("Nu există un cont UVALO cu acest email.");
-      if (u.status === "disabled") return err("Contul este dezactivat.");
+      if (u.status === "disabled" || u.status === "closed") return err("Contul nu este activ.");
       if (!cur.users.includes(u.id)) await setCollabSettings(a.db, actor, { ...cur, users: [...cur.users, u.id] });
       await audit(a.db, actor, "collab.test_add", "user", u.id, u.email);
       return NextResponse.json({ ok: true, user: { id: u.id, name: u.name || u.email, email: u.email, anevar: u.anevar_no } });

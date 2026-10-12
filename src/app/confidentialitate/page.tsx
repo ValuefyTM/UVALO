@@ -115,7 +115,7 @@ export default function Confidentialitate() {
 
       <section id="drepturi">
         <h2>10. Drepturile tale</h2>
-        <p>Ai dreptul să ceri acces la datele tale, rectificarea sau ștergerea lor, restricționarea prelucrării, portabilitatea datelor și să te opui prelucrărilor bazate pe interesul legitim. Ne scrii la <a href={`mailto:${COMPANY.email}`}>{COMPANY.email}</a> și îți răspundem în cel mult o lună. Numele, telefonul și imaginea le poți schimba oricând din pagina „Contul meu”, de unde îți poți și șterge singur contul.</p>
+        <p>Ai dreptul să ceri acces la datele tale, rectificarea sau ștergerea lor, restricționarea prelucrării, portabilitatea datelor și să te opui prelucrărilor bazate pe interesul legitim. Ne scrii la <a href={`mailto:${COMPANY.email}`}>{COMPANY.email}</a> și îți răspundem în cel mult o lună. Numele, telefonul și imaginea le poți schimba oricând din pagina „Contul meu”, de unde îți poți și închide singur contul.</p>
         <p>Dacă ești nemulțumit, poți depune o plângere la Autoritatea Națională de Supraveghere a Prelucrării Datelor cu Caracter Personal (<a href="https://www.dataprotection.ro" target="_blank" rel="noreferrer">dataprotection.ro</a>).</p>
       </section>
 

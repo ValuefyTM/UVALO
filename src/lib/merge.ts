@@ -101,19 +101,12 @@ export async function mergeUsers(db: D1Database, by: User, keepId: string, fromI
  * Removes its sessions, sign-in codes, firm memberships, open invitations, Chrome captures and Colaborări data; a firm made
  * only for this person (no other members or invitations) goes too. Activity stays in `events`; a copy stays in the audit log.
  */
-export async function deleteUser(db: D1Database, by: User, id: string, self = false) {
-  if (id === by.id && !self) return { error: "Nu îți poți șterge propriul cont de aici: folosește „Contul meu”." };
+export async function deleteUser(db: D1Database, by: User, id: string) {
+  if (id === by.id) return { error: "Nu îți poți șterge propriul cont." };
   const u = await db.prepare("SELECT * FROM users WHERE id = ?").bind(id).first<Row>();
   if (!u) return { error: "Contul nu mai există." };
-  if (u.is_superadmin) return { error: self ? "Contul de administrator UVALO nu se poate șterge singur. Cere altui administrator să-ți scoată drepturile." : "Scoate întâi drepturile de administrator UVALO." };
+  if (u.is_superadmin) return { error: "Scoate întâi drepturile de administrator UVALO." };
   const email = u.email.toLowerCase();
-  if (self) {
-    // the person runs a firm that has colleagues: the firm must not be left without an owner
-    const firm = await db.prepare(`SELECT o.name FROM memberships m JOIN orgs o ON o.id = m.org_id WHERE m.user_id = ?1 AND m.status = 'active' AND m.role IN ('owner', 'admin')
-        AND NOT EXISTS (SELECT 1 FROM memberships x WHERE x.org_id = m.org_id AND x.user_id <> ?1 AND x.status = 'active' AND x.role IN ('owner', 'admin'))
-        AND EXISTS (SELECT 1 FROM memberships y WHERE y.org_id = m.org_id AND y.user_id <> ?1 AND y.status = 'active') LIMIT 1`).bind(id).first<{ name: string }>();
-    if (firm) return { error: `Administrezi firma ${firm.name}, care mai are colegi. Fă întâi pe altcineva administrator din „Firma mea” sau scrie-ne la office@uvalo.ro.` };
-  }
 
   // firms where this person is the only one (an individual account): deleted with it
   const { results: lone } = await db.prepare(`SELECT m.org_id AS id FROM memberships m WHERE m.user_id = ?
@@ -162,6 +155,38 @@ export async function deleteUser(db: D1Database, by: User, id: string, self = fa
     await db.prepare("UPDATE app_settings SET value = ?, updated_at = ?, updated_by = ? WHERE key = 'collab'").bind(JSON.stringify(d), now(), by.id).run();
   }
   const { avatar: _a, ...snapshot } = u;
-  await audit(db, by.id, self ? "user.delete_self" : "user.delete", "user", id, JSON.stringify({ removed: snapshot, orgs: lone.map((o) => o.id) }).slice(0, 4000));
+  await audit(db, by.id, "user.delete", "user", id, JSON.stringify({ removed: snapshot, orgs: lone.map((o) => o.id) }).slice(0, 4000));
   return { ok: true, email: u.email, orgs: lone.length };
+}
+
+export const CLOSE_REASONS: [string, string][] = [
+  ["nu_folosesc", "Nu folosesc platforma"], ["lipsa_functii", "Lipsesc funcții de care am nevoie"], ["alt_instrument", "Folosesc alt instrument"],
+  ["nu_mai_evaluez", "Nu mai lucrez ca evaluator"], ["alt_cont", "Am alt cont"], ["altceva", "Alt motiv"],
+];
+
+/**
+ * The person closes their own account ("Contul meu" → "Închide contul"): nothing is deleted. The account gets status
+ * 'closed' (Admin → Utilizatori → "Au renunțat"), its sessions are signed out but kept, history stays, the seat in a firm
+ * is freed; in Colaborări the profile stops receiving notifications and the active posts are archived. Asking for an
+ * account again (same email) makes it active again.
+ */
+export async function closeAccount(db: D1Database, u: User, reason: string, note: string) {
+  if (u.is_superadmin) return { error: "Contul de administrator UVALO nu se poate închide singur. Cere altui administrator să-ți scoată drepturile." };
+  // the person runs a firm that has colleagues: the firm must not be left without someone to run it
+  const firm = await db.prepare(`SELECT o.name FROM memberships m JOIN orgs o ON o.id = m.org_id WHERE m.user_id = ?1 AND m.status = 'active' AND m.role IN ('owner', 'admin')
+      AND NOT EXISTS (SELECT 1 FROM memberships x JOIN users xu ON xu.id = x.user_id WHERE x.org_id = m.org_id AND x.user_id <> ?1 AND x.status = 'active' AND x.role IN ('owner', 'admin') AND xu.status = 'active')
+      AND EXISTS (SELECT 1 FROM memberships y JOIN users yu ON yu.id = y.user_id WHERE y.org_id = m.org_id AND y.user_id <> ?1 AND y.status = 'active' AND yu.status IN ('active', 'invited')) LIMIT 1`)
+    .bind(u.id).first<{ name: string }>();
+  if (firm) return { error: `Administrezi firma ${firm.name}, care mai are colegi. Fă întâi pe altcineva administrator din „Firma mea” sau scrie-ne la office@uvalo.ro.` };
+  const why = CLOSE_REASONS.find(([k]) => k === reason)?.[1] ?? null;
+  const text = [why, note.trim().slice(0, 500) || null].filter(Boolean).join(" — ") || null;
+  const t = now();
+  await db.batch([
+    db.prepare("UPDATE users SET status = 'closed', closed_at = ?, close_reason = ? WHERE id = ?").bind(t, text, u.id),
+    db.prepare("UPDATE sessions SET revoked_at = ? WHERE user_id = ? AND revoked_at IS NULL").bind(t, u.id),
+    db.prepare("UPDATE collab_profiles SET available = 0 WHERE user_id = ?").bind(u.id),
+    db.prepare("UPDATE collab_posts SET status = 'archived' WHERE user_id = ? AND status = 'active'").bind(u.id),
+  ]);
+  await audit(db, u.id, "user.close", "user", u.id, text ?? undefined);
+  return { ok: true };
 }

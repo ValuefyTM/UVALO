@@ -44,7 +44,7 @@ export async function lookup(db: D1Database, legitRaw: unknown): Promise<Lookup>
   const legit = cleanLegit(legitRaw);
   const m = legit ? await memberByLegit(db, legit) : null;
   if (!m) return { status: "not_found" };
-  const u = await db.prepare("SELECT id FROM users WHERE anevar_no = ? AND status <> 'disabled'").bind(legit).first();
+  const u = await db.prepare("SELECT id FROM users WHERE anevar_no = ? AND status NOT IN ('disabled', 'closed')").bind(legit).first();
   if (u) return { status: "has_account", name: m.name };
   const p = await db.prepare("SELECT id FROM account_requests WHERE legit = ? AND status = 'pending'").bind(legit).first();
   if (p) return { status: "pending", name: m.name };
@@ -65,7 +65,7 @@ export async function createRequest(db: D1Database, b: Record<string, unknown>) 
   if (!phone) return { ok: false as const, error: "Completează un număr de telefon valid (ex. 0722 123 456)." };
   if (b.confirm !== true) return { ok: false as const, error: `Confirmă că ești ${l.name}.` };
   const taken = await findUser(db, email);
-  if (taken && taken.status !== "disabled") return { ok: false as const, error: "Adresa de email are deja cont. Intră cu ea sau folosește altă adresă." };
+  if (taken && taken.status !== "disabled" && taken.status !== "closed") return { ok: false as const, error: "Adresa de email are deja cont. Intră cu ea sau folosește altă adresă." };
   const { ip, ua } = await ipUa();
   const id = uuid();
   const legit = cleanLegit(b.legit);

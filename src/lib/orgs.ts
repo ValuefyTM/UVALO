@@ -141,7 +141,7 @@ export async function setUserStatus(db: D1Database, by: User, userId: string, ac
     await db.prepare("UPDATE users SET status = 'disabled', disabled_at = ? WHERE id = ?").bind(now(), userId).run();
     await revokeSessions(db, userId);
   } else if (action === "enable") {
-    await db.prepare("UPDATE users SET status = CASE WHEN activated_at IS NULL THEN 'invited' ELSE 'active' END, disabled_at = NULL WHERE id = ?").bind(userId).run();
+    await db.prepare("UPDATE users SET status = CASE WHEN activated_at IS NULL THEN 'invited' ELSE 'active' END, disabled_at = NULL, closed_at = NULL WHERE id = ?").bind(userId).run();
   } else if (action === "super_on" || action === "super_off") {
     await db.prepare("UPDATE users SET is_superadmin = ? WHERE id = ?").bind(action === "super_on" ? 1 : 0, userId).run();
   } else if (action === "logout_all") {

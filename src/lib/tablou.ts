@@ -8,7 +8,7 @@ export type TablouRow = {
 
 export const CONT_FILTERS: [string, string][] = [
   ["", "Toți membrii"], ["cu", "Cu cont activ"], ["activi", "Activi în ultimele 30 de zile"], ["inactivi", "Cu cont, inactivi 30 de zile"],
-  ["niciodata", "Cu cont, neautentificați niciodată"], ["invitati", "Invitați (cont neactivat)"], ["solicitari", "Solicitare în așteptare"], ["fara", "Fără cont"],
+  ["niciodata", "Cu cont, neautentificați niciodată"], ["invitati", "Invitați (cont neactivat)"], ["renuntat", "Au renunțat (cont închis)"], ["solicitari", "Solicitare în așteptare"], ["fara", "Fără cont"],
 ];
 // Public contact details (anevar.ro): who has published some, or an email / a phone in particular.
 export const CONTACT_FILTERS: [string, string][] = [["", "Oricare"], ["da", "Cu date de contact publice"], ["email", "Cu email public"], ["tel", "Cu telefon public"], ["nu", "Fără date de contact"]];
@@ -40,6 +40,7 @@ function where(f: TablouFilter, withCounty = true) {
     case "inactivi": w.push("u.status = 'active' AND (u.last_seen_at IS NULL OR u.last_seen_at <= ?)"); p.push(s30); break;
     case "niciodata": w.push("u.status = 'active' AND u.last_login_at IS NULL"); break;
     case "invitati": w.push("u.status = 'invited'"); break;
+    case "renuntat": w.push("u.status = 'closed'"); break;
     case "solicitari": w.push("EXISTS (SELECT 1 FROM account_requests r WHERE r.legit = m.legit AND r.status = 'pending')"); break;
     case "fara": w.push("u.id IS NULL"); break;
   }
@@ -47,7 +48,7 @@ function where(f: TablouFilter, withCounty = true) {
 }
 
 // One account per card number (the most recent one that is not disabled, else any).
-const FROM = `FROM anevar_members m LEFT JOIN users u ON u.id = (SELECT x.id FROM users x WHERE x.anevar_no = m.legit ORDER BY x.status = 'disabled', x.created_at DESC LIMIT 1)`;
+const FROM = `FROM anevar_members m LEFT JOIN users u ON u.id = (SELECT x.id FROM users x WHERE x.anevar_no = m.legit ORDER BY x.status IN ('disabled', 'closed'), x.created_at DESC LIMIT 1)`;
 
 export async function tablou(db: D1Database, f: TablouFilter, all = false) {
   const { sql, p } = where(f);

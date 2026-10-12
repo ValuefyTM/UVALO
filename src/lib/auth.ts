@@ -15,7 +15,7 @@ const MAX_CODES_PER_HOUR = 5;
 const inMinutes = (m: number) => new Date(Date.now() + m * 60_000).toISOString();
 
 export type User = {
-  id: string; email: string; name: string; phone: string | null; status: "invited" | "active" | "disabled"; is_superadmin: number;
+  id: string; email: string; name: string; phone: string | null; status: "invited" | "active" | "disabled" | "closed"; is_superadmin: number;
   anevar_no: string | null; county: string | null; specs: string | null; has_avatar: number; is_office: number; terms_at: string | null; created_at: string; activated_at: string | null; last_login_at: string | null; last_seen_at: string | null;
   notes: string | null;
 };
@@ -247,7 +247,7 @@ export async function acceptInvite(db: D1Database, token: string, name: string, 
   const t = now();
   await db.batch([
     db.prepare(`UPDATE users SET name = ?, phone = ?, anevar_no = COALESCE(?, anevar_no), county = COALESCE(?, county), specs = COALESCE(?, specs),
-        status = CASE WHEN status = 'disabled' THEN status ELSE 'active' END, activated_at = COALESCE(activated_at, ?), terms_at = ? WHERE id = ?`)
+        status = CASE WHEN status = 'disabled' THEN status ELSE 'active' END, closed_at = NULL, activated_at = COALESCE(activated_at, ?), terms_at = ? WHERE id = ?`)
       .bind(m?.name ?? (inv.anevar_no ? inv.name : name), phone, m ? legit : null, m?.county ?? null, m?.specs ?? null, t, t, inv.user_id),
     db.prepare("UPDATE invites SET accepted_at = ? WHERE id = ?").bind(t, inv.id),
   ]);

@@ -79,7 +79,7 @@ export const canManageOrg = (c: Ctx) => c.super || c.role === "owner" || c.role 
 /** Seats taken in a firm: active members plus pending invitations. */
 export async function seatsUsed(db: D1Database, orgId: string) {
   const r = await db
-    .prepare(`SELECT COUNT(*) AS n FROM memberships m JOIN users u ON u.id = m.user_id WHERE m.org_id = ? AND m.status = 'active' AND u.status <> 'disabled'`)
+    .prepare(`SELECT COUNT(*) AS n FROM memberships m JOIN users u ON u.id = m.user_id WHERE m.org_id = ? AND m.status = 'active' AND u.status NOT IN ('disabled', 'closed')`)
     .bind(orgId)
     .first<{ n: number }>();
   return r?.n ?? 0;
