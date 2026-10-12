@@ -1128,12 +1128,40 @@ a.instMain:hover { border-color: #E0AD4F; }
 .cbSplashFeats b { font-size: 13px; }
 .cbSplashFeats small { font-size: 12px; color: var(--muted-2); line-height: 1.45; }
 .cbSplashActs { display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
+.cbIconTab svg { flex: none; }
+.cbZoneSwitch, .cbMobFilters { display: none; }
+.cbZoneSwitch { background: var(--cream-2); border-radius: 12px; padding: 4px; gap: 4px; }
+.cbZoneSwitch button { flex: 1; min-height: 42px; border: 0; border-radius: 9px; background: transparent; font: inherit; font-size: 13px; font-weight: 700; color: var(--muted-2); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+.cbZoneSwitch button[aria-pressed="true"] { background: var(--navy); color: #fff; }
+.cbZoneSwitch small { font-size: 10.5px; font-weight: 700; opacity: .75; }
+.cbSwCount { min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px; background: var(--acc); color: var(--ink); font-size: 11px; display: inline-flex; align-items: center; justify-content: center; }
+.cbMobFilters { flex-direction: column; gap: 10px; }
+.cbMobRow { display: flex; gap: 8px; align-items: center; justify-content: space-between; }
+.cbMobRow .cbSeg { align-self: auto; }
 @media (max-width: 979px) {
   .cbFeedGrid, .cbZoneGrid { grid-template-columns: 1fr; }
   .cbSide { position: static; }
+  /* phones and tablets: the filters fold above the feed instead of after it */
+  .cbFeedSide { display: none; }
+  .cbMobFilters { display: flex; }
 }
 @media (max-width: 760px) {
-  .cbBar { flex-direction: column; align-items: stretch; }
+  /* top row: publish on the left, notifications and profile as icons on the right; the tabs scroll on one line under it */
+  .cbBar { flex-direction: column; flex-wrap: nowrap; align-items: stretch; gap: 10px; }
+  .cbBarRight { order: -1; flex-wrap: nowrap; }
+  .cbPublish { order: -1; margin-right: auto; }
+  .cbNotifWrap { position: static; }
+  .cbNotifs { position: fixed; left: 16px; right: 16px; top: 76px; width: auto; max-width: none; }
+  .cbNotifsList { max-height: 60vh; }
+  .cbLbl { display: none; }
+  .cbIconTab { width: 44px; height: 44px; padding: 0; justify-content: center; position: relative; }
+  .cbIconTab .cbBadge { position: absolute; top: -6px; right: -6px; }
+  .cbTabs { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin: 0 -16px; padding: 0 16px; }
+  .cbTabs::-webkit-scrollbar { display: none; }
+  .cbTab { flex: none; }
+  .cbZones { display: none; }
+  .cbZoneSwitch { display: flex; }
+  .cbZoneStrip { font-size: 12px; padding: 8px 12px; }
   .cbComposeRow, .cbComposeGrid, .cbComposeFoot { margin-left: 0; padding-left: 0; }
   .cbReq { grid-template-columns: 36px minmax(0, 1fr); }
   .cbReqActs { grid-column: 1 / -1; flex-direction: row; flex-wrap: wrap; }

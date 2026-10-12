@@ -26,6 +26,8 @@ function ago(iso: string) {
   const d = Math.round(h / 24);
   return d === 1 ? "ieri" : `acum ${d} zile`;
 }
+/** Relative time; the server and the browser render it a few seconds apart, so a different minute is not an error. */
+const Ago = ({ iso }: { iso: string }) => <span suppressHydrationWarning>{ago(iso)}</span>;
 const hhmm = (iso: string) => new Date(iso).toLocaleString("ro-RO", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Bucharest" });
 const dayMonth = (d: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString("ro-RO", { day: "numeric", month: "short" });
 /** "Lugoj, Timiș", or just "Arad" when the town and the county share the name. */
@@ -106,11 +108,14 @@ export function Colaborari({ initial, splash }: { initial: State; splash: boolea
         </nav>
         <div className="cbBarRight">
           <div className="cbNotifWrap">
-            <button type="button" className="cbTab" aria-expanded={notifOpen} onClick={() => setNotifOpen(!notifOpen)}>Notificări{unreadNotifs > 0 && <span className="cbBadge">{unreadNotifs}</span>}</button>
+            <button type="button" className="cbTab cbIconTab" aria-label="Notificări" aria-expanded={notifOpen} onClick={() => setNotifOpen(!notifOpen)}>
+              <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9" /><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" /></svg>
+              <span className="cbLbl">Notificări</span>{unreadNotifs > 0 && <span className="cbBadge">{unreadNotifs}</span>}
+            </button>
             {notifOpen && <Notifs s={s} onGo={async (n) => { go(n.go as never); if (!n.read) { await call({ action: "read", id: n.id }); reload(); } }} onReadAll={async () => { await call({ action: "read" }); reload(); }} onZones={() => { setView("settings"); setNotifOpen(false); }} />}
           </div>
-          <button type="button" className="cbTab" onClick={() => setProfileOpen(true)}><Av p={s.me} size={22} />Profilul meu</button>
-          <button type="button" className="btn btnNavy btnSm" onClick={() => { setView("feed"); setZone("colegi"); setComposeOpen(true); window.scrollTo({ top: 0, behavior: "smooth" }); }}>+ Publică anunț</button>
+          <button type="button" className="cbTab cbIconTab" aria-label="Profilul meu" onClick={() => setProfileOpen(true)}><Av p={s.me} size={22} /><span className="cbLbl">Profilul meu</span></button>
+          <button type="button" className="btn btnNavy btnSm cbPublish" onClick={() => { setView("feed"); setZone("colegi"); setComposeOpen(true); window.scrollTo({ top: 0, behavior: "smooth" }); }}>+ Publică anunț</button>
         </div>
       </div>
       {toast && <div className="cbToast" role="status"><span>{toast}</span><button type="button" className="linkBtn" onClick={() => setToast("")}>Închide</button></div>}
@@ -145,7 +150,7 @@ function Notifs({ s, onGo, onReadAll, onZones }: { s: State; onGo: (n: State["no
         {s.notifs.map((n) => (
           <button key={n.id} type="button" className={`cbNotif${n.read ? "" : " unread"}`} onClick={() => onGo(n)}>
             <span className="cbNotifText">{n.text}</span>
-            <span className="cbNotifMeta">{n.type} · {ago(n.created_at)}</span>
+            <span className="cbNotifMeta">{n.type} · <Ago iso={n.created_at} /></span>
           </button>
         ))}
       </div>
@@ -179,9 +184,38 @@ function Feed({ s, zone, setZone, hl, composeOpen, setComposeOpen, reload, flash
     sort === "aproape" ? (a.dist ?? 1e9) - (b.dist ?? 1e9) : sort === "termen" ? (a.due ?? "9999").localeCompare(b.due ?? "9999") : b.created_at.localeCompare(a.created_at));
   useEffect(() => { if (hl) document.getElementById(`p-${hl}`)?.scrollIntoView({ behavior: "smooth", block: "center" }); }, [hl]);
   const uniq = (a: (string | null)[]) => [...new Set(a.filter((x): x is string => !!x))].sort((x, y) => x.localeCompare(y, "ro"));
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const active = [county, prop, spec, sort !== "noi" ? sort : ""].filter(Boolean).length;
+  const scopeSeg = (
+    <div className="cbSeg">
+      {([["zone", "Zonele mele"], ["all", "Toate zonele"]] as const).map(([v, l]) => <button key={v} type="button" aria-pressed={scope === v} onClick={() => setScope(v)}>{l}</button>)}
+    </div>
+  );
+  const filterControls = (
+    <>
+      <select className="select" aria-label="Ordinea" value={sort} onChange={(e) => setSort(e.target.value as typeof sort)}>
+        <option value="noi">Cele mai noi</option><option value="aproape">Cele mai apropiate</option><option value="termen">Termen cel mai apropiat</option>
+      </select>
+      <small className="cbLabel">FILTRE</small>
+      <select className="select" aria-label="Județul" value={county} onChange={(e) => setCounty(e.target.value)}>
+        <option value="">Toate județele</option>{uniq(base.map((p) => p.county)).map((c) => <option key={c}>{c}</option>)}
+      </select>
+      <select className="select" aria-label="Tipul proprietății" value={prop} onChange={(e) => setProp(e.target.value)}>
+        <option value="">Orice tip de proprietate</option>{uniq(base.map((p) => p.prop)).map((c) => <option key={c}>{c}</option>)}
+      </select>
+      <div className="cbChips">
+        {["", "EPI", "EI", "EBM"].map((v) => <button key={v || "all"} type="button" className="cbChip" aria-pressed={spec === v} onClick={() => setSpec(v)}>{v || "Toate"}</button>)}
+      </div>
+      <span className="cbCount">{list.length === 1 ? "1 anunț" : `${list.length} anunțuri`}{active > 0 && <> · <button type="button" className="linkBtn" onClick={() => { setCounty(""); setProp(""); setSpec(""); setSort("noi"); }}>Resetează</button></>}</span>
+    </>
+  );
 
   return (
     <div className="cbFeed">
+      <div className="cbZoneSwitch" role="group" aria-label="Anunțuri">
+        <button type="button" aria-pressed={zone === "colegi"} onClick={() => setZone("colegi")}>De la colegi <span className="cbSwCount">{inZoneCount}</span></button>
+        <button type="button" aria-pressed={zone === "firme"} onClick={() => setZone("firme")}>De la firme <small>în curând</small></button>
+      </div>
       <div className="cbZones">
         <button type="button" className="cbZone" aria-pressed={zone === "colegi"} onClick={() => setZone("colegi")}>
           <span><small>DE LA COLEGI</small><b>Lucrări ocazionale</b><em>Inspecții și rapoarte + inspecție în zonele tale</em></span><strong>{inZoneCount}</strong>
@@ -202,6 +236,16 @@ function Feed({ s, zone, setZone, hl, composeOpen, setComposeOpen, reload, flash
           <div className="cbZoneStrip"><small>ZONA TA</small><span>{zoneText(z)}</span><button type="button" className="linkBtn" onClick={toSettings}>Modifică zonele →</button></div>
           <div className="cbFeedGrid">
             <div className="cbCol">
+              <div className="cbMobFilters">
+                <div className="cbMobRow">
+                  {scopeSeg}
+                  <button type="button" className="cbTab" aria-expanded={filtersOpen} onClick={() => setFiltersOpen(!filtersOpen)}>
+                    <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M4 6h16M7 12h10M10 18h4" /></svg>
+                    Filtre{active > 0 && <span className="cbBadge">{active}</span>}
+                  </button>
+                </div>
+                {filtersOpen && <div className="cbBox">{filterControls}</div>}
+              </div>
               <Composer s={s} open={composeOpen} setOpen={setComposeOpen} onDone={async (m) => { await reload(); setScope("zone"); flash(m); }} />
               {list.length === 0 && (
                 <div className="cbEmpty">
@@ -212,26 +256,11 @@ function Feed({ s, zone, setZone, hl, composeOpen, setComposeOpen, reload, flash
               )}
               {list.map((p) => <PostCard key={p.id} p={p} s={s} hl={hl === p.id} outZone={scope === "all" && !p.inZone && !p.own} reload={reload} flash={flash} toMine={toMine} />)}
             </div>
-            <aside className="cbSide">
+            <aside className="cbSide cbFeedSide">
               <div className="cbBox">
                 <small className="cbLabel">AFIȘARE</small>
-                <div className="cbSeg">
-                  {([["zone", "Zonele mele"], ["all", "Toate zonele"]] as const).map(([v, l]) => <button key={v} type="button" aria-pressed={scope === v} onClick={() => setScope(v)}>{l}</button>)}
-                </div>
-                <select className="select" aria-label="Ordinea" value={sort} onChange={(e) => setSort(e.target.value as typeof sort)}>
-                  <option value="noi">Cele mai noi</option><option value="aproape">Cele mai apropiate</option><option value="termen">Termen cel mai apropiat</option>
-                </select>
-                <small className="cbLabel">FILTRE</small>
-                <select className="select" aria-label="Județul" value={county} onChange={(e) => setCounty(e.target.value)}>
-                  <option value="">Toate județele</option>{uniq(base.map((p) => p.county)).map((c) => <option key={c}>{c}</option>)}
-                </select>
-                <select className="select" aria-label="Tipul proprietății" value={prop} onChange={(e) => setProp(e.target.value)}>
-                  <option value="">Orice tip de proprietate</option>{uniq(base.map((p) => p.prop)).map((c) => <option key={c}>{c}</option>)}
-                </select>
-                <div className="cbChips">
-                  {["", "EPI", "EI", "EBM"].map((v) => <button key={v || "all"} type="button" className="cbChip" aria-pressed={spec === v} onClick={() => setSpec(v)}>{v || "Toate"}</button>)}
-                </div>
-                <span className="cbCount">{list.length === 1 ? "1 anunț" : `${list.length} anunțuri`}</span>
+                {scopeSeg}
+                {filterControls}
               </div>
               <div className="cbBox dark">
                 <small className="cbLabel">LOCAȚIA TA DE BAZĂ</small>
@@ -264,7 +293,7 @@ function PostCard({ p, s, hl, outZone, reload, flash, toMine }: { p: FeedPost; s
     <article id={`p-${p.id}`} className={`cbPost${hl ? " hl" : ""}`}>
       <div className="cbPostHead">
         <Av p={p.author} />
-        <span className="cbWho"><b>{p.author.name}</b><small>{[p.author.sub, ago(p.created_at)].filter(Boolean).join(" · ")}</small></span>
+        <span className="cbWho"><b>{p.author.name}</b><small>{p.author.sub ? `${p.author.sub} · ` : ""}<Ago iso={p.created_at} /></small></span>
         {outZone && <span className="cbOut">În afara zonei</span>}
         <KindTag k={p.kind} />
       </div>
@@ -441,7 +470,7 @@ function Mine({ s, tab, setTab, reload, flash, openChat }: { s: State; tab: "pos
             return (
               <article key={p.id} className="cbMine">
                 <div className="cbMineHead">
-                  <div className="cbMineTop"><KindTag k={p.kind} /><span className="cbMuted">Publicat {ago(p.created_at)}</span><span className={`cbSt ${st[1]}`}>{st[0]}</span></div>
+                  <div className="cbMineTop"><KindTag k={p.kind} /><span className="cbMuted">Publicat <Ago iso={p.created_at} /></span><span className={`cbSt ${st[1]}`}>{st[0]}</span></div>
                   <h3>{p.title}</h3>
                   <div className="cbFacts"><span className="cbLoc">{where(p)}</span>{p.prop && <span className="cbFact">{p.prop}</span>}{p.spec && <span className="cbFact">{p.spec}</span>}<span className="cbFact">{dueChip(p.due).label}</span><span className="cbFact">{fee(p.budget).k} {fee(p.budget).v}</span></div>
                 </div>
@@ -459,7 +488,7 @@ function Mine({ s, tab, setTab, reload, flash, openChat }: { s: State; tab: "pos
                       <div key={r.id} className={`cbReq${r.status === "nou" ? " new" : ""}`}>
                         <Av p={r.user} />
                         <div className="cbReqText">
-                          <div className="cbReqName"><b>{r.user.name}</b><small>{r.user.sub} · {ago(r.created_at)}</small><span className={`cbSt ${cls}`}>{l}</span></div>
+                          <div className="cbReqName"><b>{r.user.name}</b><small>{r.user.sub} · <Ago iso={r.created_at} /></small><span className={`cbSt ${cls}`}>{l}</span></div>
                           {(r.base || r.dist != null) && <span className="cbReqMeta">{r.base ? `Bază: ${r.base}` : ""}{r.dist != null ? `${r.base ? " · " : ""}${distLabel(r.dist)} de proprietate` : ""}{r.years ? ` · ${r.years} experiență` : ""}</span>}
                           {r.skills.length > 0 && <div className="cbChips">{r.skills.slice(0, 6).map((k) => <span key={k} className="cbSkill">{k}</span>)}</div>}
                           {r.msg && <q className="cbQuote">{r.msg}</q>}
@@ -494,7 +523,7 @@ function Mine({ s, tab, setTab, reload, flash, openChat }: { s: State; tab: "pos
             return (
               <div key={r.id} className="cbMyReq">
                 <Av p={r.post.author} />
-                <span className="cbWho"><b>{r.post.title}</b><small>{r.post.author.name} · {where(r.post)}{distLabel(r.post.dist) ? ` (${distLabel(r.post.dist)})` : ""} · cerere trimisă {ago(r.created_at)}</small></span>
+                <span className="cbWho"><b>{r.post.title}</b><small>{r.post.author.name} · {where(r.post)}{distLabel(r.post.dist) ? ` (${distLabel(r.post.dist)})` : ""} · cerere trimisă <Ago iso={r.created_at} /></small></span>
                 <span className={`cbSt ${st[1]}`}>{st[0]}</span>
                 {r.conv_id && <button type="button" className="btn btnNavy btnSm" onClick={() => openChat(r.conv_id!)}>Deschide chat</button>}
                 {r.status !== "ales" && <button type="button" className="linkBtn" disabled={!!busy} onClick={() => confirm("Îți retragi cererea?") && act(`w-${r.id}`, { action: "withdraw", id: r.id }, () => flash("Cererea a fost retrasă."))}>Retrage</button>}
@@ -554,7 +583,7 @@ function Chat({ s, active, setActive, reload, flash }: { s: State; active: strin
           <button key={x.id} type="button" className="cbConv" aria-current={x.id === active ? "true" : undefined} onClick={() => setActive(x.id)}>
             <Av p={x.peer} size={38} />
             <span className="cbConvText"><b>{x.peer.name}</b><em>{x.post.title}</em><small className={x.unread ? "unread" : ""}>{x.last ? `${x.last.me ? "Tu: " : ""}${x.last.body}` : ""}</small></span>
-            <span className="cbConvMeta"><small>{ago(x.last_at)}</small>{x.unread > 0 && <span className="cbBadge">{x.unread}</span>}</span>
+            <span className="cbConvMeta"><small><Ago iso={x.last_at} /></small>{x.unread > 0 && <span className="cbBadge">{x.unread}</span>}</span>
           </button>
         ))}
       </div>
