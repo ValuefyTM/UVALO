@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Fragment } from "react";
 import { fmtDate, superPage } from "@/lib/guard";
 import { byCounty, CONT_FILTERS, CONTACT_FILTERS, counties, PAGE_SIZE, SPECS, tablou, type TablouFilter } from "@/lib/tablou";
 import { SPEC_LABEL } from "@/lib/requests";
@@ -57,6 +58,7 @@ export default async function Tablou({ searchParams }: { searchParams: Promise<T
         </label>
         <div className="tfFoot">
           <label className="check"><input type="checkbox" name="vechi" value="1" defaultChecked={f.vechi === "1"} />Și cei care nu mai apar în tablou</label>
+          <label className="check"><input type="checkbox" name="grup" value="judet" defaultChecked={f.grup === "judet"} />Grupează pe județe</label>
           {Object.values(f).some(Boolean) && <a className="btn btnGhost" href="/admin/tablou">Resetează</a>}
           <button type="submit" className="btn btnNavy">Filtrează</button>
         </div>
@@ -73,10 +75,15 @@ export default async function Tablou({ searchParams }: { searchParams: Promise<T
           <table className="table">
             <thead><tr><th>Legitimație</th><th>Nume</th><th>Județ</th><th>Specializări</th><th>Contact public</th><th>Cont</th><th>Ultima activitate</th><th className="r">Acțiuni 30 zile</th></tr></thead>
             <tbody>
-              {list.rows.map((r) => {
+              {list.rows.map((r, i) => {
                 const [t, cls] = status(r);
+                // grouped by county: a header row where the county changes (with the county's totals for the current filter)
+                const head = f.grup === "judet" && (i === 0 || list.rows[i - 1].county !== r.county);
+                const cs = head ? sum.find((x) => x.county === r.county) : undefined;
                 return (
-                  <tr key={r.legit}>
+                  <Fragment key={r.legit}>
+                  {head && <tr className="groupRow"><td colSpan={8}>{r.county ?? "Fără județ"}{cs ? ` · ${cs.members} membri · ${cs.accounts ?? 0} cu cont · ${cs.active ?? 0} activi 30 zile` : ""}</td></tr>}
+                  <tr>
                     <td className="mono">{r.legit}</td>
                     <td><b className="block">{r.name}</b>{r.email && <span className="muted">{r.email}</span>}{!r.in_current && <span className="muted block">nu mai apare în tablou</span>}</td>
                     <td>{r.county ?? "—"}</td>
@@ -93,6 +100,7 @@ export default async function Tablou({ searchParams }: { searchParams: Promise<T
                     <td>{r.last_seen_at ? fmtDate(r.last_seen_at, true) : r.user_id ? "niciodată" : "—"}</td>
                     <td className="r mono">{r.user_id ? <a className="rowLink" href={`/admin/activitate?user=${r.user_id}`}>{r.events_30}</a> : "—"}</td>
                   </tr>
+                  </Fragment>
                 );
               })}
             </tbody>

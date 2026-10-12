@@ -143,6 +143,11 @@ Proprietar: VALUEFY (firmă de evaluări imobiliare, Timișoara). UVALO devine u
   (migrația 0018) și `users.last_seen_at`. Panoul: „Online acum” = sesiuni cu semnal în ultimele 3 minute, grupate pe
   persoană, cu pagina (UAT și nr. cadastral în localizator), dispozitivul și orașul; plus ultimele 15 minute și azi.
 
+## Filtre în admin (Utilizatori, Tablou ANEVAR)
+
+- `/admin/utilizatori`: filtre GET (caută, județ, stare, tip cont, firmă, activitate, ordonare) și „Grupează pe județe” (`grup=judet`,
+  rânduri-antet cu totaluri). „Unește două conturi” primește mereu lista completă. `/admin/tablou`: același `grup=judet` (`TablouFilter.grup`).
+
 ## Unirea a două conturi (Admin → Utilizatori → „Unește două conturi”)
 
 - `src/lib/merge.ts` (`/api/admin/users/merge`): contul care rămâne își păstrează emailul și preia de la celălalt numele,

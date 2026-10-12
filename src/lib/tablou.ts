@@ -1,5 +1,5 @@
 // Server-only: the ANEVAR list in the administration, with accounts and activity (who signs in, who never did).
-export type TablouFilter = { judet?: string; spec?: string; cont?: string; contact?: string; q?: string; vechi?: string; sort?: string; page?: string };
+export type TablouFilter = { judet?: string; spec?: string; cont?: string; contact?: string; q?: string; vechi?: string; sort?: string; page?: string; grup?: string };
 export type TablouRow = {
   legit: string; name: string; county: string | null; specs: string | null; in_current: number; tablou_date: string | null;
   pub_address: string | null; pub_phone: string | null; pub_fax: string | null; pub_email: string | null; pub_website: string | null; contact_source: string | null; contact_date: string | null;
@@ -51,7 +51,9 @@ const FROM = `FROM anevar_members m LEFT JOIN users u ON u.id = (SELECT x.id FRO
 
 export async function tablou(db: D1Database, f: TablouFilter, all = false) {
   const { sql, p } = where(f);
-  const order = f.sort === "judet" ? "m.county, m.name" : f.sort === "login" ? "u.last_seen_at IS NULL, u.last_seen_at DESC, m.name" : f.sort === "legit" ? "CAST(m.legit AS INTEGER)" : "m.name";
+  // grouped by county: counties in order, the chosen sort inside each county
+  const inner = f.sort === "login" ? "u.last_seen_at IS NULL, u.last_seen_at DESC, m.name" : f.sort === "legit" ? "CAST(m.legit AS INTEGER)" : "m.name";
+  const order = f.grup === "judet" ? `m.county IS NULL, m.county, ${inner}` : f.sort === "judet" ? "m.county, m.name" : f.sort === "login" ? "u.last_seen_at IS NULL, u.last_seen_at DESC, m.name" : f.sort === "legit" ? "CAST(m.legit AS INTEGER)" : "m.name";
   const page = Math.max(1, Number(f.page) || 1);
   const [total, rows] = await Promise.all([
     db.prepare(`SELECT COUNT(*) AS n ${FROM} ${sql}`).bind(...p).first<{ n: number }>(),
