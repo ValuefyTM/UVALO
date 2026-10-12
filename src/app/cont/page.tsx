@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { fmtDate, initials, page } from "@/lib/guard";
 import { AppShell } from "@/components/AppShell";
-import { AccountPanel, OfficeToggle } from "@/components/AccountPanel";
+import { AccountPanel, DeleteAccount, OfficeToggle } from "@/components/AccountPanel";
 import { canManageOrg, OFFICE_READY } from "@/lib/access";
 
 export const metadata: Metadata = { title: "Contul meu | UVALO" };
@@ -18,6 +18,8 @@ export default async function Account() {
           hasAvatar={!!u.has_avatar} initials={initials(u.name, u.email)} tablou={m?.tablou_date ? fmtDate(m.tablou_date) : null} />
         <div style={{ height: 18 }} />
         <OfficeToggle ready={OFFICE_READY} on={!!u.is_office} can={!!c.org && canManageOrg(c)} org={c.org?.name ?? null} />
+        <div style={{ height: 18 }} />
+        <DeleteAccount email={u.email} />
       </div>
     </AppShell>
   );

@@ -145,3 +145,43 @@ export function OfficeToggle(p: { ready: boolean; on: boolean; can: boolean; org
     </section>
   );
 }
+
+/** "Șterge contul": the person deletes their own account, after typing its email. */
+export function DeleteAccount({ email }: { email: string }) {
+  const [open, setOpen] = useState(false);
+  const [val, setVal] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  const ok = val.trim().toLowerCase() === email.toLowerCase();
+  const go = async () => {
+    setBusy(true); setErr("");
+    const r = await fetch("/api/account", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ confirm: val }) }).catch(() => null);
+    const d = (await r?.json().catch(() => ({}))) as { error?: string } | undefined;
+    if (!r?.ok) { setBusy(false); return setErr(d?.error || "Nu am putut șterge contul. Încearcă din nou."); }
+    location.href = "/login?sters=1";
+  };
+  return (
+    <section className="card">
+      <div className="cardHead"><h2>Șterge contul</h2></div>
+      {!open ? (
+        <div className="actions" style={{ justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+          <p className="hint" style={{ margin: 0, flex: "1 1 320px" }}>Contul și datele tale din UVALO se șterg definitiv. Poți cere oricând un cont nou.</p>
+          <button type="button" className="btn btnDanger btnSm" onClick={() => setOpen(true)}>Șterge contul…</button>
+        </div>
+      ) : (
+        <form onSubmit={(e) => { e.preventDefault(); if (ok && !busy) go(); }}>
+          <p className="hint" style={{ marginTop: 0 }}>
+            Se șterg definitiv: contul, sesiunile de pe toate dispozitivele, firma ta individuală (dacă nu are alți colegi), capturile din Chrome
+            și datele din Colaborări (profil, anunțuri, conversații). Ștergerea nu se poate anula.
+          </p>
+          <label className="field">Scrie {email} ca să confirmi<input className="input" type="email" autoComplete="off" value={val} onChange={(e) => setVal(e.target.value)} autoFocus /></label>
+          {err && <div role="alert" className="error">{err}</div>}
+          <div className="actions" style={{ gap: 10, marginTop: 12 }}>
+            <button type="submit" className="btn btnDanger" disabled={!ok || busy}>{busy ? "Se șterge…" : "Șterge definitiv contul"}</button>
+            <button type="button" className="btn btnGhost" onClick={() => { setOpen(false); setVal(""); setErr(""); }}>Renunță</button>
+          </div>
+        </form>
+      )}
+    </section>
+  );
+}

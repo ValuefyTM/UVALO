@@ -160,6 +160,8 @@ Proprietar: VALUEFY (firmă de evaluări imobiliare, Timișoara). UVALO devine u
 - `deleteUser` în `src/lib/merge.ts` (`DELETE /api/admin/users/<id>`), pentru email greșit: șterge sesiunile, codurile de autentificare,
   apartenențele, invitațiile deschise, Chrome, datele din Colaborări și firma individuală (dacă nu are alți membri/invitații), apoi contul;
   persoana poate cere din nou cont (legitimația devine liberă). Nu merge pe super-admini și pe propriul cont. Un tabel nou cu `REFERENCES users` → și aici.
+- Ștergere de către persoană: „Contul meu” → „Șterge contul” (`DeleteAccount`, `DELETE /api/account` cu `{confirm: email}`, `deleteUser(..., self=true)`):
+  refuzat pentru super-admini și pentru administratorul unic al unei firme cu colegi; șterge cookie-ul → `/login?sters=1`; audit `user.delete_self`.
 
 ## Colaborări (`/colaborari`, modulul `colaborari`)
 

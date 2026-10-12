@@ -7,7 +7,7 @@ import { LoginForm } from "@/components/LoginForm";
 export const metadata: Metadata = { title: "Autentificare | UVALO" };
 export const dynamic = "force-dynamic";
 
-export default async function Login({ searchParams }: { searchParams: Promise<{ link?: string; next?: string }> }) {
+export default async function Login({ searchParams }: { searchParams: Promise<{ link?: string; next?: string; sters?: string }> }) {
   const sp = await searchParams;
   // where to go after signing in (only a page of this app, e.g. the Word pane /word/anexe?mode=pdf)
   const next = sp.next && /^\/(?![/\\])[^\s\\]*$/.test(sp.next) ? sp.next : "/";
@@ -38,6 +38,7 @@ export default async function Login({ searchParams }: { searchParams: Promise<{ 
           <span className="authEyebrow dark">Autentificare</span>
           <h1>Bine ai revenit</h1>
           <p>Introdu adresa de email a contului tău UVALO. Îți trimitem un cod de acces, fără parolă.</p>
+          {sp.sters === "1" && <div role="status" className="note" style={{ marginBottom: 14 }}>Contul tău a fost șters. Îți mulțumim că ai folosit UVALO.</div>}
           <LoginForm expired={sp.link === "expired"} next={next} />
           <div className="authAlt">
             <div><b>Nu ai cont?</b><span>Este gratuit pentru membrii titulari ANEVAR: îl soliciți cu numărul legitimației.</span></div>
