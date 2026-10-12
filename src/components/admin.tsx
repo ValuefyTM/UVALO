@@ -294,11 +294,13 @@ type Counts = Record<string, { all: number; test: number }>;
 const COUNT_LABEL: Record<string, string> = { profiles: "Profiluri", posts: "Anunțuri", requests: "Cereri de detalii", convs: "Conversații", messages: "Mesaje", notifs: "Notificări" };
 
 /** Colaborări: mode (Dezactivat / Test / Activ), the people in the test group, deleting the test data. */
-export function CollabAdmin({ mode: m0, users: u0, counts: c0 }: { mode: CollabMode; users: { id: string; name: string; email: string; anevar: string | null }[]; counts: Counts }) {
+type Account = { id: string; name: string; email: string; anevar: string | null; sup: number; org: string | null };
+export function CollabAdmin({ mode: m0, users: u0, counts: c0, accounts }: { mode: CollabMode; users: { id: string; name: string; email: string; anevar: string | null }[]; counts: Counts; accounts: Account[] }) {
   const [mode, setMode] = useState(m0);
   const [users, setUsers] = useState(u0);
   const [counts, setCounts] = useState(c0);
-  const [email, setEmail] = useState("");
+  const [q, setQ] = useState("");
+  const [sel, setSel] = useState<string[]>([]);
   const [busy, setBusy] = useState("");
   const [msg, setMsg] = useState("");
   const [ok, setOk] = useState("");
@@ -355,11 +357,36 @@ export function CollabAdmin({ mode: m0, users: u0, counts: c0 }: { mode: CollabM
       <div className="cols">
         <section className="card">
           <div className="cardHead"><h2>Grupul de test</h2><span className="pill"><i />{users.length === 1 ? "1 persoană" : `${users.length} persoane`}</span></div>
-          <p className="hint">În modul Test, Colaborările le apar doar acestor persoane (plus administratorilor UVALO), indiferent de abonament. Adaugi după emailul contului UVALO.</p>
-          <form className="actions" style={{ justifyContent: "flex-start", flexWrap: "wrap" }} onSubmit={(e) => { e.preventDefault(); if (email.trim()) run("add", { action: "add", email }, (d) => { const u = d.user as (typeof users)[number]; setUsers((x) => x.some((y) => y.id === u.id) ? x : [...x, u]); setEmail(""); setOk(`${u.name} a fost adăugat în grupul de test.`); }); }}>
-            <input className="input" type="email" aria-label="Emailul contului" placeholder="email@firma.ro" value={email} onChange={(e) => setEmail(e.target.value)} style={{ flex: "1 1 220px" }} />
-            <button type="submit" className="btn btnNavy btnSm" disabled={!!busy || !email.trim()}>{busy === "add" ? "…" : "Adaugă în test"}</button>
-          </form>
+          <p className="hint">În modul Test, Colaborările le apar doar acestor persoane (plus administratorilor UVALO), indiferent de abonament. Bifează conturile din listă și apasă „Adaugă în test”.</p>
+          {(() => {
+            const inTest = new Set(users.map((u) => u.id));
+            const norm = (x: string) => x.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+            const nq = norm(q.trim());
+            const list = accounts.filter((a) => !inTest.has(a.id) && !a.sup && (!nq || norm(`${a.name} ${a.email} ${a.anevar ?? ""} ${a.org ?? ""}`).includes(nq)));
+            const shown = list.slice(0, 60);
+            return (
+              <div className="pickBox">
+                <input className="input" type="search" aria-label="Caută un cont" placeholder="Caută după nume, email, legitimație sau firmă" value={q} onChange={(e) => setQ(e.target.value)} />
+                <div className="pickList" role="group" aria-label="Conturi">
+                  {shown.length === 0 && <p className="hint" style={{ padding: "10px 12px" }}>{q ? "Niciun cont găsit." : "Toate conturile sunt deja în grupul de test."}</p>}
+                  {shown.map((a) => (
+                    <label key={a.id} className="pickRow">
+                      <input type="checkbox" checked={sel.includes(a.id)} onChange={(e) => setSel((x) => (e.target.checked ? [...x, a.id] : x.filter((y) => y !== a.id)))} />
+                      <span><b>{a.name}</b><small>{[a.email, a.anevar ? `ANEVAR ${a.anevar}` : null, a.org].filter(Boolean).join(" · ")}</small></span>
+                    </label>
+                  ))}
+                  {list.length > shown.length && <p className="hint" style={{ padding: "8px 12px" }}>Încă {list.length - shown.length} conturi: restrânge căutarea.</p>}
+                </div>
+                <div className="actions" style={{ justifyContent: "space-between", flexWrap: "wrap" }}>
+                  <span className="hint">{sel.length ? `${sel.length} ${sel.length === 1 ? "cont selectat" : "conturi selectate"}` : "Niciun cont selectat"}{sel.length > 0 && <> · <button type="button" className="linkBtn" onClick={() => setSel([])}>Deselectează</button></>}</span>
+                  <button type="button" className="btn btnNavy btnSm" disabled={!!busy || !sel.length}
+                    onClick={() => run("add", { action: "add_many", user_ids: sel }, (d) => { const added = (d.users as (typeof users)) ?? []; setUsers((x) => [...x, ...added.filter((u) => !x.some((y) => y.id === u.id))]); setSel([]); setOk(added.length === 1 ? `${added[0].name} a fost adăugat în grupul de test.` : `${added.length} persoane au fost adăugate în grupul de test.`); })}>
+                    {busy === "add" ? "…" : sel.length > 1 ? `Adaugă ${sel.length} în test` : "Adaugă în test"}
+                  </button>
+                </div>
+              </div>
+            );
+          })()}
           {users.length > 0 ? (
             <div className="tableWrap">
               <table className="table" style={{ minWidth: 0 }}>

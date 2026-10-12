@@ -96,10 +96,14 @@ export default async function Instrument({ params }: { params: Promise<{ key: st
 
   if (key === "colaborari") {
     const cs = await collabSettings(db);
-    const [users, counts] = await Promise.all([testUsers(db, cs.users), collabCounts(db)]);
+    const [users, counts, all] = await Promise.all([testUsers(db, cs.users), collabCounts(db),
+      db.prepare(`SELECT u.id, COALESCE(NULLIF(u.name, ''), u.email) AS name, u.email, u.anevar_no AS anevar, u.is_superadmin AS sup,
+          (SELECT o.name FROM memberships m JOIN orgs o ON o.id = m.org_id WHERE m.user_id = u.id AND m.status = 'active' ORDER BY o.name LIMIT 1) AS org
+        FROM users u WHERE u.status = 'active' ORDER BY name COLLATE NOCASE LIMIT 3000`)
+        .all<{ id: string; name: string; email: string; anevar: string | null; sup: number; org: string | null }>()]);
     return (
       <AdminShell c={c} active="instrumente" pending={pending} title={tool.name} subtitle="Mod de lucru, grupul de test și statistici" actions={<a className="btn btnGhost btnSm" href="/admin/instrumente">← Instrumente</a>}>
-        <CollabAdmin mode={cs.mode} users={users} counts={counts} />
+        <CollabAdmin mode={cs.mode} users={users} counts={counts} accounts={all.results} />
         <h2 className="secTitle">Statistici</h2>
         <ToolAnalytics u={u} events={events} />
       </AdminShell>

@@ -1148,3 +1148,15 @@ a.instMain:hover { border-color: #E0AD4F; }
   .cbSplashBody { padding: 20px; }
   .cbSplashBody h2 { font-size: 22px; }
 }
+
+/* admin: pick accounts from a list (Colaborări → grupul de test) */
+.pickBox { display: flex; flex-direction: column; gap: 10px; }
+.pickList { max-height: 320px; overflow: auto; border: 1px solid var(--line); border-radius: 12px; background: #fff; }
+.pickRow { display: flex; gap: 10px; align-items: center; padding: 9px 12px; border-bottom: 1px solid var(--divider); cursor: pointer; }
+.pickRow:last-child { border-bottom: 0; }
+.pickRow:hover { background: var(--cream); }
+.pickRow:has(input:checked) { background: var(--acc-soft); }
+.pickRow input { width: 18px; height: 18px; accent-color: var(--acc-ink); flex: none; }
+.pickRow span { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.pickRow b { font-size: 13px; }
+.pickRow small { font-size: 11.5px; color: var(--muted-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

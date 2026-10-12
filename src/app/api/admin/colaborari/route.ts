@@ -20,6 +20,17 @@ export async function POST(req: Request) {
       await track(a.db, a.c, "admin", "collab_mode", mode);
       return NextResponse.json({ ok: true, mode });
     }
+    case "add_many": {
+      // several existing accounts chosen from the list
+      const ids = Array.isArray(b.user_ids) ? [...new Set((b.user_ids as unknown[]).filter((x): x is string => typeof x === "string"))].slice(0, 200) : [];
+      if (!ids.length) return err("Alege cel puțin o persoană.");
+      const { results } = await a.db.prepare(`SELECT id, name, email, anevar_no FROM users WHERE status = 'active' AND id IN (${ids.map(() => "?").join(",")})`).bind(...ids)
+        .all<{ id: string; name: string; email: string; anevar_no: string | null }>();
+      const add = results.filter((u) => !cur.users.includes(u.id));
+      if (add.length) await setCollabSettings(a.db, actor, { ...cur, users: [...cur.users, ...add.map((u) => u.id)] });
+      for (const u of add) await audit(a.db, actor, "collab.test_add", "user", u.id, u.email);
+      return NextResponse.json({ ok: true, users: add.map((u) => ({ id: u.id, name: u.name || u.email, email: u.email, anevar: u.anevar_no })) });
+    }
     case "add": {
       const email = normEmail(str(b.email, 200));
       const u = email ? await a.db.prepare("SELECT id, name, email, anevar_no, status FROM users WHERE email = ?").bind(email).first<{ id: string; name: string; email: string; anevar_no: string | null; status: string }>() : null;
