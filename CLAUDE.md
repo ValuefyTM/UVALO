@@ -17,6 +17,10 @@ Proprietar: VALUEFY (firmă de evaluări imobiliare, Timișoara). UVALO devine u
 - **Copiile bazei de producție se anonimizează implicit** (nume, emailuri, telefoane).
 - Mesajele de commit în română, scurte, la obiect. Push pe `main` = deploy în producție (vezi mai jos).
 - După schimbarea de branch: `rm -rf .next/types` dacă `tsc` dă erori ciudate.
+- **Fără VALUEFY în platformă** (texte, antete de export, logo, emailuri): contactul afișat este `office@uvalo.ro`;
+  antetul exporturilor (amplasament, comparabile) = numele evaluatorului + legitimația, nu numele firmei.
+  Excepții: numele juridic al operatorului în `COMPANY` (`/confidentialitate`, `/termeni`) și identificatorii tehnici
+  (`vf_tools`, `valuefy-tools-db`, `valuefy-anexa-*`, redirecționarea `tools.valuefy.ro`, scurtătura veche ștearsă de instalator).
 
 ## Stack
 

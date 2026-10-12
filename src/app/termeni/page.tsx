@@ -40,8 +40,8 @@ export default function Termeni() {
       <section id="abonament">
         <h2>3. Abonament și plată</h2>
         <ul>
-          <li>Accesul la instrumente urmează planul de abonament al firmei în care lucrezi (sau al contului tău individual), cu numărul de locuri și perioada de valabilitate stabilite cu VALUEFY.</li>
-          <li>Add-in-ul UVALO pentru Word se instalează gratuit, dar funcționează doar cu un cont UVALO al cărui plan îl include. Plata se face către VALUEFY, nu prin Microsoft.</li>
+          <li>Accesul la instrumente urmează planul de abonament al firmei în care lucrezi (sau al contului tău individual), cu numărul de locuri și perioada de valabilitate stabilite cu UVALO.</li>
+          <li>Add-in-ul UVALO pentru Word se instalează gratuit, dar funcționează doar cu un cont UVALO al cărui plan îl include. Plata se face către UVALO, nu prin Microsoft.</li>
           <li>Unele funcții au limite de utilizare (de exemplu numărul de texte generate pe zi), afișate în instrument când sunt atinse.</li>
           <li>Dacă abonamentul expiră sau firma este suspendată, accesul la instrumente se oprește până la reactivare.</li>
         </ul>
@@ -80,7 +80,7 @@ export default function Termeni() {
 
       <section id="proprietate">
         <h2>7. Proprietate intelectuală</h2>
-        <p>Platforma UVALO, add-in-ul, designul și textele lor aparțin VALUEFY. Primești un drept personal, neexclusiv și netransmisibil de a le folosi cât timp ai cont și abonament activ.</p>
+        <p>Platforma UVALO, add-in-ul, designul și textele lor aparțin operatorului UVALO. Primești un drept personal, neexclusiv și netransmisibil de a le folosi cât timp ai cont și abonament activ.</p>
         <p>Conținutul tău (pozele, documentele, rapoartele, datele introduse) rămâne al tău. Hărțile folosesc date © contribuitorii OpenStreetMap (licența ODbL) și Google Maps, conform termenilor acestora.</p>
       </section>
 
@@ -91,7 +91,7 @@ export default function Termeni() {
 
       <section id="raspundere">
         <h2>9. Răspundere</h2>
-        <p>În limitele permise de lege, VALUEFY nu răspunde pentru pierderi indirecte (de exemplu profit nerealizat) și nici pentru decizii luate doar pe baza datelor orientative din platformă. Răspunderea totală a VALUEFY față de un utilizator este limitată la sumele plătite pentru serviciu în ultimele 12 luni. Aceste limite nu se aplică în caz de intenție sau culpă gravă.</p>
+        <p>În limitele permise de lege, UVALO nu răspunde pentru pierderi indirecte (de exemplu profit nerealizat) și nici pentru decizii luate doar pe baza datelor orientative din platformă. Răspunderea totală a UVALO față de un utilizator este limitată la sumele plătite pentru serviciu în ultimele 12 luni. Aceste limite nu se aplică în caz de intenție sau culpă gravă.</p>
       </section>
 
       <section id="incetare">
@@ -101,7 +101,7 @@ export default function Termeni() {
 
       <section id="final">
         <h2>11. Dispoziții finale</h2>
-        <p>Termenii sunt guvernați de legea română. Neînțelegerile se rezolvă pe cale amiabilă, iar dacă nu se poate, de instanțele competente de la sediul VALUEFY. Dacă ești consumator, ai și drepturile pe care ți le dă legea protecției consumatorilor. Putem actualiza termenii; versiunea în vigoare este cea publicată aici, cu data de sus.</p>
+        <p>Termenii sunt guvernați de legea română. Neînțelegerile se rezolvă pe cale amiabilă, iar dacă nu se poate, de instanțele competente de la sediul operatorului UVALO. Dacă ești consumator, ai și drepturile pe care ți le dă legea protecției consumatorilor. Putem actualiza termenii; versiunea în vigoare este cea publicată aici, cu data de sus.</p>
       </section>
 
       <section id="contact">

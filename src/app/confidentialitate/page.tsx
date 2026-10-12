@@ -23,7 +23,7 @@ export default function Confidentialitate() {
     <LegalPage title="Politica de confidențialitate" lead="Cum prelucrăm datele personale în platforma UVALO (app.uvalo.ro) și în add-in-ul UVALO pentru Word. Pe scurt: colectăm doar ce trebuie ca să-ți oferim contul și instrumentele, nu vindem date și nu folosim cookie-uri de publicitate." toc={TOC}>
       <section id="operator">
         <h2>1. Cine prelucrează datele</h2>
-        <p>Operatorul datelor este <b>{COMPANY.name}</b>, CUI {COMPANY.cui}, înregistrată la Registrul Comerțului cu nr. {COMPANY.reg}, cu sediul în {COMPANY.seat} („VALUEFY”, „noi”). UVALO este platforma VALUEFY pentru evaluatori imobiliari.</p>
+        <p>Operatorul datelor este <b>{COMPANY.name}</b>, CUI {COMPANY.cui}, înregistrată la Registrul Comerțului cu nr. {COMPANY.reg}, cu sediul în {COMPANY.seat} („UVALO”, „noi”), care operează platforma UVALO pentru evaluatori imobiliari.</p>
         <p>Pentru orice întrebare despre date ne scrii la <a href={`mailto:${COMPANY.email}`}>{COMPANY.email}</a>.</p>
       </section>
 
@@ -109,7 +109,7 @@ export default function Confidentialitate() {
 
       <section id="securitate">
         <h2>9. Securitate</h2>
-        <p>Toate conexiunile sunt criptate (HTTPS). Nu folosim parole: te conectezi cu un cod de unică folosință trimis pe email, iar codurile și tokenurile de sesiune se păstrează doar ca amprente criptografice. Accesul la date în echipa VALUEFY este limitat la persoanele care administrează platforma.</p>
+        <p>Toate conexiunile sunt criptate (HTTPS). Nu folosim parole: te conectezi cu un cod de unică folosință trimis pe email, iar codurile și tokenurile de sesiune se păstrează doar ca amprente criptografice. Accesul la date în echipa UVALO este limitat la persoanele care administrează platforma.</p>
       </section>
 
       <section id="drepturi">

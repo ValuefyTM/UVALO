@@ -95,7 +95,7 @@ export function MembersPanel({ org, members, invites, seats, used, canOwner, adm
 
 export type OrgValues = { name: string; cui: string; city: string; plan_id: string; seats: number; valid_until: string; status: string; billing_email: string; notes: string };
 
-/** Firm details and subscription (VALUEFY). New firm: also its owner, invited right away. */
+/** Firm details and subscription (UVALO administration). New firm: also its owner, invited right away. */
 export function OrgForm({ id, initial, plans }: { id?: string; initial?: Partial<OrgValues>; plans: { id: string; name: string }[] }) {
   const [f, setF] = useState<OrgValues & { owner_email: string; owner_name: string }>({
     name: "", cui: "", city: "", plan_id: "trial", seats: 1, valid_until: "", status: "active", billing_email: "", notes: "", owner_email: "", owner_name: "", ...initial,
@@ -184,7 +184,7 @@ export function SessionsList({ rows }: { rows: SessionRow[] }) {
   );
 }
 
-/** Account actions in the VALUEFY administration (disable, enable, sign out everywhere, VALUEFY admin). */
+/** Account actions in the UVALO administration (disable, enable, sign out everywhere, UVALO admin). */
 export function UserActions({ id, status, isSuper, me }: { id: string; status: string; isSuper: boolean; me: boolean }) {
   if (me) return <span className="muted">tu</span>;
   const go = async (action: string, q?: string) => {
@@ -213,7 +213,7 @@ export function InviteAdmin() {
       const er = await send("/api/admin/superadmins", "POST", { email });
       setMsg(er ? { ok: false, t: er } : { ok: true, t: `Invitația a fost trimisă la ${email}.` });
     }}>
-      <label className="field">Invită un administrator UVALO<input className="input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="coleg@valuefy.ro" required /></label>
+      <label className="field">Invită un administrator UVALO<input className="input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="coleg@firma.ro" required /></label>
       <button type="submit" className="btn btnGhost">Invită</button>
       {msg && <span role={msg.ok ? "status" : "alert"} className={msg.ok ? "okMsg" : "error"}>{msg.t}</span>}
     </form>

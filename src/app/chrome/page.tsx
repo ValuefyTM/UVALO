@@ -22,7 +22,7 @@ export default async function Chrome({ searchParams }: { searchParams: Promise<{
   return (
     <AppShell c={c} active="chrome" title="UVALO pentru Chrome" subtitle="Dovezile comparabilelor, capturate complet, direct în raport">
       {connected && <div className="note">Ești conectat la UVALO. Revino în panoul extensiei din Chrome și apasă „Am făcut, verifică din nou”.</div>}
-      {!on && <div className="note">{c.off.includes("chrome") ? "UVALO pentru Chrome este dezactivat temporar. Revine în curând." : (c.block ?? "Abonamentul firmei tale nu include UVALO pentru Chrome.")} Scrie-ne la <a className="rowLink" href="mailto:office@valuefy.ro">office@valuefy.ro</a>.</div>}
+      {!on && <div className="note">{c.off.includes("chrome") ? "UVALO pentru Chrome este dezactivat temporar. Revine în curând." : (c.block ?? "Abonamentul firmei tale nu include UVALO pentru Chrome.")} Scrie-ne la <a className="rowLink" href="mailto:office@uvalo.ro">office@uvalo.ro</a>.</div>}
 
       <section className="wpHero cpHero">
         <div className="wpHeroText">

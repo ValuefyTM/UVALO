@@ -38,7 +38,7 @@ export const getOrg = (db: D1Database, id: string) => db.prepare(`${ORG_SQL} WHE
 
 const ROLES: Role[] = ["owner", "admin", "member"];
 
-/** Invites a person into a firm, within its seats. Only owners (and VALUEFY) give the owner role. */
+/** Invites a person into a firm, within its seats. Only owners (and UVALO administrators) give the owner role. */
 export async function inviteMember(db: D1Database, by: User, bySuper: boolean, byRole: Role | null, orgId: string, b: Record<string, unknown>) {
   const email = typeof b.email === "string" ? b.email.trim() : "";
   if (!validEmail(email)) return { ok: false as const, error: "Adresa de email nu pare validă." };
@@ -101,7 +101,7 @@ export async function cancelInvite(db: D1Database, by: User, orgId: string, invi
   return null;
 }
 
-// ---------- firms (VALUEFY administration) ----------
+// ---------- firms (UVALO administration) ----------
 
 export type OrgInput = { name: string; cui: string | null; city: string | null; plan_id: string; seats: number; valid_until: string | null; status: string; billing_email: string | null; notes: string | null };
 

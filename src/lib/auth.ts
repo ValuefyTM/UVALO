@@ -169,7 +169,7 @@ export async function revokeSessions(db: D1Database, userId: string, exceptId?: 
 
 // ---------- invitations ----------
 
-/** Invites someone into a firm (or as a VALUEFY super-admin when orgId is null). Creates the account if needed. */
+/** Invites someone into a firm (or as a UVALO super-admin when orgId is null). Creates the account if needed. */
 export async function invite(db: D1Database, by: User, orgId: string | null, rawEmail: string, role: "owner" | "admin" | "member", name?: string) {
   const email = normEmail(rawEmail);
   let u = await findUser(db, email);

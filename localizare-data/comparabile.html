@@ -302,7 +302,7 @@
    ═══════════════════════════════════════════════════════════════════════ */
 // Antetul rapoartelor: firma și numele celui autentificat (puse de pagina /comparabile).
 const ME=window.UVALO_USER||{};
-const DEF_BRAND={company:ME.company||'',subtitle:ME.subtitle||'',evaluator:ME.name||''};
+const DEF_BRAND={company:ME.company||'',subtitle:ME.subtitle||'',evaluator:ME.name&&ME.name!==ME.company?ME.name:''};
 const TILES={
   map:{url:'https://tile.openstreetmap.org/{z}/{x}/{y}.png',max:19,attr:'© OpenStreetMap'},
   sat:{url:'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',max:19,attr:'Imagini © Esri, Maxar, Earthstar Geographics'},

@@ -18,9 +18,8 @@ export async function GET(req: Request) {
   const page = await locatorAsset("comparabile.html", req);
   if (!page) return new Response("Pagina nu este disponibilă momentan.", { status: 503, headers: PRIVATE });
   await track(a.db, a.c, "comparabile", "page");
-  // The report header starts with the person's name and firm (changeable in the page's settings).
-  const org = a.c.org && a.c.org.name.trim().toLowerCase() !== a.c.user.name.trim().toLowerCase() ? a.c.org.name : "";
-  const me = { name: a.c.user.name, company: org || a.c.user.name, subtitle: a.c.user.anevar_no ? `Evaluator autorizat ANEVAR · legitimația ${a.c.user.anevar_no}` : "" };
+  // The report header: the valuer's name and card number, not the firm's name (changeable in the page's settings).
+  const me = { name: a.c.user.name, company: a.c.user.name, subtitle: a.c.user.anevar_no ? `Evaluator autorizat ANEVAR · legitimația ${a.c.user.anevar_no}` : "" };
   const html = (await page.text()).replace("</head>", `<link rel="icon" href="/icon.svg" type="image/svg+xml"><script>window.UVALO_USER=${JSON.stringify(me).replace(/</g, "\\u003c")}</script></head>`);
   // ?word=1: opened in a large Word window from UVALO pentru Word (button "Inserează în raport", public/word/src/comps-bridge.js)
   const inWord = new URL(req.url).searchParams.get("word") === "1";
@@ -32,5 +31,5 @@ function blocked(why: string) {
   return `<!DOCTYPE html><html lang="ro"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Localizare comparabile · UVALO</title>
 <style>body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:#F2ECE0;color:#111111;font-family:Verdana,Geneva,sans-serif}
 .box{width:min(440px,100%);background:#fff;border:1px solid #E2D8C4;border-radius:22px;padding:30px 26px;display:flex;flex-direction:column;gap:14px}h1{margin:0;font-size:21px}p{margin:0;font-size:14px;line-height:1.6;color:#4A4A4A}a{color:#9A5F00;font-weight:700}</style></head>
-<body><div class="box"><h1>Localizarea comparabilelor nu este disponibilă</h1><p>${why.replace(/[<>&]/g, "")}</p><p>Scrie-ne la <a href="mailto:office@valuefy.ro">office@valuefy.ro</a> ca să activăm accesul.</p><p><a href="/">← Înapoi la UVALO</a></p></div></body></html>`;
+<body><div class="box"><h1>Localizarea comparabilelor nu este disponibilă</h1><p>${why.replace(/[<>&]/g, "")}</p><p>Scrie-ne la <a href="mailto:office@uvalo.ro">office@uvalo.ro</a> ca să activăm accesul.</p><p><a href="/">← Înapoi la UVALO</a></p></div></body></html>`;
 }

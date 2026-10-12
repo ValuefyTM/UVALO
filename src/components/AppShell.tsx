@@ -11,7 +11,7 @@ type Key = "home" | "instrumente" | "colaborari" | "localizare" | "amplasament" 
 // the tools' own pages light up "Instrumente" in the menu
 const TOOL_KEYS: Key[] = ["instrumente", "localizare", "amplasament", "comparabile", "word", "chrome"];
 
-/** Sidebar layout (VALUEFY design): Acasă, Instrumente (all the tools on one page), În curând. */
+/** Sidebar layout (UVALO design): Acasă, Instrumente (all the tools on one page), În curând. */
 export async function AppShell(props: { c: Ctx; active: Key; title: string; subtitle?: string; actions?: React.ReactNode; children: React.ReactNode }) {
   const mnt = props.c.super ? await maintenanceOn() : false;
   const { c } = props;

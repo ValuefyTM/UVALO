@@ -23,7 +23,7 @@ function uvGate(kind, msg) {
   const body = kind === "login"
     ? `<h2>Conectează-te cu contul UVALO</h2><p>Extensia funcționează cu contul tău UVALO. Se deschide pagina de conectare într-un tab nou; după ce intri în cont, revino aici.</p>${login}${retry}`
     : kind === "plan"
-      ? `<h2>Nu este inclus în abonament</h2><p>${msg || "Planul firmei tale nu include UVALO pentru Chrome."} Scrie-ne la <a href="mailto:office@valuefy.ro">office@valuefy.ro</a>.</p>${retry}`
+      ? `<h2>Nu este inclus în abonament</h2><p>${msg || "Planul firmei tale nu include UVALO pentru Chrome."} Scrie-ne la <a href="mailto:office@uvalo.ro">office@uvalo.ro</a>.</p>${retry}`
       : `<h2>UVALO este în mentenanță</h2><p>${msg || "Revenim în curând."}</p>${retry}`;
   g.innerHTML = `<div class="gate-top"><img src="icons/uvalo-lockup.svg" alt="UVALO"></div><div class="gate-body">${body}</div>`;
   const l = document.getElementById("uvLogin");

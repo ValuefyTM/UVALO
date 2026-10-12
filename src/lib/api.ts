@@ -10,7 +10,7 @@ export const str = (v: unknown, max = 200) => (typeof v === "string" ? v.trim().
 
 type Need = "user" | "super" | "orgAdmin";
 
-/** The signed-in person; "super" needs a VALUEFY super-admin, "orgAdmin" an owner / administrator of the current firm. */
+/** The signed-in person; "super" needs a UVALO super-admin, "orgAdmin" an owner / administrator of the current firm. */
 export async function api(need: Need = "user"): Promise<{ db: D1Database; c: Ctx } | { res: NextResponse }> {
   const db = await getDb();
   if (!db) return { res: err("Baza de date nu este disponibilă.", 503) };

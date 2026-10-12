@@ -24,7 +24,7 @@ export default async function Maintenance({ searchParams }: { searchParams: Prom
         <span className="mntEyebrow">Mentenanță</span>
         <h1>Revenim în curând</h1>
         <p>{m.message || DEFAULT_MESSAGE}</p>
-        <p className="mntSmall">Datele și contul tău sunt în siguranță. Pentru întrebări, scrie-ne la <a href="mailto:office@valuefy.ro">office@valuefy.ro</a>.</p>
+        <p className="mntSmall">Datele și contul tău sunt în siguranță. Pentru întrebări, scrie-ne la <a href="mailto:office@uvalo.ro">office@uvalo.ro</a>.</p>
         <div className="mntActions">
           {c ? <LogoutButton /> : <a className="mntLink" href="/login">Administrator? Intră în cont →</a>}
         </div>

@@ -1,5 +1,5 @@
 // Server-only: email through Resend. Returns false (never throws) when it cannot send.
-// RESEND_API_KEY + TOOLS_EMAIL_FROM (e.g. "UVALO <tools@valuefy.ro>", the domain must be verified in Resend).
+// RESEND_API_KEY + TOOLS_EMAIL_FROM (e.g. "UVALO <cont@uvalo.ro>", the domain must be verified in Resend).
 export async function sendEmail(opts: { to: string; subject: string; html: string; text: string }): Promise<boolean> {
   const apiKey = process.env.RESEND_API_KEY;
   const from = process.env.TOOLS_EMAIL_FROM || process.env.CRM_EMAIL_FROM;

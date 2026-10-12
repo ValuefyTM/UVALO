@@ -395,7 +395,7 @@ a.rMeta:hover u { color: var(--acc-light); }
 .offerForm .textarea.mono { font-family: var(--mono); font-size: 12.5px; line-height: 1.55; }
 .offerForm .docList .check { font-size: 13.5px; }
 
-/* ---------- Public offer page (portal.valuefy.ro/oferta/…) — design handoff "Valuefy Oferta" ---------- */
+/* ---------- Public offer page (design handoff „Oferta”) ---------- */
 .ofPage { min-height: 100vh; background: var(--page); color: var(--ink); }
 .ofBar { position: sticky; top: 0; z-index: 20; background: rgba(242, 236, 224, 0.94); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-bottom: 1px solid var(--line); }
 .ofBarIn { max-width: 1080px; margin: 0 auto; padding: 0 20px; height: 68px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }

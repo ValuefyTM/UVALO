@@ -29,7 +29,7 @@ export default async function Word() {
   const o = await origin();
   return (
     <AppShell c={c} active="word" title="UVALO pentru Word" subtitle="Anexele raportului de evaluare, direct în Word">
-      {!on && <div className="note">{c.off.includes("word") ? "UVALO pentru Word este dezactivat temporar. Revine în curând." : (c.block ?? "Abonamentul firmei tale nu include UVALO pentru Word.")} Scrie-ne la <a className="rowLink" href="mailto:office@valuefy.ro">office@valuefy.ro</a>.</div>}
+      {!on && <div className="note">{c.off.includes("word") ? "UVALO pentru Word este dezactivat temporar. Revine în curând." : (c.block ?? "Abonamentul firmei tale nu include UVALO pentru Word.")} Scrie-ne la <a className="rowLink" href="mailto:office@uvalo.ro">office@uvalo.ro</a>.</div>}
 
       <section className="wpHero">
         <div className="wpHeroText">
@@ -116,7 +116,7 @@ export default async function Word() {
           <h2>Instalare pe Windows</h2>
           <ol className="wordSteps">
             <li><b>Descarcă instalatorul</b> și deschide-l (dublu-click). Dacă Windows întreabă, alege <i>Mai multe informații → Rulează oricum</i>.</li>
-            <li>Instalatorul închide Word, înregistrează UVALO și scoate add-in-ul vechi <i>VALUEFY Anexe</i>, dacă îl ai. Nu cere drepturi de administrator și nu instalează nimic altceva.</li>
+            <li>Instalatorul închide Word, înregistrează UVALO și scoate add-in-ul vechi de anexe, dacă îl ai. Nu cere drepturi de administrator și nu instalează nimic altceva.</li>
             <li>Deschide Word. Dacă tab-ul <b>UVALO</b> nu apare (sau dispare după ce repornești Word): <b>Inserare → Add-in-urile mele → Add-in-uri de dezvoltator → UVALO</b>. Pentru un tab care rămâne mereu, fără acest pas, folosește instalarea pentru toată firma din Microsoft 365 (mai jos).</li>
             <li>La prima folosire te conectezi în panoul din dreapta cu contul UVALO (email + cod), o singură dată pe calculator.</li>
           </ol>

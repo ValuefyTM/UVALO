@@ -911,10 +911,10 @@ function tables(){
     if(osm.city&&(!osm.locality||osm.city.name!==osm.locality.name))rows.push(['Centrul '+osm.city.name,fmtD(osm.city.d)]);
     catCounts().forEach((c,i)=>rows.push([(i+1)+'. '+c.label,fmtD(c.near.d)+' · '+c.count+' în rază']));
     osm.neg.forEach(n=>rows.push(['⚠ '+n.label,n.d===0?'pe amplasament':fmtD(n.d)]));
-    t.push(['Localizare și dotări (rază '+fmtD(S.radius)+')',rows])}
+    t.unshift(['Localizare și dotări (rază '+fmtD(S.radius)+')',rows])}// sub Fig. 1 (zona); caracteristicile sub Fig. 2 (planul)
   return t;
 }
-const brand={company:ME.company||'',subtitle:ME.subtitle||'',evaluator:ME.name||''};
+const brand={company:ME.company||'',subtitle:ME.subtitle||'',evaluator:ME.name&&ME.name!==ME.company?ME.name:''};
 const docTitle=()=>S.p?('Parcela nr. cadastral '+S.p.id+', '+S.uat.name+', jud. '+S.uat.county):(S.pt.label||'Amplasament');
 function trunc(ctx,t,w){if(ctx.measureText(t).width<=w)return t;let s=t;while(s.length&&ctx.measureText(s+'…').width>w)s=s.slice(0,-1);return s+'…'}
 function a4(){const cv=document.createElement('canvas');cv.width=1240;cv.height=1754;const ctx=cv.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,1240,1754);return{cv,ctx}}

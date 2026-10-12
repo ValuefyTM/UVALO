@@ -3,7 +3,7 @@ import { api, err, json, str } from "@/lib/api";
 import { invite } from "@/lib/auth";
 import { validEmail } from "@/lib/crypto";
 
-/** Invites a VALUEFY administrator (sees and manages every firm). */
+/** Invites a UVALO administrator (sees and manages every firm). */
 export async function POST(req: Request) {
   const a = await api("super");
   if ("res" in a) return a.res;

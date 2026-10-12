@@ -5,7 +5,7 @@ import { locateParcel } from "@/lib/cadastre";
  * Centre (GPS) of a cadastral parcel, for placing a property on a map.
  * GET ?nr=<cadastral or CF number>&city=<locality>  →  { nr, uat, lat, lng, match } or { nr, error }
  * POST { items: [{ id, nr, city }] } (up to 200)    →  { results: [{ id, …same }] }
- * For other VALUEFY apps (the CRM): `Authorization: Bearer <LOCATOR_API_TOKEN>`; otherwise a signed-in user of the locator.
+ * For other apps (the external CRM): `Authorization: Bearer <LOCATOR_API_TOKEN>`; otherwise a signed-in user of the locator.
  */
 async function allowed(req: Request) {
   const token = process.env.LOCATOR_API_TOKEN;

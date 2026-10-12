@@ -1,4 +1,4 @@
-// Server-only: ANEVAR list lookups and account requests (ask → VALUEFY approves → invitation by email).
+// Server-only: ANEVAR list lookups and account requests (ask → UVALO approves → invitation by email).
 import { headers } from "next/headers";
 import { now, uuid } from "./db";
 import { audit, findUser, invite, type User } from "./auth";
@@ -86,7 +86,7 @@ export async function createRequest(db: D1Database, b: Record<string, unknown>) 
       foot: "Dacă nu ai cerut tu contul, ignoră acest email.",
     }),
   });
-  // Tell the VALUEFY administrators.
+  // Tell the UVALO administrators.
   const { results: admins } = await db.prepare("SELECT email FROM users WHERE is_superadmin = 1 AND status = 'active'").all<{ email: string }>();
   for (const a of admins) {
     await sendEmail({
@@ -163,10 +163,10 @@ export async function reject(db: D1Database, by: User, id: string, note: string,
     await sendEmail({
       to: r.email,
       subject: "Solicitarea ta de cont UVALO",
-      text: `Bună ziua, ${r.name}!\nDeocamdată nu putem activa contul solicitat în UVALO.${note ? `\n${note}` : ""}\nPentru detalii, scrie-ne la office@valuefy.ro.`,
+      text: `Bună ziua, ${r.name}!\nDeocamdată nu putem activa contul solicitat în UVALO.${note ? `\n${note}` : ""}\nPentru detalii, scrie-ne la office@uvalo.ro.`,
       html: layout({
         eyebrow: "UVALO", title: `Bună ziua, ${r.name}!`,
-        body: `<p style="margin:0 0 10px;font-size:15px;line-height:1.65;color:#4A4A4A">Deocamdată nu putem activa contul solicitat în UVALO.</p>${note ? `<p style="margin:0 0 10px;font-size:15px;line-height:1.65;color:#4A4A4A">${esc(note)}</p>` : ""}<p style="margin:0;font-size:15px;line-height:1.65;color:#4A4A4A">Pentru detalii, scrie-ne la office@valuefy.ro.</p>`,
+        body: `<p style="margin:0 0 10px;font-size:15px;line-height:1.65;color:#4A4A4A">Deocamdată nu putem activa contul solicitat în UVALO.</p>${note ? `<p style="margin:0 0 10px;font-size:15px;line-height:1.65;color:#4A4A4A">${esc(note)}</p>` : ""}<p style="margin:0;font-size:15px;line-height:1.65;color:#4A4A4A">Pentru detalii, scrie-ne la office@uvalo.ro.</p>`,
         foot: "UVALO · platformă pentru evaluatori",
       }),
     });

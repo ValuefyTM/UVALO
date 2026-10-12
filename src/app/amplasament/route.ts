@@ -22,10 +22,9 @@ export async function GET(req: Request) {
   if (!page) return new Response("Pagina nu este disponibilă momentan.", { status: 503, headers: PRIVATE });
   const sp = new URL(req.url).searchParams;
   await track(a.db, a.c, "amplasament", "page", sp.get("nr") ?? sp.get("adr") ?? null, sp.get("uat") ? { uat: sp.get("uat") } : undefined);
-  // The report header starts with the person's name and firm; the plans the page can read (the locator's data).
-  const org = a.c.org && a.c.org.name.trim().toLowerCase() !== a.c.user.name.trim().toLowerCase() ? a.c.org.name : "";
+  // The report header: the valuer's name and card number (not the firm's name); the plans the page can read (the locator's data).
   const me = {
-    name: a.c.user.name, company: org || a.c.user.name,
+    name: a.c.user.name, company: a.c.user.name,
     subtitle: a.c.user.anevar_no ? `Evaluator autorizat ANEVAR · legitimația ${a.c.user.anevar_no}` : "",
     plans: a.c.super || a.c.modules.includes("localizare"),
   };
@@ -39,5 +38,5 @@ function blocked(why: string) {
   return `<!DOCTYPE html><html lang="ro"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Analiza amplasamentului · UVALO</title>
 <style>body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:#F2ECE0;color:#111111;font-family:Verdana,Geneva,sans-serif}
 .box{width:min(440px,100%);background:#fff;border:1px solid #E2D8C4;border-radius:22px;padding:30px 26px;display:flex;flex-direction:column;gap:14px}h1{margin:0;font-size:21px}p{margin:0;font-size:14px;line-height:1.6;color:#4A4A4A}a{color:#9A5F00;font-weight:700}</style></head>
-<body><div class="box"><h1>Analiza amplasamentului nu este disponibilă</h1><p>${why.replace(/[<>&]/g, "")}</p><p>Scrie-ne la <a href="mailto:office@valuefy.ro">office@valuefy.ro</a> ca să activăm accesul.</p><p><a href="/">← Înapoi la UVALO</a></p></div></body></html>`;
+<body><div class="box"><h1>Analiza amplasamentului nu este disponibilă</h1><p>${why.replace(/[<>&]/g, "")}</p><p>Scrie-ne la <a href="mailto:office@uvalo.ro">office@uvalo.ro</a> ca să activăm accesul.</p><p><a href="/">← Înapoi la UVALO</a></p></div></body></html>`;
 }

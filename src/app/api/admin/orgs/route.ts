@@ -3,7 +3,7 @@ import { api, err, json } from "@/lib/api";
 import { createOrg, inviteMember, validateOrg } from "@/lib/orgs";
 import { validEmail } from "@/lib/crypto";
 
-/** New firm (VALUEFY): name, CUI, plan, seats, end date, and optionally its owner (`owner_email`, `owner_name`) invited right away. */
+/** New firm (UVALO administration): name, CUI, plan, seats, end date, and optionally its owner (`owner_email`, `owner_name`) invited right away. */
 export async function POST(req: Request) {
   const a = await api("super");
   if ("res" in a) return a.res;

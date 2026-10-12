@@ -4,7 +4,7 @@ import { resendInvite } from "@/lib/auth";
 import { canManageOrg, type Role } from "@/lib/access";
 import { cancelInvite, inviteMember, removeMember, setRole } from "@/lib/orgs";
 
-/** The firm being managed: the current one, or any firm for a VALUEFY super-admin (`org` in the body / query). */
+/** The firm being managed: the current one, or any firm for a UVALO super-admin (`org` in the body / query). */
 async function target(req: Request, body?: Record<string, unknown>) {
   const a = await api();
   if ("res" in a) return a;

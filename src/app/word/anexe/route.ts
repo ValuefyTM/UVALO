@@ -14,7 +14,7 @@ export async function GET(req: Request) {
     if (a.status === 401) return Response.redirect(new URL(`/login?next=${encodeURIComponent(url.pathname + url.search)}`, req.url), 303);
     if ("maintenance" in a && a.maintenance) return Response.redirect(new URL("/mentenanta", req.url), 303);
     const why = a.c?.off.includes("word") ? "UVALO pentru Word este dezactivat temporar de administratorii UVALO. Revine în curând." : a.c?.block ?? "Abonamentul firmei tale nu include UVALO pentru Word.";
-    return new Response(panePage("Anexe", `<h1>Nu este disponibil</h1><p>${why}</p><p>Scrie-ne la <a href="mailto:office@valuefy.ro">office@valuefy.ro</a> ca să activăm accesul.</p>`), { status: a.status, headers: paneHeaders });
+    return new Response(panePage("Anexe", `<h1>Nu este disponibil</h1><p>${why}</p><p>Scrie-ne la <a href="mailto:office@uvalo.ro">office@uvalo.ro</a> ca să activăm accesul.</p>`), { status: a.status, headers: paneHeaders });
   }
   const mode = url.searchParams.get("mode") === "pdf" ? "pdf" : "photo";
   if (!a.c.super && a.c.off.includes(`word.${mode}`)) {

@@ -5,7 +5,7 @@
 
 /** The add-in's id in Word. Never change it: Word would see a new add-in and keep the old one. */
 export const ADDIN_ID = "0f7fa373-18aa-4d09-a7ce-0b54909593a7";
-/** The add-in made before UVALO (VALUEFY Anexe, served from a local server); the installer replaces it. */
+/** The annex add-in used before UVALO (served from a local server); the installer replaces it. */
 export const OLD_ADDIN_ID = "0a337985-8af2-4761-aa29-222a89928350";
 /** Raise it when the manifest changes (new button, new texts), so Word reloads it. */
 export const MANIFEST_VERSION = "1.1.0.0";
@@ -15,6 +15,9 @@ export const MANIFEST_VERSION = "1.1.0.0";
  * it is separate from MANIFEST_VERSION, which changes only with the buttons of the tab (and needs a new install).
  */
 export const WORD_VERSIONS: { v: string; date: string; manifest?: boolean; notes: string[] }[] = [
+  { v: "1.3.1", date: "12 oct. 2026", notes: [
+    "Texte actualizate: contactul este acum office@uvalo.ro, iar mesajele despre add-in-ul vechi de anexe nu mai menționează alt nume.",
+  ] },
   { v: "1.3.0", date: "11 oct. 2026", notes: [
     "„Comparabile din Chrome” (Instrumente): anunțurile capturate cu UVALO pentru Chrome și trimise cu „Trimite în Word” se inserează la cursor, cu sursa și data capturii.",
   ] },
@@ -144,7 +147,7 @@ ${icons}
 
 /**
  * Windows installer for the current user (no admin rights, no Node, no local server): downloads the manifest to
- * %LOCALAPPDATA%\UVALO\Word and registers it in Word; removes the old VALUEFY Anexe add-in and its local server.
+ * %LOCALAPPDATA%\UVALO\Word and registers it in Word; removes the old annex add-in and its local server.
  * A .cmd that runs the PowerShell part written after the #PS# line.
  */
 export function installer(origin: string) {
@@ -184,12 +187,12 @@ try {
   if (-not (Test-Path $key)) { New-Item -Path $key -Force | Out-Null }
   Set-ItemProperty -Path $key -Name "${ADDIN_ID}" -Value $manifest
   if ((Get-ItemProperty -Path $key)."${ADDIN_ID}" -eq $manifest) { ok "UVALO inregistrat in Word" } else { bad "Nu am putut scrie in registru ($key)" }
-  # add-in-ul vechi VALUEFY Anexe (server local pe portul 3001)
+  # add-in-ul vechi de anexe (server local pe portul 3001); scurtatura de mai jos are numele vechi
   if ((Get-ItemProperty -Path $key -ErrorAction SilentlyContinue)."${OLD_ADDIN_ID}") {
     Remove-ItemProperty -Path $key -Name "${OLD_ADDIN_ID}" -ErrorAction SilentlyContinue
     Remove-Item (Join-Path ([Environment]::GetFolderPath("Startup")) "VALUEFY Anexa foto.lnk") -ErrorAction SilentlyContinue
     Get-CimInstance Win32_Process -Filter "Name='node.exe'" -ErrorAction SilentlyContinue | Where-Object { $_.CommandLine -like "*server.js*" -and $_.CommandLine -like "*anexa*" } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
-    ok "Add-in-ul vechi VALUEFY Anexe a fost scos"
+    ok "Add-in-ul vechi de anexe a fost scos"
   }
   $wef = Join-Path $env:LOCALAPPDATA "Microsoft\\Office\\16.0\\Wef"
   if (Test-Path $wef) { Get-ChildItem $wef | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue; ok "Cache-ul de add-in-uri Office a fost golit" }
@@ -202,7 +205,7 @@ try {
   Write-Host "La prima folosire te conectezi cu contul UVALO, in panoul din dreapta."
 } catch {
   bad ("Instalarea s-a oprit: " + $_.Exception.Message)
-  Write-Host "Trimite o captura a acestei ferestre la office@valuefy.ro."
+  Write-Host "Trimite o captura a acestei ferestre la office@uvalo.ro."
 }
 `;
   return cmd(ps);

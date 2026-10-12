@@ -35,7 +35,7 @@ export async function GET(req: Request) {
     word
       ? card("/word/anexe?mode=photo", "foto", "Anexă foto", offPart("photo") ?? "Pozele de la inspecție, ordonate, cu legende, câte vrei pe pagină.") +
         card("/word/anexe?mode=pdf", "pdf", "Anexă documente", offPart("pdf") ?? "Extras CF, releveu, autorizații: pagină cu pagină, cu titlu pe fiecare document.")
-      : `<p>${esc(c?.block ?? "Abonamentul firmei tale nu include UVALO pentru Word.")} Scrie-ne la <a href="mailto:office@valuefy.ro">office@valuefy.ro</a>.</p>`,
+      : `<p>${esc(c?.block ?? "Abonamentul firmei tale nu include UVALO pentru Word.")} Scrie-ne la <a href="mailto:office@uvalo.ro">office@uvalo.ro</a>.</p>`,
     word
       ? card("/word/chrome", "chrome", "Comparabile din Chrome", offPart("chrome") ?? "Anunțurile capturate cu UVALO pentru Chrome și trimise cu „Trimite în Word”, inserate la cursor.")
       : "",

@@ -68,7 +68,7 @@ export function AccountPanel(p: { id: string; name: string; email: string; legit
           <div><dt>Județ</dt><dd>{p.county ?? "—"}</dd></div>
           <div><dt>Specializări</dt><dd>{p.specs ? <div className="specs" style={{ justifyContent: "flex-end" }}>{p.specs.split(",").map((s) => <span key={s} className="spec" title={SPEC[s]}>{s}</span>)}</div> : "—"}</dd></div>
         </dl>
-        <p className="hint">Datele vin din tabloul membrilor titulari ANEVAR{p.tablou ? ` (la ${p.tablou})` : ""} și nu se modifică din cont. Dacă nu sunt corecte, scrie-ne la office@valuefy.ro.</p>
+        <p className="hint">Datele vin din tabloul membrilor titulari ANEVAR{p.tablou ? ` (la ${p.tablou})` : ""} și nu se modifică din cont. Dacă nu sunt corecte, scrie-ne la office@uvalo.ro.</p>
       </section>
 
       <section className="card">

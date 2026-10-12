@@ -5,7 +5,7 @@ import { LogoutButton, MenuButton } from "./ClientBits";
 
 export type AdminKey = "panou" | "solicitari" | "recomandari" | "tablou" | "utilizatori" | "firme" | "activitate" | "instrumente";
 
-/** VALUEFY administration portal: its own menu, separate from the tools the valuers use. */
+/** UVALO administration portal: its own menu, separate from the tools the valuers use. */
 export async function AdminShell(props: { c: Ctx; active: AdminKey; pending?: number; title: string; subtitle?: string; actions?: React.ReactNode; children: React.ReactNode }) {
   const mnt = await maintenanceOn();
   const { c } = props;

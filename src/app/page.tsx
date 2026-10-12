@@ -64,7 +64,7 @@ export default async function Home() {
 
   return (
     <AppShell c={c} active="home" title={`Bună${first ? `, ${first}` : ""}!`} subtitle={sub}>
-      {c.block && !c.super && <div className="note">{c.block} Scrie-ne la <a className="rowLink" href="mailto:office@valuefy.ro">office@valuefy.ro</a> ca să reactivăm accesul.</div>}
+      {c.block && !c.super && <div className="note">{c.block} Scrie-ne la <a className="rowLink" href="mailto:office@uvalo.ro">office@uvalo.ro</a> ca să reactivăm accesul.</div>}
 
       <div className="home">
         <section className="homeHero" aria-label="Localizator cadastral">
