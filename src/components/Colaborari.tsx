@@ -53,13 +53,13 @@ const KindTag = ({ k }: { k: Kind }) => <span className={`cbTag cbTag-${k}`}>{k 
 
 /* ---------- the module ---------- */
 
-export function Colaborari({ initial, splash, firmsAsked = false }: { initial: State; splash: boolean; firmsAsked?: boolean }) {
+export function Colaborari({ initial, splash, firmsAsked = false, post }: { initial: State; splash: boolean; firmsAsked?: boolean; post?: string }) {
   const [s, setS] = useState(initial);
   const [view, setView] = useState<View>("feed");
   const [zone, setZone] = useState<"colegi" | "firme">("colegi");
   const [mineTab, setMineTab] = useState<"posts" | "req">("posts");
   const [conv, setConv] = useState<string | null>(initial.convs[0]?.id ?? null);
-  const [hl, setHl] = useState<string | null>(null);
+  const [hl, setHl] = useState<string | null>(post ?? null); // ?post= (link from the email) highlights that post
   const [toast, setToast] = useState("");
   const [notifOpen, setNotifOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -155,7 +155,7 @@ function Notifs({ s, onGo, onReadAll, onZones }: { s: State; onGo: (n: State["no
           </button>
         ))}
       </div>
-      <div className="cbNotifsFoot">Notificările vin doar în aplicație, pentru anunțurile din <button type="button" className="linkBtn" onClick={onZones}>zonele tale de acoperire</button>.</div>
+      <div className="cbNotifsFoot">Notificările vin în aplicație (și pe email, dacă ai ales) pentru anunțurile din <button type="button" className="linkBtn" onClick={onZones}>zonele tale de acoperire</button>.</div>
     </div>
   );
 }
@@ -626,7 +626,7 @@ function Chat({ s, active, setActive, reload, flash }: { s: State; active: strin
 function useZoneForm(s: State) {
   const z = s.profile;
   return useState(() => ({
-    available: z?.available !== 0, address: z?.address ?? "", city: z?.city ?? "", county: z?.county ?? s.me.county ?? "Timiș",
+    available: z?.available !== 0, email_notif: z?.email_notif !== 0, address: z?.address ?? "", city: z?.city ?? "", county: z?.county ?? s.me.county ?? "Timiș",
     zone_mode: (z?.zone_mode ?? "raza") as "raza" | "judet", radius: z?.radius ?? 50, extra: z?.extra ?? [], kinds: z?.kinds ?? (["inspectie", "raport"] as Kind[]),
   }));
 }
@@ -647,9 +647,15 @@ function Zones({ s, onSaved, toFeed }: { s: State; onSaved: (m: string) => Promi
       <div className="cbZoneGrid">
         <div className="cbCol">
           <section className="cbCard cbRow">
-            <span className="cbCardText"><b>Disponibil pentru colaborări</b><small>Zonele stabilesc ce vezi implicit în „Lucrări ocazionale” și din ce zone primești notificări (doar în aplicație). Oprit = nu primești notificări, dar vezi în continuare toate anunțurile.</small></span>
+            <span className="cbCardText"><b>Disponibil pentru colaborări</b><small>Zonele stabilesc ce vezi implicit în „Lucrări ocazionale” și din ce zone primești notificări (în aplicație și, dacă vrei, pe email). Oprit = nu primești notificări, dar vezi în continuare toate anunțurile.</small></span>
             <Switch on={f.available} label="Disponibil pentru colaborări" onChange={(v) => setF({ ...f, available: v })} />
           </section>
+          {f.available && (
+            <section className="cbCard cbRow">
+              <span className="cbCardText"><b>Primește anunțurile noi și pe email</b><small>Când un coleg postează o lucrare în zonele tale, primești un email cu un link care te duce direct la anunț.</small></span>
+              <Switch on={f.email_notif} label="Primește anunțurile noi și pe email" onChange={(v) => setF({ ...f, email_notif: v })} />
+            </section>
+          )}
           <section className="cbCard">
             <small className="cbStep">1 · LOCAȚIE DE BAZĂ</small><b className="cbCardTitle">De aici se calculează distanțele</b>
             <div className="cbGrid3">
@@ -855,7 +861,7 @@ function Setup({ s, onDone }: { s: State; onDone: (m: string) => Promise<void> }
         ) : <p className="cbNote">Fără zonă nu primești notificări. Vezi în continuare toate anunțurile și îți poți seta zona oricând din „Zone de acoperire”.</p>}
       </section>
       <div className="cbSetupFoot">
-        <span className={error ? "error" : ""}>{error || (f.available ? "Notificările vin doar în aplicație, pentru zona aleasă. Setările le schimbi oricând." : "Nu primești notificări până nu îți setezi zona.")}</span>
+        <span className={error ? "error" : ""}>{error || (f.available ? "Primești notificări în aplicație și pe email pentru anunțurile din zona aleasă. Setările le schimbi oricând." : "Nu primești notificări până nu îți setezi zona.")}</span>
         <button type="button" className="btn btnGold" disabled={busy} onClick={finish}>{busy ? "Se activează…" : "Activează Colaborările"}</button>
       </div>
     </div>

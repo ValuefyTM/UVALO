@@ -148,6 +148,12 @@ Proprietar: VALUEFY (firmă de evaluări imobiliare, Timișoara). UVALO devine u
 - `/admin/utilizatori`: filtre GET (caută, județ, stare, tip cont, firmă, activitate, ordonare) și „Grupează pe județe” (`grup=judet`,
   rânduri-antet cu totaluri). „Unește două conturi” primește mereu lista completă. `/admin/tablou`: același `grup=judet` (`TablouFilter.grup`).
 
+## Emailuri de cont
+
+- Aprobarea unei solicitări de cont (`approve` în `requests.ts` → `invite(..., approved = true)`) trimite „Solicitarea ta de cont UVALO a fost
+  aprobată” + „Activează contul”, fără numele celui care a aprobat; retrimiterea invitației detectează singură solicitarea aprobată.
+  Invitațiile în firmă păstrează „X te-a invitat”. Saluturile folosesc `greetName()` (numele din Tablou, scris cu majuscule → „Ionescu Maria”).
+
 ## Unirea a două conturi (Admin → Utilizatori → „Unește două conturi”)
 
 - `src/lib/merge.ts` (`/api/admin/users/merge`): contul care rămâne își păstrează emailul și preia de la celălalt numele,
@@ -179,7 +185,7 @@ Proprietar: VALUEFY (firmă de evaluări imobiliare, Timișoara). UVALO devine u
   `?conv=` = mesajele; POST `{action}`: profile, post, request, withdraw, open_chat, pick, status, message, read),
   pagina `src/components/Colaborari.tsx` (feed, Anunțurile mele, Mesaje cu polling 6 s, Zone de acoperire, profil,
   activare în 3 pași, splash „Nou în UVALO” `CollabSplash` pe Acasă și în pagină, o dată per browser — localStorage).
-- Reguli: anunț nou → notificări doar în aplicație pentru profilurile cu zona potrivită (`inZone`: județul de bază cu rază
+- Reguli: anunț nou → notificări în aplicație (și email, vezi mai jos) pentru profilurile cu zona potrivită (`inZone`: județul de bază cu rază
   sau tot județul, plus județele suplimentare; fără coordonate contează tot județul). Coordonatele vin din Google
   Geocoding (`GOOGLE_MAPS_KEY`); fără cheie, distanțele lipsesc. Onorariu implicit „de stabilit”, sumă = „Buget”.
   Telefonul/emailul apar doar după ce autorul deschide conversația. „Alege pentru lucrare” → `inlucru` (iese din feed),
@@ -187,6 +193,10 @@ Proprietar: VALUEFY (firmă de evaluări imobiliare, Timișoara). UVALO devine u
 - Profil „doar mă uit” (`available = 0`) + „Vreau detalii” → fereastra `AvailModal`: activează disponibilitatea și cere
   zona, apoi deschide cererea. Meniul arată la „Colaborări” un contor (`relevantCount`): anunțuri active din zonele
   persoanei, fără ale ei și fără cele la care a cerut deja detalii (0 pentru „doar mă uit”).
+- **Email la anunț nou** (pe lângă notificarea din aplicație): `emailNewPost` în `collab.ts` → „Un coleg are nevoie de ajutorul tău”, către
+  profilurile din zonă cu `email_notif = 1` (migrația 0020, comutator în „Zone de acoperire”), trimis prin `sendEmails` (Resend batch, 100/apel).
+  Butonul = `magicLink()` din `auth.ts`: rând în `auth_codes` cu `ip = 'notify'` (nu intră în limita de 5 coduri/oră), valabil 3 zile, o singură dată,
+  `/login/link?token=…&next=/colaborari?post=<id>` (deja autentificat → doar deschide pagina); `?post=` evidențiază anunțul în feed.
 - Evenimente `colaborari`: `page`, `profile`, `post`, `request`, `open_chat`, `pick`, `post_status` (meta `{test:1}` în test).
 
 ## Instrumente în admin (`/admin/instrumente`)

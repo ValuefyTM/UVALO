@@ -2,7 +2,7 @@
 import { cookies, headers } from "next/headers";
 import { now, uuid } from "./db";
 import { normEmail, randomCode, randomToken, safeEqual, sha256 } from "./crypto";
-import { esc, layout, sendEmail } from "./email";
+import { esc, greetName, layout, sendEmail } from "./email";
 import { origin } from "./site";
 
 export const COOKIE = "vf_tools";
@@ -61,7 +61,7 @@ async function clientIp() {
 /** Sends a code + link when the email has an active account. Same answer either way (no account enumeration). */
 export async function requestSignIn(db: D1Database, rawEmail: string) {
   const email = normEmail(rawEmail);
-  const recent = await db.prepare("SELECT COUNT(*) AS n FROM auth_codes WHERE email = ? AND created_at > ?").bind(email, inMinutes(-60)).first<{ n: number }>();
+  const recent = await db.prepare("SELECT COUNT(*) AS n FROM auth_codes WHERE email = ? AND created_at > ? AND COALESCE(ip, '') <> 'notify'").bind(email, inMinutes(-60)).first<{ n: number }>();
   if ((recent?.n ?? 0) >= MAX_CODES_PER_HOUR) return;
   const u = await accountFor(db, email);
   if (!u) return;
@@ -117,6 +117,17 @@ export async function consumeLink(db: D1Database, token: string) {
   return u && canSignIn(u) ? u : null;
 }
 
+/**
+ * A one-time sign-in link for a notification email (e.g. a new post in Colaborări), valid a few days, that opens `next`.
+ * Already signed in → it just opens `next`. Stored like a sign-in code (ip = 'notify', not counted in the hourly limit).
+ */
+export async function magicLink(db: D1Database, rawEmail: string, next: string, days = 3) {
+  const email = normEmail(rawEmail), token = randomToken();
+  await db.prepare("INSERT INTO auth_codes (id, email, code_hash, token_hash, expires_at, ip) VALUES (?, ?, ?, ?, ?, 'notify')")
+    .bind(uuid(), email, await sha256(randomToken()), await sha256(token), inMinutes(days * 24 * 60)).run();
+  return `${await origin()}/login/link?token=${encodeURIComponent(token)}&next=${encodeURIComponent(next)}`;
+}
+
 // ---------- sessions ----------
 
 export async function createSession(db: D1Database, userId: string) {
@@ -170,7 +181,8 @@ export async function revokeSessions(db: D1Database, userId: string, exceptId?: 
 // ---------- invitations ----------
 
 /** Invites someone into a firm (or as a UVALO super-admin when orgId is null). Creates the account if needed. */
-export async function invite(db: D1Database, by: User, orgId: string | null, rawEmail: string, role: "owner" | "admin" | "member", name?: string) {
+/** `approved` = the account comes from an approved account request (the email says so, without the name of who approved it). */
+export async function invite(db: D1Database, by: User, orgId: string | null, rawEmail: string, role: "owner" | "admin" | "member", name?: string, approved = false) {
   const email = normEmail(rawEmail);
   let u = await findUser(db, email);
   if (!u) {
@@ -193,15 +205,34 @@ export async function invite(db: D1Database, by: User, orgId: string | null, raw
   await db.prepare("INSERT INTO invites (id, org_id, email, role, token_hash, invited_by, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?)")
     .bind(id, orgId, email, role, await sha256(token), by.id, inMinutes(INVITE_DAYS * 24 * 60)).run();
   await audit(db, by.id, "invite.create", orgId ? "org" : "platform", orgId ?? undefined, `${email} (${role})`);
-  const sent = await sendInviteEmail(db, u, orgId, token, by);
+  const sent = await sendInviteEmail(db, u, orgId, token, by, approved);
   return { userId: u.id, inviteId: id, sent, active: u.status === "active" };
 }
 
-async function sendInviteEmail(db: D1Database, u: User, orgId: string | null, token: string, by: User | null) {
+async function sendInviteEmail(db: D1Database, u: User, orgId: string | null, token: string, by: User | null, approved = false) {
   const org = orgId ? await db.prepare("SELECT name FROM orgs WHERE id = ?").bind(orgId).first<{ name: string }>() : null;
   const active = u.status === "active";
   const link = active ? `${await origin()}/login` : `${await origin()}/invitatie?token=${encodeURIComponent(token)}`;
-  const hello = u.name ? `Bună, ${u.name.split(" ")[0]}!` : "Bună!";
+  const hello = u.name?.trim() ? `Bună ziua, ${greetName(u.name)}!` : "Bună ziua!";
+  if (approved) {
+    // individual account: the firm is the person's own, so it is not named
+    const own = !org || (await db.prepare("SELECT 1 FROM memberships WHERE org_id = ? AND user_id <> ?").bind(orgId, u.id).first()) === null;
+    const firm = own ? "" : `, în contul firmei ${org!.name}`;
+    const p = (t: string) => `<p style="margin:0 0 10px;font-size:15px;line-height:1.65;color:#4A4A4A">${t}</p>`;
+    return sendEmail({
+      to: u.email,
+      subject: "Solicitarea ta de cont UVALO a fost aprobată",
+      text: `${hello}\nSolicitarea ta de cont în UVALO a fost acceptată${firm}.\nActivează contul ca să începi să folosești instrumentele pentru evaluatori: ${link}\nNu ai nevoie de parolă: te autentifici cu un cod primit pe email.${active ? "" : `\nLinkul de activare este valabil ${INVITE_DAYS} zile.`}`,
+      html: layout({
+        eyebrow: "Cont aprobat",
+        title: `${hello} Contul tău UVALO a fost aprobat.`,
+        body: p(`Solicitarea ta de cont în UVALO a fost acceptată${esc(firm)}. Activează contul ca să începi să folosești instrumentele pentru evaluatori: localizatorul cadastral, analiza amplasamentului, comparabilele și extensiile UVALO pentru Word și Chrome.`)
+          + `<p style="margin:0;font-size:15px;line-height:1.65;color:#4A4A4A">Nu ai nevoie de parolă: te autentifici cu un cod primit pe email.</p>`,
+        button: { label: active ? "Intră în UVALO →" : "Activează contul →", url: link },
+        foot: `${active ? "" : `Linkul de activare este valabil ${INVITE_DAYS} zile. `}Ai primit acest email pentru că ai solicitat un cont UVALO. Întrebări: office@uvalo.ro.`,
+      }),
+    });
+  }
   const where = org ? `în contul firmei <strong style="color:#111111">${esc(org.name)}</strong>` : "ca administrator UVALO";
   return sendEmail({
     to: u.email,
@@ -225,7 +256,8 @@ export async function resendInvite(db: D1Database, inviteId: string, by: User | 
   if (!u) return false;
   const token = randomToken();
   await db.prepare("UPDATE invites SET token_hash = ?, expires_at = ? WHERE id = ?").bind(await sha256(token), inMinutes(INVITE_DAYS * 24 * 60), inv.id).run();
-  return sendInviteEmail(db, u, inv.org_id, token, by);
+  const approved = !!(await db.prepare("SELECT 1 FROM account_requests WHERE user_id = ? AND status = 'approved'").bind(u.id).first());
+  return sendInviteEmail(db, u, inv.org_id, token, by, approved);
 }
 
 /** The invitation behind a link (for the acceptance page). */

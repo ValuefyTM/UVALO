@@ -143,7 +143,7 @@ export async function approve(db: D1Database, by: User, id: string, b: Record<st
       .bind(orgId, r.company?.trim() || r.name, plan, until, r.email, by.id, `Cont individual, din solicitarea ${r.legit}`).run();
     await audit(db, by.id, "org.create", "org", orgId, `${r.name} · ${plan} · cont individual`);
   }
-  const inv = await invite(db, by, orgId, r.email, b.org ? "member" : "owner", r.name);
+  const inv = await invite(db, by, orgId, r.email, b.org ? "member" : "owner", m?.name ?? r.name, true);
   await db.batch([
     db.prepare("UPDATE users SET name = ?, anevar_no = ?, county = ?, specs = ?, phone = COALESCE(phone, ?) WHERE id = ?")
       .bind(m?.name ?? r.name, r.legit, m?.county ?? null, m?.specs ?? null, r.phone, inv.userId),

@@ -25,6 +25,40 @@ export async function sendEmail(opts: { to: string; subject: string; html: strin
   }
 }
 
+/** Many separate emails at once (Resend batch API, 100 per call). Returns how many were accepted. */
+export async function sendEmails(list: { to: string; subject: string; html: string; text: string }[]): Promise<number> {
+  const apiKey = process.env.RESEND_API_KEY;
+  const from = process.env.TOOLS_EMAIL_FROM || process.env.CRM_EMAIL_FROM;
+  if (!list.length) return 0;
+  if (!apiKey || !from) {
+    console.warn(`[email] not configured — would send ${list.length} emails: ${list[0].subject}\n${list[0].text}`);
+    return 0;
+  }
+  let sent = 0;
+  for (let i = 0; i < list.length; i += 100) {
+    const part = list.slice(i, i + 100);
+    try {
+      const res = await fetch("https://api.resend.com/emails/batch", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify(part.map((m) => ({ from, to: [m.to], subject: m.subject, html: m.html, text: m.text }))),
+      });
+      if (res.ok) sent += part.length;
+      else console.error("[email] batch failed", res.status, await res.text());
+    } catch (error) {
+      console.error("[email] batch failed", error);
+    }
+  }
+  return sent;
+}
+
+/** A name for a greeting: "IONESCU MARIA-ELENA" (as in the ANEVAR list) → "Ionescu Maria-Elena"; mixed case is left as typed. */
+export function greetName(name: string | null | undefined) {
+  const n = (name ?? "").trim().replace(/\s+/g, " ");
+  if (!n || n !== n.toLocaleUpperCase("ro")) return n;
+  return n.toLocaleLowerCase("ro").replace(/(^|[\s-])(\p{L})/gu, (_, a: string, b: string) => a + b.toLocaleUpperCase("ro"));
+}
+
 export const esc = (s: unknown) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
 
 /** Simple branded layout shared by every email. */

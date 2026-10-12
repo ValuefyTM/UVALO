@@ -3,6 +3,8 @@
 // and the test data (everything written while the module is not "Activ" has test = 1 and can be deleted at once).
 import { now, uuid } from "./db";
 import { geocode } from "./gmaps";
+import { magicLink } from "./auth";
+import { esc, greetName, layout, sendEmails } from "./email";
 import { COUNTIES, KINDS, km, POST_SPECS, PROPS, YEARS, type CollabMode, type Kind } from "./collab-shared";
 
 /* ---------- mode and test users (app_settings "collab") ---------- */
@@ -83,6 +85,7 @@ export async function notify(db: D1Database, userId: string, type: string, body:
 export type ProfileRow = {
   user_id: string; available: number; years: string | null; skills: string; experience: string; about: string | null; driving: number; travel: number;
   address: string | null; city: string | null; county: string | null; lat: number | null; lng: number | null; zone_mode: string; radius: number; extra: string; kinds: string;
+  email_notif: number;
 };
 export type Profile = Omit<ProfileRow, "skills" | "experience" | "extra" | "kinds"> & { skills: string[]; experience: { firm: string; role: string; period: string }[]; extra: string[]; kinds: Kind[] };
 
@@ -111,7 +114,7 @@ export async function saveProfile(db: D1Database, userId: string, b: Record<stri
   const bool = (k: string, d: number) => (typeof b[k] === "boolean" ? (b[k] ? 1 : 0) : d);
   const radius = Number.isFinite(Number(b.radius)) ? Math.min(300, Math.max(5, Math.round(Number(b.radius)))) : cur?.radius ?? 50;
   const v = {
-    available: bool("available", cur?.available ?? 1), years: YEARS.includes(String(b.years)) ? String(b.years) : cur?.years ?? null,
+    available: bool("available", cur?.available ?? 1), email_notif: bool("email_notif", cur?.email_notif ?? 1), years: YEARS.includes(String(b.years)) ? String(b.years) : cur?.years ?? null,
     skills: JSON.stringify(skills), experience: JSON.stringify(exp), about: b.about !== undefined ? text(b.about, 1200) || null : cur?.about ?? null,
     driving: bool("driving", cur?.driving ?? 0), travel: bool("travel", cur?.travel ?? 0),
     address, city, county, zone_mode: b.zone_mode === "judet" ? "judet" : b.zone_mode === "raza" ? "raza" : cur?.zone_mode ?? "raza", radius,
@@ -124,13 +127,13 @@ export async function saveProfile(db: D1Database, userId: string, b: Record<stri
   }
   const t = now();
   if (cur) {
-    await db.prepare(`UPDATE collab_profiles SET available = ?, years = ?, skills = ?, experience = ?, about = ?, driving = ?, travel = ?, address = ?, city = ?, county = ?,
+    await db.prepare(`UPDATE collab_profiles SET available = ?, email_notif = ?, years = ?, skills = ?, experience = ?, about = ?, driving = ?, travel = ?, address = ?, city = ?, county = ?,
       lat = ?, lng = ?, zone_mode = ?, radius = ?, extra = ?, kinds = ?, updated_at = ? WHERE user_id = ?`)
-      .bind(v.available, v.years, v.skills, v.experience, v.about, v.driving, v.travel, v.address, v.city, v.county, lat, lng, v.zone_mode, v.radius, v.extra, v.kinds, t, userId).run();
+      .bind(v.available, v.email_notif, v.years, v.skills, v.experience, v.about, v.driving, v.travel, v.address, v.city, v.county, lat, lng, v.zone_mode, v.radius, v.extra, v.kinds, t, userId).run();
   } else {
-    await db.prepare(`INSERT INTO collab_profiles (user_id, available, years, skills, experience, about, driving, travel, address, city, county, lat, lng, zone_mode, radius, extra, kinds, test, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-      .bind(userId, v.available, v.years, v.skills, v.experience, v.about, v.driving, v.travel, v.address, v.city, v.county, lat, lng, v.zone_mode, v.radius, v.extra, v.kinds, await testFlag(db), t).run();
+    await db.prepare(`INSERT INTO collab_profiles (user_id, available, email_notif, years, skills, experience, about, driving, travel, address, city, county, lat, lng, zone_mode, radius, extra, kinds, test, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+      .bind(userId, v.available, v.email_notif, v.years, v.skills, v.experience, v.about, v.driving, v.travel, v.address, v.city, v.county, lat, lng, v.zone_mode, v.radius, v.extra, v.kinds, await testFlag(db), t).run();
   }
   return { profile: await getProfile(db, userId), located: lat != null };
 }
@@ -266,7 +269,39 @@ export async function createPost(db: D1Database, me: Me, b: Record<string, unkno
   const who = results.map(parseProfile).filter((z) => inZone(post, z));
   const label = kind === "inspectie" ? "caută ajutor la o inspecție" : "predă o lucrare (raport + inspecție)";
   for (const z of who.slice(0, 500)) await notify(db, z.user_id, "Anunț nou în zona ta", `${nameOf(me)} ${label}: ${title}, ${city}`, { view: "feed", hl: id }, test);
-  return { id, notified: who.length };
+  const emailed = await emailNewPost(db, who.filter((z) => z.email_notif !== 0).slice(0, 500).map((z) => z.user_id), { id, kind, title, city, county, note, due, budget });
+  return { id, notified: who.length, emailed };
+}
+
+/** Email for a new post: "Un coleg are nevoie de ajutorul tău", with a sign-in link straight to the post (valid 3 days, once). */
+async function emailNewPost(db: D1Database, ids: string[], p: { id: string; kind: Kind; title: string; city: string; county: string; note: string; due: string | null; budget: number | null }) {
+  if (!ids.length) return 0;
+  const { results: us } = await db.prepare(`SELECT id, email, name FROM users WHERE status = 'active' AND id IN (${ids.map(() => "?").join(",")})`).bind(...ids)
+    .all<{ id: string; email: string; name: string }>();
+  const what = p.kind === "inspectie" ? "o inspecție" : "o lucrare (raport + inspecție)";
+  const due = p.due ? p.due.split("-").reverse().join(".") : null;
+  const facts = [`${KINDS[p.kind]}`, `${p.city}, ${p.county}`, due ? `termen ${due}` : null, p.budget ? `buget ${p.budget.toLocaleString("ro-RO")} lei` : "onorariu de stabilit"].filter(Boolean).join(" · ");
+  const short = p.note.length > 280 ? `${p.note.slice(0, 277).trimEnd()}…` : p.note;
+  const list = [];
+  for (const u of us) {
+    const link = await magicLink(db, u.email, `/colaborari?post=${p.id}`);
+    const hi = u.name?.trim() ? `Bună ziua, ${greetName(u.name)}!` : "Bună ziua!";
+    list.push({
+      to: u.email,
+      subject: `Un coleg are nevoie de ajutorul tău: ${p.title}`,
+      text: `${hi}\nUn coleg evaluator caută ajutor pentru ${what} în zona ta.\n\n${p.title}\n${facts}\n${short}\n\nIntră în UVALO să vezi anunțul: ${link}\n(Linkul te autentifică direct și este valabil 3 zile.)\n\nEmailurile pentru anunțuri noi le poți opri din Colaborări → Zone de acoperire.`,
+      html: layout({
+        eyebrow: "Colaborări", title: "Un coleg are nevoie de ajutorul tău",
+        body: `<p style="margin:0 0 14px;font-size:15px;line-height:1.65;color:#4A4A4A">${esc(hi)} Un coleg evaluator caută ajutor pentru ${esc(what)} în zona ta.</p>
+<div style="border:1px solid #E2D8C4;border-radius:12px;padding:14px 16px;background:#FBF8F2"><b style="font-size:15px">${esc(p.title)}</b>
+<div style="margin-top:4px;font-size:12px;color:#9A5F00;font-weight:bold">${esc(facts)}</div>
+<p style="margin:8px 0 0;font-size:14px;line-height:1.6;color:#4A4A4A">${esc(short)}</p></div>`,
+        button: { label: "Intră în app să vezi anunțul", url: link },
+        foot: "Butonul te autentifică direct în UVALO și este valabil 3 zile. Primești acest email pentru că anunțul este în zonele tale de acoperire; emailurile le poți opri din Colaborări → Zone de acoperire.",
+      }),
+    });
+  }
+  return sendEmails(list);
 }
 
 async function postOf(db: D1Database, id: unknown) {
