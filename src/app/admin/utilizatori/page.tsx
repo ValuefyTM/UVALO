@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { fmtDate, superPage } from "@/lib/guard";
 import { ROLE_LABEL, type Role } from "@/lib/access";
 import { AdminShell } from "@/components/AdminShell";
-import { InviteAdmin, UserActions } from "@/components/forms";
+import { InviteAdmin, MergeUsers, UserActions } from "@/components/forms";
 
 export const metadata: Metadata = { title: "Utilizatori | UVALO" };
 export const dynamic = "force-dynamic";
@@ -25,6 +25,7 @@ export default async function AdminUsers() {
         <InviteAdmin />
         <p className="hint">Utilizatorii firmelor se invită din pagina firmei. Aici inviți colegi care administrează platforma.</p>
       </section>
+      <MergeUsers users={results} me={c.user.id} />
       <section className="card flush">
         <div className="tableWrap">
           <table className="table">

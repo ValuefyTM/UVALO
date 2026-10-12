@@ -124,6 +124,13 @@ Proprietar: VALUEFY (firmă de evaluări imobiliare, Timișoara). UVALO devine u
   `word.chrome` în admin. Dacă volumul crește, imaginile se pot muta în R2.
 - Evenimente: `chrome` (`open`, `capture`, `export`, `send_word`), `word` (`chrome_open`, `insert_chrome`).
 
+## Unirea a două conturi (Admin → Utilizatori → „Unește două conturi”)
+
+- `src/lib/merge.ts` (`/api/admin/users/merge`): contul care rămâne își păstrează emailul și preia de la celălalt numele,
+  legitimația, județul, specializările, telefonul, poza (unde le are); firmele (rolul mai mare), sesiunile, evenimentele,
+  auditul, recomandările, Chrome, Colaborări, setările care numesc persoana. Totul într-un `db.batch` (tranzacție), apoi
+  contul vechi se șterge; copia lui rămâne în `audit_log` (`user.merge`). Un tabel nou cu `REFERENCES users` → adaugă-l aici.
+
 ## Colaborări (`/colaborari`, modulul `colaborari`)
 
 - Lucrări ocazionale între evaluatori (inspecție / raport + inspecție), după mockup-ul din canvas „UVALO — Colaborări”.

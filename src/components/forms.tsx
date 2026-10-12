@@ -219,3 +219,67 @@ export function InviteAdmin() {
     </form>
   );
 }
+
+type MergeUser = { id: string; email: string; name: string; anevar_no: string | null; county: string | null; status: string; is_superadmin: number; orgs: string | null };
+const norm = (x: string) => x.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+
+function PickUser({ label, users, value, onChange, exclude }: { label: string; users: MergeUser[]; value: string; onChange: (id: string) => void; exclude: string }) {
+  const [q, setQ] = useState("");
+  const list = users.filter((u) => u.id !== exclude && (!q.trim() || norm(`${u.name} ${u.email} ${u.anevar_no ?? ""}`).includes(norm(q.trim())))).slice(0, 200);
+  return (
+    <div className="field">{label}
+      <input className="input" type="search" placeholder="Caută după nume, email sau legitimație" aria-label={`${label}: caută`} value={q} onChange={(e) => setQ(e.target.value)} />
+      <select className="select" size={6} aria-label={label} value={value} onChange={(e) => onChange(e.target.value)} style={{ height: "auto" }}>
+        {list.map((u) => <option key={u.id} value={u.id}>{u.name || u.email} · {u.email}{u.anevar_no ? ` · leg. ${u.anevar_no}` : ""}{u.status !== "active" ? ` · ${u.status === "disabled" ? "dezactivat" : "invitat"}` : ""}</option>)}
+      </select>
+    </div>
+  );
+}
+
+/** Two accounts of the same person → one: the kept account keeps its email and takes the other's profile and data. */
+export function MergeUsers({ users, me }: { users: MergeUser[]; me: string }) {
+  const [keep, setKeep] = useState(me);
+  const [from, setFrom] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState("");
+  const k = users.find((u) => u.id === keep), f = users.find((u) => u.id === from);
+  const pick = (a: string | null | undefined, b: string | null | undefined) => (b && b.trim() ? b : a || "—");
+  const go = async () => {
+    if (!k || !f) return;
+    if (!confirm(`Unești contul ${f.email} în ${k.email}? Contul ${f.email} se șterge, iar datele lui trec pe ${k.email}. Nu se poate anula.`)) return;
+    setBusy(true); setMsg("");
+    const e = await send("/api/admin/users/merge", "POST", { keep, from });
+    setBusy(false);
+    if (e) return setMsg(e);
+    location.reload();
+  };
+  return (
+    <details className="card mergeCard">
+      <summary><b>Unește două conturi</b><span className="muted">aceeași persoană cu două conturi (de exemplu emailul de lucru și contul din Tabloul ANEVAR)</span></summary>
+      <div className="mergeGrid">
+        <PickUser label="Contul care rămâne (își păstrează emailul)" users={users} value={keep} onChange={setKeep} exclude={from} />
+        <PickUser label="Contul care se unește în el (se șterge)" users={users} value={from} onChange={setFrom} exclude={keep} />
+      </div>
+      {k && f && (
+        <div className="tableWrap">
+          <table className="table" style={{ minWidth: 0 }}>
+            <thead><tr><th /><th>Rămâne</th><th>Se șterge</th><th>Rezultat</th></tr></thead>
+            <tbody>
+              <tr><td>Email</td><td>{k.email}</td><td>{f.email}</td><td><b>{k.email}</b></td></tr>
+              <tr><td>Nume</td><td>{k.name || "—"}</td><td>{f.name || "—"}</td><td><b>{pick(k.name, f.name)}</b></td></tr>
+              <tr><td>Legitimație ANEVAR</td><td>{k.anevar_no || "—"}</td><td>{f.anevar_no || "—"}</td><td><b>{pick(k.anevar_no, f.anevar_no)}</b></td></tr>
+              <tr><td>Județ</td><td>{k.county || "—"}</td><td>{f.county || "—"}</td><td><b>{pick(k.county, f.county)}</b></td></tr>
+              <tr><td>Firme</td><td>{k.orgs?.split(";;").map((x) => x.split("|")[0]).join(", ") || "—"}</td><td>{f.orgs?.split(";;").map((x) => x.split("|")[0]).join(", ") || "—"}</td><td><b>amândouă</b></td></tr>
+              <tr><td>Admin UVALO</td><td>{k.is_superadmin ? "da" : "nu"}</td><td>{f.is_superadmin ? "da" : "nu"}</td><td><b>{k.is_superadmin || f.is_superadmin ? "da" : "nu"}</b></td></tr>
+            </tbody>
+          </table>
+        </div>
+      )}
+      <p className="hint">Se preiau și telefonul, specializările și poza (când contul care se șterge le are), sesiunile, activitatea, recomandările, datele din Colaborări și din UVALO pentru Chrome. O copie a contului șters rămâne în jurnalul de audit.</p>
+      {msg && <div role="alert" className="error">{msg}</div>}
+      <div className="actions" style={{ justifyContent: "flex-start" }}>
+        <button type="button" className="btn btnNavy btnSm" disabled={busy || !k || !f} onClick={go}>{busy ? "Se unesc…" : "Unește conturile"}</button>
+      </div>
+    </details>
+  );
+}
