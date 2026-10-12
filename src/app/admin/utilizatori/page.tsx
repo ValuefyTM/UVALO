@@ -117,7 +117,7 @@ export default async function AdminUsers({ searchParams }: { searchParams: Promi
                       <td>{u.last_seen_at ? fmtDate(u.last_seen_at, true) : "—"}</td>
                       <td className="r mono"><a className="rowLink" href={`/admin/activitate?user=${u.id}`}>{u.events_30}</a></td>
                       <td className="r mono">{u.devices}</td>
-                      <td className="r"><UserActions id={u.id} status={u.status} isSuper={!!u.is_superadmin} me={u.id === c.user.id} /></td>
+                      <td className="r"><UserActions id={u.id} status={u.status} isSuper={!!u.is_superadmin} me={u.id === c.user.id} email={u.email} /></td>
                     </tr>
                   </Fragment>
                 );

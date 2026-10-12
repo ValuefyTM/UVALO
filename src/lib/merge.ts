@@ -95,3 +95,66 @@ export async function mergeUsers(db: D1Database, by: User, keepId: string, fromI
   await audit(db, by.id, "user.merge", "user", keepId, JSON.stringify({ kept: keep.email, removed: snapshot }).slice(0, 4000));
   return { ok: true, name: v.name, email: keep.email };
 }
+
+/**
+ * Deletes an account (e.g. made with a mistyped email), so the person can ask for an account again with the right address.
+ * Removes its sessions, sign-in codes, firm memberships, open invitations, Chrome captures and Colaborări data; a firm made
+ * only for this person (no other members or invitations) goes too. Activity stays in `events`; a copy stays in the audit log.
+ */
+export async function deleteUser(db: D1Database, by: User, id: string) {
+  if (id === by.id) return { error: "Nu îți poți șterge propriul cont." };
+  const u = await db.prepare("SELECT * FROM users WHERE id = ?").bind(id).first<Row>();
+  if (!u) return { error: "Contul nu mai există." };
+  if (u.is_superadmin) return { error: "Scoate întâi drepturile de administrator UVALO." };
+  const email = u.email.toLowerCase();
+
+  // firms where this person is the only one (an individual account): deleted with it
+  const { results: lone } = await db.prepare(`SELECT m.org_id AS id FROM memberships m WHERE m.user_id = ?
+      AND NOT EXISTS (SELECT 1 FROM memberships o WHERE o.org_id = m.org_id AND o.user_id <> ?)
+      AND NOT EXISTS (SELECT 1 FROM invites i WHERE i.org_id = m.org_id AND lower(i.email) <> ?)
+      AND NOT EXISTS (SELECT 1 FROM sessions s WHERE s.org_id = m.org_id AND s.user_id <> ?)`)
+    .bind(id, id, email, id).all<{ id: string }>();
+
+  const one = (sql: string) => db.prepare(sql).bind(id);
+  const st: D1PreparedStatement[] = [
+    one("DELETE FROM sessions WHERE user_id = ?"),
+    one("DELETE FROM email_changes WHERE user_id = ?"),
+    db.prepare("DELETE FROM auth_codes WHERE lower(email) = ?").bind(email),
+    db.prepare("UPDATE invites SET cancelled_at = ? WHERE lower(email) = ? AND accepted_at IS NULL AND cancelled_at IS NULL").bind(now(), email),
+    one("DELETE FROM memberships WHERE user_id = ?"),
+    one("DELETE FROM chrome_slices WHERE batch_id IN (SELECT id FROM chrome_batches WHERE user_id = ?)"),
+    one("DELETE FROM chrome_batches WHERE user_id = ?"),
+    one("UPDATE feedback SET user_id = NULL WHERE user_id = ?"),
+    one("DELETE FROM referrals WHERE by_user = ?"),
+    one("UPDATE account_requests SET user_id = NULL WHERE user_id = ?"),
+    one("UPDATE account_requests SET decided_by = NULL WHERE decided_by = ?"),
+    one("UPDATE orgs SET created_by = NULL WHERE created_by = ?"),
+    one("UPDATE invites SET invited_by = NULL WHERE invited_by = ?"),
+    one("UPDATE users SET created_by = NULL WHERE created_by = ?"),
+    // Colaborări: the person's posts (with everything on them), requests, conversations, messages, notifications, profile
+    db.prepare(`DELETE FROM collab_messages WHERE user_id = ?1 OR conv_id IN (SELECT id FROM collab_convs WHERE author_id = ?1 OR peer_id = ?1
+      OR post_id IN (SELECT id FROM collab_posts WHERE user_id = ?1))`).bind(id),
+    db.prepare("DELETE FROM collab_convs WHERE author_id = ?1 OR peer_id = ?1 OR post_id IN (SELECT id FROM collab_posts WHERE user_id = ?1)").bind(id),
+    db.prepare("DELETE FROM collab_requests WHERE user_id = ?1 OR post_id IN (SELECT id FROM collab_posts WHERE user_id = ?1)").bind(id),
+    one("UPDATE collab_posts SET chosen_id = NULL WHERE chosen_id = ?"),
+    one("DELETE FROM collab_notifs WHERE user_id = ?"),
+    one("DELETE FROM collab_posts WHERE user_id = ?"),
+    one("DELETE FROM collab_profiles WHERE user_id = ?"),
+  ];
+  for (const o of lone) {
+    st.push(db.prepare("DELETE FROM invites WHERE org_id = ?").bind(o.id), db.prepare("UPDATE sessions SET org_id = NULL WHERE org_id = ?").bind(o.id),
+      db.prepare("DELETE FROM orgs WHERE id = ?").bind(o.id));
+  }
+  st.push(one("DELETE FROM users WHERE id = ?"));
+  await db.batch(st); // one transaction: all or nothing
+
+  const row = await db.prepare("SELECT value FROM app_settings WHERE key = 'collab'").first<{ value: string }>().catch(() => null);
+  if (row?.value.includes(id)) {
+    const d = JSON.parse(row.value) as { users?: string[] };
+    d.users = (d.users ?? []).filter((x) => x !== id);
+    await db.prepare("UPDATE app_settings SET value = ?, updated_at = ?, updated_by = ? WHERE key = 'collab'").bind(JSON.stringify(d), now(), by.id).run();
+  }
+  const { avatar: _a, ...snapshot } = u;
+  await audit(db, by.id, "user.delete", "user", id, JSON.stringify({ removed: snapshot, orgs: lone.map((o) => o.id) }).slice(0, 4000));
+  return { ok: true, email: u.email, orgs: lone.length };
+}

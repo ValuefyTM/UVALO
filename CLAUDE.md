@@ -155,6 +155,12 @@ Proprietar: VALUEFY (firmă de evaluări imobiliare, Timișoara). UVALO devine u
   auditul, recomandările, Chrome, Colaborări, setările care numesc persoana. Totul într-un `db.batch` (tranzacție), apoi
   contul vechi se șterge; copia lui rămâne în `audit_log` (`user.merge`). Un tabel nou cu `REFERENCES users` → adaugă-l aici.
 
+## Ștergerea unui cont (Admin → Utilizatori → „Șterge contul”)
+
+- `deleteUser` în `src/lib/merge.ts` (`DELETE /api/admin/users/<id>`), pentru email greșit: șterge sesiunile, codurile de autentificare,
+  apartenențele, invitațiile deschise, Chrome, datele din Colaborări și firma individuală (dacă nu are alți membri/invitații), apoi contul;
+  persoana poate cere din nou cont (legitimația devine liberă). Nu merge pe super-admini și pe propriul cont. Un tabel nou cu `REFERENCES users` → și aici.
+
 ## Colaborări (`/colaborari`, modulul `colaborari`)
 
 - Lucrări ocazionale între evaluatori (inspecție / raport + inspecție), după mockup-ul din canvas „UVALO — Colaborări”.

@@ -185,7 +185,7 @@ export function SessionsList({ rows }: { rows: SessionRow[] }) {
 }
 
 /** Account actions in the UVALO administration (disable, enable, sign out everywhere, UVALO admin). */
-export function UserActions({ id, status, isSuper, me }: { id: string; status: string; isSuper: boolean; me: boolean }) {
+export function UserActions({ id, status, isSuper, me, email }: { id: string; status: string; isSuper: boolean; me: boolean; email: string }) {
   if (me) return <span className="muted">tu</span>;
   const go = async (action: string, q?: string) => {
     if (q && !confirm(q)) return;
@@ -199,6 +199,12 @@ export function UserActions({ id, status, isSuper, me }: { id: string; status: s
         ? <button type="button" className="linkBtn" onClick={() => go("enable")}>Reactivează</button>
         : <button type="button" className="linkBtn danger" onClick={() => go("disable", "Dezactivezi contul? Persoana este deconectată imediat de pe toate dispozitivele.")}>Dezactivează</button>}
       <button type="button" className="linkBtn" onClick={() => go("logout_all", "Deconectezi persoana de pe toate dispozitivele?")}>Deconectează</button>
+      {!isSuper && <button type="button" className="linkBtn danger" onClick={async () => {
+        if (!confirm(`Ștergi definitiv contul ${email}?\n\nSe șterg sesiunile, firma individuală (dacă nu mai are alți membri), invitațiile deschise și datele din Colaborări. Persoana poate cere apoi un cont nou, cu adresa corectă.`)) return;
+        const e = await send(`/api/admin/users/${id}`, "DELETE");
+        if (e) return alert(e);
+        location.reload();
+      }}>Șterge contul</button>}
       <button type="button" className="linkBtn" onClick={() => go(isSuper ? "super_off" : "super_on", isSuper ? "Scoți drepturile de administrator UVALO?" : "Faci persoana administrator UVALO (vede și administrează toate firmele)?")}>{isSuper ? "Scoate admin" : "Fă admin"}</button>
     </span>
   );
