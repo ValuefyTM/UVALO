@@ -159,8 +159,7 @@ export function inZone(p: Pick<PostRow, "kind" | "county" | "lat" | "lng">, z: P
 export async function relevantCount(db: D1Database, userId: string) {
   const z = await getProfile(db, userId);
   if (!z || !z.available) return 0;
-  const { results } = await db.prepare(`SELECT kind, county, lat, lng FROM collab_posts p WHERE p.status = 'active' AND p.user_id <> ?1
-      AND NOT EXISTS (SELECT 1 FROM collab_requests r WHERE r.post_id = p.id AND r.user_id = ?1 AND r.status <> 'retras') LIMIT 500`)
+  const { results } = await db.prepare("SELECT kind, county, lat, lng FROM collab_posts p WHERE p.status = 'active' AND p.user_id <> ?1 LIMIT 500")
     .bind(userId).all<Pick<PostRow, "kind" | "county" | "lat" | "lng">>();
   return results.filter((p) => inZone(p, z)).length;
 }
@@ -172,7 +171,7 @@ export async function collabState(db: D1Database, me: { id: string }) {
   const [feed, mine, myReqs, convs, notifs] = await Promise.all([
     db.prepare("SELECT p.*, (SELECT COUNT(*) FROM collab_requests r WHERE r.post_id = p.id AND r.status <> 'retras') AS n FROM collab_posts p WHERE p.status = 'active' ORDER BY p.created_at DESC LIMIT 300")
       .all<PostRow & { n: number }>(),
-    db.prepare("SELECT * FROM collab_posts WHERE user_id = ? ORDER BY status = 'archived', created_at DESC LIMIT 100").bind(me.id).all<PostRow>(),
+    db.prepare("SELECT * FROM collab_posts WHERE user_id = ? AND status <> 'deleted' ORDER BY status = 'archived', created_at DESC LIMIT 100").bind(me.id).all<PostRow>(),
     db.prepare(`SELECT r.id, r.post_id, r.status, r.created_at, r.msg FROM collab_requests r WHERE r.user_id = ? AND r.status <> 'retras' ORDER BY r.created_at DESC LIMIT 100`)
       .bind(me.id).all<{ id: string; post_id: string; status: string; created_at: string; msg: string | null }>(),
     db.prepare(`SELECT c.*, (SELECT COUNT(*) FROM collab_messages m WHERE m.conv_id = c.id AND m.user_id IS NOT NULL AND m.user_id <> ?1
@@ -222,7 +221,7 @@ export async function collabState(db: D1Database, me: { id: string }) {
       }) })),
     myRequests: myReqs.results.flatMap((r) => {
       const p = postById.get(r.post_id);
-      if (!p) return [];
+      if (!p || p.status === "deleted") return [];
       return [{ id: r.id, status: r.status, created_at: r.created_at, msg: r.msg, post: { ...card(p), author: u(p.user_id) }, conv_id: convs.results.find((c) => c.request_id === r.id)?.id ?? null }];
     }),
     convs: convs.results.flatMap((c) => {
@@ -233,7 +232,7 @@ export async function collabState(db: D1Database, me: { id: string }) {
       return [{ id: c.id, request_id: c.request_id, role, last_at: c.last_at, unread: c.unread, last: c.last_body ? { body: c.last_body, me: c.last_user === me.id } : null,
         peer: u(role === "author" ? c.peer_id : c.author_id, true),
         post: { id: p.id, kind: p.kind, title: p.title, city: p.city, county: p.county, due: p.due, status: p.status },
-        state: chosen ? "ales" : p.chosen_id ? "altul" : p.status === "archived" ? "arhivat" : "" }];
+        state: p.status === "deleted" ? "sters" : chosen ? "ales" : p.chosen_id ? "altul" : p.status === "archived" ? "arhivat" : "" }];
     }),
     notifs: notifs.results.map((n) => { let go = {}; try { go = JSON.parse(n.go ?? "{}"); } catch {} return { id: n.id, type: n.type, text: n.text, go, read: !!n.read_at, created_at: n.created_at }; }),
     convByReq: Object.fromEntries([...convByReq.entries()].map(([k, v]) => [k, v.id])),
@@ -381,6 +380,48 @@ export async function setPostStatus(db: D1Database, me: Me, b: Record<string, un
   const status = b.archive ? "archived" : p.chosen_id ? "inlucru" : "active";
   await db.prepare("UPDATE collab_posts SET status = ?, updated_at = ? WHERE id = ?").bind(status, now(), p.id).run();
   return { ok: true, status };
+}
+
+/** The author changes the post (text, place, type, date, fee). Those who asked for details get an in-app notification. */
+export async function editPost(db: D1Database, me: Me, b: Record<string, unknown>) {
+  const p = await postOf(db, b.post_id);
+  if (!p || p.user_id !== me.id || p.status === "deleted") return fail("Anunțul nu mai există.");
+  const kind = String(b.kind) as Kind;
+  if (!(kind in KINDS)) return fail("Alege tipul anunțului: inspecție sau raport + inspecție.");
+  const note = text(b.note, 2000), city = clean(b.city, 80), county = String(b.county ?? "");
+  if (note.length < 10) return fail("Descrie lucrarea în câteva cuvinte (cel puțin 10 caractere).");
+  if (!city || !COUNTIES.includes(county)) return fail("Alege localitatea și județul.");
+  const prop = PROPS.includes(String(b.prop)) ? String(b.prop) : null;
+  const spec = POST_SPECS.includes(String(b.spec)) ? String(b.spec) : p.spec ?? "EPI";
+  const due = typeof b.due === "string" && /^\d{4}-\d{2}-\d{2}$/.test(b.due) ? b.due : null;
+  const budget = b.budget === null || b.budget === "" || b.budget === undefined ? null : Number.isFinite(Number(b.budget)) && Number(b.budget) > 0 ? Math.round(Number(b.budget)) : null;
+  const title = clean(b.title, 120) || `${prop ?? "Proprietate"}, ${city}`;
+  let lat = p.lat, lng = p.lng;
+  if (city !== p.city || county !== p.county) { const g = await place(`${city}, județul ${county}`); lat = g?.lat ?? null; lng = g?.lng ?? null; }
+  await db.prepare("UPDATE collab_posts SET kind = ?, title = ?, note = ?, city = ?, county = ?, lat = ?, lng = ?, prop = ?, spec = ?, due = ?, budget = ?, updated_at = ? WHERE id = ?")
+    .bind(kind, title, note, city, county, lat, lng, prop, spec, due, budget, now(), p.id).run();
+  const { results } = await db.prepare("SELECT user_id FROM collab_requests WHERE post_id = ? AND status <> 'retras'").bind(p.id).all<{ user_id: string }>();
+  const test = await testFlag(db);
+  for (const r of results) await notify(db, r.user_id, "Anunț modificat", `${nameOf(me)} a modificat anunțul „${title}”, la care ai cerut detalii.`, { view: "feed", hl: p.id }, test);
+  return { ok: true, notified: results.length };
+}
+
+/**
+ * The author deletes the post: it leaves the feed and "Postările mele" (kept as status 'deleted', with its conversations,
+ * which show "Anunț șters"). Those who asked for details get an in-app notification.
+ */
+export async function deletePost(db: D1Database, me: Me, b: Record<string, unknown>) {
+  const p = await postOf(db, b.post_id);
+  if (!p || p.user_id !== me.id || p.status === "deleted") return fail("Anunțul nu mai există.");
+  await db.prepare("UPDATE collab_posts SET status = 'deleted', updated_at = ? WHERE id = ?").bind(now(), p.id).run();
+  const { results } = await db.prepare("SELECT r.user_id, (SELECT id FROM collab_convs c WHERE c.request_id = r.id) AS conv_id FROM collab_requests r WHERE r.post_id = ? AND r.status <> 'retras'")
+    .bind(p.id).all<{ user_id: string; conv_id: string | null }>();
+  const test = await testFlag(db);
+  for (const r of results) {
+    await notify(db, r.user_id, "Anunț șters", `${nameOf(me)} a șters anunțul „${p.title}”, la care ai cerut detalii.`, r.conv_id ? { view: "chat", conv: r.conv_id } : { view: "feed" }, test);
+    if (r.conv_id) await sysMessage(db, r.conv_id, "Autorul a șters anunțul.", test);
+  }
+  return { ok: true, notified: results.length };
 }
 
 async function myConv(db: D1Database, me: Me, id: unknown) {

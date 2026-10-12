@@ -448,10 +448,63 @@ function Composer({ s, open, setOpen, onDone }: { s: State; open: boolean; setOp
 
 /* ---------- my posts and my requests ---------- */
 
+type MinePost = State["mine"][number];
+
+/** "Editează": the author changes the post; those who asked for details are told in the app. */
+function EditPost({ p, onClose, onDone }: { p: MinePost; onClose: () => void; onDone: (m: string) => Promise<void> }) {
+  const [f, setF] = useState({ note: p.note, kind: p.kind as Kind, title: p.title, city: p.city, county: p.county, prop: p.prop ?? "", spec: p.spec ?? "EPI", due: p.due ?? "", budget: p.budget ? String(p.budget) : "", tbd: !p.budget });
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  useEffect(() => {
+    const k = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", k);
+    return () => window.removeEventListener("keydown", k);
+  }, [onClose]);
+  const save = async () => {
+    setBusy(true); setError("");
+    const r = await call({ action: "edit", post_id: p.id, ...f, budget: f.tbd ? null : f.budget, due: f.due || null });
+    setBusy(false);
+    if (r.error) return setError(r.error);
+    const n = Number(r.notified) || 0;
+    await onDone(`Anunțul a fost modificat.${n ? ` ${n === 1 ? "Colegul care a cerut detalii a fost anunțat." : `Cei ${n} colegi care au cerut detalii au fost anunțați.`}` : ""}`);
+  };
+  return (
+    <div className="cbModal" role="dialog" aria-modal="true" aria-labelledby="cbEditT" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="cbModalBox" style={{ maxWidth: 680 }}>
+        <div className="cbModalHead"><span className="cbWho"><b id="cbEditT">Editează anunțul</b><small>{p.requests.length ? "Colegii care au cerut detalii primesc o notificare că anunțul s-a schimbat." : "Modificările apar imediat în feed."}</small></span><button type="button" className="cbX" aria-label="Închide" onClick={onClose}>×</button></div>
+        <div className="cbModalBody">
+          <div className="cbComposeRow" style={{ padding: 0 }}>
+            {(Object.keys(KINDS) as Kind[]).map((k) => <button key={k} type="button" className="cbChip" aria-pressed={f.kind === k} onClick={() => setF({ ...f, kind: k })}>{KINDS[k]}</button>)}
+          </div>
+          <label className="field">Descriere<textarea className="input" rows={5} style={{ minHeight: 110, resize: "vertical" }} maxLength={2000} value={f.note} onChange={(e) => setF({ ...f, note: e.target.value })} /></label>
+          <div className="cbComposeGrid cbEditGrid">
+            <label className="field cbWide">Titlu<input className="input" value={f.title} maxLength={120} onChange={(e) => setF({ ...f, title: e.target.value })} /></label>
+            <label className="field">Localitate<input className="input" value={f.city} maxLength={80} onChange={(e) => setF({ ...f, city: e.target.value })} /></label>
+            <label className="field">Județ<select className="select" value={f.county} onChange={(e) => setF({ ...f, county: e.target.value })}>{COUNTIES.map((c) => <option key={c}>{c}</option>)}</select></label>
+            <label className="field">Tip proprietate<select className="select" value={f.prop} onChange={(e) => setF({ ...f, prop: e.target.value })}><option value="">Alege…</option>{PROPS.map((c) => <option key={c}>{c}</option>)}</select></label>
+            <label className="field">Specializare<select className="select" value={f.spec} onChange={(e) => setF({ ...f, spec: e.target.value })}>{POST_SPECS.map((c) => <option key={c}>{c}</option>)}</select></label>
+            <label className="field">Termen<input className="input" type="date" value={f.due} onChange={(e) => setF({ ...f, due: e.target.value })} /></label>
+            <div className="field">Onorariu
+              {!f.tbd && <input className="input" inputMode="numeric" aria-label="Buget în lei" value={f.budget} onChange={(e) => setF({ ...f, budget: e.target.value.replace(/\D/g, "").slice(0, 7) })} placeholder="Buget, ex. 300 (lei)" />}
+              <label className="check"><input type="checkbox" checked={f.tbd} onChange={(e) => setF({ ...f, tbd: e.target.checked })} />De stabilit</label>
+            </div>
+          </div>
+        </div>
+        <div className="cbModalFoot">
+          <span className={error ? "error" : "cbMuted"}>{error}</span>
+          <button type="button" className="linkBtn" onClick={onClose}>Renunță</button>
+          <button type="button" className="btn btnGold btnSm" disabled={busy} onClick={save}>{busy ? "Se salvează…" : "Salvează modificările"}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const REQ_ST: Record<string, [string, string]> = { nou: ["Nou", "new"], contactat: ["În discuție", ""], ales: ["Ales", "ok"] };
 
 function Mine({ s, tab, setTab, reload, flash, openChat }: { s: State; tab: "posts" | "req"; setTab: (t: "posts" | "req") => void; reload: () => Promise<void>; flash: (m: string) => void; openChat: (id: string) => void }) {
   const [busy, setBusy] = useState("");
+  const [editing, setEditing] = useState<MinePost | null>(null);
   const act = async (key: string, body: Record<string, unknown>, done?: (r: Record<string, unknown>) => void | Promise<void>) => {
     setBusy(key);
     const r = await call(body);
@@ -462,6 +515,7 @@ function Mine({ s, tab, setTab, reload, flash, openChat }: { s: State; tab: "pos
   };
   return (
     <div className="cbPage">
+      {editing && <EditPost p={editing} onClose={() => setEditing(null)} onDone={async (m) => { setEditing(null); await reload(); flash(m); }} />}
       <div className="cbSeg big" role="tablist">
         <button type="button" role="tab" aria-selected={tab === "posts"} onClick={() => setTab("posts")}>Postările mele · {s.mine.length}</button>
         <button type="button" role="tab" aria-selected={tab === "req"} onClick={() => setTab("req")}>Detalii cerute · {s.myRequests.length}</button>
@@ -481,9 +535,17 @@ function Mine({ s, tab, setTab, reload, flash, openChat }: { s: State; tab: "pos
                 </div>
                 <div className="cbMineSub">
                   <small className="cbLabel">{p.requests.length === 1 ? "1 COLEG A CERUT DETALII" : `${p.requests.length} COLEGI AU CERUT DETALII`}{nNew ? ` · ${nNew} NOI` : ""}</small>
-                  <button type="button" className="linkBtn" disabled={!!busy} onClick={() => act(`st-${p.id}`, { action: "status", post_id: p.id, archive: p.status !== "archived" }, () => flash(p.status === "archived" ? "Anunțul a fost restaurat." : "Anunțul a fost arhivat."))}>
-                    {p.status === "archived" ? "Restaurează" : "Arhivează"}
-                  </button>
+                  <span className="cbMineActs">
+                    <button type="button" className="linkBtn" disabled={!!busy} onClick={() => setEditing(p)}>Editează</button>
+                    <button type="button" className="linkBtn" disabled={!!busy} onClick={() => act(`st-${p.id}`, { action: "status", post_id: p.id, archive: p.status !== "archived" }, () => flash(p.status === "archived" ? "Anunțul a fost restaurat." : "Anunțul a fost arhivat."))}>
+                      {p.status === "archived" ? "Restaurează" : "Arhivează"}
+                    </button>
+                    <button type="button" className="linkBtn danger" disabled={!!busy} onClick={() => {
+                      const n = p.requests.length;
+                      const q = `Ștergi anunțul „${p.title}”?\n\nDispare din feed și din „Postările mele”.${n ? ` ${n === 1 ? "Colegul care a cerut detalii va fi anunțat" : `Cei ${n} colegi care au cerut detalii vor fi anunțați`}; conversațiile rămân.` : ""}\nȘtergerea nu se poate anula. Dacă vrei doar să-l scoți din feed, folosește „Arhivează”.`;
+                      if (confirm(q)) act(`del-${p.id}`, { action: "delete", post_id: p.id }, () => flash("Anunțul a fost șters."));
+                    }}>Șterge</button>
+                  </span>
                 </div>
                 <div className="cbReqs">
                   {p.requests.length === 0 && <p className="cbEmptySmall">Încă nu a cerut nimeni detalii.</p>}
@@ -578,7 +640,7 @@ function Chat({ s, active, setActive, reload, flash }: { s: State; active: strin
     if (r.error) return flash(r.error);
     await reload(); await load(c.id);
   };
-  const stLabel = c ? (c.state === "ales" ? (c.role === "author" ? "Ales pentru lucrare · În lucru" : "Ai fost ales · În lucru") : c.state === "altul" ? "Atribuit altui coleg" : c.state === "arhivat" ? "Anunț arhivat" : c.role === "requester" ? "Ai cerut detalii" : "") : "";
+  const stLabel = c ? (c.state === "ales" ? (c.role === "author" ? "Ales pentru lucrare · În lucru" : "Ai fost ales · În lucru") : c.state === "altul" ? "Atribuit altui coleg" : c.state === "arhivat" ? "Anunț arhivat" : c.state === "sters" ? "Anunț șters de autor" : c.role === "requester" ? "Ai cerut detalii" : "") : "";
 
   if (s.convs.length === 0) return <div className="cbPage"><div className="cbEmpty"><b>Nicio conversație încă</b><span className="cbMuted">Conversațiile încep când autorul unui anunț răspunde la o cerere de detalii.</span></div></div>;
   return (

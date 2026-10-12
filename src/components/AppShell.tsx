@@ -46,7 +46,7 @@ export async function AppShell(props: { c: Ctx; active: Key; title: string; subt
           {nav.map((i) => (
             <a key={i.key} href={i.href} aria-current={current(i.key)}>
               {i.label}
-              {!!i.count && <span className="navCount" aria-label={`${i.count} ${i.count === 1 ? "anunț nou" : "anunțuri noi"} în zona ta`}>{i.count > 99 ? "99+" : i.count}</span>}
+              {!!i.count && <span className="navCount" aria-label={`${i.count} ${i.count === 1 ? "anunț activ" : "anunțuri active"} în zonele tale`} title={`${i.count === 1 ? "Un anunț activ" : `${i.count} anunțuri active`} în zonele tale`}>{i.count > 99 ? "99+" : i.count}</span>}
             </a>
           ))}
           <span className="navSec">În curând</span>

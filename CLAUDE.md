@@ -191,8 +191,11 @@ Proprietar: VALUEFY (firmă de evaluări imobiliare, Timișoara). UVALO devine u
   Telefonul/emailul apar doar după ce autorul deschide conversația. „Alege pentru lucrare” → `inlucru` (iese din feed),
   apoi Arhivează / Restaurează. Specializările vin din `users.specs` (Tablou ANEVAR), nu se editează.
 - Profil „doar mă uit” (`available = 0`) + „Vreau detalii” → fereastra `AvailModal`: activează disponibilitatea și cere
-  zona, apoi deschide cererea. Meniul arată la „Colaborări” un contor (`relevantCount`): anunțuri active din zonele
-  persoanei, fără ale ei și fără cele la care a cerut deja detalii (0 pentru „doar mă uit”).
+  zona, apoi deschide cererea. Meniul arată la „Colaborări” un contor roșu (`relevantCount`, `.navCount`): anunțurile active din
+  zonele persoanei, fără ale ei (0 pentru „doar mă uit”).
+- Autorul își poate **edita** (`edit` → `editPost`, fereastra `EditPost`) sau **șterge** (`delete` → `deletePost`) anunțul din „Postările mele”.
+  Ștergerea e logică (`status = 'deleted'`): iese din feed și din listă, conversațiile rămân cu „Anunț șters de autor” + mesaj de sistem;
+  la ambele, cei care au cerut detalii primesc notificare în aplicație. Evenimente `post_edit`, `post_delete`.
 - **Email la anunț nou** (pe lângă notificarea din aplicație): `emailNewPost` în `collab.ts` → „Un coleg are nevoie de ajutorul tău”, către
   profilurile din zonă cu `email_notif = 1` (migrația 0020, comutator în „Zone de acoperire”), trimis prin `sendEmails` (Resend batch, 100/apel).
   Butonul = `magicLink()` din `auth.ts`: rând în `auth_codes` cu `ip = 'notify'` (nu intră în limita de 5 coduri/oră), valabil 3 zile, o singură dată,

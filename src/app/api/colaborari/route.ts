@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { api, err, json } from "@/lib/api";
 import { track } from "@/lib/track";
 import {
-  collabState, createPost, messages, openConversation, pickRequest, readNotifs, requestDetails, saveProfile, sendMessage, setPostStatus, withdrawRequest,
+  collabState, createPost, deletePost, editPost, messages, openConversation, pickRequest, readNotifs, requestDetails, saveProfile, sendMessage, setPostStatus, withdrawRequest,
 } from "@/lib/collab";
 
 export const dynamic = "force-dynamic";
@@ -28,11 +28,11 @@ export async function GET(req: Request) {
 
 const ACTIONS = {
   profile: async (db: D1Database, me: { id: string; name: string; email: string }, b: Record<string, unknown>) => ({ ok: true, ...(await saveProfile(db, me.id, b)) }),
-  post: createPost, request: requestDetails, withdraw: withdrawRequest, open_chat: openConversation, pick: pickRequest, status: setPostStatus,
+  post: createPost, edit: editPost, delete: deletePost, request: requestDetails, withdraw: withdrawRequest, open_chat: openConversation, pick: pickRequest, status: setPostStatus,
   message: sendMessage, read: readNotifs,
 } as const;
 // usage statistics in Admin → Instrumente → Colaborări (messages and read marks are not counted)
-const TRACK: Partial<Record<keyof typeof ACTIONS, string>> = { profile: "profile", post: "post", request: "request", open_chat: "open_chat", pick: "pick", status: "post_status" };
+const TRACK: Partial<Record<keyof typeof ACTIONS, string>> = { profile: "profile", post: "post", edit: "post_edit", delete: "post_delete", request: "request", open_chat: "open_chat", pick: "pick", status: "post_status" };
 
 export async function POST(req: Request) {
   const a = await access();
