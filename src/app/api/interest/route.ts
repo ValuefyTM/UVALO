@@ -2,7 +2,8 @@ import { api, json } from "@/lib/api";
 import { track } from "@/lib/track";
 
 /** "Anunță-mă" on the home page: the person wants an email when an upcoming module opens. */
-const SOON = new Set(["analize", "colaborari"]);
+// "angajare": firms that want to post job ads in Colaborări (the "De la firme" tab)
+const SOON = new Set(["analize", "colaborari", "angajare"]);
 
 export async function POST(req: Request) {
   const a = await api();

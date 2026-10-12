@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { superPage } from "@/lib/guard";
+import { fmtDate, superPage } from "@/lib/guard";
 import { countyOfUats, githubReady, listUploads, refresh, uats } from "@/lib/plans";
 import { recentEvents } from "@/lib/orgs";
 import { aiTotals, aiUsage, FEATURES, userLimits, PROMPT_DEFAULTS, PROMPT_LABELS, type PromptKey, prompts, toolByKey, toolSettings, toolUsage } from "@/lib/tools";
@@ -96,14 +96,30 @@ export default async function Instrument({ params }: { params: Promise<{ key: st
 
   if (key === "colaborari") {
     const cs = await collabSettings(db);
-    const [users, counts, all] = await Promise.all([testUsers(db, cs.users), collabCounts(db),
+    const [users, counts, all, firms] = await Promise.all([testUsers(db, cs.users), collabCounts(db),
       db.prepare(`SELECT u.id, COALESCE(NULLIF(u.name, ''), u.email) AS name, u.email, u.anevar_no AS anevar, u.is_superadmin AS sup,
           (SELECT o.name FROM memberships m JOIN orgs o ON o.id = m.org_id WHERE m.user_id = u.id AND m.status = 'active' ORDER BY o.name LIMIT 1) AS org
         FROM users u WHERE u.status = 'active' ORDER BY name COLLATE NOCASE LIMIT 3000`)
-        .all<{ id: string; name: string; email: string; anevar: string | null; sup: number; org: string | null }>()]);
+        .all<{ id: string; name: string; email: string; anevar: string | null; sup: number; org: string | null }>(),
+      // "Anunță-mă, vreau să postez" from the "De la firme" tab
+      db.prepare(`SELECT COALESCE(NULLIF(u.name, ''), u.email) AS name, u.email, o.name AS org, MIN(e.at) AS at FROM events e JOIN users u ON u.id = e.user_id LEFT JOIN orgs o ON o.id = e.org_id
+        WHERE e.module = 'home' AND e.action = 'notify' AND e.target = 'angajare' GROUP BY e.user_id ORDER BY at DESC LIMIT 500`)
+        .all<{ name: string; email: string; org: string | null; at: string }>()]);
     return (
       <AdminShell c={c} active="instrumente" pending={pending} title={tool.name} subtitle="Mod de lucru, grupul de test și statistici" actions={<a className="btn btnGhost btnSm" href="/admin/instrumente">← Instrumente</a>}>
         <CollabAdmin mode={cs.mode} users={users} counts={counts} accounts={all.results} />
+        <section className="card">
+          <div className="cardHead"><h2>Vor să posteze anunțuri de angajare</h2><span className="pill"><i />{firms.results.length}</span></div>
+          <p className="hint">Cine a apăsat „Anunță-mă, vreau să postez” în tab-ul „De la firme”. Îi anunțăm la lansarea anunțurilor de angajare.</p>
+          {firms.results.length ? (
+            <div className="tableWrap">
+              <table className="table" style={{ minWidth: 0 }}>
+                <thead><tr><th>Persoană</th><th>Firmă</th><th>Când</th></tr></thead>
+                <tbody>{firms.results.map((f) => <tr key={f.email}><td><b>{f.name}</b><div className="muted" style={{ fontSize: 12 }}>{f.email}</div></td><td>{f.org ?? "—"}</td><td>{fmtDate(f.at, true)}</td></tr>)}</tbody>
+              </table>
+            </div>
+          ) : <p className="hint">Nimeni încă.</p>}
+        </section>
         <h2 className="secTitle">Statistici</h2>
         <ToolAnalytics u={u} events={events} />
       </AdminShell>

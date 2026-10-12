@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CollabState, Person, Profile } from "@/lib/collab";
+import { NotifyButton } from "./NotifyButton";
 import { COUNTIES, KINDS, POST_SPECS, PROPS, SKILL_SUGGESTIONS, YEARS, type CollabMode, type Kind } from "@/lib/collab-shared";
 
 type State = CollabState & { mode: CollabMode };
@@ -52,7 +53,7 @@ const KindTag = ({ k }: { k: Kind }) => <span className={`cbTag cbTag-${k}`}>{k 
 
 /* ---------- the module ---------- */
 
-export function Colaborari({ initial, splash }: { initial: State; splash: boolean }) {
+export function Colaborari({ initial, splash, firmsAsked = false }: { initial: State; splash: boolean; firmsAsked?: boolean }) {
   const [s, setS] = useState(initial);
   const [view, setView] = useState<View>("feed");
   const [zone, setZone] = useState<"colegi" | "firme">("colegi");
@@ -120,7 +121,7 @@ export function Colaborari({ initial, splash }: { initial: State; splash: boolea
       </div>
       {toast && <div className="cbToast" role="status"><span>{toast}</span><button type="button" className="linkBtn" onClick={() => setToast("")}>Închide</button></div>}
 
-      {view === "feed" && <Feed s={s} zone={zone} setZone={setZone} hl={hl} composeOpen={composeOpen} setComposeOpen={setComposeOpen} reload={reload} flash={flash}
+      {view === "feed" && <Feed s={s} firmsAsked={firmsAsked} zone={zone} setZone={setZone} hl={hl} composeOpen={composeOpen} setComposeOpen={setComposeOpen} reload={reload} flash={flash}
         toMine={() => go({ view: "mine" })} toSettings={() => setView("settings")} />}
       {view === "mine" && <Mine s={s} tab={mineTab} setTab={setMineTab} reload={reload} flash={flash} openChat={(id) => { setConv(id); setView("chat"); }} />}
       {view === "chat" && <Chat s={s} active={conv} setActive={setConv} reload={reload} flash={flash} />}
@@ -168,8 +169,8 @@ function zoneText(z: Profile) {
   return `${home}${z.extra.length ? ` · plus ${z.extra.join(", ")}` : ""} · ${k}`;
 }
 
-function Feed({ s, zone, setZone, hl, composeOpen, setComposeOpen, reload, flash, toMine, toSettings }: {
-  s: State; zone: "colegi" | "firme"; setZone: (z: "colegi" | "firme") => void; hl: string | null; composeOpen: boolean; setComposeOpen: (b: boolean) => void;
+function Feed({ s, firmsAsked, zone, setZone, hl, composeOpen, setComposeOpen, reload, flash, toMine, toSettings }: {
+  s: State; firmsAsked: boolean; zone: "colegi" | "firme"; setZone: (z: "colegi" | "firme") => void; hl: string | null; composeOpen: boolean; setComposeOpen: (b: boolean) => void;
   reload: () => Promise<void>; flash: (m: string) => void; toMine: () => void; toSettings: () => void;
 }) {
   const z = s.profile!;
@@ -229,7 +230,11 @@ function Feed({ s, zone, setZone, hl, composeOpen, setComposeOpen, reload, flash
           <span className="cbSoonTag">ÎN CURÂND</span>
           <h2>Aici vor fi anunțuri din partea firmelor</h2>
           <p>Angajări și colaborări pe termen lung publicate de firmele de evaluare. Până atunci, vezi lucrările ocazionale de la colegi.</p>
-          <button type="button" className="btn btnGold" onClick={() => setZone("colegi")}>Vezi lucrările de la colegi →</button>
+          <div className="cbSoonActs">
+            <button type="button" className="btn btnGold" onClick={() => setZone("colegi")}>Vezi lucrările de la colegi →</button>
+            <NotifyButton k="angajare" done={firmsAsked} label="Anunță-mă, vreau să postez" />
+          </div>
+          <small className="cbMuted">Pentru firmele care vor să publice anunțuri de angajare: te anunțăm când se deschide.</small>
         </div>
       ) : (
         <>

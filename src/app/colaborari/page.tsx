@@ -14,9 +14,10 @@ export default async function ColaborariPage() {
   const on = c.modules.includes("colaborari");
   const state = on ? await collabState(db, c.user) : null;
   if (on) await track(db, c, "colaborari", "page");
+  const firmsAsked = on && !!(await db.prepare("SELECT 1 FROM events WHERE user_id = ? AND module = 'home' AND action = 'notify' AND target = 'angajare' LIMIT 1").bind(c.user.id).first());
   return (
     <AppShell c={c} active="colaborari" title="Colaborări" subtitle="Lucrări ocazionale de la colegi: inspecții și rapoarte + inspecție">
-      {state ? <Colaborari initial={{ ...state, mode: c.collab }} splash={!state.profile} /> : (
+      {state ? <Colaborari initial={{ ...state, mode: c.collab }} splash={!state.profile} firmsAsked={firmsAsked} /> : (
         <div className="note">Colaborările vin în curând în UVALO. Le poți urmări din pagina de start („Anunță-mă la lansare”).</div>
       )}
     </AppShell>
