@@ -23,6 +23,15 @@
   :focus-visible{outline:2px solid var(--acc);outline-offset:2px}
   .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
   [hidden]{display:none!important}
+  /* atenționare la PDF: paranteze drepte necompletate în text */
+  .warnDlg{border:0;border-radius:18px;padding:0;max-width:520px;width:calc(100% - 32px);box-shadow:0 30px 70px rgba(20,16,10,.35);color:var(--ink)}
+  .warnDlg::backdrop{background:rgba(20,16,10,.55)}
+  .warnDlg .wd{padding:20px 22px;display:flex;flex-direction:column;gap:12px}
+  .warnDlg h2{margin:0;font-size:17px}
+  .warnDlg p{margin:0;font-size:13px;line-height:1.55;color:var(--muted)}
+  .warnDlg ul{margin:0;padding:0;list-style:none;display:flex;flex-wrap:wrap;gap:6px;max-height:180px;overflow:auto}
+  .warnDlg li{font-size:12px;background:var(--mark);border-radius:6px;padding:4px 8px}
+  .warnDlg .wa{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap;padding:14px 22px;border-top:1px solid var(--divider)}
 
   /* antet */
   .top{background:#111;color:#fff;padding:12px 24px;display:flex;flex-wrap:wrap;align-items:center;gap:12px 20px}
@@ -350,6 +359,19 @@
   </div>
 </main>
 <div class="toast" id="toast"></div>
+<dialog class="warnDlg" id="warnDlg" aria-labelledby="warnT">
+  <div class="wd">
+    <h2 id="warnT">Textul are locuri necompletate</h2>
+    <p id="warnP"></p>
+    <ul id="warnL"></ul>
+    <p>În PDF nu se mai pot modifica. Completează-le în text înainte de export, sau exportă în Word, unde le poți completa după.</p>
+  </div>
+  <div class="wa">
+    <button class="btn" type="button" id="warnFix">Completez textul</button>
+    <button class="btn" type="button" id="warnWord">Exportă în Word</button>
+    <button class="btn dark" type="button" id="warnGo">Exportă PDF oricum</button>
+  </div>
+</dialog>
 
 <script>
 /* Stereo 70 → WGS84 (aceleași formule ca localizatorul cadastral) */
@@ -973,13 +995,25 @@ async function buildPages(){
 const CORS='Browserul a blocat compunerea imaginii din plăcile hărții. Reîncearcă peste câteva secunde.';
 function loadScript(src){return new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=()=>rej(new Error(src));document.head.appendChild(s)})}
 const fname=ext=>'analiza_amplasament_'+(S.p?S.p.id+'_'+(S.uat.key||'plan'):'adresa')+'_'+new Date().toISOString().slice(0,10)+'.'+ext;
-$('bPdf').addEventListener('click',async()=>{
+/* paranteze drepte rămase în textul care intră în export ([de completat: …], [bun] …) */
+function openMarks(){const t=outText();return t?[...new Set((t.match(/\[[^\]]{1,160}\]/g)||[]))]:[]}
+$('bPdf').addEventListener('click',()=>{
+  const m=openMarks();
+  if(!m.length)return exportPdf();
+  $('warnP').textContent=m.length===1?'Un loc din descrierea amplasamentului e încă între paranteze drepte:':m.length+' locuri din descrierea amplasamentului sunt încă între paranteze drepte:';
+  $('warnL').replaceChildren(...m.slice(0,30).map(x=>{const li=document.createElement('li');li.textContent=x;return li}));
+  const d=$('warnDlg');if(d.showModal)d.showModal();else if(confirm($('warnP').textContent+'\n'+m.join('\n')+'\n\nExporți PDF-ul oricum?'))exportPdf();
+});
+$('warnGo').addEventListener('click',()=>{$('warnDlg').close();exportPdf()});
+$('warnWord').addEventListener('click',()=>{$('warnDlg').close();$('bWord').click()});
+$('warnFix').addEventListener('click',()=>{$('warnDlg').close();const o=$('out'),mk=o.querySelector('mark:not(.bad)');(mk||o).scrollIntoView({behavior:'smooth',block:'center'});o.focus({preventScroll:true});if(mk){const r=document.createRange();r.selectNodeContents(mk);const sel=getSelection();sel.removeAllRanges();sel.addRange(r)}});
+async function exportPdf(){
   toast('Se generează PDF-ul…');
   try{if(!(window.jspdf&&window.jspdf.jsPDF))await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js')}catch(e){toast('Nu am putut încărca biblioteca PDF.');return}
   const pages=await buildPages();
   try{const doc=new window.jspdf.jsPDF({unit:'mm',format:'a4'});pages.forEach((cv,i)=>{if(i)doc.addPage();doc.addImage(cv.toDataURL('image/jpeg',.92),'JPEG',0,0,210,297,undefined,'FAST')});doc.save(fname('pdf'));toast('PDF exportat.');track('export_pdf',S.p&&S.p.id)}
   catch(e){toast(CORS,6000)}
-});
+}
 async function dlCanvas(cv,name){try{const a=document.createElement('a');a.href=cv.toDataURL('image/png');a.download=name;a.click();return true}catch(e){toast(CORS,6000);return false}}
 $('pngZone').addEventListener('click',async()=>{toast('Se generează harta…');const cv=await zoneCanvas(1800,1200);if(await dlCanvas(cv,fname('png').replace('analiza_amplasament','harta_zona'))){toast('Harta zonei a fost descărcată.');track('export_png','zona')}});
 $('pngPlan').addEventListener('click',async()=>{if(!S.p)return;toast('Se generează planul…');const cv=await planCanvas(1800,1100);if(cv&&await dlCanvas(cv,fname('png').replace('analiza_amplasament','plan_situatie'))){toast('Planul de situație a fost descărcat.');track('export_png','plan')}});
