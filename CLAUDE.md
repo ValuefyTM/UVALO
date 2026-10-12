@@ -128,6 +128,14 @@ Proprietar: VALUEFY (firmă de evaluări imobiliare, Timișoara). UVALO devine u
   `word.chrome` în admin. Dacă volumul crește, imaginile se pot muta în R2.
 - Evenimente: `chrome` (`open`, `capture`, `export`, `send_word`), `word` (`chrome_open`, `insert_chrome`).
 
+## Feedback (buton în dreapta jos)
+
+- `public/feedback.js` (vanilla, stiluri proprii `uvfb-*`): în `AppShell` și injectat de rutele `localizare`, `amplasament`,
+  `comparabile` (nu în fereastra Word). Atribute `data-bottom` / `data-bottom-mobile` pentru barele fixe (meniul de jos pe
+  telefon, scara hărții). Trimite la `/api/feedback` (tip problemă / idee / altceva, text, pagina, acord de răspuns; max. 10/oră),
+  salvat în tabelul `feedback` (migrația 0017), email către super-admini. Admin → Feedback (`/admin/feedback`): filtre,
+  stare nou / citit / rezolvat, notă internă, „Răspunde” pe email; contorul de noi în meniul admin.
+
 ## Unirea a două conturi (Admin → Utilizatori → „Unește două conturi”)
 
 - `src/lib/merge.ts` (`/api/admin/users/merge`): contul care rămâne își păstrează emailul și preia de la celălalt numele,

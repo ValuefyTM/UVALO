@@ -58,6 +58,7 @@ export async function mergeUsers(db: D1Database, by: User, keepId: string, fromI
     move("UPDATE plan_uploads SET created_by = ? WHERE created_by = ?"),
     move("UPDATE users SET created_by = ? WHERE created_by = ?"),
     move("UPDATE chrome_batches SET user_id = ? WHERE user_id = ?"),
+    move("UPDATE feedback SET user_id = ? WHERE user_id = ?"),
     db.prepare("DELETE FROM email_changes WHERE user_id = ?").bind(fromId),
     // Colaborări: one profile (the kept one, if it has one); a request twice on the same post keeps the kept account's
     move("UPDATE OR IGNORE collab_profiles SET user_id = ? WHERE user_id = ?"),

@@ -425,3 +425,39 @@ export function CollabAdmin({ mode: m0, users: u0, counts: c0, accounts }: { mod
     </>
   );
 }
+
+const FB_STATUS: Record<string, string> = { nou: "Nou", citit: "Citit", rezolvat: "Rezolvat" };
+
+/** Admin → Feedback: status of a message, an internal note and a reply by email. */
+export function FeedbackActions({ id, status: s0, email, note: n0 }: { id: number; status: string; email: string | null; note: string | null }) {
+  const [status, setStatus] = useState(s0);
+  const [note, setNote] = useState(n0 ?? "");
+  const [editing, setEditing] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const save = async (body: Record<string, unknown>) => {
+    setBusy(true);
+    const r = await fetch(`/api/admin/feedback/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }).catch(() => null);
+    setBusy(false);
+    return !!r?.ok;
+  };
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-end", minWidth: 170 }}>
+      <span className={`pill ${status === "rezolvat" ? "pillOk" : status === "nou" ? "pillWarn" : ""}`}><i />{FB_STATUS[status] ?? status}</span>
+      <div className="actions" style={{ justifyContent: "flex-end", flexWrap: "wrap" }}>
+        {status === "nou" && <button type="button" className="linkBtn" disabled={busy} onClick={async () => (await save({ status: "citit" })) && setStatus("citit")}>Citit</button>}
+        {status !== "rezolvat"
+          ? <button type="button" className="linkBtn" disabled={busy} onClick={async () => (await save({ status: "rezolvat" })) && setStatus("rezolvat")}>Rezolvat</button>
+          : <button type="button" className="linkBtn" disabled={busy} onClick={async () => (await save({ status: "citit" })) && setStatus("citit")}>Redeschide</button>}
+        {email && <a className="linkBtn" href={`mailto:${email}?subject=${encodeURIComponent("Răspuns la feedback-ul tău UVALO")}`}>Răspunde</a>}
+        <button type="button" className="linkBtn" onClick={() => setEditing(!editing)}>{note ? "Notă" : "+ Notă"}</button>
+      </div>
+      {editing && (
+        <form style={{ display: "flex", flexDirection: "column", gap: 6, width: 220 }} onSubmit={async (e) => { e.preventDefault(); if (await save({ note })) setEditing(false); }}>
+          <textarea className="textarea" rows={2} value={note} maxLength={1000} onChange={(e) => setNote(e.target.value)} aria-label="Notă internă" />
+          <button type="submit" className="btn btnSm btnNavy" disabled={busy}>Salvează nota</button>
+        </form>
+      )}
+      {!editing && note && <span className="muted" style={{ fontSize: 12, maxWidth: 220, textAlign: "right" }}>{note}</span>}
+    </div>
+  );
+}

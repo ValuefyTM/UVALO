@@ -30,7 +30,7 @@ export async function GET(req: Request) {
   };
   const U = list.map((u) => ({ key: u.key, name: u.name, county: u.county ?? "Timiș", v: u.v ?? null, bb: u.bb ?? null }));
   const inject = `<link rel="icon" href="/icon.svg" type="image/svg+xml"><script>window.UVALO_USER=${JSON.stringify(me).replace(/</g, "\\u003c")};window.UVALO_UATS=${JSON.stringify(U).replace(/</g, "\\u003c")}</script>`;
-  const html = (await page.text()).replace("</head>", `${inject}</head>`);
+  const html = (await page.text()).replace("</head>", `${inject}</head>`).replace(/<\/body>(?![\s\S]*<\/body>)/, `<script src="/feedback.js" defer></script></body>`);
   return new Response(html, { headers: { "Content-Type": "text/html; charset=utf-8", ...PRIVATE } });
 }
 

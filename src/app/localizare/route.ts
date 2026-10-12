@@ -48,7 +48,7 @@ export async function GET(req: Request) {
   const GM = gm ? `<script>window.VF_GMAPS=${JSON.stringify(gm).replace(/</g, "\\u003c")}</script>` : "";
   const html = (await page.text())
     .replace("</head>", `${PWA_HEAD}${GM}</head>`)
-    .replace("</body>", `${ack?.loc_ack_at ? "" : NOTICE}<script src="/api/localizare/script" defer></script><script src="/api/localizare/track-js" defer></script>${PWA_SCRIPT}</body>`);
+    .replace("</body>", `${ack?.loc_ack_at ? "" : NOTICE}<script src="/api/localizare/script" defer></script><script src="/api/localizare/track-js" defer></script>${PWA_SCRIPT}<script src="/feedback.js" defer data-bottom="44" data-bottom-mobile="84"></script></body>`);
   return new Response(html, { headers: { "Content-Type": "text/html; charset=utf-8", ...PRIVATE } });
 }
 

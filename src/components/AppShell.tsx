@@ -87,6 +87,8 @@ export async function AppShell(props: { c: Ctx; active: Key; title: string; subt
         ))}
         <MenuButton />
       </nav>
+      {/* feedback button, bottom right (above the bottom menu on phones) */}
+      <script src="/feedback.js" async data-bottom="16" data-bottom-mobile="84" />
     </div>
   );
 }

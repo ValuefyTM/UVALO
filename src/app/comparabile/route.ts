@@ -24,7 +24,9 @@ export async function GET(req: Request) {
   // ?word=1: opened in a large Word window from UVALO pentru Word (button "Inserează în raport", public/word/src/comps-bridge.js)
   const inWord = new URL(req.url).searchParams.get("word") === "1";
   const out = inWord ? html.replace("</head>", `<script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script></head>`).replace(/<\/body>(?![\s\S]*<\/body>)/, `<script src="/word/src/comps-bridge.js"></script></body>`) : html;
-  return new Response(out, { headers: { "Content-Type": "text/html; charset=utf-8", ...PRIVATE } });
+  // feedback button, not inside the Word window
+  const page2 = inWord ? out : out.replace(/<\/body>(?![\s\S]*<\/body>)/, `<script src="/feedback.js" defer></script></body>`);
+  return new Response(page2, { headers: { "Content-Type": "text/html; charset=utf-8", ...PRIVATE } });
 }
 
 function blocked(why: string) {

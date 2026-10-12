@@ -1,17 +1,21 @@
 import type { Ctx } from "@/lib/access";
 import { maintenanceOn } from "@/lib/maintenance";
 import { initials } from "@/lib/guard";
+import { getDb } from "@/lib/db";
 import { LogoutButton, MenuButton } from "./ClientBits";
 
-export type AdminKey = "panou" | "solicitari" | "recomandari" | "tablou" | "utilizatori" | "firme" | "activitate" | "instrumente";
+export type AdminKey = "panou" | "solicitari" | "recomandari" | "tablou" | "utilizatori" | "firme" | "activitate" | "instrumente" | "feedback";
 
 /** UVALO administration portal: its own menu, separate from the tools the valuers use. */
 export async function AdminShell(props: { c: Ctx; active: AdminKey; pending?: number; title: string; subtitle?: string; actions?: React.ReactNode; children: React.ReactNode }) {
   const mnt = await maintenanceOn();
   const { c } = props;
+  // new feedback messages, next to "Feedback" in the menu
+  const db = await getDb();
+  const fb = db ? (await db.prepare("SELECT COUNT(*) AS n FROM feedback WHERE status = 'nou'").first<{ n: number }>().catch(() => null))?.n ?? 0 : 0;
   const nav: [AdminKey, string, string][] = [
     ["panou", "Panou", "/admin"], ["solicitari", "Solicitări de cont", "/admin/solicitari"], ["recomandari", "Recomandări", "/admin/recomandari"], ["tablou", "Tablou ANEVAR", "/admin/tablou"],
-    ["utilizatori", "Utilizatori", "/admin/utilizatori"], ["firme", "Firme și abonamente", "/admin/firme"], ["activitate", "Activitate", "/admin/activitate"], ["instrumente", "Instrumente", "/admin/instrumente"],
+    ["utilizatori", "Utilizatori", "/admin/utilizatori"], ["firme", "Firme și abonamente", "/admin/firme"], ["activitate", "Activitate", "/admin/activitate"], ["instrumente", "Instrumente", "/admin/instrumente"], ["feedback", "Feedback", "/admin/feedback"],
   ];
   return (
     <div className="shell">
@@ -26,7 +30,7 @@ export async function AdminShell(props: { c: Ctx; active: AdminKey; pending?: nu
         <nav className="nav" aria-label="Administrare">
           {nav.map(([k, l, h]) => (
             <a key={k} href={h} aria-current={props.active === k ? "page" : undefined}>
-              {l}{k === "solicitari" && !!props.pending && <span className="soon">{props.pending}</span>}
+              {l}{k === "solicitari" && !!props.pending && <span className="soon">{props.pending}</span>}{k === "feedback" && fb > 0 && <span className="soon">{fb}</span>}
             </a>
           ))}
         </nav>
