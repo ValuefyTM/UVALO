@@ -52,6 +52,8 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   hull/date) + date per UAT. Servit de `src/app/localizare/route.ts`, care injectează scripturile (export, tracking,
   PWA, notice) și redirecționează la mentenanță. `export.js` = export PDF/Word/PNG + căutare mai multe numere.
   `scripts/copy-localizare.mjs` îl copiază în build.
+  Pe telefon: harta 72svh, butonul ⤢ (`#full`) = hartă pe tot ecranul (`body.mapFull`), pornită automat de „Locația mea” și oprită la
+  „×”; acolo, parcela atinsă dă butonul „Vezi fișa ↓” (`toOut`). Bara GPS e compactă: stare + ×, o linie de detalii, acțiuni pe un rând.
 - `tools/dxf/convert.py` — convertorul DXF ANCPI → date localizator (ezdxf, shapely, pyproj; Stereo70 → WGS84).
   Citește stratul `T_A1S1_<UAT>_<data>` și `*constructii*`; face **merge** cu datele existente.
   `--entry <key>` reface intrarea din `UATS` (versiune sha1[:10], dată, județ).

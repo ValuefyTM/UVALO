@@ -209,12 +209,18 @@ body.resizing #map{pointer-events:none}
 .lb.cb{color:#fff;font-size:10px}
 .lb.uat{font-size:12px;letter-spacing:.02em}
 /* GPS */
-.gpsBar{position:absolute;left:16px;right:16px;bottom:28px;z-index:1001;background:#fff;color:var(--ink);border-radius:14px;padding:10px 12px;box-shadow:0 8px 24px rgba(0,0,0,.3);font-size:12.5px;line-height:1.5;max-height:45%;overflow:auto}
+.gpsBar{position:absolute;left:16px;right:16px;bottom:28px;z-index:1001;background:#fff;color:var(--ink);border-radius:14px;padding:10px 12px;box-shadow:0 8px 24px rgba(0,0,0,.3);font-size:12.5px;line-height:1.5;max-height:45%;overflow:auto;max-width:560px}
+.gpsBar .gHead{display:flex;gap:10px;align-items:flex-start}
+.gpsBar .gTxt{flex:1;min-width:0}
+.gpsBar .gX{flex:none;width:30px;height:30px;padding:0;border-radius:999px;font-size:16px;line-height:1;display:flex!important;align-items:center;justify-content:center}
+.gpsBar .gIco{display:inline-block;width:8px;height:8px;border-radius:999px;background:#2F6B12;margin-right:6px;vertical-align:1px;box-shadow:0 0 0 3px rgba(47,107,18,.18)}
+.gpsBar .gIco.no{background:var(--acc)}
 .gpsBar .sub{display:block;color:var(--muted);font-size:12px;margin-top:2px}
 .mapwrap:has(.gpsBar:not([hidden])) .legend{display:none}
 .gpsBar b{font-family:var(--mono)}
 .gpsBar .ok{color:#2F6B12;font-weight:700}.gpsBar .no{color:var(--acc-text-2);font-weight:700}
-.gpsBar .acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}
+.gpsBar .acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.fullBtn,.fullOut{display:none!important}
 .gpsBar button{font:inherit;font-size:12px;font-weight:700;padding:5px 10px;display:inline-block;border-radius:999px;border:1px solid var(--line-3);background:var(--subtle);color:var(--ink);cursor:pointer}
 .gpsBar button.pid{background:var(--acc-tint);border-color:#f5d9a6;font-family:var(--mono);padding:2px 8px;margin:0 2px}
 .gpsBar button[aria-pressed="true"]{background:var(--dark);border-color:var(--dark);color:#fff}
@@ -229,7 +235,7 @@ body.resizing #map{pointer-events:none}
   .phead{order:1;padding:12px 16px;padding-top:calc(12px + env(safe-area-inset-top,0px))}
   .find{order:2;padding:16px;gap:12px}
   .find h1{font-size:17px}
-  .mapwrap{order:3;height:56svh;min-height:320px;flex:none}
+  .mapwrap{order:3;height:72svh;min-height:360px;flex:none}
   main{order:4;padding:18px 16px}
   .note{order:5;padding:0 16px 16px}
   .pfoot{order:6;padding-inline:16px}
@@ -243,7 +249,26 @@ body.resizing #map{pointer-events:none}
   .mctl{left:12px;top:12px}
   .legend{left:12px;bottom:34px;max-width:calc(100% - 130px)}
   .lyr{bottom:34px}
-  .gpsBar{left:12px;right:12px;bottom:62px}
+  .gpsBar{left:10px;right:10px;bottom:10px;max-height:38%;padding:10px 12px 10px 14px;border-radius:16px;font-size:13px}
+  .gpsBar .acts{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin-right:-4px}
+  .gpsBar .acts button{flex:none;padding:7px 12px;font-size:12.5px}
+  .gpsBar .sub{font-size:11.5px}
+  .mapwrap:has(.gpsBar:not([hidden])) .lyr{top:12px;bottom:auto}
+  .fullBtn{display:flex!important}
+  /* harta pe tot ecranul (buton ⤢ sau automat la „Locația mea”) */
+  body.mapFull{overflow:hidden}
+  body.mapFull .uvfb-btn,body.mapFull .uvfb-tip{display:none!important}
+  body.mapFull #toast{bottom:auto;top:calc(16px + env(safe-area-inset-top,0px))}
+  .mapwrap{scroll-margin-top:64px}
+  body.mapFull .mapwrap{position:fixed;inset:0;height:auto;min-height:0;z-index:1500}
+  body.mapFull .mctl{top:calc(12px + env(safe-area-inset-top,0px))}
+  body.mapFull .lyr{top:calc(12px + env(safe-area-inset-top,0px))}
+  body.mapFull .gpsBar{bottom:calc(10px + env(safe-area-inset-bottom,0px))}
+  body.mapFull .legend{bottom:calc(64px + env(safe-area-inset-bottom,0px))}
+  body.mapFull .lyr:not(.closed){top:calc(12px + env(safe-area-inset-top,0px));bottom:auto}
+  .fullOut{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:1002;border:0;border-radius:999px;background:var(--acc);color:var(--ink);font-weight:700;font-size:13px;padding:11px 18px;box-shadow:0 8px 22px rgba(0,0,0,.35);cursor:pointer;white-space:nowrap;max-width:calc(100% - 24px);overflow:hidden;text-overflow:ellipsis}
+  body.mapFull .fullOut:not([hidden]){display:block!important}
+  body.mapFull .mapwrap:has(.gpsBar:not([hidden])) .fullOut{display:none!important}
 }
 @media (max-width:380px){
   .facts{grid-template-columns:1fr 1fr}
@@ -297,6 +322,7 @@ body.resizing #map{pointer-events:none}
     <div class="mctl">
       <div class="grp"><button type="button" id="zin" aria-label="Apropie">+</button><button type="button" id="zout" aria-label="Depărtează">−</button></div>
       <button type="button" id="fit" title="Încadrează parcela" aria-label="Încadrează parcela"><span class="fitIco"></span></button>
+      <button type="button" id="full" class="fullBtn" aria-pressed="false" title="Hartă pe tot ecranul" aria-label="Hartă pe tot ecranul"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path class="fo" d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/><path class="fi" style="display:none" d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg></button>
       <button type="button" id="gpsMap" aria-pressed="false" title="Locația mea" aria-label="Locația mea"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="3.5"/><circle cx="12" cy="12" r="8"/><path d="M12 1v3M12 20v3M1 12h3M20 12h3"/></svg></button>
     </div>
     <div class="lyr" id="lyr">
@@ -307,6 +333,7 @@ body.resizing #map{pointer-events:none}
     </div>
     <div class="legend" id="legend" hidden></div>
     <div class="gpsBar" id="gpsBar" role="status" aria-live="polite" hidden></div>
+    <button type="button" class="fullOut" id="fullOut" hidden></button>
   </div>
 </div>
 <div id="toast" hidden></div>
@@ -685,7 +712,7 @@ function show(id,idx,fromMap){
   $('gj').onclick=()=>dl(p.id+'_'+U.key+'.geojson','application/geo+json',JSON.stringify(gjson(p)));
   history.replaceState(null,'','#'+U.key+'-'+p.id);
   refreshLabels();
-  if(fromMap&&matchMedia('(max-width:820px)').matches)out.scrollIntoView({behavior:'smooth',block:'start'});
+  toOut(fromMap,'nr. cad. '+p.id);
 }
 function coordSection(o,A){const g=geom(o), n=o.s.length, lim=allPts||n<=6?n:6, st=mode==='s';
   const rows=o.s.slice(0,lim).map((s,k)=>'<div class="r" data-k="'+k+'"><span>'+(k+1)+'</span>'+(st?'<span>'+fmt(s[1],3)+'</span><span>'+fmt(s[0],3)+'</span>':'<span>'+o.w[k][0].toFixed(7)+'</span><span>'+o.w[k][1].toFixed(7)+'</span>')+'<span>'+fmt(g.seg[k],3)+'</span></div>').join('');
@@ -714,7 +741,7 @@ function showBuilding(b,fromMap){
   if($('bp'))$('bp').onclick=()=>show(p.id,p.i);
   $('kml').onclick=()=>dl((b.c||'constructie')+'_'+(p?p.id:'')+'_'+U.key+'.kml','application/vnd.google-earth.kml+xml',kml(b,b.title+' – '+fmt(b.a,2)+' mp'));
   refreshLabels();
-  if(fromMap&&matchMedia('(max-width:820px)').matches)out.scrollIntoView({behavior:'smooth',block:'start'});
+  toOut(fromMap,b.c||'construcție');
 }
 /* ---------- Căutare după nr. topo ---------- */
 let lastTopo=null, backTo=null;
@@ -783,6 +810,25 @@ $('f').addEventListener('submit',e=>{e.preventDefault();sugg.innerHTML='';
       if(D&&D.parcels.some(p=>p.id===v)){await loadUat(s.key);toast('Numărul '+v+' e în '+s.name+'. Am schimbat localitatea.');break}}}
     show(v);history.replaceState(null,'','#'+U.key+'-'+v);scrollToMap()})();
 });
+/* ---------- Telefon: harta pe tot ecranul ---------- */
+const isPhone=()=>matchMedia('(max-width:820px)').matches;
+let autoFull=false;
+function setFull(on){
+  if(on&&!isPhone())return;
+  document.body.classList.toggle('mapFull',on);$('full').setAttribute('aria-pressed',on);
+  $('full').querySelector('.fo').style.display=on?'none':'';$('full').querySelector('.fi').style.display=on?'':'none';
+  {const t=on?'Ieși din harta pe tot ecranul':'Hartă pe tot ecranul';$('full').title=t;$('full').setAttribute('aria-label',t)}
+  if(!on){autoFull=false;$('fullOut').hidden=true}
+  requestAnimationFrame(()=>map.invalidateSize({pan:false}));
+}
+$('full').onclick=e=>{L.DomEvent.stopPropagation(e);setFull(!document.body.classList.contains('mapFull'))};
+/* După alegerea unei parcele pe hartă: pe telefon, fișa e sub hartă; pe tot ecranul apare butonul „Vezi fișa”. */
+function toOut(fromMap,label){
+  if(!fromMap||!isPhone())return;
+  if(document.body.classList.contains('mapFull')){const b=$('fullOut');b.textContent='Vezi fișa: '+label+' ↓';b.hidden=false;return}
+  $('out').scrollIntoView({behavior:'smooth',block:'start'});
+}
+$('fullOut').onclick=()=>{setFull(false);setTimeout(()=>$('out').scrollIntoView({behavior:'smooth',block:'start'}),60)};
 /* ---------- Locația mea (GPS): punct live pe hartă și parcela pe care stai ---------- */
 const gpsL=L.layerGroup().addTo(map); let gpsWatch=null, gpsFirst=true, gpsPos=null, gpsFollow=true, gpsDot=null, gpsAcc=null;
 /* Busola: direcția în care e îndreptat telefonul (con pe punctul albastru). iPhone cere permisiune la prima atingere. */
@@ -816,12 +862,13 @@ async function compassStart(){
 }
 function compassStop(){compassOn=false;heading=null;window.removeEventListener('deviceorientationabsolute',onOrient);window.removeEventListener('deviceorientation',onOrient);drawHeading()}
 function gpsState(on){[$('gpsBtn'),$('gpsMap')].forEach(b=>b.setAttribute('aria-pressed',on));$('gpsBtn').querySelector('.sr').textContent=on?'Oprește locația mea':'Unde sunt? Folosește locația mea';$('gpsBtn').title=on?'Oprește locația mea':'Folosește locația mea'}
-function gpsStop(){if(gpsWatch!==null)navigator.geolocation.clearWatch(gpsWatch);gpsWatch=null;gpsPos=null;gpsL.clearLayers();gpsDot=gpsAcc=null;compassStop();$('gpsBar').hidden=true;gpsState(false)}
+function gpsStop(){if(gpsWatch!==null)navigator.geolocation.clearWatch(gpsWatch);gpsWatch=null;gpsPos=null;gpsL.clearLayers();gpsDot=gpsAcc=null;compassStop();$('gpsBar').hidden=true;gpsState(false);if(autoFull)setFull(false)}
 function gpsStart(){
   if(!navigator.geolocation){toast('Browserul nu oferă locația.');return}
   gpsFirst=true;gpsFollow=true;gpsState(true);
+  if(isPhone()&&!document.body.classList.contains('mapFull')){setFull(true);autoFull=true}
   compassStart(); // în același gest de atingere (cerut de iPhone)
-  const bar=$('gpsBar');bar.hidden=false;bar.innerHTML='<span>Caut locația… Acceptă accesul la locație dacă browserul îl cere.</span>';
+  const bar=$('gpsBar');bar.hidden=false;bar.innerHTML='<div class="gHead"><span class="gTxt">Caut locația… Acceptă accesul la locație dacă browserul îl cere.</span><button type="button" class="gX" data-g="stop" aria-label="Oprește locația">×</button></div>';
   gpsWatch=navigator.geolocation.watchPosition(onGps,onGpsErr,{enableHighAccuracy:true,maximumAge:3000,timeout:30000});
 }
 function onGpsErr(e){
@@ -850,29 +897,31 @@ function gpsBar(){
   const g=gpsPos; if(!g)return;
   let h='';
   const inUat=U&&P.length&&UATS.some(u=>u.key===U.key&&inBB(u.bb,g.la,g.lo,0.002));
-  if(!inUat){h='<span class="no">Nu ești într-o localitate încărcată pe hartă.</span>'}
+  let sub='';
+  if(!inUat){h='<span class="gIco no"></span><span class="no">Nu ești într-o localitate încărcată pe hartă.</span>'}
   else{
     const cand=P.filter(p=>inBB(p.bb,g.la,g.lo,0.0015));
     const here=cand.filter(p=>distM(p,g.la,g.lo)===0);
-    if(here.length){h='<span class="ok">Ești pe parcela</span> '+[...new Set(here.map(p=>p.id))].map(id=>'<button type="button" class="pid" data-pid="'+esc(id)+'">'+esc(id)+'</button>').join(' ')+' <span>· '+esc(U.name)+'</span>';
+    if(here.length){h='<span class="gIco"></span><span class="ok">Ești pe parcela</span> '+[...new Set(here.map(p=>p.id))].map(id=>'<button type="button" class="pid" data-pid="'+esc(id)+'">'+esc(id)+'</button>').join(' ')+' <span>· '+esc(U.name)+'</span>';
       const e=edgeM(here[0],g.la,g.lo);
-      if(e<g.acc)h+='<span class="sub">La '+fmt(e,0)+' m de limită, sub precizia GPS: poți fi și pe parcela vecină.</span>'}
+      if(e<g.acc)sub=' · la '+fmt(e,0)+' m de limită, poate fi și parcela vecină'}
     else{const nn=cand.map(p=>({p,d:distM(p,g.la,g.lo)})).sort((a,b)=>a.d-b.d)[0];
-      h='<span class="no">Nu ești pe o parcelă înscrisă</span> <span>(drum sau imobil neînscris).</span>'+(nn&&nn.d<60?' <span>Cea mai apropiată:</span> <button type="button" class="pid" data-pid="'+esc(nn.p.id)+'">'+esc(nn.p.id)+'</button> <span>la '+fmt(nn.d,0)+' m</span>':'')}
+      h='<span class="gIco no"></span><span class="no">Nu ești pe o parcelă înscrisă</span> <span>(drum sau imobil neînscris).</span>'+(nn&&nn.d<60?' <span>Cea mai apropiată:</span> <button type="button" class="pid" data-pid="'+esc(nn.p.id)+'">'+esc(nn.p.id)+'</button> <span>la '+fmt(nn.d,0)+' m</span>':'')}
   }
   const hd=compassOn&&heading!=null?heading:(g.course!=null?g.course:null);
-  h+='<span class="sub">Precizie GPS ±'+g.acc+' m'+(g.acc>25?' — slabă, ieși în aer liber':'')+(hd!=null?' · direcție <b id="gpsHead">'+dirName(hd)+' '+Math.round(hd)+'°</b>'+(compassOn?'':' (de mers)'):'')+'</span>';
-  h+='<div class="acts"><button type="button" data-g="center">Centrează</button><button type="button" data-g="compass" aria-pressed="'+compassOn+'">Busolă: '+(compassOn?'pornită':'oprită')+'</button><button type="button" data-g="here">Parcele în jur</button><button type="button" data-g="stop">Oprește</button></div>';
+  h='<div class="gHead"><span class="gTxt">'+h+'</span><button type="button" class="gX" data-g="stop" aria-label="Oprește locația" title="Oprește locația">×</button></div>';
+  h+='<span class="sub">GPS ±'+g.acc+' m'+(g.acc>25?' (slab, ieși în aer liber)':'')+(hd!=null?' · <b id="gpsHead">'+dirName(hd)+' '+Math.round(hd)+'°</b>'+(compassOn?'':' (de mers)'):'')+sub+'</span>';
+  h+='<div class="acts"><button type="button" data-g="center">◎ Centrează</button><button type="button" data-g="compass" aria-pressed="'+compassOn+'" title="Busolă '+(compassOn?'pornită':'oprită')+'">Busolă</button><button type="button" data-g="here">Parcele în jur</button></div>';
   const bar=$('gpsBar');bar.hidden=false;bar.innerHTML=h;
 }
 $('gpsBar').addEventListener('click',async e=>{
   const b=e.target.closest('button');if(!b)return;
-  if(b.dataset.pid){const list=byId.get(b.dataset.pid);if(list){gpsFollow=false;$('q').value=b.dataset.pid;show(b.dataset.pid,list[0].i,true)}return}
+  if(b.dataset.pid){const list=byId.get(b.dataset.pid);if(list){gpsFollow=false;$('q').value=b.dataset.pid;if(document.body.classList.contains('mapFull'))setFull(false);show(b.dataset.pid,list[0].i,true)}return}
   if(b.dataset.g==='stop')return gpsStop();
   if(b.dataset.g==='compass'){if(compassOn)compassStop();else await compassStart();return gpsBar()}
   if(!gpsPos)return;
   if(b.dataset.g==='center'){gpsFollow=true;map.setView([gpsPos.la,gpsPos.lo],Math.max(map.getZoom(),18))}
-  if(b.dataset.g==='here'){await goToPoint(gpsPos.la,gpsPos.lo,'Locația mea (±'+gpsPos.acc+' m)',[]);locLayer.clearLayers();gpsBar()}
+  if(b.dataset.g==='here'){if(document.body.classList.contains('mapFull'))setFull(false);await goToPoint(gpsPos.la,gpsPos.lo,'Locația mea (±'+gpsPos.acc+' m)',[]);locLayer.clearLayers();gpsBar();if(isPhone())$('out').scrollIntoView({behavior:'smooth',block:'start'})}
 });
 map.on('dragstart',()=>{gpsFollow=false});
 const gpsToggle=()=>gpsWatch!==null?gpsStop():gpsStart();
