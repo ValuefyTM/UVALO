@@ -4,7 +4,8 @@ Repo: `ValuefyTM/uvalo` (fost `ValuefyTM/tools`).
 
 Platformă SaaS pentru evaluatori imobiliari (fostă „VALUEFY Tools”). Modulul principal este **Localizatorul cadastral**
 (hartă cu parcele/clădiri din exporturile ANCPI, căutare după nr. cadastral/topo/adresă, export PDF/Word/PNG, GPS).
-Proprietar: VALUEFY (firmă de evaluări imobiliare, Timișoara). UVALO devine un produs separat de site-ul și CRM-ul VALUEFY.
+Operatorul platformei (din 13 oct 2026): **IDEONA ANALYTICS S.R.L.**, CUI 46573375, J2022003536355, Str. Circumvalațiunii nr. 33,
+Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs separat de site-ul și CRM-ul VALUEFY.
 
 ## Reguli de lucru
 
@@ -19,7 +20,7 @@ Proprietar: VALUEFY (firmă de evaluări imobiliare, Timișoara). UVALO devine u
 - După schimbarea de branch: `rm -rf .next/types` dacă `tsc` dă erori ciudate.
 - **Fără VALUEFY în platformă** (texte, antete de export, logo, emailuri): contactul afișat este `office@uvalo.ro`;
   antetul exporturilor (amplasament, comparabile) = numele evaluatorului + legitimația, nu numele firmei.
-  Excepții: numele juridic al operatorului în `COMPANY` (`/confidentialitate`, `/termeni`) și identificatorii tehnici
+  Excepții: identificatorii tehnici
   (`vf_tools`, `valuefy-tools-db`, `valuefy-anexa-*`, redirecționarea `tools.valuefy.ro`, scurtătura veche ștearsă de instalator).
 
 ## Stack
@@ -29,7 +30,8 @@ Proprietar: VALUEFY (firmă de evaluări imobiliare, Timișoara). UVALO devine u
 - `worker.ts` = intrarea workerului (wrangler `"main"`), un strat peste aplicația OpenNext:
   - `OLD_HOSTS` (implicit `tools.valuefy.ro`) → **301** către `APP_URL`, păstrând calea și query-ul; `/api/` NU se
     redirecționează (CRM-ul VALUEFY îl folosește încă);
-  - `SITE_HOSTS` (implicit `uvalo.ro,www.uvalo.ro`) → **302** temporar către aplicație, până există site de prezentare;
+  - `SITE_HOSTS` (implicit `uvalo.ro,www.uvalo.ro`) = **site-ul de prezentare**: `/` servește pagina `/site` a aplicației,
+    fișierele ei trec (`SITE_FILES`: `/_next/`, `/site/`, `/word/prezentare/`, logo, iconițe), orice altă cale → **302** la aceeași cale în aplicație;
   - șterge `x-forwarded-*` (linkurile din emailuri se construiesc doar din `APP_URL`/Host — `src/lib/site.ts`).
 - Fără framework CSS: totul în `src/app/globals.css`. Brand: fundal închis `#141414`, auriu `#E0AD4F`.
   Logo-uri în `public/uvalo-*.svg` (lockup alb, simbol, vertical ink, logo text); favicon `src/app/icon.svg`;
@@ -127,6 +129,14 @@ Proprietar: VALUEFY (firmă de evaluări imobiliare, Timișoara). UVALO devine u
   Instrumente și din panoul Comparabile) → `public/word/src/chrome-pane.js` inserează la cursor. Funcție separată
   `word.chrome` în admin. Dacă volumul crește, imaginile se pot muta în R2.
 - Evenimente: `chrome` (`open`, `capture`, `export`, `send_word`), `word` (`chrome_open`, `insert_chrome`).
+
+## Site-ul de prezentare (uvalo.ro → `/site`)
+
+- `src/app/site/page.tsx` (publică, indexabilă, merge și în mentenanță) după canvasul „UVALO — Landing Colaborări”: hero Colaborări,
+  cum funcționează, analize de piață „În curând” (raport pilot Deta), instrumentele (localizator, amplasament, comparabile, Word cu galerie
+  `SiteGallery`, Chrome), firme/birouri, CTA „Creează cont gratuit” (`/solicita-cont`). Fără pricing. Stiluri `.ld*` în `globals.css`,
+  fonturi Sora + Manrope (Google Fonts), imagini în `public/site/`. Linkurile spre aplicație = `origin()` (APP_URL).
+- `uvalo.ro` și `www.uvalo.ro` trebuie adăugate ca custom domains pe workerul `tools` ca site-ul să apară.
 
 ## Feedback (buton în dreapta jos)
 

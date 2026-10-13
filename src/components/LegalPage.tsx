@@ -1,7 +1,7 @@
 /** Public legal pages (privacy, terms): no sign-in, readable during maintenance too (Microsoft Marketplace links them). */
 export const COMPANY = {
-  name: "VALUEFY S.R.L.", cui: "38250411", reg: "J35/3816/2017", seat: "Giroc, județul Timiș, România",
-  email: "office@uvalo.ro", updated: "12 octombrie 2026",
+  name: "IDEONA ANALYTICS S.R.L.", cui: "46573375", reg: "J2022003536355", seat: "Str. Circumvalațiunii nr. 33, Timișoara, județul Timiș, România",
+  email: "office@uvalo.ro", updated: "13 octombrie 2026",
 };
 
 export function LegalPage({ title, lead, toc, children }: { title: string; lead: string; toc: [string, string][]; children: React.ReactNode }) {
