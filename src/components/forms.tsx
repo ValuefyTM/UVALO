@@ -185,7 +185,7 @@ export function SessionsList({ rows }: { rows: SessionRow[] }) {
 }
 
 /** Account actions in the UVALO administration (disable, enable, sign out everywhere, UVALO admin). */
-export function UserActions({ id, status, isSuper, me, email }: { id: string; status: string; isSuper: boolean; me: boolean; email: string }) {
+export function UserActions({ id, status, isSuper, me, email, office = false }: { id: string; status: string; isSuper: boolean; me: boolean; email: string; office?: boolean }) {
   if (me) return <span className="muted">tu</span>;
   const go = async (action: string, q?: string) => {
     if (q && !confirm(q)) return;
@@ -198,6 +198,7 @@ export function UserActions({ id, status, isSuper, me, email }: { id: string; st
       {status === "disabled" || status === "closed"
         ? <button type="button" className="linkBtn" onClick={() => go("enable")}>Reactivează</button>
         : <button type="button" className="linkBtn danger" onClick={() => go("disable", "Dezactivezi contul? Persoana este deconectată imediat de pe toate dispozitivele.")}>Dezactivează</button>}
+      {!isSuper && <button type="button" className="linkBtn" onClick={() => go(office ? "office_off" : "office_on", office ? "Retragi funcția de birou? „Firma mea” dispare din meniul persoanei (firma și colegii rămân)." : "Permiți funcția de birou? Persoana o poate activa din „Contul meu” și adăuga colegi.")}>{office ? "Retrage birou" : "Permite birou"}</button>}
       <button type="button" className="linkBtn" onClick={() => go("logout_all", "Deconectezi persoana de pe toate dispozitivele?")}>Deconectează</button>
       {!isSuper && <button type="button" className="linkBtn danger" onClick={async () => {
         if (!confirm(`Ștergi definitiv contul ${email}?\n\nSe șterg sesiunile, firma individuală (dacă nu mai are alți membri), invitațiile deschise și datele din Colaborări. Persoana poate cere apoi un cont nou, cu adresa corectă.`)) return;

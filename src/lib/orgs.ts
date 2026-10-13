@@ -144,6 +144,9 @@ export async function setUserStatus(db: D1Database, by: User, userId: string, ac
     await db.prepare("UPDATE users SET status = CASE WHEN activated_at IS NULL THEN 'invited' ELSE 'active' END, disabled_at = NULL, closed_at = NULL WHERE id = ?").bind(userId).run();
   } else if (action === "super_on" || action === "super_off") {
     await db.prepare("UPDATE users SET is_superadmin = ? WHERE id = ?").bind(action === "super_on" ? 1 : 0, userId).run();
+  } else if (action === "office_on" || action === "office_off") {
+    // "Birou de evaluare" (in test): the person may activate it from "Contul meu"; turning it off hides "Firma mea"
+    await db.prepare(`UPDATE users SET office_allowed = ?${action === "office_off" ? ", is_office = 0" : ""} WHERE id = ?`).bind(action === "office_on" ? 1 : 0, userId).run();
   } else if (action === "logout_all") {
     await revokeSessions(db, userId);
   } else return "Acțiune necunoscută.";

@@ -172,6 +172,17 @@ Proprietar: VALUEFY (firmă de evaluări imobiliare, Timișoara). UVALO devine u
   Refuzat pentru super-admini și administratorul unic al unei firme cu colegi. Admin → Utilizatori, Stare „Au renunțat” (și în Tablou);
   „Reactivează” sau o nouă solicitare de cont cu același email îl fac din nou activ. `status 'closed'` se tratează ca `disabled` la locuri/solicitări.
 
+## Birou de evaluare (`/cont` → `/firma`)
+
+- În testare, per cont: Admin → Utilizatori → „Permite birou” / „Retrage birou” (`users.office_allowed`, migrația 0021; `setUserStatus`
+  `office_on|off`; filtrele „Cu funcția de birou” și „Au cerut funcția de birou”). `c.office` = super-admin sau `office_allowed`.
+- Fără permisiune: în „Contul meu” cardul „În curând · în testare” + „Anunță-mă când se lansează” (`/api/interest`, cheia `birou`).
+- Cu permisiune: „Activează funcția de birou” → `OfficeForm` (denumire, bifa membru corporativ + nr. autorizație, descriere, logo ≤ 300 KB,
+  micșorat în browser) → `POST /api/account/office` → `saveOffice` (`src/lib/office.ts`): firma pe care o administrează persoana (altfel una
+  nouă, cu ea titular) primește detaliile (`orgs.corporate/corp_no/description/logo/office_at`), minimum `OFFICE_SEATS` = 5 locuri, `is_office = 1`
+  → `/firma?nou=1`. „Firma mea” (`officeActive(c)`): `OfficeHeader` (logo `/api/org/logo/<id>`, editare) + `MembersPanel` (invitații pe email,
+  inclusiv colaboratori fără legitimație ANEVAR). `OFFICE_READY` nu mai există.
+
 ## Colaborări (`/colaborari`, modulul `colaborari`)
 
 - Lucrări ocazionale între evaluatori (inspecție / raport + inspecție), după mockup-ul din canvas „UVALO — Colaborări”.

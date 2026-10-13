@@ -3,7 +3,7 @@ import { api, err, json, str } from "@/lib/api";
 import { setUserStatus } from "@/lib/orgs";
 import { deleteUser } from "@/lib/merge";
 
-/** `{ action: disable | enable | super_on | super_off | logout_all }` on any account (UVALO administration). */
+/** `{ action: disable | enable | super_on | super_off | office_on | office_off | logout_all }` on any account (UVALO administration). */
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const a = await api("super");
   if ("res" in a) return a.res;

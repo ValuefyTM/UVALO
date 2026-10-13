@@ -15,11 +15,11 @@ const since = (d: number) => new Date(Date.now() - d * 864e5).toISOString();
 export default async function AdminFirms() {
   const { db, c, pending } = await superPage();
   const [{ results: orgs }, kp, days, uats, { results: plans }] = await Promise.all([
-    db.prepare(`${ORG_SQL.replace("SELECT o.*", `SELECT o.*,
+    db.prepare(`${ORG_SQL.replace("SELECT o.id,", `SELECT
         (SELECT COUNT(*) FROM memberships m JOIN users u ON u.id = m.user_id WHERE m.org_id = o.id AND m.status = 'active' AND u.status NOT IN ('disabled', 'closed')) AS used,
         (SELECT COUNT(DISTINCT e.user_id) FROM events e WHERE e.org_id = o.id AND e.at > ?1) AS active_30,
         (SELECT COUNT(*) FROM events e WHERE e.org_id = o.id AND e.at > ?1) AS events_30,
-        (SELECT MAX(e.at) FROM events e WHERE e.org_id = o.id) AS last_at`)} ORDER BY o.status = 'active' DESC, o.name`)
+        (SELECT MAX(e.at) FROM events e WHERE e.org_id = o.id) AS last_at, o.id,`)} ORDER BY o.status = 'active' DESC, o.name`)
       .bind(since(30)).all<Org & { used: number; active_30: number; events_30: number; last_at: string | null }>(),
     db.prepare(`SELECT (SELECT COUNT(*) FROM orgs WHERE status = 'active') AS orgs, (SELECT COUNT(*) FROM users WHERE status = 'active') AS users,
         (SELECT COUNT(*) FROM users WHERE status = 'invited') AS invited,

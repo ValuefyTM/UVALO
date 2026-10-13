@@ -7,7 +7,7 @@ import { audit, type User } from "./auth";
 
 type Row = {
   id: string; email: string; name: string; phone: string | null; status: string; is_superadmin: number; anevar_no: string | null; county: string | null; specs: string | null;
-  avatar: string | null; is_office: number; terms_at: string | null; loc_ack_at: string | null; created_at: string; activated_at: string | null; last_login_at: string | null;
+  avatar: string | null; is_office: number; office_allowed: number; terms_at: string | null; loc_ack_at: string | null; created_at: string; activated_at: string | null; last_login_at: string | null;
   last_seen_at: string | null; notes: string | null;
 };
 const RANK: Record<string, number> = { owner: 3, admin: 2, member: 1 };
@@ -25,7 +25,7 @@ export async function mergeUsers(db: D1Database, by: User, keepId: string, fromI
   const v = {
     name: filled(from.name) ?? keep.name, phone: filled(from.phone) ?? keep.phone, anevar_no: filled(from.anevar_no) ?? keep.anevar_no,
     county: filled(from.county) ?? keep.county, specs: filled(from.specs) ?? keep.specs, avatar: filled(from.avatar) ?? keep.avatar,
-    is_superadmin: Math.max(keep.is_superadmin, from.is_superadmin), is_office: Math.max(keep.is_office, from.is_office),
+    is_superadmin: Math.max(keep.is_superadmin, from.is_superadmin), is_office: Math.max(keep.is_office, from.is_office), office_allowed: Math.max(keep.office_allowed ?? 0, from.office_allowed ?? 0),
     status: keep.status === "active" || from.status === "active" ? "active" : keep.status,
     terms_at: minIso(keep.terms_at, from.terms_at), loc_ack_at: maxIso(keep.loc_ack_at, from.loc_ack_at), created_at: minIso(keep.created_at, from.created_at)!,
     activated_at: minIso(keep.activated_at, from.activated_at), last_login_at: maxIso(keep.last_login_at, from.last_login_at), last_seen_at: maxIso(keep.last_seen_at, from.last_seen_at),
@@ -74,9 +74,9 @@ export async function mergeUsers(db: D1Database, by: User, keepId: string, fromI
     move("UPDATE collab_messages SET user_id = ? WHERE user_id = ?"),
     move("UPDATE collab_notifs SET user_id = ? WHERE user_id = ?"),
     db.prepare("DELETE FROM users WHERE id = ?").bind(fromId),
-    db.prepare(`UPDATE users SET name = ?, phone = ?, anevar_no = ?, county = ?, specs = ?, avatar = ?, is_superadmin = ?, is_office = ?, status = ?, terms_at = ?,
+    db.prepare(`UPDATE users SET name = ?, phone = ?, anevar_no = ?, county = ?, specs = ?, avatar = ?, is_superadmin = ?, is_office = ?, office_allowed = ?, status = ?, terms_at = ?,
       loc_ack_at = ?, created_at = ?, activated_at = ?, last_login_at = ?, last_seen_at = ?, notes = ?, disabled_at = CASE WHEN ? = 'active' THEN NULL ELSE disabled_at END WHERE id = ?`)
-      .bind(v.name, v.phone, v.anevar_no, v.county, v.specs, v.avatar, v.is_superadmin, v.is_office, v.status, v.terms_at, v.loc_ack_at, v.created_at, v.activated_at,
+      .bind(v.name, v.phone, v.anevar_no, v.county, v.specs, v.avatar, v.is_superadmin, v.is_office, v.office_allowed, v.status, v.terms_at, v.loc_ack_at, v.created_at, v.activated_at,
         v.last_login_at, v.last_seen_at, v.notes, v.status, keepId),
   );
   await db.batch(st); // one transaction: all or nothing

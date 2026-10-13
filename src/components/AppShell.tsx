@@ -1,6 +1,6 @@
 import type { Ctx } from "@/lib/access";
 import { maintenanceOn } from "@/lib/maintenance";
-import { canManageOrg, OFFICE_READY, ROLE_LABEL } from "@/lib/access";
+import { officeActive, ROLE_LABEL } from "@/lib/access";
 import { initials } from "@/lib/guard";
 import { getDb } from "@/lib/db";
 import { relevantCount } from "@/lib/collab";
@@ -29,7 +29,7 @@ export async function AppShell(props: { c: Ctx; active: Key; title: string; subt
     // Colaborări: only for those allowed in its current mode (Test: the chosen people; Activ: everyone).
     ...(c.modules.includes("colaborari") ? [{ key: "colaborari" as const, label: "Colaborări", href: "/colaborari", count: collabN, isNew: collabNew }] : []),
     // "Firma mea" only for those who turned on "Lucrez ca birou de evaluare" in their account.
-    ...(OFFICE_READY && c.org && canManageOrg(c) && c.user.is_office ? [{ key: "firma" as const, label: "Firma mea", href: "/firma" }] : []),
+    ...(officeActive(c) ? [{ key: "firma" as const, label: "Firma mea", href: "/firma" }] : []),
   ];
   const current = (k: Key) => (k === "instrumente" ? TOOL_KEYS.includes(props.active) : props.active === k) ? "page" as const : undefined;
   // Phone: Acasă, Instrumente, Colaborări (when open to this person) and the account in the bottom menu; the rest behind "Meniu".

@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 
 type F = { q?: string; judet?: string; stare?: string; tip?: string; firma?: string; act?: string; sort?: string; grup?: string };
 const STARE: [string, string][] = [["", "Toate"], ["active", "Active"], ["invited", "Invitate"], ["disabled", "Dezactivate"], ["closed", "Au renunțat"]];
-const TIP: [string, string][] = [["", "Toți"], ["legit", "Cu legitimație ANEVAR"], ["fara", "Fără legitimație"], ["admin", "Administratori UVALO"]];
+const TIP: [string, string][] = [["", "Toți"], ["legit", "Cu legitimație ANEVAR"], ["fara", "Fără legitimație"], ["admin", "Administratori UVALO"], ["birou", "Cu funcția de birou"], ["birou_cerut", "Au cerut funcția de birou"]];
 const FIRMA: [string, string][] = [["", "Oricare"], ["cu", "Într-o firmă"], ["fara", "Fără firmă"]];
 const ACT: [string, string][] = [["", "Oricând"], ["online", "Online acum"], ["7", "Activi în ultimele 7 zile"], ["30", "Activi în ultimele 30 de zile"], ["inactivi", "Inactivi 30 de zile"], ["niciodata", "Niciodată autentificați"]];
 const SORT: [string, string][] = [["", "Ultima activitate"], ["nume", "Nume"], ["judet", "Județ"], ["nou", "Cele mai noi conturi"], ["actiuni", "Acțiuni 30 zile"]];
@@ -30,6 +30,8 @@ export default async function AdminUsers({ searchParams }: { searchParams: Promi
   if (f.tip === "legit") w.push("u.anevar_no IS NOT NULL AND u.anevar_no <> ''");
   if (f.tip === "fara") w.push("(u.anevar_no IS NULL OR u.anevar_no = '')");
   if (f.tip === "admin") w.push("u.is_superadmin = 1");
+  if (f.tip === "birou") w.push("u.office_allowed = 1");
+  if (f.tip === "birou_cerut") w.push("EXISTS (SELECT 1 FROM events e WHERE e.user_id = u.id AND e.module = 'home' AND e.action = 'notify' AND e.target = 'birou')");
   const inFirm = "EXISTS (SELECT 1 FROM memberships m WHERE m.user_id = u.id AND m.status = 'active')";
   if (f.firma === "cu") w.push(inFirm);
   else if (f.firma === "fara") w.push(`NOT ${inFirm}`);
@@ -46,13 +48,13 @@ export default async function AdminUsers({ searchParams }: { searchParams: Promi
   const order = f.grup === "judet" ? `u.county IS NULL, u.county, ${inner}` : inner;
 
   const [{ results }, { results: all }, { results: js }, { results: firms }] = await Promise.all([
-    db.prepare(`SELECT u.id, u.email, u.name, u.anevar_no, u.county, u.status, u.is_superadmin, u.last_seen_at, u.created_at, u.activated_at, u.closed_at, u.close_reason,
+    db.prepare(`SELECT u.id, u.email, u.name, u.anevar_no, u.county, u.status, u.is_superadmin, u.office_allowed, u.is_office, u.last_seen_at, u.created_at, u.activated_at, u.closed_at, u.close_reason,
         (SELECT GROUP_CONCAT(o.name || '|' || m.role || '|' || o.id, ';;') FROM memberships m JOIN orgs o ON o.id = m.org_id WHERE m.user_id = u.id AND m.status = 'active') AS orgs,
         (SELECT COUNT(*) FROM events e WHERE e.user_id = u.id AND e.at > ?) AS events_30,
         (SELECT COUNT(*) FROM sessions s WHERE s.user_id = u.id AND s.revoked_at IS NULL AND s.expires_at > ?) AS devices
       FROM users u ${where} ORDER BY ${order} LIMIT 2000`)
       .bind(since(30), new Date().toISOString(), ...p)
-      .all<{ id: string; email: string; name: string; anevar_no: string | null; county: string | null; status: string; is_superadmin: number; last_seen_at: string | null; created_at: string; activated_at: string | null; closed_at: string | null; close_reason: string | null; orgs: string | null; events_30: number; devices: number }>(),
+      .all<{ id: string; email: string; name: string; anevar_no: string | null; county: string | null; status: string; is_superadmin: number; office_allowed: number; is_office: number; last_seen_at: string | null; created_at: string; activated_at: string | null; closed_at: string | null; close_reason: string | null; orgs: string | null; events_30: number; devices: number }>(),
     // every account, for "Unește două conturi" (not affected by the filters)
     db.prepare(`SELECT u.id, u.email, u.name, u.anevar_no, u.county, u.status, u.is_superadmin,
         (SELECT GROUP_CONCAT(o.name || '|' || m.role || '|' || o.id, ';;') FROM memberships m JOIN orgs o ON o.id = m.org_id WHERE m.user_id = u.id AND m.status = 'active') AS orgs
@@ -113,14 +115,14 @@ export default async function AdminUsers({ searchParams }: { searchParams: Promi
                   <Fragment key={u.id}>
                     {head && <tr className="groupRow"><td colSpan={7}>{u.county ?? "Fără județ"} · {groupCount.get(u.county ?? "") ?? 0} {groupCount.get(u.county ?? "") === 1 ? "cont" : "conturi"}</td></tr>}
                     <tr>
-                      <td><b className="block">{u.name || u.email}</b><span className="muted">{u.email}{u.anevar_no ? ` · leg. ${u.anevar_no}` : ""}{u.county ? ` · ${u.county}` : ""}</span>{u.is_superadmin ? <span className="pill pillInfo" style={{ marginLeft: 8 }}><i />Admin UVALO</span> : null}</td>
+                      <td><b className="block">{u.name || u.email}</b><span className="muted">{u.email}{u.anevar_no ? ` · leg. ${u.anevar_no}` : ""}{u.county ? ` · ${u.county}` : ""}</span>{u.is_superadmin ? <span className="pill pillInfo" style={{ marginLeft: 8 }}><i />Admin UVALO</span> : null}{u.office_allowed ? <span className="pill pillWarn" style={{ marginLeft: 8 }}><i />Birou{u.is_office ? " activ" : " permis"}</span> : null}</td>
                       <td>{u.orgs ? u.orgs.split(";;").map((x) => { const [n, r, id] = x.split("|"); return <a key={id} className="rowLink block" href={`/admin/firme/${id}`}>{n} <span className="muted">· {ROLE_LABEL[r as Role] ?? r}</span></a>; }) : <span className="muted">—</span>}</td>
                       <td><span className={`pill ${STATUS[u.status]?.[1] ?? "pillWarn"}`}><i />{STATUS[u.status]?.[0] ?? u.status}</span>
                         {u.status === "closed" && <span className="muted block" style={{ marginTop: 4, fontSize: 12 }}>{u.closed_at ? fmtDate(u.closed_at) : ""}{u.close_reason ? ` · ${u.close_reason}` : ""}</span>}</td>
                       <td>{u.last_seen_at ? fmtDate(u.last_seen_at, true) : "—"}</td>
                       <td className="r mono"><a className="rowLink" href={`/admin/activitate?user=${u.id}`}>{u.events_30}</a></td>
                       <td className="r mono">{u.devices}</td>
-                      <td className="r"><UserActions id={u.id} status={u.status} isSuper={!!u.is_superadmin} me={u.id === c.user.id} email={u.email} /></td>
+                      <td className="r"><UserActions id={u.id} status={u.status} isSuper={!!u.is_superadmin} me={u.id === c.user.id} email={u.email} office={!!u.office_allowed} /></td>
                     </tr>
                   </Fragment>
                 );

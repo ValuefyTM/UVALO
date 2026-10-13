@@ -11,6 +11,7 @@ export const ROLE_LABEL: Record<Role, string> = { owner: "Titular cont", admin: 
 export type Org = {
   id: string; name: string; cui: string | null; city: string | null; status: "active" | "suspended"; plan_id: string; plan_name: string; modules: string;
   seats: number; valid_until: string | null; billing_email: string | null; notes: string | null; created_at: string;
+  corporate: number; corp_no: string | null; description: string | null; has_logo: number; office_at: string | null;
 };
 export type Membership = { org_id: string; org_name: string; role: Role; org_status: string };
 
@@ -23,7 +24,8 @@ export const MODULES = [
   { key: "word", name: "UVALO pentru Word", href: "/word", desc: "Anexa foto și anexa cu documente PDF, direct în raportul Word, dintr-un tab UVALO." },
 ] as const;
 
-export const ORG_SQL = `SELECT o.*, p.name AS plan_name, p.modules FROM orgs o JOIN plans p ON p.id = o.plan_id`;
+export const ORG_SQL = `SELECT o.id, o.name, o.cui, o.city, o.status, o.plan_id, o.seats, o.valid_until, o.billing_email, o.notes, o.created_by, o.created_at, o.updated_at,
+  o.corporate, o.corp_no, o.description, o.logo IS NOT NULL AS has_logo, o.office_at, p.name AS plan_name, p.modules FROM orgs o JOIN plans p ON p.id = o.plan_id`;
 
 export const today = () => now().slice(0, 10);
 
@@ -43,6 +45,8 @@ export type Ctx = {
   off: string[];
   /** Colaborări: Dezactivat / Test / Activ (in "modules" only for the people allowed in the current mode). */
   collab: CollabMode;
+  /** "Birou de evaluare" turned on for this person by the administration (super-admins: always). */
+  office: boolean;
 };
 
 export async function context(db: D1Database): Promise<Ctx | null> {
@@ -68,11 +72,11 @@ export async function context(db: D1Database): Promise<Ctx | null> {
   // Colaborări is in every plan; who sees it depends on its mode (Admin → Instrumente → Colaborări).
   const cs = await collabSettings(db);
   if (collabAllowed(cs, { super: sup, userId: user.id, hasAccess: !!org && !block })) modules.push("colaborari");
-  return { user, session, super: sup, orgs, org, role, modules, block, off, collab: cs.mode };
+  return { user, session, super: sup, orgs, org, role, modules, block, off, collab: cs.mode, office: sup || !!user.office_allowed };
 }
 
-/** "Birou de evaluare" (Firma mea: colleagues, seats) opens together with the subscriptions; until then it shows "În curând". */
-export const OFFICE_READY = false;
+/** "Birou de evaluare" (Firma mea: colleagues, seats): only for the accounts the administration turned it on for (in test). */
+export const officeActive = (c: Ctx) => c.office && !!c.user.is_office && !!c.org && canManageOrg(c);
 
 export const canManageOrg = (c: Ctx) => c.super || c.role === "owner" || c.role === "admin";
 

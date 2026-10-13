@@ -104,43 +104,111 @@ export function AccountPanel(p: { id: string; name: string; email: string; legit
   );
 }
 
-/** "Lucrez ca birou de evaluare": turns on "Firma mea" (colleagues, seats, team activity). */
-export function OfficeToggle(p: { ready: boolean; on: boolean; can: boolean; org: string | null }) {
-  const [on, setOn] = useState(p.on);
+export type OfficeData = { name: string; corporate: boolean; corp_no: string; description: string; logo: string | null };
+
+/** A logo picked from disk, shrunk to at most 320 px (PNG keeps the transparency). */
+async function shrinkLogo(file: File): Promise<string> {
+  const bmp = await createImageBitmap(file);
+  const k = Math.min(1, 320 / Math.max(bmp.width, bmp.height));
+  const c = document.createElement("canvas");
+  c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
+  c.getContext("2d")!.drawImage(bmp, 0, 0, c.width, c.height);
+  return c.toDataURL("image/png");
+}
+
+/** The office details: firm name, corporate member + authorization number, description, logo (activation and later edits). */
+export function OfficeForm({ initial, submitLabel, onCancel, onSaved }: { initial: OfficeData; submitLabel: string; onCancel?: () => void; onSaved: (r: { first: boolean }) => void }) {
+  const [f, setF] = useState(initial);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
-  const flip = async (v: boolean) => {
-    setBusy(true); setErr("");
-    const r = await fetch("/api/account/office", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ on: v }) }).catch(() => null);
-    setBusy(false);
-    if (!r?.ok) return setErr("Nu am putut salva. Încearcă din nou.");
-    setOn(v); setTimeout(() => location.reload(), 500);
+  const file = useRef<HTMLInputElement>(null);
+  const pick = async (fl: File | undefined) => {
+    if (!fl) return;
+    if (!/^image\/(png|jpeg|webp)$/.test(fl.type)) return setErr("Alege o imagine PNG, JPG sau WebP.");
+    try { setF({ ...f, logo: await shrinkLogo(fl) }); setErr(""); } catch { setErr("Nu am putut citi imaginea."); }
   };
-  // Not open yet: shown as "În curând", turned off and not clickable (it opens with the subscriptions).
-  if (!p.ready) return (
+  const save = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (f.name.trim().length < 2) return setErr("Scrie denumirea firmei.");
+    if (f.corporate && !f.corp_no.trim()) return setErr("Scrie numărul autorizației de membru corporativ.");
+    setBusy(true); setErr("");
+    const logo = f.logo === initial.logo ? undefined : f.logo ?? null; // unchanged logos are not sent again
+    const r = await fetch("/api/account/office", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...f, logo }) }).catch(() => null);
+    const d = (await r?.json().catch(() => ({}))) as { error?: string; first?: boolean } | undefined;
+    setBusy(false);
+    if (!r?.ok) return setErr(d?.error || "Nu am putut salva. Încearcă din nou.");
+    onSaved({ first: !!d?.first });
+  };
+  return (
+    <form className="officeForm" onSubmit={save} noValidate>
+      <label className="field">Denumirea firmei<input className="input" value={f.name} maxLength={120} onChange={(e) => setF({ ...f, name: e.target.value })} placeholder="ex. Evaluări Imobiliare SRL" /></label>
+      <label className="check"><input type="checkbox" checked={f.corporate} onChange={(e) => setF({ ...f, corporate: e.target.checked })} />Firma este membru corporativ ANEVAR</label>
+      {f.corporate && <label className="field">Nr. autorizației de membru corporativ<input className="input" value={f.corp_no} maxLength={40} onChange={(e) => setF({ ...f, corp_no: e.target.value })} placeholder="ex. 0123" /></label>}
+      <label className="field"><span>Descriere <small>(opțional)</small></span><textarea className="input" rows={3} maxLength={600} value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} placeholder="ex. Evaluări pentru bănci și persoane fizice în Timiș și Arad." /></label>
+      <div className="field"><span>Logo <small>(opțional)</small></span>
+        <div className="officeLogoRow">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          {f.logo ? <img className="officeLogo" src={f.logo} alt="Logo-ul firmei" /> : <span className="officeLogo empty" aria-hidden="true">LOGO</span>}
+          <input ref={file} type="file" accept="image/png,image/jpeg,image/webp" hidden onChange={(e) => pick(e.target.files?.[0])} />
+          <button type="button" className="btn btnGhost btnSm" onClick={() => file.current?.click()}>{f.logo ? "Schimbă logo-ul" : "Încarcă logo"}</button>
+          {f.logo && <button type="button" className="linkBtn danger" onClick={() => setF({ ...f, logo: null })}>Scoate</button>}
+        </div>
+      </div>
+      {err && <div role="alert" className="error">{err}</div>}
+      <div className="actions" style={{ gap: 10 }}>
+        <button type="submit" className="btn btnGold" disabled={busy}>{busy ? "Se salvează…" : submitLabel}</button>
+        {onCancel && <button type="button" className="btn btnGhost" onClick={onCancel}>Renunță</button>}
+      </div>
+    </form>
+  );
+}
+
+/**
+ * "Birou de evaluare" in the account. Not turned on by the administration: "În curând · în testare" + "Anunță-mă".
+ * Turned on: activation with the office details, then "Firma mea" (the office's people, who may be non-valuers).
+ */
+export function OfficeCard(p: { allowed: boolean; active: boolean; asked: boolean; member: string | null; initial: OfficeData }) {
+  const [open, setOpen] = useState(false);
+  const [asked, setAsked] = useState(p.asked);
+  const [busy, setBusy] = useState(false);
+  if (!p.allowed) return (
+    <section className="card officeSoon">
+      <div className="cardHead"><h2>Birou de evaluare</h2><span className="pill pillWarn">În curând · în testare</span></div>
+      <p className="hint" style={{ margin: 0 }}>Vei putea lucra ca birou: denumirea și logo-ul firmei, colegii din birou (evaluatori și colaboratori fără legitimație) și activitatea echipei, într-un singur loc. Funcția este acum în testare cu câteva birouri.</p>
+      <div className="actions" style={{ gap: 10, alignItems: "center" }}>
+        {asked ? <span className="okMsg">✓ Te anunțăm când se lansează.</span> : (
+          <button type="button" className="btn btnGhost btnSm" disabled={busy} onClick={async () => {
+            setBusy(true);
+            const r = await fetch("/api/interest", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: "birou" }) }).catch(() => null);
+            setBusy(false); if (r?.ok) setAsked(true);
+          }}>Anunță-mă când se lansează</button>
+        )}
+      </div>
+    </section>
+  );
+  if (p.active) return (
     <section className="card">
-      <div className="cardHead"><h2>Birou de evaluare</h2><span className="pill pillWarn">În curând</span></div>
-      <label className="switchRow" style={{ cursor: "default", opacity: 0.6 }}>
-        <input type="checkbox" role="switch" checked={false} disabled readOnly />
-        <span className="switch" aria-hidden="true" />
-        <span><b>Lucrez ca birou de evaluare</b><small>Vei putea adăuga colegii din birou și urmări activitatea echipei. Funcția se activează odată cu abonamentele pentru birouri.</small></span>
-      </label>
+      <div className="cardHead"><h2>Birou de evaluare</h2><span className="pill pillOk"><i />Activ</span></div>
+      <div className="officeSum">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        {p.initial.logo ? <img className="officeLogo" src={p.initial.logo} alt="" /> : <span className="officeLogo empty" aria-hidden="true">{p.initial.name.slice(0, 2).toUpperCase()}</span>}
+        <span><b>{p.initial.name}</b><small>{p.initial.corporate ? `Membru corporativ ANEVAR · aut. ${p.initial.corp_no}` : "Birou de evaluare"}</small></span>
+        <a className="btn btnNavy btnSm" href="/firma" style={{ marginLeft: "auto" }}>Administrează biroul →</a>
+      </div>
     </section>
   );
   return (
     <section className="card">
-      <div className="cardHead"><h2>Birou de evaluare</h2>{on && p.can && <a className="btn btnGhost btnSm" href="/firma">Firma mea →</a>}</div>
-      {p.can ? (
+      <div className="cardHead"><h2>Birou de evaluare</h2><span className="pill pillInfo"><i />În testare</span></div>
+      {p.member ? (
+        <p className="hint" style={{ margin: 0 }}>Faci parte din echipa {p.member}. Biroul este administrat de titularul contului firmei.</p>
+      ) : !open ? (
         <>
-          <label className="switchRow">
-            <input type="checkbox" role="switch" checked={on} disabled={busy} onChange={(e) => flip(e.target.checked)} />
-            <span className="switch" aria-hidden="true" />
-            <span><b>Lucrez ca birou de evaluare</b><small>Activează „Firma mea”{p.org ? ` (${p.org})` : ""}: colegii din birou, locurile din abonament și activitatea echipei.</small></span>
-          </label>
-          {err && <div role="alert" className="error">{err}</div>}
+          <p className="hint" style={{ margin: 0 }}>Lucrezi cu o echipă? Activează funcția de birou: completezi detaliile firmei, apoi adaugi colegii (evaluatori sau colaboratori fără legitimație) din pagina de administrare a biroului.</p>
+          <div><button type="button" className="btn btnGold" onClick={() => setOpen(true)}>Activează funcția de birou</button></div>
         </>
       ) : (
-        <p className="hint">{p.org ? `Faci parte din echipa ${p.org}. Colegii și abonamentul sunt administrate de titularul contului firmei.` : "Contul tău nu face parte încă dintr-o firmă."}</p>
+        <OfficeForm initial={p.initial} submitLabel="Activează și deschide biroul" onCancel={() => setOpen(false)} onSaved={() => { location.href = "/firma?nou=1"; }} />
       )}
     </section>
   );
@@ -190,6 +258,30 @@ export function CloseAccount({ email, reasons }: { email: string; reasons: [stri
             <button type="button" className="btn btnGhost" onClick={() => { setOpen(false); setVal(""); setErr(""); }}>Renunță</button>
           </div>
         </form>
+      )}
+    </section>
+  );
+}
+
+/** "Firma mea": the office card on top (logo, name, corporate member) with "Editează detaliile". */
+export function OfficeHeader({ initial, canEdit, welcome }: { initial: OfficeData; canEdit: boolean; welcome: boolean }) {
+  const [edit, setEdit] = useState(false);
+  return (
+    <section className="card">
+      {welcome && <div className="okMsg" role="status">Biroul este activ. Adaugă colegii mai jos: evaluatori sau colaboratori fără legitimație ANEVAR (asistenți, inspectori). Fiecare primește invitația pe email.</div>}
+      {edit ? (
+        <OfficeForm initial={initial} submitLabel="Salvează detaliile" onCancel={() => setEdit(false)} onSaved={() => location.reload()} />
+      ) : (
+        <div className="officeSum">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          {initial.logo ? <img className="officeLogo big" src={initial.logo} alt="Logo-ul firmei" /> : <span className="officeLogo big empty" aria-hidden="true">{initial.name.slice(0, 2).toUpperCase()}</span>}
+          <span className="officeSumText">
+            <b>{initial.name}</b>
+            <small>{initial.corporate ? `Membru corporativ ANEVAR · autorizația nr. ${initial.corp_no}` : "Birou de evaluare"}</small>
+            {initial.description && <span className="officeDesc">{initial.description}</span>}
+          </span>
+          {canEdit && <button type="button" className="btn btnGhost btnSm" style={{ marginLeft: "auto" }} onClick={() => setEdit(true)}>Editează detaliile</button>}
+        </div>
       )}
     </section>
   );
