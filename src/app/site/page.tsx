@@ -24,7 +24,9 @@ const LAND: [string, string, string, string][] = [
 ];
 
 export default async function Site() {
-  const app = await origin();
+  // On uvalo.ro (site host) without APP_URL, origin() would be the site itself and "/" the landing again: go to the app.
+  const o = await origin();
+  const app = /^https?:\/\/(www\.)?uvalo\.ro$/i.test(o) ? "https://app.uvalo.ro" : o;
   const signup = `${app}/solicita-cont`, login = `${app}/login`;
   return (
     <div className="ld">
