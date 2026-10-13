@@ -22,7 +22,7 @@ export function CountTable({ title, rows, head, empty }: { title: string; rows: 
       <h2>{title}</h2>
       {rows.length === 0 ? <p className="hint">{empty}</p> : (
         <div className="tableWrap">
-          <table className="table">
+          <table className="table tableCompact">
             <thead><tr><th>{head[0]}</th><th className="r">{head[1]}</th>{head[2] && <th className="r">{head[2]}</th>}</tr></thead>
             <tbody>{rows.map(([a, b, c]) => <tr key={a}><td>{a}</td><td className="r mono">{b.toLocaleString("ro-RO")}</td>{head[2] && <td className="r mono">{c ?? "—"}</td>}</tr>)}</tbody>
           </table>
@@ -71,7 +71,7 @@ export function UatCountTable({ title, rows, countyOf, empty }: { title: string;
       <h2>{title}</h2>
       {rows.length === 0 ? <p className="hint">{empty}</p> : (
         <div className="tableWrap">
-          <table className="table">
+          <table className="table tableCompact">
             <thead><tr><th>UAT</th><th className="r">Deschideri</th><th className="r">Persoane</th></tr></thead>
             {ordered.map(([c, list]) => (
               <tbody key={c}>

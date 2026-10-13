@@ -143,6 +143,14 @@ Proprietar: VALUEFY (firmă de evaluări imobiliare, Timișoara). UVALO devine u
   (migrația 0018) și `users.last_seen_at`. Panoul: „Online acum” = sesiuni cu semnal în ultimele 3 minute, grupate pe
   persoană, cu pagina (UAT și nr. cadastral în localizator), dispozitivul și orașul; plus ultimele 15 minute și azi.
 
+## Admin → Activitate (`/admin/activitate`)
+
+- Fără filtru: „Cei mai activi utilizatori” (top 5 pe 30 de zile, `topUsers`, fără modulul `admin`, cu instrumentul preferat) și
+  „Cele mai folosite instrumente” (`toolUsage`: acțiuni, persoane, ultima folosire, doar modulele din `TOOLS`), apoi graficul și tabelele.
+- `?user=<id>` (selectorul de sus sau click pe top): statisticile persoanei — `userTotals` (acțiuni, locul în clasament, zile active,
+  autentificări, prima/ultima acțiune), graficul ei, instrumentele, acțiunile, localitățile, parcelele și jurnalul doar al ei
+  (`topActions`/`topTargets` primesc acum și `userId`).
+
 ## Filtre în admin (Utilizatori, Tablou ANEVAR)
 
 - `/admin/utilizatori`: filtre GET (caută, județ, stare, tip cont, firmă, activitate, ordonare) și „Grupează pe județe” (`grup=judet`,

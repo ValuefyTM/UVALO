@@ -169,16 +169,66 @@ export async function activityByDay(db: D1Database, days: number, orgId?: string
   });
 }
 
-export async function topActions(db: D1Database, days: number, orgId?: string) {
-  const { results } = await db.prepare(`SELECT module, action, COUNT(*) AS n FROM events WHERE at > ? ${orgId ? "AND org_id = ?" : ""} GROUP BY module, action ORDER BY n DESC LIMIT 20`)
-    .bind(...(orgId ? [since(days), orgId] : [since(days)])).all<{ module: string; action: string; n: number }>();
+/** WHERE clause for the statistics: period, optional firm and person. */
+function scope(days: number, orgId?: string, userId?: string, alias = "") {
+  const w = [`${alias}at > ?`], p: unknown[] = [since(days)];
+  if (orgId) { w.push(`${alias}org_id = ?`); p.push(orgId); }
+  if (userId) { w.push(`${alias}user_id = ?`); p.push(userId); }
+  return { w, p };
+}
+
+export async function topActions(db: D1Database, days: number, orgId?: string, userId?: string) {
+  const { w, p } = scope(days, orgId, userId);
+  const { results } = await db.prepare(`SELECT module, action, COUNT(*) AS n FROM events WHERE ${w.join(" AND ")} GROUP BY module, action ORDER BY n DESC LIMIT 20`)
+    .bind(...p).all<{ module: string; action: string; n: number }>();
   return results;
 }
 
-export async function topTargets(db: D1Database, days: number, action: string, orgId?: string) {
-  const { results } = await db.prepare(`SELECT target, COUNT(*) AS n, COUNT(DISTINCT user_id) AS u FROM events WHERE at > ? AND action = ? AND target IS NOT NULL ${orgId ? "AND org_id = ?" : ""} GROUP BY target ORDER BY n DESC LIMIT 15`)
-    .bind(...(orgId ? [since(days), action, orgId] : [since(days), action])).all<{ target: string; n: number; u: number }>();
+export async function topTargets(db: D1Database, days: number, action: string, orgId?: string, userId?: string) {
+  const { w, p } = scope(days, orgId, userId);
+  const { results } = await db.prepare(`SELECT target, COUNT(*) AS n, COUNT(DISTINCT user_id) AS u FROM events WHERE ${w.join(" AND ")} AND action = ? AND target IS NOT NULL GROUP BY target ORDER BY n DESC LIMIT 15`)
+    .bind(...p, action).all<{ target: string; n: number; u: number }>();
   return results;
+}
+
+/** Modules that are not tools: the admin's own work is left out of the user statistics. */
+const NOT_USAGE = "'admin'";
+
+export type ToolUse = { module: string; n: number; u: number; days: number; last: string };
+/** Use of each module (actions, people, active days, last use), most used first. */
+export async function toolUsage(db: D1Database, days: number, orgId?: string, userId?: string) {
+  const { w, p } = scope(days, orgId, userId);
+  const { results } = await db.prepare(`SELECT module, COUNT(*) AS n, COUNT(DISTINCT user_id) AS u, COUNT(DISTINCT substr(at, 1, 10)) AS days, MAX(at) AS last
+      FROM events WHERE ${w.join(" AND ")} AND module NOT IN (${NOT_USAGE}) GROUP BY module ORDER BY n DESC`).bind(...p).all<ToolUse>();
+  return results;
+}
+
+export type TopUser = { id: string; name: string | null; email: string; org_name: string | null; n: number; days: number; last: string; top: string | null };
+/** The most active people (actions in the period, without admin work), with their most used module. */
+export async function topUsers(db: D1Database, days: number, limit = 5, orgId?: string) {
+  const { w, p } = scope(days, orgId, undefined, "e.");
+  const { results } = await db.prepare(`SELECT u.id, NULLIF(u.name, '') AS name, u.email, COUNT(*) AS n, COUNT(DISTINCT substr(e.at, 1, 10)) AS days, MAX(e.at) AS last,
+        (SELECT o.name FROM memberships m JOIN orgs o ON o.id = m.org_id WHERE m.user_id = u.id AND m.status = 'active' ORDER BY m.created_at LIMIT 1) AS org_name,
+        (SELECT x.module FROM events x WHERE x.user_id = u.id AND x.at > ? AND x.module NOT IN (${NOT_USAGE}) GROUP BY x.module ORDER BY COUNT(*) DESC LIMIT 1) AS top
+      FROM events e JOIN users u ON u.id = e.user_id WHERE ${w.join(" AND ")} AND e.module NOT IN (${NOT_USAGE})
+      GROUP BY u.id ORDER BY n DESC LIMIT ?`).bind(since(days), ...p, limit).all<TopUser>();
+  return results;
+}
+
+/** One person's totals: actions and active days in the period, first and last action ever, sessions, rank among users. */
+export async function userTotals(db: D1Database, userId: string, days: number) {
+  const s = since(days);
+  return db.prepare(`SELECT
+        (SELECT COUNT(*) FROM events WHERE user_id = ?1 AND at > ?2 AND module NOT IN (${NOT_USAGE})) AS n,
+        (SELECT COUNT(DISTINCT substr(at, 1, 10)) FROM events WHERE user_id = ?1 AND at > ?2) AS days,
+        (SELECT COUNT(*) FROM events WHERE user_id = ?1 AND module NOT IN (${NOT_USAGE})) AS total,
+        (SELECT MIN(at) FROM events WHERE user_id = ?1) AS first,
+        (SELECT MAX(at) FROM events WHERE user_id = ?1) AS last,
+        (SELECT COUNT(*) FROM sessions WHERE user_id = ?1 AND created_at > ?2) AS sessions,
+        (SELECT COUNT(*) + 1 FROM (SELECT user_id FROM events WHERE at > ?2 AND user_id IS NOT NULL AND module NOT IN (${NOT_USAGE}) GROUP BY user_id
+           HAVING COUNT(*) > (SELECT COUNT(*) FROM events WHERE user_id = ?1 AND at > ?2 AND module NOT IN (${NOT_USAGE})))) AS rank,
+        (SELECT COUNT(DISTINCT user_id) FROM events WHERE at > ?2 AND module NOT IN (${NOT_USAGE})) AS people`)
+    .bind(userId, s).first<{ n: number; days: number; total: number; first: string | null; last: string | null; sessions: number; rank: number; people: number }>();
 }
 
 export type EventRow = { id: number; at: string; module: string; action: string; target: string | null; meta: string | null; user_name: string | null; email: string | null; org_name: string | null };
