@@ -28,8 +28,6 @@ export async function AppShell(props: { c: Ctx; active: Key; title: string; subt
     { key: "instrumente", label: "Instrumente", href: "/instrumente" },
     // Colaborări: only for those allowed in its current mode (Test: the chosen people; Activ: everyone).
     ...(c.modules.includes("colaborari") ? [{ key: "colaborari" as const, label: "Colaborări", href: "/colaborari", count: collabN, isNew: collabNew }] : []),
-    // "Firma mea" only for those who turned on "Lucrez ca birou de evaluare" in their account.
-    ...(officeActive(c) ? [{ key: "firma" as const, label: "Firma mea", href: "/firma" }] : []),
   ];
   const current = (k: Key) => (k === "instrumente" ? TOOL_KEYS.includes(props.active) : props.active === k) ? "page" as const : undefined;
   // Phone: Acasă, Instrumente, Colaborări (when open to this person) and the account in the bottom menu; the rest behind "Meniu".
@@ -60,6 +58,7 @@ export async function AppShell(props: { c: Ctx; active: Key; title: string; subt
           {c.super && <a className="sideLink" href="/admin">Portal admin →</a>}
           <OrgSwitch orgs={c.orgs.map((o) => ({ id: o.org_id, name: o.org_name }))} current={c.org?.id ?? null} />
           <Referral />
+          <div className={`meStack${officeActive(c) ? " withOffice" : ""}`}>
           <a className="meCard meLink" href="/cont" aria-current={props.active === "cont" ? "page" : undefined} title="Contul meu: imagine, email, birou de evaluare">
             {c.user.has_avatar
               // eslint-disable-next-line @next/next/no-img-element
@@ -70,6 +69,18 @@ export async function AppShell(props: { c: Ctx; active: Key; title: string; subt
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" /></svg>
             </span>
           </a>
+          {/* "Birou de evaluare": the office under the profile, in the same card (not in the menu) */}
+          {officeActive(c) && (
+            <a className="meOffice" href="/firma" aria-current={props.active === "firma" ? "page" : undefined} title="Firma mea: colegii din birou, detaliile firmei, activitatea echipei">
+              {c.org!.has_logo
+                // eslint-disable-next-line @next/next/no-img-element
+                ? <img className="meOfficeLogo" src={`/api/org/logo/${c.org!.id}`} alt="" />
+                : <span className="meOfficeLogo" aria-hidden="true">{c.org!.name.slice(0, 2).toUpperCase()}</span>}
+              <span className="meText"><b>Firma mea</b><small>{c.org!.name}</small></span>
+              <span className="meGo" aria-hidden="true">→</span>
+            </a>
+          )}
+          </div>
           <LogoutButton />
         </div>
       </aside>

@@ -180,7 +180,8 @@ Proprietar: VALUEFY (firmă de evaluări imobiliare, Timișoara). UVALO devine u
 - Cu permisiune: „Activează funcția de birou” → `OfficeForm` (denumire, bifa membru corporativ + nr. autorizație, descriere, logo ≤ 300 KB,
   micșorat în browser) → `POST /api/account/office` → `saveOffice` (`src/lib/office.ts`): firma pe care o administrează persoana (altfel una
   nouă, cu ea titular) primește detaliile (`orgs.corporate/corp_no/description/logo/office_at`), minimum `OFFICE_SEATS` = 5 locuri, `is_office = 1`
-  → `/firma?nou=1`. „Firma mea” (`officeActive(c)`): `OfficeHeader` (logo `/api/org/logo/<id>`, editare) + `MembersPanel` (invitații pe email,
+  → `/firma?nou=1`. „Firma mea” nu e în meniu: apare în bara laterală sub cardul de profil, în același bloc (`.meStack`/`.meOffice`,
+  cu logo-ul), doar cu `officeActive(c)`. Pagina: `OfficeHeader` (logo `/api/org/logo/<id>`, editare) + `MembersPanel` (invitații pe email,
   inclusiv colaboratori fără legitimație ANEVAR). `OFFICE_READY` nu mai există.
 
 - Membrii unui birou (nu administratorii) nu pot activa funcția de birou: cardul „Membru în X” + „Vreau să ies din birou” (`OfficeLeave`):
