@@ -54,7 +54,7 @@ export async function AppShell(props: { c: Ctx; active: Key; title: string; subt
           ))}
           <span className="navSec">În curând</span>
           <a aria-disabled="true" tabIndex={-1} className="navSoon">Analize de piață</a>
-          {!c.modules.includes("colaborari") && <a aria-disabled="true" tabIndex={-1} className="navSoon">Colaborări</a>}
+          {!c.modules.includes("colaborari") && c.collab !== "on" && !!c.user.anevar_no?.trim() && <a aria-disabled="true" tabIndex={-1} className="navSoon">Colaborări</a>}
         </nav>
         <div className="me">
           {c.super && <a className="sideLink" href="/admin">Portal admin →</a>}

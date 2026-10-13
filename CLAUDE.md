@@ -183,6 +183,12 @@ Proprietar: VALUEFY (firmă de evaluări imobiliare, Timișoara). UVALO devine u
   → `/firma?nou=1`. „Firma mea” (`officeActive(c)`): `OfficeHeader` (logo `/api/org/logo/<id>`, editare) + `MembersPanel` (invitații pe email,
   inclusiv colaboratori fără legitimație ANEVAR). `OFFICE_READY` nu mai există.
 
+- Membrii unui birou (nu administratorii) nu pot activa funcția de birou: cardul „Membru în X” + „Vreau să ies din birou” (`OfficeLeave`):
+  doar evaluatori — legitimația se verifică în Tablou (există, nu e pe alt cont, numele se potrivește) → `office_leaves` (migrația 0022),
+  email către administratorii biroului; în „Firma mea” `LeaveRequests`: „Scoate din birou și creează cont individual” (`decideLeave`: membership
+  `removed`, firmă individuală nouă cu persoana titular, `anevar_no`/județ/specializări din Tablou, email) sau „Respinge”.
+- „În curând: Colaborări” (card pe Acasă, meniu) doar pentru evaluatori fără acces cât timp modul ≠ `on`; niciodată pentru nonevaluatori.
+
 ## Colaborări (`/colaborari`, modulul `colaborari`)
 
 - Lucrări ocazionale între evaluatori (inspecție / raport + inspecție), după mockup-ul din canvas „UVALO — Colaborări”.

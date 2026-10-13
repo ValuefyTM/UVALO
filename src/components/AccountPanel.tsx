@@ -167,10 +167,12 @@ export function OfficeForm({ initial, submitLabel, onCancel, onSaved }: { initia
  * "Birou de evaluare" in the account. Not turned on by the administration: "În curând · în testare" + "Anunță-mă".
  * Turned on: activation with the office details, then "Firma mea" (the office's people, who may be non-valuers).
  */
-export function OfficeCard(p: { allowed: boolean; active: boolean; asked: boolean; member: string | null; initial: OfficeData }) {
+export function OfficeCard(p: { allowed: boolean; active: boolean; asked: boolean; member: string | null; initial: OfficeData; leave?: { pending: string | null; legit: string | null } }) {
   const [open, setOpen] = useState(false);
   const [asked, setAsked] = useState(p.asked);
   const [busy, setBusy] = useState(false);
+  // a member of someone's office: no office function of their own; they may ask to leave for an individual account
+  if (p.member) return <OfficeLeave org={p.member} pending={p.leave?.pending ?? null} legit={p.leave?.legit ?? null} />;
   if (!p.allowed) return (
     <section className="card officeSoon">
       <div className="cardHead"><h2>Birou de evaluare</h2><span className="pill pillWarn">În curând · în testare</span></div>
@@ -283,6 +285,79 @@ export function OfficeHeader({ initial, canEdit, welcome }: { initial: OfficeDat
           {canEdit && <button type="button" className="btn btnGhost btnSm" style={{ marginLeft: "auto" }} onClick={() => setEdit(true)}>Editează detaliile</button>}
         </div>
       )}
+    </section>
+  );
+}
+
+/** A member of an office: why there is no office function here, and "Vreau să ies din birou" (valuers only, card checked). */
+function OfficeLeave({ org, pending, legit: known }: { org: string; pending: string | null; legit: string | null }) {
+  const [open, setOpen] = useState(false);
+  const [legit, setLegit] = useState(known ?? "");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  const call = async (method: string, body?: unknown) => {
+    setBusy(true); setErr("");
+    const r = await fetch("/api/account/leave", { method, headers: body ? { "Content-Type": "application/json" } : undefined, body: body ? JSON.stringify(body) : undefined }).catch(() => null);
+    const d = (await r?.json().catch(() => ({}))) as { error?: string } | undefined;
+    setBusy(false);
+    if (!r?.ok) return setErr(d?.error || "Nu am putut trimite. Încearcă din nou.");
+    location.reload();
+  };
+  return (
+    <section className="card">
+      <div className="cardHead"><h2>Birou de evaluare</h2><span className="pill"><i />Membru în {org}</span></div>
+      <p className="hint" style={{ margin: 0 }}>Faci parte din biroul <b>{org}</b>, așa că nu poți activa funcția de birou pe contul tău. Biroul, colegii și abonamentul le administrează titularul biroului.</p>
+      {pending ? (
+        <>
+          <div className="note">Ai cerut să ieși din birou pe {pending}. Administratorul biroului a primit cererea pe email; după ce o aprobă, contul tău continuă ca cont individual.</div>
+          {err && <div role="alert" className="error">{err}</div>}
+          <div><button type="button" className="linkBtn" disabled={busy} onClick={() => call("DELETE")}>Anulează cererea</button></div>
+        </>
+      ) : !open ? (
+        <div><button type="button" className="btn btnGhost btnSm" onClick={() => setOpen(true)}>Vreau să ies din birou</button></div>
+      ) : (
+        <form className="officeForm" onSubmit={(e) => { e.preventDefault(); call("POST", { legit }); }}>
+          <p className="hint" style={{ margin: 0 }}>Trimitem cererea administratorului biroului. După ce te scoate din birou, contul tău continuă ca <b>cont individual</b>, cu același email și istoric. Contul individual este doar pentru evaluatori: verificăm legitimația în Tabloul ANEVAR.</p>
+          <label className="field">Legitimația ANEVAR<input className="input" inputMode="numeric" value={legit} maxLength={7} readOnly={!!known} onChange={(e) => setLegit(e.target.value.replace(/\D/g, ""))} placeholder="ex. 15902" /></label>
+          {err && <div role="alert" className="error">{err}</div>}
+          <div className="actions" style={{ gap: 10 }}>
+            <button type="submit" className="btn btnNavy" disabled={busy || !legit}>{busy ? "Se trimite…" : "Trimite cererea administratorului"}</button>
+            <button type="button" className="btn btnGhost" onClick={() => { setOpen(false); setErr(""); }}>Renunță</button>
+          </div>
+        </form>
+      )}
+    </section>
+  );
+}
+
+/** "Firma mea": requests of members to leave the office for an individual account. */
+export function LeaveRequests({ rows }: { rows: { id: string; name: string; email: string; legit: string; tablou_name: string | null; created: string }[] }) {
+  const [busy, setBusy] = useState("");
+  const [err, setErr] = useState("");
+  if (!rows.length) return null;
+  const decide = async (id: string, approve: boolean, who: string) => {
+    if (!confirm(approve ? `Îl scoți pe ${who} din birou? Contul lui continuă ca cont individual, iar locul din birou se eliberează.` : `Respingi cererea lui ${who}?`)) return;
+    setBusy(id); setErr("");
+    const r = await fetch(`/api/org/leave/${id}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ approve }) }).catch(() => null);
+    const d = (await r?.json().catch(() => ({}))) as { error?: string } | undefined;
+    setBusy("");
+    if (!r?.ok) return setErr(d?.error || "Nu am putut salva. Încearcă din nou.");
+    location.reload();
+  };
+  return (
+    <section className="card">
+      <div className="cardHead"><h2>Cereri de ieșire din birou</h2><span className="pill pillWarn"><i />{rows.length}</span></div>
+      <p className="hint" style={{ margin: 0 }}>Colegi care vor să continue în UVALO cu un cont individual. Legitimația ANEVAR a fost verificată în Tablou.</p>
+      {err && <div role="alert" className="error">{err}</div>}
+      {rows.map((r) => (
+        <div key={r.id} className="leaveRow">
+          <span><b>{r.name || r.email}</b><small>{r.email} · leg. ANEVAR {r.legit}{r.tablou_name ? ` (${r.tablou_name})` : ""} · cerută {r.created}</small></span>
+          <span className="actions" style={{ gap: 10 }}>
+            <button type="button" className="linkBtn" disabled={!!busy} onClick={() => decide(r.id, false, r.name || r.email)}>Respinge</button>
+            <button type="button" className="btn btnNavy btnSm" disabled={!!busy} onClick={() => decide(r.id, true, r.name || r.email)}>{busy === r.id ? "…" : "Scoate din birou și creează cont individual"}</button>
+          </span>
+        </div>
+      ))}
     </section>
   );
 }

@@ -4,6 +4,7 @@ import { AppShell } from "@/components/AppShell";
 import { AccountPanel, CloseAccount, OfficeCard } from "@/components/AccountPanel";
 import { CLOSE_REASONS } from "@/lib/merge";
 import { canManageOrg, officeActive } from "@/lib/access";
+import { pendingLeave } from "@/lib/office";
 
 export const metadata: Metadata = { title: "Contul meu | UVALO" };
 export const dynamic = "force-dynamic";
@@ -15,6 +16,7 @@ export default async function Account() {
   // "Birou de evaluare": the firm this person runs (its details prefill the activation form)
   const own = !!c.org && canManageOrg(c);
   const logo = own && c.org!.has_logo ? (await db.prepare("SELECT logo FROM orgs WHERE id = ?").bind(c.org!.id).first<{ logo: string | null }>())?.logo ?? null : null;
+  const pl = c.org && !own ? await pendingLeave(db, u.id, c.org.id) : null;
   const asked = !c.office && !!(await db.prepare("SELECT 1 FROM events WHERE user_id = ? AND module = 'home' AND action = 'notify' AND target = 'birou' LIMIT 1").bind(u.id).first());
   return (
     <AppShell c={c} active="cont" title="Contul meu">
@@ -23,7 +25,8 @@ export default async function Account() {
           hasAvatar={!!u.has_avatar} initials={initials(u.name, u.email)} tablou={m?.tablou_date ? fmtDate(m.tablou_date) : null} />
         <div style={{ height: 18 }} />
         <OfficeCard allowed={c.office} active={officeActive(c)} asked={asked} member={c.org && !canManageOrg(c) ? c.org.name : null}
-          initial={{ name: own ? c.org!.name : "", corporate: own ? !!c.org!.corporate : false, corp_no: own ? c.org!.corp_no ?? "" : "", description: own ? c.org!.description ?? "" : "", logo }} />
+          initial={{ name: own ? c.org!.name : "", corporate: own ? !!c.org!.corporate : false, corp_no: own ? c.org!.corp_no ?? "" : "", description: own ? c.org!.description ?? "" : "", logo }}
+          leave={{ pending: pl ? fmtDate(pl.created_at) : null, legit: u.anevar_no }} />
         <div style={{ height: 18 }} />
         <CloseAccount email={u.email} reasons={CLOSE_REASONS} />
       </div>

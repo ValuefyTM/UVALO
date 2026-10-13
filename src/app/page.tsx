@@ -60,6 +60,8 @@ export default async function Home() {
   }
   // Colaborări: a preview for those who activated it, the launch banner for those who may use it and have not yet
   const collab = c.modules.includes("colaborari");
+  // "În curând: Colaborări" only for valuers without access while the module is not launched (never for non-valuers)
+  const collabSoon = !collab && c.collab !== "on" && (c.super || !!c.user.anevar_no?.trim());
   const cs = collab ? await collabState(db, c.user).catch(() => null) : null;
   const launch = collab && cs && !cs.profile ? await collabLaunch(db, { id: c.user.id, county: c.user.county }).catch(() => null) : null;
   const asked = new Set((await db.prepare("SELECT DISTINCT target FROM events WHERE user_id = ? AND module = 'home' AND action = 'notify'").bind(c.user.id).all<{ target: string }>()).results.map((r) => r.target));
@@ -134,7 +136,7 @@ export default async function Home() {
         <section aria-labelledby="soonT">
           <h2 id="soonT" className="homeSec">În curând în UVALO</h2>
           <div className="soonGrid">
-            {SOON.filter((x) => !(x.key === "colaborari" && collab)).map(({ key, Art, name, desc }) => (
+            {SOON.filter((x) => x.key !== "colaborari" || collabSoon).map(({ key, Art, name, desc }) => (
               <div key={key} className="soonBig">
                 <Art />
                 <div className="soonBody">

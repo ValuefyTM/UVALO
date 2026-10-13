@@ -59,6 +59,8 @@ export async function mergeUsers(db: D1Database, by: User, keepId: string, fromI
     move("UPDATE users SET created_by = ? WHERE created_by = ?"),
     move("UPDATE chrome_batches SET user_id = ? WHERE user_id = ?"),
     move("UPDATE feedback SET user_id = ? WHERE user_id = ?"),
+    move("UPDATE office_leaves SET user_id = ? WHERE user_id = ?"),
+    move("UPDATE office_leaves SET decided_by = ? WHERE decided_by = ?"),
     db.prepare("DELETE FROM email_changes WHERE user_id = ?").bind(fromId),
     // Colaborări: one profile (the kept one, if it has one); a request twice on the same post keeps the kept account's
     move("UPDATE OR IGNORE collab_profiles SET user_id = ? WHERE user_id = ?"),
@@ -125,6 +127,8 @@ export async function deleteUser(db: D1Database, by: User, id: string) {
     one("DELETE FROM chrome_slices WHERE batch_id IN (SELECT id FROM chrome_batches WHERE user_id = ?)"),
     one("DELETE FROM chrome_batches WHERE user_id = ?"),
     one("UPDATE feedback SET user_id = NULL WHERE user_id = ?"),
+    one("DELETE FROM office_leaves WHERE user_id = ?"),
+    one("UPDATE office_leaves SET decided_by = NULL WHERE decided_by = ?"),
     one("DELETE FROM referrals WHERE by_user = ?"),
     one("UPDATE account_requests SET user_id = NULL WHERE user_id = ?"),
     one("UPDATE account_requests SET decided_by = NULL WHERE decided_by = ?"),

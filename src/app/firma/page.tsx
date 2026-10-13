@@ -5,7 +5,8 @@ import { orgBlock, seatsUsed } from "@/lib/access";
 import { activityByDay, members, pendingInvites, recentEvents, topTargets } from "@/lib/orgs";
 import { AppShell } from "@/components/AppShell";
 import { MembersPanel } from "@/components/forms";
-import { OfficeHeader } from "@/components/AccountPanel";
+import { LeaveRequests, OfficeHeader } from "@/components/AccountPanel";
+import { leaveRequests } from "@/lib/office";
 import { DayBars, EventLog, UatCountTable } from "@/components/Charts";
 
 export const metadata: Metadata = { title: "Firma mea | UVALO" };
@@ -19,6 +20,7 @@ export default async function Firm({ searchParams }: { searchParams: Promise<{ n
     members(db, org.id), pendingInvites(db, org.id), seatsUsed(db, org.id), activityByDay(db, 30, org.id), topTargets(db, 30, "uat_open", org.id), recentEvents(db, { orgId: org.id, limit: 50 }),
   ]);
   const block = orgBlock(org);
+  const leaves = await leaveRequests(db, org.id);
   const logo = org.has_logo ? (await db.prepare("SELECT logo FROM orgs WHERE id = ?").bind(org.id).first<{ logo: string | null }>())?.logo ?? null : null;
   const countyOf = await countyOfUats();
   return (
@@ -26,6 +28,7 @@ export default async function Firm({ searchParams }: { searchParams: Promise<{ n
       {block && <div className="note">{block}</div>}
       <OfficeHeader welcome={nou === "1"} canEdit={c.office}
         initial={{ name: org.name, corporate: !!org.corporate, corp_no: org.corp_no ?? "", description: org.description ?? "", logo }} />
+      <LeaveRequests rows={leaves.map((l) => ({ id: l.id, name: l.name, email: l.email, legit: l.legit, tablou_name: l.tablou_name, created: fmtDate(l.created_at) }))} />
       <MembersPanel
         members={m.map((x) => ({ user_id: x.user_id, email: x.email, name: x.name, status: x.status, role: x.role, last_seen: x.last_seen_at ? fmtDate(x.last_seen_at, true) : "—", events_30: x.events_30, searches_30: x.searches_30, exports_30: x.exports_30, me: x.user_id === c.user.id }))}
         invites={inv.map((i) => ({ id: i.id, email: i.email, role: i.role, created: fmtDate(i.created_at), expires: fmtDate(i.expires_at), by: i.invited_by_name }))}
