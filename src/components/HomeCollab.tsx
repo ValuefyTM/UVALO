@@ -101,7 +101,6 @@ export function CollabHome({ s }: { s: CollabState }) {
               <span className="hcCardHead"><small>AI NEVOIE DE UN COLEG?</small></span>
               <b>Publică o inspecție sau predă o lucrare</b>
               <small className="hcMuted">Colegii din zonă primesc notificare în aplicație și pe email.</small>
-              <span className="hcCardGo">+ Publică anunț</span>
             </a>
           )}
 
