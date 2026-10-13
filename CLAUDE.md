@@ -184,7 +184,7 @@ Proprietar: VALUEFY (firmă de evaluări imobiliare, Timișoara). UVALO devine u
 - Logica în `src/lib/collab.ts` (+ `collab-shared.ts` pentru browser), API unic `/api/colaborari` (GET = starea paginii,
   `?conv=` = mesajele; POST `{action}`: profile, post, request, withdraw, open_chat, pick, status, message, read),
   pagina `src/components/Colaborari.tsx` (feed, Anunțurile mele, Mesaje cu polling 6 s, Zone de acoperire, profil,
-  activare în 3 pași, splash „Nou în UVALO” `CollabSplash` pe Acasă și în pagină, o dată per browser — localStorage).
+  activare în 3 pași).
 - Reguli: anunț nou → notificări în aplicație (și email, vezi mai jos) pentru profilurile cu zona potrivită (`inZone`: județul de bază cu rază
   sau tot județul, plus județele suplimentare; fără coordonate contează tot județul). Coordonatele vin din Google
   Geocoding (`GOOGLE_MAPS_KEY`); fără cheie, distanțele lipsesc. Onorariu implicit „de stabilit”, sumă = „Buget”.
@@ -205,8 +205,13 @@ Proprietar: VALUEFY (firmă de evaluări imobiliare, Timișoara). UVALO devine u
 - **Acasă** (`src/components/HomeCollab.tsx`): cu profil → secțiunea „Lucrări de la colegi, în zonele tale” sub localizator (`CollabHome`, din
   `collabState`: ultimele 3 anunțuri din zone, anunțul propriu activ/în lucru cu cererile, mesajele, notificările); fără profil → bannerul de
   lansare „NOU ÎN UVALO” deasupra localizatorului (`CollabLaunch`, `collabLaunch()`: anunțurile active din județul persoanei și cel mai nou).
-  Fereastra `CollabSplash` nu mai apare pe Acasă (doar în pagina Colaborări). Meniul: „NOU” până la activare, apoi contorul roșu; pe telefon
+  Imaginea = `CollabArt` (`src/components/CollabArt.tsx`, și în email). „N colegi l-au activat deja” (`activatedCount`, minimum 20) pe banner și în
+  pagina de activare. Fără splash de lansare; după activare apare o dată (localStorage) `RecommendSplash`: îndeamnă la „Recomandă unui coleg”
+  (`Referral variant="button"`). Meniul: „NOU” până la activare, apoi contorul roșu; pe telefon
   Colaborări intră în meniul de jos. `/colaborari` primește `?view=mine|chat|settings`, `?conv=`, `?compose=1`, `?post=`.
+- Admin → Instrumente → Colaborări: „Cine a activat Colaborările” (profilurile) și „Anunțul de lansare”: abonații „Anunță-mă la lansare”
+  (`launchSubscribers`) + butonul care trimite o dată emailul „Colaborările sunt aici” (`sendLaunchEmails`, imagine `public/email/colaborari-lansare.png`,
+  link de autentificare 7 zile; eveniment `colaborari`/`launch_mail` pe destinatar), doar celor cu acces în modul curent și fără profil.
 - Evenimente `colaborari`: `page`, `profile`, `post`, `request`, `open_chat`, `pick`, `post_status` (meta `{test:1}` în test).
 
 ## Instrumente în admin (`/admin/instrumente`)

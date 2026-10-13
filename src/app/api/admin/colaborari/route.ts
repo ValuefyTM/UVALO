@@ -3,7 +3,7 @@ import { api, err, json, str } from "@/lib/api";
 import { audit } from "@/lib/auth";
 import { normEmail } from "@/lib/crypto";
 import { track } from "@/lib/track";
-import { collabCounts, collabSettings, purgeTest, setCollabSettings } from "@/lib/collab";
+import { collabCounts, collabSettings, purgeTest, sendLaunchEmails, setCollabSettings } from "@/lib/collab";
 
 /** Colaborări in the administration: mode (Dezactivat / Test / Activ), the test users, deleting the test data. */
 export async function POST(req: Request) {
@@ -45,6 +45,11 @@ export async function POST(req: Request) {
       await setCollabSettings(a.db, actor, { ...cur, users: cur.users.filter((x) => x !== id) });
       await audit(a.db, actor, "collab.test_remove", "user", id);
       return NextResponse.json({ ok: true });
+    }
+    case "launch_mail": {
+      const r = await sendLaunchEmails(a.db);
+      await audit(a.db, actor, "collab.launch_mail", "collab", undefined, String(r.sent));
+      return NextResponse.json({ ok: true, sent: r.sent });
     }
     case "purge": {
       const n = await purgeTest(a.db);

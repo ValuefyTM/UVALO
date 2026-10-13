@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CollabState, Person, Profile } from "@/lib/collab";
 import { NotifyButton } from "./NotifyButton";
+import { CollabArt } from "./CollabArt";
+import { Referral } from "./Referral";
 import { COUNTIES, KINDS, POST_SPECS, PROPS, SKILL_SUGGESTIONS, YEARS, type CollabMode, type Kind } from "@/lib/collab-shared";
 
 type State = CollabState & { mode: CollabMode };
@@ -53,8 +55,8 @@ const KindTag = ({ k }: { k: Kind }) => <span className={`cbTag cbTag-${k}`}>{k 
 
 /* ---------- the module ---------- */
 
-export function Colaborari({ initial, splash, firmsAsked = false, post, start, startConv, compose = false }: {
-  initial: State; splash: boolean; firmsAsked?: boolean; post?: string; start?: View; startConv?: string; compose?: boolean;
+export function Colaborari({ initial, firmsAsked = false, post, start, startConv, compose = false }: {
+  initial: State; firmsAsked?: boolean; post?: string; start?: View; startConv?: string; compose?: boolean;
 }) {
   const [s, setS] = useState(initial);
   const [view, setView] = useState<View>(start ?? "feed"); // ?view= from the home page
@@ -93,7 +95,6 @@ export function Colaborari({ initial, splash, firmsAsked = false, post, start, s
     <>
       {s.mode !== "on" && <TestStrip mode={s.mode} />}
       <Setup s={s} onDone={async (m) => { await reload(); flash(m); }} />
-      {splash && <CollabSplash here />}
     </>
   );
 
@@ -121,6 +122,7 @@ export function Colaborari({ initial, splash, firmsAsked = false, post, start, s
           <button type="button" className="btn btnNavy btnSm cbPublish" onClick={() => { setView("feed"); setZone("colegi"); setComposeOpen(true); window.scrollTo({ top: 0, behavior: "smooth" }); }}>+ Publică anunț</button>
         </div>
       </div>
+      <RecommendSplash activated={s.activated} />
       {toast && <div className="cbToast" role="status"><span>{toast}</span><button type="button" className="linkBtn" onClick={() => setToast("")}>Închide</button></div>}
 
       {view === "feed" && <Feed s={s} firmsAsked={firmsAsked} zone={zone} setZone={setZone} hl={hl} composeOpen={composeOpen} setComposeOpen={setComposeOpen} reload={reload} flash={flash}
@@ -914,7 +916,7 @@ function Setup({ s, onDone }: { s: State; onDone: (m: string) => Promise<void> }
   };
   return (
     <div className="cbSetup">
-      <div className="cbSetupHead"><small className="cbStep">ACTIVARE MODUL</small><h2>Bun venit la Colaborări</h2>
+      <div className="cbSetupHead"><span className="cbActivated" title="Evaluatori care au activat Colaborările"><b>{s.activated}</b> colegi l-au activat deja</span><small className="cbStep">ACTIVARE MODUL</small><h2>Bun venit la Colaborări</h2>
         <p>Anunțurile le văd doar evaluatorii înregistrați în UVALO. Înainte de prima folosire, spune-ne dacă vrei să colaborezi, completează-ți profilul și alege zona din care primești solicitări. Le poți schimba oricând.</p></div>
       <section className="cbCard">
         <small className="cbStep">1 · DISPONIBILITATE</small><b className="cbCardTitle">Vrei să preiei lucrări de la colegi?</b>
@@ -953,90 +955,47 @@ function Setup({ s, onDone }: { s: State; onDone: (m: string) => Promise<void> }
   );
 }
 
-/* ---------- "Nou în UVALO" ---------- */
 
-const SPLASH_KEY = "uvalo-colaborari-splash";
 
-/** The announcement shown once (per browser) to the people who can use Colaborări and have not activated it yet. */
-export function CollabSplash({ here = false }: { here?: boolean }) {
+/* ---------- after activation: recommend colleagues ---------- */
+
+const REF_KEY = "uvalo-colaborari-recomanda";
+
+/** Shown once (per browser) at the first opening after activation: the more colleagues in the area, the better it works. */
+function RecommendSplash({ activated }: { activated: number }) {
   const [open, setOpen] = useState(false);
   useEffect(() => {
-    try { if (!localStorage.getItem(SPLASH_KEY)) setOpen(true); } catch { setOpen(true); }
+    try { if (!localStorage.getItem(REF_KEY)) { setOpen(true); localStorage.setItem(REF_KEY, new Date().toISOString()); } } catch {}
   }, []);
-  const close = useCallback(() => { try { localStorage.setItem(SPLASH_KEY, new Date().toISOString()); } catch {} setOpen(false); }, []);
   useEffect(() => {
     if (!open) return;
-    const k = (e: KeyboardEvent) => { if (e.key === "Escape") close(); };
+    const k = (e: KeyboardEvent) => { if (e.key === "Escape" && !document.querySelector("dialog[open]")) setOpen(false); };
     window.addEventListener("keydown", k);
     return () => window.removeEventListener("keydown", k);
-  }, [open, close]);
-  const art = useMemo(() => <SplashArt />, []);
+  }, [open]);
   if (!open) return null;
   return (
-    <div className="cbModal cbSplash" role="dialog" aria-modal="true" aria-labelledby="cbSplashT" onClick={(e) => { if (e.target === e.currentTarget) close(); }}>
+    <div className="cbModal cbSplash" role="dialog" aria-modal="true" aria-labelledby="cbRefT" onClick={(e) => { if (e.target === e.currentTarget) setOpen(false); }}>
       <div className="cbModalBox">
         <div className="cbSplashArt">
-          {art}
-          <span className="cbSplashTag">NOU ÎN UVALO</span>
-          <button type="button" className="cbSplashX" aria-label="Închide" onClick={close}>×</button>
+          <CollabArt />
+          <span className="cbSplashTag">{activated} COLEGI L-AU ACTIVAT</span>
+          <button type="button" className="cbSplashX" aria-label="Închide" onClick={() => setOpen(false)}>×</button>
         </div>
         <div className="cbSplashBody">
-          <h2 id="cbSplashT">Colaborări între evaluatori</h2>
-          <p>Găsește un coleg pentru inspecții și rapoarte acolo unde nu ajungi, sau preia lucrări din zona ta. Anunțurile le văd doar evaluatorii înregistrați în UVALO.</p>
+          <h2 id="cbRefT">Colaborările merg mai bine cu mai mulți colegi în zonă</h2>
+          <p>Cu cât sunt mai mulți evaluatori în UVALO, cu atât găsești mai repede pe cineva pentru o inspecție și primești mai multe lucrări din zona ta. Invită colegii cu care lucrezi: primesc pe email linkul și își solicită cont cu legitimația ANEVAR.</p>
           <div className="cbSplashFeats">
-            <span><b>Lucrări din zona ta</b><small>Alegi raza și județele, primești notificări în aplicație.</small></span>
-            <span><b>Profil verificat</b><small>Specializările vin direct din Tabloul ANEVAR.</small></span>
-            <span><b>Discuți în aplicație</b><small>Datele de contact apar doar după ce începe conversația.</small></span>
+            <span><b>Mai multe anunțuri</b><small>Fiecare coleg nou poate publica lucrări în zona ta.</small></span>
+            <span><b>Răspuns mai rapid</b><small>Mai mulți colegi disponibili pentru inspecțiile tale.</small></span>
+            <span><b>Durează un minut</b><small>Scrii emailul colegului, noi îi trimitem invitația.</small></span>
           </div>
           <div className="cbSplashActs">
-            <button type="button" className="btn btnGhost" onClick={close}>Mai târziu</button>
-            {here ? <button type="button" className="btn btnGold" onClick={close}>Activează Colaborările</button>
-              : <a className="btn btnGold" href="/colaborari" onClick={() => { try { localStorage.setItem(SPLASH_KEY, new Date().toISOString()); } catch {} }}>Activează Colaborările</a>}
+            <button type="button" className="btn btnGhost" onClick={() => setOpen(false)}>Mai târziu</button>
+            <Referral variant="button" label="Recomandă unui coleg" />
           </div>
         </div>
       </div>
     </div>
-  );
-}
-
-function SplashArt() {
-  return (
-    <svg className="cbSplashSvg" viewBox="0 0 780 320" role="img" aria-label="Un anunț de inspecție în zona de acoperire, cu o conversație între doi evaluatori" preserveAspectRatio="xMidYMid slice">
-      <rect width="780" height="320" fill="#141414" />
-      <circle cx="150" cy="210" r="210" fill="none" stroke="#e0ad4f" strokeOpacity=".18" />
-      <circle cx="150" cy="210" r="130" fill="#e0ad4f" fillOpacity=".06" stroke="#e0ad4f" strokeOpacity=".3" />
-      <circle cx="150" cy="210" r="56" fill="#e0ad4f" fillOpacity=".16" stroke="#e0ad4f" strokeWidth="2" />
-      <circle cx="150" cy="210" r="8" fill="#fff" stroke="#e0ad4f" strokeWidth="4" />
-      <circle cx="248" cy="150" r="5" fill="#e0ad4f" /><circle cx="70" cy="140" r="5" fill="#e0ad4f" /><circle cx="250" cy="280" r="5" fill="#8d857a" />
-      <g transform="translate(330 64) rotate(-4)" opacity=".85">
-        <rect width="270" height="96" rx="14" fill="#2a2a2a" />
-        <rect x="16" y="16" width="130" height="20" rx="10" fill="#f6dcc8" />
-        <text x="81" y="30" textAnchor="middle" fontFamily="Verdana, sans-serif" fontSize="9" fontWeight="700" fill="#8a3a12">RAPORT + INSPECȚIE</text>
-        <text x="16" y="60" fontFamily="Verdana, sans-serif" fontSize="14" fontWeight="700" fill="#fff">Casă P+M cu teren 900 mp</text>
-        <text x="16" y="80" fontFamily="Verdana, sans-serif" fontSize="11" fill="#a79e92">Caransebeș, Caraș-Severin</text>
-      </g>
-      <g transform="translate(420 100)">
-        <rect width="320" height="150" rx="14" fill="#fff" />
-        <circle cx="34" cy="32" r="16" fill="#1a1714" />
-        <text x="34" y="36" textAnchor="middle" fontFamily="Verdana, sans-serif" fontSize="10" fontWeight="700" fill="#e0ad4f">IM</text>
-        <text x="58" y="29" fontFamily="Verdana, sans-serif" fontSize="12" fontWeight="700" fill="#1a1714">Ioana Mureșan</text>
-        <text x="58" y="44" fontFamily="Verdana, sans-serif" fontSize="10" fill="#8d857a">EPI · acum 2 ore</text>
-        <rect x="226" y="20" width="80" height="20" rx="10" fill="#fbebd0" />
-        <text x="266" y="34" textAnchor="middle" fontFamily="Verdana, sans-serif" fontSize="9" fontWeight="700" fill="#8a5a00">INSPECȚIE</text>
-        <text x="18" y="76" fontFamily="Verdana, sans-serif" fontSize="15" fontWeight="700" fill="#1a1714">Apartament 3 camere, bloc 1985</text>
-        <rect x="18" y="90" width="100" height="22" rx="7" fill="#141414" />
-        <text x="28" y="105" fontFamily="Verdana, sans-serif" fontSize="11" fontWeight="700" fill="#fff">Arad <tspan fill="#e0ad4f">≈ 62 km</tspan></text>
-        <rect x="126" y="90" width="112" height="22" rx="7" fill="#fff" stroke="#efe4d3" />
-        <text x="136" y="105" fontFamily="Verdana, sans-serif" fontSize="11" fill="#4a423a">Buget: <tspan fontWeight="700">250 lei</tspan></text>
-        <rect x="204" y="120" width="100" height="22" rx="8" fill="#f2a93b" />
-        <text x="254" y="135" textAnchor="middle" fontFamily="Verdana, sans-serif" fontSize="11" fontWeight="700" fill="#1a1714">Vreau detalii</text>
-      </g>
-      <g transform="translate(300 250)">
-        <rect width="200" height="28" rx="14" fill="#f4ece1" />
-        <text x="14" y="18" fontFamily="Verdana, sans-serif" fontSize="12" fill="#1a1714">Pot merge joi la 10. Ai CF-ul?</text>
-        <rect x="70" y="36" width="160" height="28" rx="14" fill="#e0ad4f" />
-        <text x="84" y="54" fontFamily="Verdana, sans-serif" fontSize="12" fontWeight="700" fill="#141414">Da, ți-l trimit acum.</text>
-      </g>
-    </svg>
   );
 }

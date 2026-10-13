@@ -1280,21 +1280,14 @@ a.hcCard:hover { border-color: var(--acc); text-decoration: none; }
 .hcLaunchActs { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; margin-top: 4px; }
 .hcLaunchActs small { font-size: 12px; color: var(--on-navy-2); }
 .hcBig { height: 50px; padding: 0 24px; border-radius: 14px; font-size: 14.5px; font-weight: 800; }
-.hcArt { position: relative; background: #1c1c1c; border-left: 1px solid #262626; min-height: 320px;
-  background-image: linear-gradient(#262626 1px, transparent 1px), linear-gradient(90deg, #262626 1px, transparent 1px); background-size: 46px 46px; }
-.hcRing { position: absolute; left: 50%; top: 50%; width: 230px; height: 230px; transform: translate(-50%, -50%); border-radius: 999px; border: 2px dashed var(--acc); background: rgba(224, 173, 79, 0.08); }
-.hcPin { position: absolute; left: 50%; top: 50%; width: 16px; height: 16px; transform: translate(-50%, -50%); border-radius: 999px; background: var(--acc); box-shadow: 0 0 0 6px rgba(224, 173, 79, 0.25); }
-.hcPt { position: absolute; width: 12px; height: 12px; border-radius: 999px; background: #fff; }
-.hcPt.a { left: 40%; top: 38%; } .hcPt.b { left: 62%; top: 60%; } .hcPt.c { left: 18%; top: 72%; background: #6b6b6b; }
-.hcArtCard { position: absolute; left: 7%; top: 8%; width: min(300px, 80%); background: #fff; color: var(--ink); border-radius: 16px; padding: 12px 14px; box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35); display: flex; flex-direction: column; gap: 7px; }
-.hcArtTop { display: flex; gap: 8px; align-items: center; }
-.hcArtTop small { font-size: 11px; color: var(--muted-2); }
-.hcArtCard b { font-size: 13.5px; }
-.hcArtChat { position: absolute; right: 6%; top: 52%; width: min(270px, 70%); background: #2a2a2a; border: 1px solid #3a3a3a; border-radius: 16px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35); }
-.hcArtChat small { font-size: 10px; font-weight: 800; letter-spacing: 0.12em; color: var(--on-navy-2); }
-.hcArtChat span { max-width: 85%; font-size: 12px; line-height: 1.45; padding: 8px 11px; }
-.hcArtChat .in { align-self: flex-start; border-radius: 12px 12px 12px 4px; background: #3a3a3a; }
-.hcArtChat .out { align-self: flex-end; border-radius: 12px 12px 4px 12px; background: var(--acc); color: #141414; font-weight: 700; }
+.hcArt { position: relative; background: #141414; min-height: 320px; overflow: hidden; }
+.hcArtSvg { position: absolute; left: -16%; top: 50%; transform: translateY(-50%); width: 120%; height: auto; aspect-ratio: 780 / 320; display: block; }
+.hcActivated { position: absolute; top: 18px; right: 18px; z-index: 2; display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 14px; border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(224, 173, 79, 0.45); color: #fff; font-size: 12px; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+.hcActivated b { color: var(--acc); font-size: 14px; }
+.cbSetupHead { position: relative; }
+.cbActivated { float: right; margin: 0 0 8px 12px; display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px; border-radius: 999px; background: #141414; color: #fff; font-size: 12px; }
+.cbActivated b { color: var(--acc); font-size: 13.5px; }
 .hcArtCount { position: absolute; left: 9%; bottom: 7%; display: flex; gap: 10px; align-items: center; background: #fff; color: var(--ink); border-radius: 999px; padding: 7px 14px 7px 7px; box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3); }
 .hcArtCount span { min-width: 28px; height: 28px; padding: 0 6px; border-radius: 999px; background: #E5484D; color: #fff; font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center; }
 .hcArtCount b { font-size: 12.5px; }
@@ -1303,9 +1296,9 @@ a.hcCard:hover { border-color: var(--acc); text-decoration: none; }
 }
 @media (max-width: 860px) {
   .hcLaunch { grid-template-columns: minmax(0, 1fr); }
-  .hcArt { order: -1; min-height: 230px; border-left: 0; border-bottom: 1px solid #262626; }
-  .hcRing { width: 150px; height: 150px; }
-  .hcArtChat { display: none; }
+  .hcArt { order: -1; min-height: 0; aspect-ratio: 780 / 380; }
+  .hcArtCount { left: 12px; bottom: 10px; }
+  .hcActivated { top: 12px; right: 12px; }
   .hcBig { flex: 1 1 100%; justify-content: center; }
 }
 @media (max-width: 640px) {

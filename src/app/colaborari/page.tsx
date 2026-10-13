@@ -19,7 +19,7 @@ export default async function ColaborariPage({ searchParams }: { searchParams: P
   const firmsAsked = on && !!(await db.prepare("SELECT 1 FROM events WHERE user_id = ? AND module = 'home' AND action = 'notify' AND target = 'angajare' LIMIT 1").bind(c.user.id).first());
   return (
     <AppShell c={c} active="colaborari" title="Colaborări" subtitle="Lucrări ocazionale de la colegi: inspecții și rapoarte + inspecție">
-      {state ? <Colaborari initial={{ ...state, mode: c.collab }} splash={!state.profile} firmsAsked={firmsAsked} post={typeof post === "string" && /^[\w-]{8,64}$/.test(post) ? post : undefined}
+      {state ? <Colaborari initial={{ ...state, mode: c.collab }} firmsAsked={firmsAsked} post={typeof post === "string" && /^[\w-]{8,64}$/.test(post) ? post : undefined}
         start={start} startConv={typeof conv === "string" && /^[\w-]{8,64}$/.test(conv) ? conv : undefined} compose={compose === "1"} /> : (
         <div className="note">Colaborările vin în curând în UVALO. Le poți urmări din pagina de start („Anunță-mă la lansare”).</div>
       )}

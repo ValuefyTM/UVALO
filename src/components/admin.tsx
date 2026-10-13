@@ -461,3 +461,27 @@ export function FeedbackActions({ id, status: s0, email, note: n0 }: { id: numbe
     </div>
   );
 }
+
+/** Colaborări → "Anunțul de lansare": sends the launch email to the subscribers who may use it now. */
+export function LaunchMail({ ready, waiting, sent, activated }: { ready: number; waiting: number; sent: number; activated: number }) {
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState("");
+  const go = async () => {
+    if (!confirm(`Trimiți emailul de lansare la ${ready} ${ready === 1 ? "persoană" : "persoane"}?`)) return;
+    setBusy(true); setMsg("");
+    const r = await fetch("/api/admin/colaborari", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "launch_mail" }) }).catch(() => null);
+    const d = ((await r?.json().catch(() => ({}))) ?? {}) as { sent?: number; error?: string };
+    setBusy(false);
+    if (!r?.ok) return setMsg(d.error || "Nu am putut trimite. Încearcă din nou.");
+    setMsg(`Am trimis ${d.sent ?? 0} ${(d.sent ?? 0) === 1 ? "email" : "emailuri"}.`);
+    setTimeout(() => location.reload(), 1200);
+  };
+  return (
+    <div className="actions" style={{ gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+      <button type="button" className="btn btnGold btnSm" disabled={busy || ready === 0} onClick={go}>{busy ? "Se trimite…" : `Trimite emailul de lansare (${ready})`}</button>
+      <a className="btn btnGhost btnSm" href="/email/colaborari-lansare.png" target="_blank" rel="noreferrer">Vezi imaginea din email</a>
+      <span className="muted" style={{ fontSize: 12.5 }}>{waiting - ready > 0 ? `${waiting - ready} fără acces încă · ` : ""}{sent} trimise · {activated} au activat deja</span>
+      {msg && <span className="okMsg">{msg}</span>}
+    </div>
+  );
+}

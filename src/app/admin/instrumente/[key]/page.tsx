@@ -6,8 +6,8 @@ import { recentEvents } from "@/lib/orgs";
 import { aiTotals, aiUsage, FEATURES, userLimits, PROMPT_DEFAULTS, PROMPT_LABELS, type PromptKey, prompts, toolByKey, toolSettings, toolUsage } from "@/lib/tools";
 import { roDate } from "@/lib/plan-format";
 import { AdminShell } from "@/components/AdminShell";
-import { AiLimits, CollabAdmin, FeatureSwitches, PromptEditor, ToolSwitch, UserLimits } from "@/components/admin";
-import { collabCounts, collabSettings, testUsers } from "@/lib/collab";
+import { AiLimits, CollabAdmin, LaunchMail, FeatureSwitches, PromptEditor, ToolSwitch, UserLimits } from "@/components/admin";
+import { collabCounts, collabSettings, launchSubscribers, testUsers } from "@/lib/collab";
 import { CountTable, UatCountTable } from "@/components/Charts";
 import { PlanList, PlanUploader } from "@/components/plans";
 import { ToolAnalytics } from "@/components/ToolAnalytics";
@@ -96,7 +96,7 @@ export default async function Instrument({ params }: { params: Promise<{ key: st
 
   if (key === "colaborari") {
     const cs = await collabSettings(db);
-    const [users, counts, all, firms] = await Promise.all([testUsers(db, cs.users), collabCounts(db),
+    const [users, counts, all, firms, actv, subs] = await Promise.all([testUsers(db, cs.users), collabCounts(db),
       db.prepare(`SELECT u.id, COALESCE(NULLIF(u.name, ''), u.email) AS name, u.email, u.anevar_no AS anevar, u.is_superadmin AS sup,
           (SELECT o.name FROM memberships m JOIN orgs o ON o.id = m.org_id WHERE m.user_id = u.id AND m.status = 'active' ORDER BY o.name LIMIT 1) AS org
         FROM users u WHERE u.status = 'active' ORDER BY name COLLATE NOCASE LIMIT 3000`)
@@ -104,10 +104,54 @@ export default async function Instrument({ params }: { params: Promise<{ key: st
       // "Anunță-mă, vreau să postez" from the "De la firme" tab
       db.prepare(`SELECT COALESCE(NULLIF(u.name, ''), u.email) AS name, u.email, o.name AS org, MIN(e.at) AS at FROM events e JOIN users u ON u.id = e.user_id LEFT JOIN orgs o ON o.id = e.org_id
         WHERE e.module = 'home' AND e.action = 'notify' AND e.target = 'angajare' GROUP BY e.user_id ORDER BY at DESC LIMIT 500`)
-        .all<{ name: string; email: string; org: string | null; at: string }>()]);
+        .all<{ name: string; email: string; org: string | null; at: string }>(),
+      // who activated Colaborări (has a profile)
+      db.prepare(`SELECT COALESCE(NULLIF(u.name, ''), u.email) AS name, u.email, u.anevar_no AS anevar, p.county, p.city, p.available, p.zone_mode, p.radius, p.extra, p.test, p.created_at AS at
+        FROM collab_profiles p JOIN users u ON u.id = p.user_id ORDER BY p.created_at DESC LIMIT 2000`)
+        .all<{ name: string; email: string; anevar: string | null; county: string | null; city: string | null; available: number; zone_mode: string; radius: number; extra: string; test: number; at: string }>(),
+      launchSubscribers(db)]);
+    const subsWaiting = subs.filter((r) => !r.active && !r.mailed);
     return (
       <AdminShell c={c} active="instrumente" pending={pending} title={tool.name} subtitle="Mod de lucru, grupul de test și statistici" actions={<a className="btn btnGhost btnSm" href="/admin/instrumente">← Instrumente</a>}>
         <CollabAdmin mode={cs.mode} users={users} counts={counts} accounts={all.results} />
+        <section className="card">
+          <div className="cardHead"><h2>Cine a activat Colaborările</h2><span className="pill pillOk"><i />{actv.results.length}</span></div>
+          <p className="hint">Conturile care și-au completat activarea (profil și zonă). Pe Acasă și în pagina de activare apare „{Math.max(20, actv.results.length)} colegi l-au activat deja” (minimum 20).</p>
+          {actv.results.length ? (
+            <div className="tableWrap">
+              <table className="table" style={{ minWidth: 0 }}>
+                <thead><tr><th>Persoană</th><th>Zonă</th><th>Disponibil</th><th>Activat</th></tr></thead>
+                <tbody>{actv.results.map((r) => {
+                  let extra: string[] = []; try { extra = JSON.parse(r.extra); } catch {}
+                  return (
+                    <tr key={r.email}>
+                      <td><b>{r.name}</b><div className="muted" style={{ fontSize: 12 }}>{r.email}{r.anevar ? ` · leg. ${r.anevar}` : ""}</div></td>
+                      <td>{r.county ? `${r.city ? `${r.city}, ` : ""}${r.county} · ${r.zone_mode === "judet" ? "tot județul" : `rază ${r.radius} km`}` : "—"}{extra.length ? <div className="muted" style={{ fontSize: 12 }}>+ {extra.join(", ")}</div> : null}</td>
+                      <td>{r.available ? <span className="pill pillOk"><i />Da</span> : <span className="pill"><i />Doar se uită</span>}</td>
+                      <td>{fmtDate(r.at, true)}{r.test ? <div className="muted" style={{ fontSize: 12 }}>în test</div> : null}</td>
+                    </tr>
+                  );
+                })}</tbody>
+              </table>
+            </div>
+          ) : <p className="hint">Nimeni încă.</p>}
+        </section>
+        <section className="card">
+          <div className="cardHead"><h2>Anunțul de lansare</h2><span className="pill"><i />{subs.length} abonați</span></div>
+          <p className="hint">Cine a apăsat „Anunță-mă la lansare” pentru Colaborări. Emailul „Colaborările sunt aici” (cu imagine și buton care îi autentifică direct, valabil 7 zile) pleacă o singură dată fiecăruia, doar celor care au acces acum ({cs.mode === "on" ? "toți, modul e Activ" : cs.mode === "test" ? "în Test: doar grupul de test" : "modul e Dezactivat: nimeni"}) și nu au activat deja.</p>
+          <LaunchMail ready={subsWaiting.filter((r) => r.allowed).length} waiting={subsWaiting.length} sent={subs.filter((r) => r.mailed).length} activated={subs.filter((r) => r.active).length} />
+          {subs.length > 0 && (
+            <div className="tableWrap">
+              <table className="table" style={{ minWidth: 0 }}>
+                <thead><tr><th>Persoană</th><th>S-a abonat</th><th>Stare</th></tr></thead>
+                <tbody>{subs.map((r) => (
+                  <tr key={r.id}><td><b>{r.name || r.email}</b><div className="muted" style={{ fontSize: 12 }}>{r.email}</div></td><td>{fmtDate(r.at, true)}</td>
+                    <td>{r.active ? <span className="pill pillOk"><i />A activat</span> : r.mailed ? <span className="pill pillInfo"><i />Email trimis {fmtDate(r.mailed)}</span> : r.allowed ? <span className="pill pillWarn"><i />De anunțat</span> : <span className="pill"><i />Fără acces încă</span>}</td></tr>
+                ))}</tbody>
+              </table>
+            </div>
+          )}
+        </section>
         <section className="card">
           <div className="cardHead"><h2>Vor să posteze anunțuri de angajare</h2><span className="pill"><i />{firms.results.length}</span></div>
           <p className="hint">Cine a apăsat „Anunță-mă, vreau să postez” în tab-ul „De la firme”. Îi anunțăm la lansarea anunțurilor de angajare.</p>

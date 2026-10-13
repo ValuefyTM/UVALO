@@ -5,6 +5,7 @@ import { now, uuid } from "./db";
 import { geocode } from "./gmaps";
 import { magicLink } from "./auth";
 import { esc, greetName, layout, sendEmails } from "./email";
+import { origin } from "./site";
 import { COUNTIES, KINDS, km, POST_SPECS, PROPS, YEARS, type CollabMode, type Kind } from "./collab-shared";
 
 /* ---------- mode and test users (app_settings "collab") ---------- */
@@ -168,7 +169,7 @@ export async function relevantCount(db: D1Database, userId: string) {
 
 export async function collabState(db: D1Database, me: { id: string }) {
   const profile = await getProfile(db, me.id);
-  const [feed, mine, myReqs, convs, notifs] = await Promise.all([
+  const [feed, mine, myReqs, convs, notifs, act] = await Promise.all([
     db.prepare("SELECT p.*, (SELECT COUNT(*) FROM collab_requests r WHERE r.post_id = p.id AND r.status <> 'retras') AS n FROM collab_posts p WHERE p.status = 'active' ORDER BY p.created_at DESC LIMIT 300")
       .all<PostRow & { n: number }>(),
     db.prepare("SELECT * FROM collab_posts WHERE user_id = ? AND status <> 'deleted' ORDER BY status = 'archived', created_at DESC LIMIT 100").bind(me.id).all<PostRow>(),
@@ -182,6 +183,7 @@ export async function collabState(db: D1Database, me: { id: string }) {
       .bind(me.id).all<{ id: string; post_id: string; request_id: string; author_id: string; peer_id: string; last_at: string; unread: number; last_body: string | null; last_user: string | null }>(),
     db.prepare("SELECT id, type, text, go, read_at, created_at FROM collab_notifs WHERE user_id = ? ORDER BY id DESC LIMIT 40").bind(me.id)
       .all<{ id: number; type: string; text: string; go: string | null; read_at: string | null; created_at: string }>(),
+    activatedCount(db),
   ]);
 
   // the requests on my posts, the posts I asked about, and the posts of the conversations
@@ -236,10 +238,17 @@ export async function collabState(db: D1Database, me: { id: string }) {
     }),
     notifs: notifs.results.map((n) => { let go = {}; try { go = JSON.parse(n.go ?? "{}"); } catch {} return { id: n.id, type: n.type, text: n.text, go, read: !!n.read_at, created_at: n.created_at }; }),
     convByReq: Object.fromEntries([...convByReq.entries()].map(([k, v]) => [k, v.id])),
+    activated: act,
   };
 }
 
 export type CollabState = Awaited<ReturnType<typeof collabState>>;
+
+/** "X colegi l-au activat deja": the active accounts with a Colaborări profile, shown as at least 20. */
+export async function activatedCount(db: D1Database) {
+  const r = await db.prepare("SELECT COUNT(*) AS n FROM collab_profiles p JOIN users u ON u.id = p.user_id WHERE u.status = 'active'").first<{ n: number }>().catch(() => null);
+  return Math.max(20, r?.n ?? 0);
+}
 
 /** Home page banner for those who have not activated Colaborări: active posts in their county (else everywhere) and the newest one. */
 export async function collabLaunch(db: D1Database, me: { id: string; county: string | null }) {
@@ -250,7 +259,7 @@ export async function collabLaunch(db: D1Database, me: { id: string; county: str
     db.prepare(`SELECT kind, title, city, county, budget, created_at FROM collab_posts WHERE status = 'active' AND user_id <> ?1 ${w} ORDER BY created_at DESC LIMIT 1`).bind(...p)
       .first<{ kind: Kind; title: string; city: string; county: string; budget: number | null; created_at: string }>(),
   ]);
-  return { count: n?.n ?? 0, county: me.county, latest: latest ?? null };
+  return { count: n?.n ?? 0, county: me.county, latest: latest ?? null, activated: await activatedCount(db) };
 }
 
 /* ---------- actions ---------- */
@@ -496,4 +505,68 @@ export async function purgeTest(db: D1Database) {
 export async function testUsers(db: D1Database, ids: string[]) {
   const m = await people(db, ids);
   return ids.map((id) => { const r = m.get(id); return { id, name: r ? r.name || r.email : "Cont șters", email: r?.email ?? "", anevar: r?.anevar_no ?? null }; });
+}
+
+/* ---------- launch email ---------- */
+
+/**
+ * Those who pressed "Anunță-mă la lansare" for Colaborări and have not activated it: who may receive the launch email now
+ * (mode Activ: all of them; Test: only the test group and the UVALO administrators) and who already got it.
+ */
+export async function launchSubscribers(db: D1Database) {
+  const s = await collabSettings(db);
+  const { results } = await db.prepare(`SELECT u.id, u.email, u.name, u.is_superadmin AS sup, MIN(e.at) AS at,
+      EXISTS (SELECT 1 FROM collab_profiles p WHERE p.user_id = u.id) AS active,
+      (SELECT MAX(x.at) FROM events x WHERE x.user_id = u.id AND x.module = 'colaborari' AND x.action = 'launch_mail') AS mailed
+    FROM events e JOIN users u ON u.id = e.user_id
+    WHERE e.module = 'home' AND e.action = 'notify' AND e.target = 'colaborari' AND u.status = 'active' GROUP BY u.id ORDER BY at DESC`)
+    .all<{ id: string; email: string; name: string; sup: number; at: string; active: number; mailed: string | null }>();
+  return results.map((r) => ({ ...r, allowed: s.mode === "on" || (s.mode === "test" && (s.users.includes(r.id) || !!r.sup)) }));
+}
+
+/** The launch email ("Colaborările sunt aici"), with a sign-in link straight to Colaborări, to the subscribers who may use it now. */
+export async function sendLaunchEmails(db: D1Database) {
+  const list = (await launchSubscribers(db)).filter((r) => r.allowed && !r.active && !r.mailed);
+  if (!list.length) return { sent: 0 };
+  const n = await activatedCount(db);
+  const base = await origin();
+  const mails = [];
+  for (const u of list) {
+    const link = await magicLink(db, u.email, "/colaborari", 7);
+    const hi = u.name?.trim() ? `Bună ziua, ${greetName(u.name)}!` : "Bună ziua!";
+    mails.push({
+      to: u.email,
+      subject: "Colaborările sunt aici: găsește un coleg pentru inspecție în câteva minute",
+      text: `${hi}\nAi cerut să te anunțăm: Colaborările s-au lansat în UVALO.\nPublici o inspecție sau un raport + inspecție, colegii din zonă primesc notificare și îți cer detalii; alegi pe cine vrei și vorbiți în chat. Sau preiei tu lucrări din zonele în care lucrezi.\n${n} colegi l-au activat deja.\n\nActivează Colaborările: ${link}\n(Linkul te autentifică direct și este valabil 7 zile.)`,
+      html: launchHtml({ hi, n, link, img: `${base}/email/colaborari-lansare.png` }),
+    });
+  }
+  const sent = await sendEmails(mails);
+  if (sent) await db.batch(list.slice(0, sent).map((u) => db.prepare("INSERT INTO events (user_id, module, action) VALUES (?, 'colaborari', 'launch_mail')").bind(u.id)));
+  return { sent };
+}
+
+function launchHtml({ hi, n, link, img }: { hi: string; n: number; link: string; img: string }) {
+  const feat = (t: string, d: string) => `<tr><td style="padding:0 0 12px;vertical-align:top;width:30px"><div style="width:22px;height:22px;border-radius:11px;background:#141414;color:#E0AD4F;font-size:12px;font-weight:bold;text-align:center;line-height:22px">✓</div></td>
+<td style="padding:0 0 12px;font-size:14px;line-height:1.55;color:#4A4A4A"><b style="color:#141414">${esc(t)}</b><br>${esc(d)}</td></tr>`;
+  return `<!DOCTYPE html><html lang="ro"><body style="margin:0;padding:0;background:#F2ECE0">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F2ECE0;padding:24px 12px"><tr><td align="center">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#FFFFFF;border-radius:18px;overflow:hidden;font-family:Verdana,Geneva,sans-serif;color:#141414">
+<tr><td style="background:#141414;padding:18px 28px"><span style="color:#fff;font-size:15px;font-weight:bold;letter-spacing:2px">UVA<span style="color:#E0AD4F">LO</span></span>
+<span style="float:right;background:#E0AD4F;color:#141414;font-size:10px;font-weight:bold;letter-spacing:1px;padding:5px 10px;border-radius:999px">NOU ÎN UVALO</span></td></tr>
+<tr><td style="background:#141414"><a href="${esc(link)}"><img src="${esc(img)}" width="600" alt="Colaborări în UVALO: un anunț de inspecție din zona ta și o conversație între doi evaluatori" style="display:block;width:100%;height:auto;border:0"></a></td></tr>
+<tr><td style="padding:30px 32px 8px">
+<p style="margin:0 0 6px;font-size:12px;font-weight:bold;letter-spacing:1px;color:#9A5F00;text-transform:uppercase">Ai cerut să te anunțăm · Colaborări</p>
+<h1 style="margin:0 0 14px;font-size:24px;line-height:1.25">Colaborările sunt aici.<br><span style="color:#B07A12">Găsești un coleg pentru inspecție în câteva minute.</span></h1>
+<p style="margin:0 0 18px;font-size:15px;line-height:1.65;color:#4A4A4A">${esc(hi)} Publici o lucrare, colegii din zonă primesc notificare și îți cer detalii. Alegi pe cine vrei și vorbiți în chat. Sau preiei tu inspecții și rapoarte de la colegi, în zonele în care lucrezi.</p>
+<table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+${feat("Lucrări din zona ta", "Alegi raza în jurul adresei sau județe întregi; primești anunțurile noi în aplicație și pe email.")}
+${feat("Profil verificat", "Specializările vin direct din Tabloul ANEVAR.")}
+${feat("Discuți în aplicație", "Datele de contact apar doar după ce începe conversația.")}
+</table>
+<p style="margin:10px 0 26px"><a href="${esc(link)}" style="display:inline-block;background:#F2A93B;color:#111111;font-weight:bold;text-decoration:none;padding:15px 26px;border-radius:12px;font-size:15px">Activează Colaborările →</a>
+<span style="display:inline-block;margin-left:12px;font-size:13px;color:#6B6B6B"><b style="color:#141414">${n}</b> colegi l-au activat deja</span></p>
+</td></tr>
+<tr><td style="background:#FBF8F2;padding:16px 32px;font-size:12px;line-height:1.6;color:#6B6B6B">Primești acest email pentru că ai apăsat „Anunță-mă la lansare” în UVALO. Butonul te autentifică direct și este valabil 7 zile.</td></tr>
+</table></td></tr></table></body></html>`;
 }
