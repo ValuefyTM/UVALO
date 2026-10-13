@@ -72,7 +72,7 @@ export default async function Site() {
         <div className="ldWrap ldStack ldGap36">
           <div className="ldHead">
             <span className="ldEyebrow">COLABORĂRI · CUM FUNCȚIONEAZĂ</span>
-            <h2 className="ldH ldH2">De la anunț la coleg ales, fără telefoane date pe grupuri.</h2>
+            <h2 className="ldH ldH2">De la anunț la coleg ales, fără mesaje date pe grupuri.</h2>
           </div>
           <div className="ldGrid3">
             {[
