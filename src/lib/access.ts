@@ -69,9 +69,11 @@ export async function context(db: D1Database): Promise<Ctx | null> {
   const block = org ? orgBlock(org) : sup ? null : "Contul tău nu face parte din nicio firmă cu abonament.";
   const { off } = await toolSettings(db);
   const modules = sup ? MODULES.map((m) => m.key) : org && !block ? org.modules.split(",").map((x) => x.trim()).filter((m) => !off.includes(m)) : [];
-  // Colaborări is in every plan; who sees it depends on its mode (Admin → Instrumente → Colaborări).
+  // Colaborări is in every plan; who sees it depends on its mode (Admin → Instrumente → Colaborări). Only valuers (with an
+  // ANEVAR card): an office's colleagues without one (assistants, inspectors) do not get it.
   const cs = await collabSettings(db);
-  if (collabAllowed(cs, { super: sup, userId: user.id, hasAccess: !!org && !block })) modules.push("colaborari");
+  const valuer = !!user.anevar_no?.trim();
+  if ((sup || valuer) && collabAllowed(cs, { super: sup, userId: user.id, hasAccess: !!org && !block })) modules.push("colaborari");
   return { user, session, super: sup, orgs, org, role, modules, block, off, collab: cs.mode, office: sup || !!user.office_allowed };
 }
 

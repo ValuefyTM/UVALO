@@ -188,7 +188,8 @@ Proprietar: VALUEFY (firmă de evaluări imobiliare, Timișoara). UVALO devine u
 - Lucrări ocazionale între evaluatori (inspecție / raport + inspecție), după mockup-ul din canvas „UVALO — Colaborări”.
   Tab-ul „Angajare” (anunțuri de la firme) afișează doar „În curând”.
 - **Moduri** (Admin → Instrumente → Colaborări, `app_settings` cheia `collab` = `{mode, users}`; grupul de test se alege din lista conturilor active, cu căutare și bife — acțiunea `add_many`): `off` (implicit; doar
-  super-adminii), `test` (super-adminii + `users`, indiferent de abonament), `on` (toți cei fără blocaj). Nu e în planuri:
+  super-adminii), `test` (super-adminii + `users`, indiferent de abonament), `on` (toți cei fără blocaj). Doar evaluatorii
+  (cu `anevar_no`) și super-adminii: membrii unui birou fără legitimație nu primesc modulul. Nu e în planuri:
   `context()` adaugă `colaborari` în `c.modules` după mod; `c.collab` = modul.
 - **Date de test**: tot ce se scrie cât timp modul ≠ `on` are `test = 1` (tabelele `collab_*`, migrația 0016); butonul
   „Șterge datele de test” (`/api/admin/colaborari`, `purgeTest`) le șterge, cu tot ce depinde de ele. Evenimentele rămân.

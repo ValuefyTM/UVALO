@@ -515,13 +515,14 @@ export async function testUsers(db: D1Database, ids: string[]) {
  */
 export async function launchSubscribers(db: D1Database) {
   const s = await collabSettings(db);
-  const { results } = await db.prepare(`SELECT u.id, u.email, u.name, u.is_superadmin AS sup, MIN(e.at) AS at,
+  const { results } = await db.prepare(`SELECT u.id, u.email, u.name, u.is_superadmin AS sup, u.anevar_no, MIN(e.at) AS at,
       EXISTS (SELECT 1 FROM collab_profiles p WHERE p.user_id = u.id) AS active,
       (SELECT MAX(x.at) FROM events x WHERE x.user_id = u.id AND x.module = 'colaborari' AND x.action = 'launch_mail') AS mailed
     FROM events e JOIN users u ON u.id = e.user_id
     WHERE e.module = 'home' AND e.action = 'notify' AND e.target = 'colaborari' AND u.status = 'active' GROUP BY u.id ORDER BY at DESC`)
-    .all<{ id: string; email: string; name: string; sup: number; at: string; active: number; mailed: string | null }>();
-  return results.map((r) => ({ ...r, allowed: s.mode === "on" || (s.mode === "test" && (s.users.includes(r.id) || !!r.sup)) }));
+    .all<{ id: string; email: string; name: string; sup: number; anevar_no: string | null; at: string; active: number; mailed: string | null }>();
+  // only valuers (ANEVAR card) or UVALO administrators may use Colaborări
+  return results.map((r) => ({ ...r, allowed: (!!r.sup || !!r.anevar_no?.trim()) && (s.mode === "on" || (s.mode === "test" && (s.users.includes(r.id) || !!r.sup))) }));
 }
 
 /** The launch email ("Colaborările sunt aici"), with a sign-in link straight to Colaborări, to the subscribers who may use it now. */
