@@ -19,7 +19,7 @@ export default async function Login({ searchParams }: { searchParams: Promise<{ 
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img className="authLockup" src="/uvalo-lockup.svg" alt="UVALO" />
         <div className="authPitch">
-          <span className="authEyebrow">Platformă pentru evaluatori</span>
+          <span className="authEyebrow">Platforma evaluatorilor autorizați din România</span>
           <h2>Instrumentele de evaluare, într-un singur cont.</h2>
           <ul>
             <li>Localizator cadastral: număr cadastral, topo, adresă sau locația ta pe teren</li>

@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
   openGraph: {
     type: "website", siteName: "UVALO", locale: "ro_RO",
-    title: "UVALO · platforma evaluatorilor imobiliari",
+    title: "UVALO · Platforma evaluatorilor autorizați din România",
     description: "Localizator cadastral gratuit: orice imobil din planurile ANCPI, după număr cadastral, topo sau adresă. Fișa în PDF și Word.",
     images: [OG_IMAGE],
   },

@@ -132,6 +132,7 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
 
 ## Site-ul de prezentare (uvalo.ro → `/site`)
 
+- Numele afișat: „Platforma evaluatorilor autorizați din România” (titlul paginii, OG, subsol, login).
 - `src/app/site/page.tsx` (publică, indexabilă, merge și în mentenanță) după canvasul „UVALO — Landing Colaborări”: hero Colaborări,
   cum funcționează, analize de piață „În curând” (raport pilot Deta), instrumentele (localizator, amplasament, comparabile, Word cu galerie
   `SiteGallery`, Chrome), firme/birouri, CTA „Creează cont gratuit” (`/solicita-cont`). Fără pricing. Stiluri `.ld*` în `globals.css`,

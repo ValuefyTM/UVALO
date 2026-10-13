@@ -6,7 +6,7 @@ import { SiteGallery } from "@/components/SiteGallery";
 // The presentation site on uvalo.ro (worker.ts serves this page for "/" on SITE_HOSTS). Public, works in maintenance too.
 // Focus on Colaborări, announces the market analyses; no pricing.
 export const metadata: Metadata = {
-  title: "UVALO · platforma evaluatorilor imobiliari",
+  title: "UVALO · Platforma evaluatorilor autorizați din România",
   description: "Colaborări între evaluatori autorizați ANEVAR: găsești un coleg pentru inspecție în câteva minute. Plus localizatorul cadastral, analiza amplasamentului, comparabilele și anexele în Word.",
   robots: { index: true, follow: true },
   alternates: { canonical: "https://uvalo.ro/" },
@@ -240,7 +240,7 @@ export default async function Site() {
 
       <footer className="ldFoot">
         <div className="ldWrap ldFootIn">
-          <span className="ldFootBrand"><img src="/uvalo-lockup.svg" alt="UVALO" /><span>Platformă pentru evaluatori</span></span>
+          <span className="ldFootBrand"><img src="/uvalo-lockup.svg" alt="UVALO" /><span>Platforma evaluatorilor autorizați din România</span></span>
           <span className="ldFootLinks">
             <a href={`mailto:${COMPANY.email}`}>{COMPANY.email}</a>
             <a href={`${app}/confidentialitate`}>Confidențialitate</a>
