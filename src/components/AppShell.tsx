@@ -7,7 +7,7 @@ import { relevantCount } from "@/lib/collab";
 import { LogoutButton, MenuButton, OrgSwitch } from "./ClientBits";
 import { Referral } from "./Referral";
 
-type Key = "home" | "instrumente" | "colaborari" | "localizare" | "amplasament" | "comparabile" | "word" | "chrome" | "firma" | "cont";
+type Key = "home" | "instrumente" | "colaborari" | "inspectii" | "localizare" | "amplasament" | "comparabile" | "word" | "chrome" | "firma" | "cont";
 // the tools' own pages light up "Instrumente" in the menu
 const TOOL_KEYS: Key[] = ["instrumente", "localizare", "amplasament", "comparabile", "word", "chrome"];
 
@@ -23,11 +23,13 @@ export async function AppShell(props: { c: Ctx; active: Key; title: string; subt
     collabNew = !!db && !(await db.prepare("SELECT 1 FROM collab_profiles WHERE user_id = ?").bind(c.user.id).first().catch(() => true));
     collabN = db && !collabNew ? await relevantCount(db, c.user.id).catch(() => 0) : 0;
   }
-  const nav: { key: Key; label: string; href: string; count?: number; isNew?: boolean }[] = [
+  const nav: { key: Key; label: string; href: string; count?: number; isNew?: boolean; test?: boolean }[] = [
     { key: "home", label: "Acasă", href: "/" },
     { key: "instrumente", label: "Instrumente", href: "/instrumente" },
     // Colaborări: only for those allowed in its current mode (Test: the chosen people; Activ: everyone).
     ...(c.modules.includes("colaborari") ? [{ key: "colaborari" as const, label: "Colaborări", href: "/colaborari", count: collabN, isNew: collabNew }] : []),
+    // Inspecții: in test, only the super-admins see it
+    ...(c.modules.includes("inspectii") ? [{ key: "inspectii" as const, label: "Inspecții", href: "/inspectii", test: true }] : []),
   ];
   const current = (k: Key) => (k === "instrumente" ? TOOL_KEYS.includes(props.active) : props.active === k) ? "page" as const : undefined;
   // Phone: Acasă, Instrumente, Colaborări (when open to this person) and the account in the bottom menu; the rest behind "Meniu".
@@ -47,6 +49,7 @@ export async function AppShell(props: { c: Ctx; active: Key; title: string; subt
             <a key={i.key} href={i.href} aria-current={current(i.key)}>
               {i.label}
               {i.isNew && <span className="navNew">NOU</span>}
+              {i.test && <span className="navNew navTest">TEST</span>}
               {!!i.count && <span className="navCount" aria-label={`${i.count} ${i.count === 1 ? "anunț activ" : "anunțuri active"} în zonele tale`} title={`${i.count === 1 ? "Un anunț activ" : `${i.count} anunțuri active`} în zonele tale`}>{i.count > 99 ? "99+" : i.count}</span>}
             </a>
           ))}

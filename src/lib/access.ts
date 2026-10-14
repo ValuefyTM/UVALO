@@ -74,6 +74,8 @@ export async function context(db: D1Database): Promise<Ctx | null> {
   const cs = await collabSettings(db);
   const valuer = !!user.anevar_no?.trim();
   if ((sup || valuer) && collabAllowed(cs, { super: sup, userId: user.id, hasAccess: !!org && !block })) modules.push("colaborari");
+  // Inspecții: in test, only the UVALO super-admins (no plan includes it yet).
+  if (sup) modules.push("inspectii");
   return { user, session, super: sup, orgs, org, role, modules, block, off, collab: cs.mode, office: sup || !!user.office_allowed };
 }
 

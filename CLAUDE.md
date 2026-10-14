@@ -286,6 +286,24 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   link de autentificare 7 zile; eveniment `colaborari`/`launch_mail` pe destinatar), doar celor cu acces în modul curent și fără profil.
 - Evenimente `colaborari`: `page`, `profile`, `post`, `request`, `open_chat`, `pick`, `post_status` (meta `{test:1}` în test).
 
+## Inspecții (`/inspectii`, modulul `inspectii`) — ÎN TEST, doar super-adminii
+
+- Pregătite pe web, făcute pe telefon (aplicația UVALO, încă de construit), văzute pe web. Mockup: canvasul „UVALO — Inspecții” (pagini Web / Mobil).
+- Acces: `context()` adaugă `inspectii` în `c.modules` doar pentru super-admini (nu e în planuri); meniul arată „Inspecții” cu eticheta TEST.
+  Pentru lansare: un mod ca la Colaborări (off/test/on) sau modulul în planuri.
+- Fără telefon conectat (`insp_devices`) → pagina de activare (`InspActivate`: cod de 6 cifre în `insp_pair_codes`, 10 min, pentru aplicație);
+  în test, „Continuă fără telefon (test)” creează un dispozitiv `platform = 'test'`.
+- Migrația 0023: `inspections` (bunul, contact, programare, fișa ca instantaneu `template` + versiune, `answers`, `room_answers`, `findings`, semnătura,
+  `test = 1`), `insp_templates` (fișele firmei `org` — pot fi impuse — și ale persoanei `user`; `draft` + `published` + `version`), `insp_files`
+  (poze/acte, fișierele vor sta în R2 — bucket de legat), `insp_log` (istoric), `insp_devices`, `insp_pair_codes`. Fișele UVALO stau în cod
+  (`UVALO_TEMPLATES` în `src/lib/insp-shared.ts`, doar citire, se duplică). Logica: `src/lib/insp.ts`; API unic `POST /api/inspectii {action}`.
+- Pagini: `/inspectii` (`InspList`: file Ale mele / Făcute pentru colegi / Făcute pentru mine, filtre pe stare, Listă / Hartă (Leaflet) / Calendar
+  săptămânal cu „De programat” trase pe o oră → `schedule`), `/inspectii/nou[?id=]` (`InspForm`: CF citit cu `/api/amplasament/plan`, încăperi,
+  fișa, contact, programare, cine o face: eu / coleg din birou / Colaborări), `/inspectii/<id>` (fișa ca document: cuprins în stânga, conținut;
+  „Descarcă PDF” = print; în test „Simulează inspecția” completează fișa ca telefonul), `/inspectii/fise` (`InspTemplates`: editor de grupuri și
+  întrebări, răspunsuri precompletate, publicare pe versiuni).
+- `merge.ts` (unire/ștergere conturi) acoperă tabelele noi. Evenimente `inspectii` (meta `{test:1}`).
+
 ## Instrumente în admin (`/admin/instrumente`)
 
 - Listă cu fiecare instrument (localizare, amplasament, comparabile, word, chrome, colaborari — acesta cu moduri, nu on/off) + pagină `/admin/instrumente/<cheie>`: comutator
