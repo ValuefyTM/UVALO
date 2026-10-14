@@ -84,6 +84,8 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   Acceptă și **extrasul CF** (coordonatele din tabelul „Lungime segmente”) și planuri **fără inventar, dar cu caroiaj** (`sursa_coordonate =
   caroiaj` → `puncte_estimate`, aduse la suprafața de pe plan cu `fitArea`, marcate „estimate ±1–2 m”). Ordinea X/Y se decide în pagină
   (`orientPts`): varianta care cade în România, iar dacă amândouă, cea mai apropiată de UAT-ul din document (bb din localizator sau geocodare).
+  Nr. cadastral găsit și în localizator → `p.anc` (conturul ANCPI, suprafața, distanța maximă între contururi): pe harta zonei și în fig. 2
+  conturul din document roșu, cel ANCPI albastru punctat, cu legendă; în caseta planului „coincid” sub 0,5 m.
   Merge și în județe fără plan în localizator. Fig. 2 (plan de situație) arată numerele punctelor, lungimile laturilor și vecinii de pe planul încărcat.
 - Căutare după **coordonate Stereo 70** (`parseStereo`, în amplasament și în localizator): „X 476000 Y 210500” sau „476000, 210500”.
 - Deschiderea: doar laturi aproape paralele (< 30°) cu o stradă OSM la ≤ 25 m; altfel „neidentificată automat”, cu
