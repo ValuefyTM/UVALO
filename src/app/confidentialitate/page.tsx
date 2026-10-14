@@ -9,6 +9,7 @@ const TOC: [string, string][] = [
   ["site", "Site-ul uvalo.ro"],
   ["word", "UVALO pentru Word"],
   ["chrome", "UVALO pentru Chrome"],
+  ["acte", "Documentele încărcate (CF, planuri)"],
   ["scopuri", "De ce le prelucrăm"],
   ["furnizori", "Cui le transmitem"],
   ["pastrare", "Cât timp le păstrăm"],
@@ -38,7 +39,7 @@ export default function Confidentialitate() {
           <li><b>Autentificare și sesiuni</b>: codurile trimise pe email (păstrate doar ca amprentă criptografică), adresa IP, țara și orașul aproximate din IP, tipul de browser, data conectării.</li>
           <li><b>Activitatea în platformă</b>: ce instrumente folosești și ce acțiuni faci (de exemplu localitatea și numărul cadastral căutat, exporturile, textele generate), cu data și ora, precum și pagina deschisă în acel moment și ultima dată când ai fost activ (un semnal trimis cât timp pagina e deschisă). Le folosim pentru securitate, limite de utilizare, suport și statistici, inclusiv statistici de folosire pe utilizator, văzute doar de administratorii UVALO.</li>
           <li><b>Închiderea contului</b>: data și motivul ales de tine, cu observațiile pe care le scrii.</li>
-          <li><b>Datele introduse în instrumente</b>: în analiza amplasamentului, datele parcelei, completările tale și, dacă îl încarci, planul de amplasament (PDF sau imagine) trimis spre citire automată; în localizatorul de comparabile, adresele și punctele pe care le pui pe hartă.</li>
+          <li><b>Datele introduse în instrumente</b>: în analiza amplasamentului, datele parcelei, completările tale și, dacă îl încarci, extrasul CF sau planul de amplasament (PDF sau imagine), folosit doar pentru citirea automată și nestocat (vezi secțiunea 6); în localizatorul de comparabile, adresele și punctele pe care le pui pe hartă.</li>
           <li><b>Feedback</b>: mesajele trimise din butonul „Feedback”, cu pagina de pe care le-ai trimis, browserul și dacă vrei răspuns pe email. Le citesc doar administratorii UVALO.</li>
           <li><b>Colaborări</b> (când modulul îți este disponibil și îl activezi): profilul de colaborare (experiența, competențele, disponibilitatea, permisul, despre tine), locația de bază și zonele de acoperire, anunțurile pe care le publici, cererile de detalii, mesajele din conversații și notificările din aplicație. Pentru anunțurile noi din zonele tale îți trimitem și un email cu un link de autentificare valabil 3 zile (îl poți opri din „Zone de acoperire”). Profilul și mesajul tău le vede autorul anunțului la care ceri detalii; telefonul și emailul se văd între voi doar după ce începe conversația. Localitatea și adresa de bază se transformă în coordonate prin Google, ca să calculăm distanțele.</li>
         </ul>
@@ -72,8 +73,21 @@ export default function Confidentialitate() {
         </ul>
       </section>
 
+      <section id="acte">
+        <h2>6. Documentele încărcate (extras CF, plan de amplasament)</h2>
+        <p>În analiza amplasamentului, în bara de căutare de pe pagina de start și în localizatorul cadastral poți încărca un extras de carte funciară sau un plan de amplasament și delimitare (PDF sau imagine), ca să citim automat datele imobilului.</p>
+        <ul>
+          <li><b>Folosim documentul doar pentru citirea datelor</b> imobilului: numărul cadastral și de carte funciară, localitatea, suprafețele, coordonatele Stereo 70, construcțiile, vecinii și adresa. Nu îl folosim în alt scop.</li>
+          <li><b>Nu stocăm documentul.</b> Fișierul trece prin serverul UVALO doar cât durează citirea, este trimis spre citire la Anthropic și nu este salvat în baza de date, pe disc sau în altă formă, nici la noi, nici în contul tău.</li>
+          <li><b>Nu îl partajăm</b> cu alți utilizatori, cu firma ta, cu colegii din Colaborări sau cu terți. Singurul furnizor care îl primește este Anthropic, ca persoană împuternicită, numai pentru citire; conform termenilor săi comerciali, datele trimise prin API nu sunt folosite pentru antrenarea modelelor și sunt păstrate de Anthropic doar temporar, pentru siguranță și prevenirea abuzurilor, apoi șterse conform politicii sale.</li>
+          <li><b>Datele citite</b> rămân doar în browserul tău, în pagina deschisă (și în memoria tab-ului cât treci de la pagina de start la analiză), ca să le vezi pe hartă și în analiză. Dispar când închizi pagina, cu excepția a ceea ce alegi tu să exporți (PDF, Word, PNG).</li>
+          <li>În jurnalul de activitate păstrăm doar faptul că ai folosit citirea automată: data, numărul cadastral citit, tipul și mărimea fișierului și numărul de puncte de coordonate, pentru limitele de utilizare și statistici. Nu păstrăm conținutul documentului și nici numele proprietarilor sau alte date personale din el.</li>
+          <li>Extrasul de carte funciară poate conține date personale ale proprietarilor. Încarcă doar documente pe care ai dreptul să le folosești în lucrarea de evaluare; noi nu extragem, nu afișăm și nu păstrăm aceste date.</li>
+        </ul>
+      </section>
+
       <section id="scopuri">
-        <h2>6. De ce le prelucrăm</h2>
+        <h2>7. De ce le prelucrăm</h2>
         <ul>
           <li><b>Ca să-ți oferim serviciul</b> (contul, instrumentele, abonamentul firmei): executarea contractului, art. 6 alin. (1) lit. b) GDPR.</li>
           <li><b>Securitate și prevenirea abuzurilor</b> (sesiuni, IP, limite de utilizare, jurnal de activitate): interesul nostru legitim, lit. f).</li>
@@ -84,12 +98,12 @@ export default function Confidentialitate() {
       </section>
 
       <section id="furnizori">
-        <h2>7. Cui le transmitem</h2>
+        <h2>8. Cui le transmitem</h2>
         <p>Nu vindem și nu închiriem date. Le transmitem doar furnizorilor care ne ajută să facem serviciul să funcționeze, ca persoane împuternicite, cu contracte de prelucrare a datelor:</p>
         <ul>
           <li><b>Cloudflare</b>: găzduirea aplicației, baza de date și rețeaua (inclusiv protecția împotriva atacurilor).</li>
           <li><b>Resend</b>: trimiterea emailurilor (coduri de autentificare, invitații).</li>
-          <li><b>Anthropic</b>: generarea textului „Descrierea amplasamentului” și citirea planului de amplasament încărcat. Primește doar datele analizei, completările tale și fișierul încărcat, nu datele contului. Conform termenilor comerciali Anthropic, datele trimise prin API nu sunt folosite pentru antrenarea modelelor.</li>
+          <li><b>Anthropic</b>: generarea textului „Descrierea amplasamentului” și citirea extrasului CF sau a planului de amplasament încărcat. Primește doar datele analizei, completările tale și fișierul încărcat, nu datele contului. Conform termenilor comerciali Anthropic, datele trimise prin API nu sunt folosite pentru antrenarea modelelor.</li>
           <li><b>Google Maps Platform</b>: căutarea adreselor, hărțile de fundal și transformarea în coordonate a localității de bază din Colaborări și a localității anunțurilor.</li>
           <li><b>OpenStreetMap</b> (Overpass și Nominatim): dotările și străzile din jurul amplasamentului și căutarea adreselor în localizatorul de comparabile. Primesc doar coordonatele zonei sau adresa căutată, direct din browserul tău, fără date despre cont.</li>
           <li><b>Membrii firmei tale</b>: titularul și administratorii contului firmei văd cine folosește locurile firmei și activitatea din cadrul firmei.</li>
@@ -99,37 +113,37 @@ export default function Confidentialitate() {
       </section>
 
       <section id="pastrare">
-        <h2>8. Cât timp le păstrăm</h2>
+        <h2>9. Cât timp le păstrăm</h2>
         <ul>
           <li>Datele contului și ale firmei: cât timp contul este activ. Când îți închizi singur contul, istoricul rămâne păstrat ca să-l poți redeschide; la cererea ta ștergem datele. După închiderea contului le ștergem sau le anonimizăm în cel mult 12 luni, cu excepția celor pe care legea ne obligă să le păstrăm mai mult (de exemplu documentele contabile).</li>
           <li>Codurile de autentificare expiră în 15 minute; sesiunile, în cel mult 60 de zile sau la deconectare.</li>
           <li>Jurnalul de activitate: cât timp contul este activ, apoi ca mai sus.</li>
           <li>Solicitările de cont respinse: cel mult 12 luni.</li>
-          <li>Planurile încărcate pentru citire automată nu se păstrează după ce au fost citite.</li>
+          <li>Extrasele CF și planurile încărcate pentru citire automată <b>nu se păstrează</b>: nu le salvăm nicăieri după citire (vezi secțiunea 6).</li>
           <li>Comparabilele trimise din UVALO pentru Chrome în Word: cel mult 7 zile, sau până la următoarea trimitere.</li>
           <li>Colaborări: profilul, anunțurile și conversațiile cât timp contul este activ; anunțurile arhivate rămân doar pentru tine și pentru cei cu care ai discutat. Datele introduse în perioada de test a modulului se pot șterge la încheierea testului.</li>
         </ul>
       </section>
 
       <section id="cookie">
-        <h2>9. Cookie-uri și stocare locală</h2>
+        <h2>10. Cookie-uri și stocare locală</h2>
         <p>Folosim <b>un singur cookie</b>, strict necesar: cookie-ul de sesiune care te ține conectat (valabil cel mult 60 de zile). Nu folosim cookie-uri de publicitate sau de urmărire și nici servicii de analiză de la terți.</p>
         <p>Browserul (sau panoul din Word) păstrează local câteva preferințe, de exemplu straturile hărții, setările anexelor și lucrul în curs din add-in. Acestea rămân pe dispozitivul tău.</p>
       </section>
 
       <section id="securitate">
-        <h2>10. Securitate</h2>
+        <h2>11. Securitate</h2>
         <p>Toate conexiunile sunt criptate (HTTPS). Nu folosim parole: te conectezi cu un cod de unică folosință trimis pe email, iar codurile și tokenurile de sesiune se păstrează doar ca amprente criptografice. Accesul la date în echipa UVALO este limitat la persoanele care administrează platforma.</p>
       </section>
 
       <section id="drepturi">
-        <h2>11. Drepturile tale</h2>
+        <h2>12. Drepturile tale</h2>
         <p>Ai dreptul să ceri acces la datele tale, rectificarea sau ștergerea lor, restricționarea prelucrării, portabilitatea datelor și să te opui prelucrărilor bazate pe interesul legitim. Ne scrii la <a href={`mailto:${COMPANY.email}`}>{COMPANY.email}</a> și îți răspundem în cel mult o lună. Numele, telefonul și imaginea le poți schimba oricând din pagina „Contul meu”, de unde îți poți și închide singur contul.</p>
         <p>Dacă ești nemulțumit, poți depune o plângere la Autoritatea Națională de Supraveghere a Prelucrării Datelor cu Caracter Personal (<a href="https://www.dataprotection.ro" target="_blank" rel="noreferrer">dataprotection.ro</a>).</p>
       </section>
 
       <section id="modificari">
-        <h2>12. Modificări și contact</h2>
+        <h2>13. Modificări și contact</h2>
         <p>Când schimbăm această politică actualizăm data de sus; schimbările importante le anunțăm în platformă sau pe email. Pentru orice întrebare: <a href={`mailto:${COMPANY.email}`}>{COMPANY.email}</a>.</p>
         <p>Vezi și <a href="/termeni">Termenii de utilizare</a>.</p>
       </section>

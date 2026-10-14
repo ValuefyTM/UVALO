@@ -57,6 +57,8 @@ export default function Termeni() {
           <li>Planurile din localizator provin din exporturi ale datelor cadastrale (ANCPI) și pot fi incomplete sau neactualizate. Au <b>caracter orientativ</b> și nu înlocuiesc extrasul de carte funciară, planul de amplasament sau alte documente oficiale.</li>
           <li>Dotările, străzile și factorii din jurul amplasamentului provin din OpenStreetMap și pot fi incomplete.</li>
           <li>Textele generate automat (de exemplu „Descrierea amplasamentului”) și datele citite automat din planurile încărcate sunt <b>propuneri</b>. Evaluatorul le verifică și răspunde pentru conținutul raportului de evaluare, conform standardelor ANEVAR.</li>
+          <li><b>Documentele încărcate</b> (extras de carte funciară, plan de amplasament) sunt folosite <b>doar pentru citirea automată a datelor</b> imobilului. Nu le stocăm, nu le partajăm cu alți utilizatori sau cu terți și nu le folosim în alt scop; le transmitem numai furnizorului care face citirea (Anthropic), ca persoană împuternicită. Detalii în Politica de confidențialitate, secțiunea 6.</li>
+          <li>Încarci doar documente pe care ai dreptul să le folosești în lucrarea ta, cu respectarea confidențialității față de client și a datelor personale pe care le conțin. Coordonatele și suprafețele citite (inclusiv cele estimate din caroiaj) trebuie verificate cu documentul original.</li>
         </ul>
       </section>
 

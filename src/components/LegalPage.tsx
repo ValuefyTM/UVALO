@@ -1,7 +1,7 @@
 /** Public legal pages (privacy, terms): no sign-in, readable during maintenance too (Microsoft Marketplace links them). */
 export const COMPANY = {
   name: "IDEONA ANALYTICS S.R.L.", cui: "46573375", reg: "J2022003536355", seat: "Str. Circumvalațiunii nr. 33, Timișoara, județul Timiș, România",
-  email: "office@uvalo.ro", updated: "13 octombrie 2026",
+  email: "office@uvalo.ro", updated: "14 octombrie 2026",
 };
 
 export function LegalPage({ title, lead, toc, children }: { title: string; lead: string; toc: [string, string][]; children: React.ReactNode }) {
