@@ -78,6 +78,29 @@ button,select,input{font:inherit;color:inherit}
 
 /* fișa */
 main{flex:1 0 auto;display:flex;flex-direction:column;gap:16px;padding:20px 24px}
+/* județ fără planuri: localizare după Stereo 70 sau CF / plan citit automat */
+#np{border:0;padding:0;border-radius:20px;width:min(560px,calc(100% - 24px));max-height:calc(100% - 24px);box-shadow:0 30px 80px -20px rgba(0,0,0,.55);color:var(--ink);font:13px/1.55 var(--sans)}
+#np::backdrop{background:rgba(20,20,20,.55)}
+.npIn{padding:22px 22px 18px;display:flex;flex-direction:column;gap:12px;position:relative}
+.npIn h3{margin:0;font-size:18px;line-height:1.3;letter-spacing:-.01em;padding-right:30px}
+.npIn p{margin:0;color:var(--body)}
+.npX{position:absolute;right:12px;top:12px;width:34px;height:34px;border:0;border-radius:10px;background:var(--subtle);font-size:20px;cursor:pointer;color:var(--muted)}
+.npBox{border:1px solid var(--line);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:8px;background:var(--subtle)}
+.npBox b.t{font-size:11px;letter-spacing:1.5px;color:var(--acc-text);text-transform:uppercase}
+.npBox textarea{width:100%;min-height:96px;resize:vertical;border:1px solid var(--line-3);border-radius:10px;padding:10px;font:12.5px/1.5 var(--mono);background:#fff;color:var(--ink)}
+.npBox textarea:focus{outline:none;border-color:var(--acc)}
+.npRow{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.npRow small{color:var(--muted);flex:1;min-width:180px}
+.npDrop{border:1.5px dashed var(--line-3);border-radius:12px;padding:16px;text-align:center;cursor:pointer;background:#fff;display:flex;flex-direction:column;gap:2px;transition:border-color .15s}
+.npDrop:hover,.npDrop.over{border-color:var(--acc);background:var(--acc-tint)}
+.npDrop b{font-size:13.5px}.npDrop span{font-size:12px;color:var(--muted)}
+.npDrop.busy{cursor:progress;border-style:solid;border-color:var(--acc)}
+.npMsg{color:var(--err);font-weight:700;font-size:12.5px}
+.npRes{display:flex;flex-direction:column;gap:10px}
+.npRes .zone{flex-direction:column;gap:4px}
+.npRes table{width:100%;border-collapse:collapse;font:12px var(--mono)}.npRes td,.npRes th{padding:3px 6px;border-bottom:1px solid var(--line-2);text-align:right}.npRes th{color:var(--muted);font-weight:400}
+.npRes .npRow a,.npRes .npRow button{flex:1 1 auto;text-align:center;text-decoration:none}
+.btn.ghost{background:#fff;border:1px solid var(--line-3);color:var(--ink)}
 .empty{font-size:13px;line-height:1.6;color:var(--body);margin:0;text-wrap:pretty}
 .rhead{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
 .rhead .lbl{font-size:11px;font-weight:700;color:var(--muted)}
@@ -336,6 +359,21 @@ body.resizing #map{pointer-events:none}
     <button type="button" class="fullOut" id="fullOut" hidden></button>
   </div>
 </div>
+<dialog id="np" aria-labelledby="npT"><div class="npIn">
+  <button type="button" class="npX" id="npX" aria-label="Închide">×</button>
+  <h3 id="npT"></h3>
+  <p id="npP"></p>
+  <div class="npBox">
+    <b class="t">Coordonate Stereo 70</b>
+    <textarea id="npPts" spellcheck="false" placeholder="Un punct pe rând: nr., X (nord), Y (est)&#10;1  405197,887  487634,682&#10;2  405187,640  487630,850&#10;3  405160,100  487700,200"></textarea>
+    <div class="npRow"><small>Un singur punct = poziția imobilului; 3 sau mai multe = conturul parcelei, cu suprafața. Ordinea X / Y o recunoaștem singuri.</small><button type="button" class="btn" id="npGo">Localizează pe hartă</button></div>
+    <p class="npMsg" id="npM" hidden></p>
+  </div>
+  <div class="npBox" id="npDocBox">
+    <b class="t">Sau extrasul CF / planul de amplasament</b>
+    <label class="npDrop" id="npDrop"><input type="file" accept="application/pdf,image/jpeg,image/png,image/webp" hidden><b>Încarcă extrasul CF sau planul de amplasament</b><span>PDF sau poză clară · îl citim automat (coordonatele Stereo 70) și desenăm parcela pe hartă</span></label>
+  </div>
+</div></dialog>
 <div id="toast" hidden></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
@@ -505,11 +543,75 @@ const inArea=(la,lo)=>la>AREA.s&&la<AREA.n&&lo>AREA.w&&lo<AREA.e;
 const cache={}; let U=null, P=[], BL=[], TP=[], byId=new Map(), ids=[], cur=null, mode='s';
 // Counties: the UAT list shows the localities of the chosen one (a locality name can repeat in another county).
 const COUNTIES=[...new Set(UATS.map(u=>u.county||'Timiș'))].sort((a,b)=>a.localeCompare(b,'ro'));
-COUNTIES.forEach(c=>$('judSel').add(new Option(c,c)));
+// Toate județele: cele cu planuri sus, celelalte (fără planșe ANCPI) într-un grup separat → fereastra de localizare după Stereo 70 / CF.
+const ALL_J=['Alba','Arad','Argeș','Bacău','Bihor','Bistrița-Năsăud','Botoșani','Brașov','Brăila','București','Buzău','Caraș-Severin','Călărași','Cluj','Constanța','Covasna','Dâmbovița','Dolj','Galați','Giurgiu','Gorj','Harghita','Hunedoara','Ialomița','Iași','Ilfov','Maramureș','Mehedinți','Mureș','Neamț','Olt','Prahova','Satu Mare','Sălaj','Sibiu','Suceava','Teleorman','Timiș','Tulcea','Vaslui','Vâlcea','Vrancea'];
+{const s=$('judSel'),g1=document.createElement('optgroup'),g2=document.createElement('optgroup');g1.label='Cu planuri cadastrale';g2.label='Fără planuri · localizare după Stereo 70 sau CF';
+  COUNTIES.forEach(c=>g1.appendChild(new Option(c,c)));ALL_J.filter(c=>!COUNTIES.includes(c)).forEach(c=>g2.appendChild(new Option(c,c)));s.append(g1);if(g2.children.length)s.append(g2)}
 function fillUats(c){const s=$('uatSel');if(s.dataset.c===c)return;s.dataset.c=c;s.length=0;s.add(new Option('Alege…',''));UATS.filter(u=>(u.county||'Timiș')===c).forEach(u=>s.add(new Option(u.name,u.key)));
   $('judSel').value=c;$('eyebrow').textContent='Hartă cadastrală · '+c}
-fillUats(COUNTIES[0]);
-$('judSel').addEventListener('change',e=>{fillUats(e.target.value);if(U&&(U.county||'Timiș')!==e.target.value)$('uatSel').value='';$('uatSel').focus()});
+fillUats(COUNTIES.includes('Timiș')?'Timiș':COUNTIES[0]);
+$('judSel').addEventListener('change',e=>{if(!COUNTIES.includes(e.target.value)){const j=e.target.value;e.target.value=$('uatSel').dataset.c;noPlan(j);return}fillUats(e.target.value);if(U&&(U.county||'Timiș')!==e.target.value)$('uatSel').value='';$('uatSel').focus()});
+
+/* ---------- județ fără planuri: Stereo 70 introdus sau CF / plan citit cu AI, desenat pe aceeași hartă ---------- */
+const DOC_AI=!!(window.UVALO_DOC&&window.UVALO_DOC.ai);
+const JUDC={alba:[46.07,23.58],arad:[46.18,21.32],arges:[44.86,24.87],bacau:[46.57,26.91],bihor:[47.05,21.93],'bistrita nasaud':[47.13,24.49],botosani:[47.75,26.67],brasov:[45.65,25.6],braila:[45.27,27.96],bucuresti:[44.43,26.1],buzau:[45.15,26.82],'caras severin':[45.3,21.89],calarasi:[44.2,27.33],cluj:[46.77,23.6],constanta:[44.18,28.63],covasna:[45.86,25.79],dambovita:[44.93,25.46],dolj:[44.32,23.8],galati:[45.44,28.05],giurgiu:[43.9,25.97],gorj:[45.04,23.27],harghita:[46.36,25.8],hunedoara:[45.75,22.9],ialomita:[44.56,27.37],iasi:[47.16,27.59],ilfov:[44.5,26.1],maramures:[47.66,23.58],mehedinti:[44.63,22.66],mures:[46.54,24.56],neamt:[46.93,26.37],olt:[44.43,24.36],prahova:[44.94,26.02],'satu mare':[47.79,22.88],salaj:[47.18,23.06],sibiu:[45.79,24.15],suceava:[47.65,26.26],teleorman:[43.97,25.33],timis:[45.75,21.23],tulcea:[45.18,28.8],vaslui:[46.64,27.73],valcea:[45.1,24.37],vrancea:[45.7,27.18]};
+const jKey=t=>String(t||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/^judetul\s+/,'').replace(/[^a-z]+/g,' ').trim();
+const docL=L.layerGroup().addTo(map);let npJud='';
+function noPlan(j){npJud=j;$('npT').textContent='Nu avem încă planuri cadastrale pentru județul '+j;
+  $('npP').innerHTML='Din păcate, pentru județul <b>'+esc(j)+'</b> nu avem încă planșele topografice ANCPI în localizator. Te putem ajuta totuși cu <b>localizarea după coordonatele Stereo 70</b>: scrie punctele'+(DOC_AI?' sau încarcă extrasul CF / planul de amplasament, pe care îl citim automat,':'')+' și îți arătăm imobilul pe hartă.';
+  $('npDocBox').hidden=!DOC_AI;try{window.vfTrack&&vfTrack('no_plan_county',j)}catch(e){}$('npM').hidden=true;const d=$('np');if(!d.open)d.showModal();setTimeout(()=>$('npPts').focus(),50)}
+$('npX').addEventListener('click',()=>$('np').close());
+$('np').addEventListener('click',e=>{if(e.target===$('np'))$('np').close()});
+const ok70=l=>l[0]>43.5&&l[0]<48.4&&l[1]>20.1&&l[1]<30;
+function cen70(r){let A=0,x=0,y=0;for(let i=0,j=r.length-1;i<r.length;j=i++){const f=r[j][0]*r[i][1]-r[i][0]*r[j][1];A+=f;x+=(r[j][0]+r[i][0])*f;y+=(r[j][1]+r[i][1])*f}
+  if(Math.abs(A)<1e-9){const m=r.reduce((s,p)=>[s[0]+p[0],s[1]+p[1]],[0,0]);return[m[0]/r.length,m[1]/r.length]}return[x/(3*A),y/(3*A)]}
+/* puncte citite (a = primul număr, b = al doilea) → [E, N]: varianta care cade în România, cea mai apropiată de județ */
+function orient70(pts,jud){const A=pts.map(p=>[p.b,p.a]),B=pts.map(p=>[p.a,p.b]),la=S70(...cen70(A)),lb=S70(...cen70(B)),h=JUDC[jKey(jud)];
+  if(ok70(la)&&!ok70(lb))return A;if(ok70(lb)&&!ok70(la))return B;if(!ok70(la))return null;
+  if(h){const d=l=>Math.hypot(l[0]-h[0],(l[1]-h[1])*.7);return d(lb)<d(la)-.05?B:A}return A}
+function parse70(t){const out=[];String(t).split(/\n|;/).forEach((line,i)=>{const n=line.match(/\d{5,7}(?:[.,]\d{1,4}(?!\d))?/g);if(!n||n.length<2)return;
+  const nr=(line.trim().match(/^([A-Za-z]?\d{1,4}[A-Za-z]?)\s*[.,:)\s]\s*\D*\d{5}/)||[])[1];const v=n.slice(-2).map(x=>+x.replace(',','.'));out.push({nr:nr||String(out.length+1),a:v[0],b:v[1]})});return out}
+function ringA(r){let A=0;for(let i=0,j=r.length-1;i<r.length;j=i++)A+=r[j][0]*r[i][1]-r[i][0]*r[j][1];return Math.abs(A/2)}
+const f2=(v,d)=>v.toLocaleString('ro-RO',{minimumFractionDigits:d,maximumFractionDigits:d});
+function showDoc(ring,nrs,o){docL.clearLayers();
+  const ll=ring.map(q=>S70(q[0],q[1])),c=S70(...cen70(ring)),one=ring.length===1;
+  if(one){L.circleMarker(ll[0],{radius:9,color:'#fff',weight:3,fillColor:'#C23A2E',fillOpacity:1}).bindTooltip('Punctul Stereo 70').addTo(docL)}
+  else{L.polygon(ll,{color:'#C23A2E',weight:3,fillColor:'#C23A2E',fillOpacity:.18}).bindTooltip((o.nr?'Nr. cad. '+o.nr+' · ':'')+'conturul din coordonatele Stereo 70').addTo(docL);
+    if(ring.length<=40)ll.forEach((p,i)=>L.marker(p,{icon:L.divIcon({className:'',html:'<span style="display:inline-block;transform:translate(-50%,-50%);background:#141414;color:#fff;border-radius:999px;padding:1px 6px;font:700 10px Verdana">'+esc(nrs[i])+'</span>',iconSize:[0,0]}),interactive:false}).addTo(docL))}
+  if(one)map.flyTo(ll[0],18,{duration:1.2});else flyTo(L.latLngBounds(ll),60);
+  const area=one?0:ringA(ring),st=o.stated;
+  const amp=DOC_AI?'<button type="button" class="btn" id="npAmp">Analiză amplasament</button>':'';
+  $('out').innerHTML='<div class="npRes"><p class="eyebrow">Localizare după Stereo 70 · jud. '+esc(o.jud||'')+'</p>'+
+    '<div class="zone"><b style="font-size:15px">'+(o.nr?'Nr. cadastral '+esc(o.nr):one?'Punctul introdus':'Parcela din coordonate')+(o.uat?' · '+esc(o.uat):'')+'</b>'+
+    '<span>'+(o.src?esc(o.src)+' · ':'')+(one?'':ring.length+' puncte · suprafață calculată <b>'+f2(area,0)+' mp</b>'+(st?' (în document '+f2(st,0)+' mp)':'')+' · ')+'GPS '+f2(c[0],6)+', '+f2(c[1],6)+'</span></div>'+
+    '<p class="empty">Localizatorul nu are planul cadastral al zonei, așa că vecinii și construcțiile nu apar pe hartă; conturul e cel din coordonatele '+(o.src?'documentului':'introduse')+'.</p>'+
+    '<div class="npRow">'+amp+'<a class="btn ghost" href="https://www.google.com/maps?q='+c[0].toFixed(6)+','+c[1].toFixed(6)+'" target="_blank" rel="noopener">Google Maps ↗</a><button type="button" class="btn ghost" id="npClr">Șterge de pe hartă</button></div>'+
+    '<details><summary>Coordonatele (Stereo 70)</summary><table><tr><th>Pct.</th><th>X (N)</th><th>Y (E)</th></tr>'+ring.map((q,i)=>'<tr><td>'+esc(nrs[i])+'</td><td>'+f2(q[1],3)+'</td><td>'+f2(q[0],3)+'</td></tr>').join('')+'</table></details></div>';
+  $('npClr').onclick=()=>{docL.clearLayers();$('out').innerHTML='<p class="empty">Am șters conturul de pe hartă.</p>'};
+  if($('npAmp'))$('npAmp').onclick=()=>{const doc=o.doc||{tip_document:'coordonate Stereo 70 introduse în localizator',judet:o.jud,uat:null,nr_cadastral:null,puncte:ring.map((q,i)=>({nr:nrs[i],x:q[1],y:q[0]})),puncte_estimate:[],constructii:[],vecini:[],laturi:[]};
+    if(one){location.href='/amplasament?lat='+c[0].toFixed(6)+'&lng='+c[1].toFixed(6);return}
+    try{sessionStorage.setItem('uvalo-doc',JSON.stringify(doc))}catch(e){}location.href='/amplasament?doc=1'};
+  try{window.vfTrack&&vfTrack('stereo_locate',o.nr||o.jud||null,{src:o.doc?'doc':'manual',pts:ring.length})}catch(e){}
+}
+$('npGo').addEventListener('click',()=>{const pts=parse70($('npPts').value),m=$('npM');
+  if(!pts.length||pts.length===2){m.textContent=pts.length?'Pentru contur sunt necesare cel puțin 3 puncte (sau unul singur, pentru poziție).':'Nu am găsit coordonate Stereo 70 (două numere de 6 cifre pe fiecare rând, de ex. 405197,887  487634,682).';m.hidden=false;return}
+  const r=orient70(pts,npJud);if(!r){m.textContent='Coordonatele nu cad în România. Verifică valorile X și Y.';m.hidden=false;return}
+  $('np').close();showDoc(r,pts.map(p=>p.nr),{jud:npJud})});
+{const z=$('npDrop'),inp=z.querySelector('input');
+  const read=async f=>{if(!/^(application\/pdf|image\/(jpeg|png|webp))$/.test(f.type)){toast('Documentul trebuie să fie PDF sau imagine.');return}
+    const old=z.innerHTML;z.classList.add('busy');z.innerHTML='<b>Citesc documentul…</b><span>durează de obicei 20–60 de secunde</span>';
+    try{const fd=new FormData();fd.append('file',f);const r=await fetch('/api/amplasament/plan',{method:'POST',body:fd}),j=await r.json().catch(()=>({}));
+      if(!r.ok){$('npM').textContent=j.error||'Documentul nu a putut fi citit.';$('npM').hidden=false;return}
+      const P=j._place,est=!(j.puncte||[]).length&&(j.puncte_estimate||[]).length>2,src=est?j.puncte_estimate:j.puncte||[];
+      if(!P||src.length<3){$('npM').textContent='Am citit documentul, dar nu are coordonate Stereo 70 lizibile. Scrie punctele mai sus sau încearcă o poză mai clară.';$('npM').hidden=false;return}
+      const ring=src.map(p=>P.swap?[+p.x,+p.y]:[+p.y,+p.x]);
+      $('np').close();showDoc(ring,src.map((p,i)=>p.nr||String(i+1)),{jud:j.judet||npJud,nr:j.nr_cadastral,uat:j.uat,stated:j.suprafata_masurata_mp||j.suprafata_din_acte_mp,src:/funciar|extras de carte/i.test(j.tip_document||'')?'din extrasul CF'+(est?' (estimate)':''):'din planul încărcat'+(est?' (estimate din caroiaj)':''),doc:j});
+      if(P.uat&&P.inPlan)toast('Imobilul e și în planul cadastral '+P.uat.name+': caută-l după număr.');
+    }catch(e){$('npM').textContent='Conexiunea a căzut. Încearcă din nou.';$('npM').hidden=false}
+    finally{z.classList.remove('busy');z.innerHTML=old;z.prepend(inp)}};
+  z.addEventListener('change',e=>{if(e.target===inp&&inp.files[0])read(inp.files[0]);inp.value=''});
+  z.addEventListener('dragover',e=>{e.preventDefault();z.classList.add('over')});z.addEventListener('dragleave',()=>z.classList.remove('over'));
+  z.addEventListener('drop',e=>{e.preventDefault();z.classList.remove('over');const f=e.dataTransfer.files[0];if(f)read(f)})}
 
 function toast(m){const t=$('toast');t.textContent=m;t.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>t.hidden=true,2000)}
 

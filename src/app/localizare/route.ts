@@ -46,8 +46,10 @@ export async function GET(req: Request) {
   ]);
   // Google maps only for paid plans with the key set in Cloudflare; otherwise the free maps.
   const GM = gm ? `<script>window.VF_GMAPS=${JSON.stringify(gm).replace(/</g, "\\u003c")}</script>` : "";
+  // counties without plans: reading a CF / site plan with AI needs the site analysis module (same API)
+  const DOC = `<script>window.UVALO_DOC=${JSON.stringify({ ai: a.c.super || a.c.modules.includes("amplasament") })}</script>`;
   const html = (await page.text())
-    .replace("</head>", `${PWA_HEAD}${GM}</head>`)
+    .replace("</head>", `${PWA_HEAD}${GM}${DOC}</head>`)
     .replace("</body>", `${ack?.loc_ack_at ? "" : NOTICE}<script src="/api/localizare/script" defer></script><script src="/api/localizare/track-js" defer></script>${PWA_SCRIPT}<script src="/presence.js" defer></script><script src="/feedback.js" defer data-bottom="44" data-bottom-mobile="84"></script></body>`);
   return new Response(html, { headers: { "Content-Type": "text/html; charset=utf-8", ...PRIVATE } });
 }
