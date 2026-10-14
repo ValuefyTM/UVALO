@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { fmtWhen, STATUS, type InspRow, type Question, type Template } from "@/lib/insp-shared";
+import { CONTACT_ROLES, fmtWhen, PROP_TYPES, STATUS, type InspRow, type Question, type Template } from "@/lib/insp-shared";
 import { allFiles, allFinish, flush, putFile, putFinish, shrink, type QPhoto } from "./store";
 import { InstallHint } from "./InstallHint";
 
@@ -12,9 +12,12 @@ type Insp = InspRow & {
   files: { id: string; kind: string; name: string | null; room: string | null; taken_at: string | null }[];
 };
 type Room = { n: string; a: number | null; floor?: string; walls?: string; state?: string };
-type Me = { id: string; name: string; email: string; avatar?: boolean };
+type Me = { id: string; name: string; email: string; avatar?: boolean; anevar_no?: string | null; county?: string | null; phone?: string | null;
+  org?: { id: string; name: string; logo: boolean; role: string | null } | null };
+type Info = { stats: { total: number; month: number; last: string | null; avg_min: number | null; photos: number }; device: { name: string; platform: string; created_at: string; last_seen_at: string } | null };
+type Tpl = { id: string; name: string; prop_type: string | null };
 type Draft = { answers: Record<string, string | string[]>; rooms: Room[]; findings: { diff: string; defects: string; notes: string }; started_at: string };
-type View = { v: "home" } | { v: "detail"; id: string } | { v: "form"; id: string; sec: number } | { v: "rooms"; id: string } | { v: "photos"; id: string } | { v: "sign"; id: string } | { v: "queue" } | { v: "account" };
+type View = { v: "home" } | { v: "detail"; id: string } | { v: "form"; id: string; sec: number } | { v: "rooms"; id: string } | { v: "photos"; id: string } | { v: "sign"; id: string } | { v: "queue" } | { v: "account" } | { v: "new" };
 
 const FLOORS = ["Parchet", "Gresie", "Laminat", "Mochetă", "Beton"];
 const WALLS = ["Vopsea lavabilă", "Faianță", "Tapet", "Tencuieli simple"];
@@ -52,6 +55,8 @@ const Back = ({ onClick }: { onClick: () => void }) => (
 /** UVALO Inspecții, the phone app (PWA on inspectii.uvalo.ro): sign-in, the assigned inspections, the sheet, rooms, photos, signature. */
 export function MobileApp() {
   const [me, setMe] = useState<Me | null>(null);
+  const [info, setInfo] = useState<Info | null>(null);
+  const [tpls, setTpls] = useState<Tpl[]>([]);
   const [state, setState] = useState<"boot" | "login" | "noaccess" | "app">("boot");
   const [items, setItems] = useState<InspRow[]>([]);
   const [cur, setCur] = useState<Insp | null>(null);
@@ -81,6 +86,8 @@ export function MobileApp() {
     setMe(j.user as Me);
     if (!j.allowed) { setState("noaccess"); return; }
     setItems(j.items as InspRow[]);
+    setInfo((j.info as Info) ?? null);
+    setTpls((j.templates as Tpl[]) ?? []);
     try { localStorage.setItem("insp-items", JSON.stringify(j.items)); } catch {}
     setState("app");
   }, []);
@@ -196,7 +203,7 @@ export function MobileApp() {
   return (
     <div className={`mb${nav ? " withNav" : ""}`}>
       {!online && <div className="mbOffline">Fără semnal · lucrezi pe telefon, se trimite când revine rețeaua</div>}
-      {view.v === "home" && <Home me={me} items={items} queueN={queueN} onOpen={(id) => open(id, { v: "detail", id })} onStart={(id) => open(id, { v: "form", id, sec: 0 })} onRefresh={load} />}
+      {view.v === "home" && <Home me={me} items={items} queueN={queueN} onNew={() => go({ v: "new" })} onOpen={(id) => open(id, { v: "detail", id })} onStart={(id) => open(id, { v: "form", id, sec: 0 })} onRefresh={load} />}
       {view.v === "detail" && cur && <Detail x={cur} draft={draft} onBack={() => history.back()} onStart={() => go({ v: "form", id: cur.id, sec: 0 })} />}
       {view.v === "form" && cur && draft && (
         <Form x={cur} d={draft} sec={view.sec} photos={pending.filter((p) => p.insp === cur.id).length + cur.files.filter((f) => f.kind === "photo").length}
@@ -207,7 +214,11 @@ export function MobileApp() {
       {view.v === "photos" && cur && draft && <Photos x={cur} d={draft} pending={pending.filter((p) => p.insp === cur.id && p.kind === "photo")} onBack={() => history.back()} onPhoto={addPhoto} />}
       {view.v === "sign" && cur && draft && <Sign x={cur} d={draft} photos={pending.filter((p) => p.insp === cur.id).length + cur.files.filter((f) => f.kind === "photo").length} change={change} onBack={() => history.back()} onFinish={finish} />}
       {view.v === "queue" && <Queue pending={pending} finishN={finishQ} items={items} online={online} onSend={async () => { const n = await sendAll(); say(n ? "Mai sunt elemente de trimis." : "Totul a fost trimis."); }} />}
-      {view.v === "account" && <Account me={me} />}
+      {view.v === "account" && <Account me={me} info={info} queueN={queueN} online={online} onSend={async () => { const n = await sendAll(); say(n ? "Mai sunt elemente de trimis." : "Totul a fost trimis."); }} say={say} />}
+      {view.v === "new" && <NewInsp tpls={tpls} online={online} pos={pos} onBack={() => history.back()} onDone={async (id, now) => {
+        await load();
+        if (now) await open(id, { v: "form", id, sec: 0 }); else { go({ v: "home" }); say("Inspecția a fost adăugată."); }
+      }} />}
       {nav && (
         <nav className="mbNav" aria-label="Meniu">
           <button type="button" aria-current={view.v === "home" ? "page" : undefined} onClick={() => go({ v: "home" })}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M3 11l9-7 9 7v9H3z" /></svg>Acasă</button>
@@ -279,7 +290,7 @@ function Login({ onDone }: { onDone: () => void }) {
 
 /* ---------- home ---------- */
 
-function Home({ me, items, queueN, onOpen, onStart, onRefresh }: { me: Me | null; items: InspRow[]; queueN: number; onOpen: (id: string) => void; onStart: (id: string) => void; onRefresh: () => void }) {
+function Home({ me, items, queueN, onNew, onOpen, onStart, onRefresh }: { me: Me | null; items: InspRow[]; queueN: number; onNew: () => void; onOpen: (id: string) => void; onStart: (id: string) => void; onRefresh: () => void }) {
   const [f, setF] = useState<"week" | "prog" | "done" | "all">("week");
   const now = new Date(), today = ymd(now);
   const wkEnd = ymd(new Date(now.getTime() + 7 * 864e5));
@@ -310,7 +321,8 @@ function Home({ me, items, queueN, onOpen, onStart, onRefresh }: { me: Me | null
               <button type="button" className="mbBtn gold" onClick={() => onStart(next.id)}>{next.status === "lucru" ? "Continuă" : "Începe fișa"}</button>
             </span>
           </div>
-        ) : <div className="mbNext mbNextNone"><b>Nicio inspecție programată</b><small>Inspecțiile pregătite pentru tine pe web apar aici.</small></div>}
+        ) : <div className="mbNext mbNextNone"><b>Nicio inspecție programată</b><small>Inspecțiile pregătite pentru tine pe web apar aici. Sau adaugă una chiar de aici.</small>
+          <button type="button" className="mbBtn gold" onClick={onNew}>+ Inspecție nouă</button></div>}
       </header>
       <InstallHint />
       <div className="mbStats">
@@ -319,7 +331,7 @@ function Home({ me, items, queueN, onOpen, onStart, onRefresh }: { me: Me | null
         <span><b className={queueN ? "red" : ""}>{queueN}</b><small>de trimis</small></span>
         <span><b className="green">{items.filter((i) => i.status === "gata" || i.status === "pred").length}</b><small>finalizate</small></span>
       </div>
-      <div className="mbSecHead"><b>Inspecțiile mele</b></div>
+      <div className="mbSecHead mbRowBetween"><b>Inspecțiile mele</b><button type="button" className="mbLink" onClick={onNew}>+ Inspecție nouă</button></div>
       <div className="mbChips" role="group" aria-label="Filtru">
         {([["week", `Săptămâna asta · ${inWeek.length + active.filter((i) => i.status === "lucru" && !inWeek.includes(i)).length}`], ["prog", `Neprogramate · ${active.filter((i) => !i.scheduled_at).length}`], ["done", "Finalizate"], ["all", "Toate"]] as const).map(([k, l]) => (
           <button key={k} type="button" aria-pressed={f === k} onClick={() => setF(k)}>{l}</button>
@@ -598,16 +610,176 @@ function Queue({ pending, finishN, items, online, onSend }: { pending: QPhoto[];
   );
 }
 
-function Account({ me }: { me: Me | null }) {
+const fmtD = (iso: string | null | undefined, time = false) => {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  return `${d.getDate()} ${MONTHS[d.getMonth()].slice(0, 3)}${d.getFullYear() !== new Date().getFullYear() ? ` ${d.getFullYear()}` : ""}${time ? `, ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}` : ""}`;
+};
+const mb = (n: number) => (n < 1048576 ? `${Math.max(1, Math.round(n / 1024))} KB` : `${(n / 1048576).toLocaleString("ro-RO", { maximumFractionDigits: 1 })} MB`);
+
+/* ---------- new inspection, from the phone ---------- */
+
+function NewInsp({ tpls, online, pos, onBack, onDone }: { tpls: Tpl[]; online: boolean; pos: React.RefObject<[number, number] | null>; onBack: () => void; onDone: (id: string, now: boolean) => Promise<void> }) {
+  const [f, setF] = useState({ address: "", prop_type: "", template_id: "", cad_nr: "", cf_nr: "", contact_name: "", contact_phone: "", contact_role: "", notes: "" });
+  const [ll, setLl] = useState<[number, number] | null>(null);
+  const [when, setWhen] = useState<"now" | "later">("now");
+  const [at, setAt] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState("");
+  const set = (k: keyof typeof f, v: string) => setF((o) => ({ ...o, [k]: v }));
+  const pickType = (t: string) => {
+    setF((o) => ({ ...o, prop_type: o.prop_type === t ? "" : t,
+      template_id: tpls.find((x) => x.prop_type === t)?.id ?? (o.template_id || tpls[0]?.id || "") }));
+  };
+  useEffect(() => { if (!f.template_id && tpls[0]) set("template_id", tpls[0].id); }, [tpls]); // eslint-disable-line react-hooks/exhaustive-deps
+  async function here() {
+    setMsg("");
+    const p = pos.current ?? await new Promise<[number, number] | null>((res) => navigator.geolocation?.getCurrentPosition((g) => res([g.coords.latitude, g.coords.longitude]), () => res(null), { enableHighAccuracy: true, timeout: 10000 }));
+    if (!p) { setMsg("Nu am primit locația. Verifică permisiunea pentru locație."); return; }
+    setLl(p);
+    const r = await fetch(`/api/m/where?lat=${p[0]}&lng=${p[1]}`).catch(() => null);
+    const a = r?.ok ? ((await r.json()) as { address: string | null }).address : null;
+    set("address", a ?? (f.address || `${p[0].toFixed(6)}, ${p[1].toFixed(6)}`));
+  }
+  async function save() {
+    setBusy(true); setMsg("");
+    const d = new Date(), pad = (n: number) => String(n).padStart(2, "0");
+    const scheduled_at = when === "now" ? `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}` : at;
+    try {
+      const r = await fetch("/api/m/new", { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...f, scheduled_at, lat: ll?.[0] ?? null, lng: ll?.[1] ?? null }) });
+      const j = await J(r);
+      if (!r.ok) throw new Error(String(j.error || "Nu a mers."));
+      await onDone(String(j.id), when === "now");
+    } catch (e) { setMsg((e as Error).message); } finally { setBusy(false); }
+  }
   return (
     <>
-      <header className="mbHead small"><b>Contul meu</b><small>{me?.email}</small></header>
+      <header className="mbBar"><Back onClick={onBack} /><span><b>Inspecție nouă</b><small>O faci tu; restul se completează și pe web</small></span></header>
       <div className="mbBody">
-        <section className="mbCard mbMe"><Avatar me={me} big /><span><b>{me?.name}</b><small>{me?.email}</small></span></section>
-        <InstallHint compact />
+        {!online && <p className="mbNote">Fără semnal nu se poate crea o inspecție nouă. Încearcă din nou când ai rețea.</p>}
+        <button type="button" className="mbStart" onClick={here}><b>📍 Sunt la proprietate</b><small>{ll ? `locație preluată · ${ll[0].toFixed(5)}, ${ll[1].toFixed(5)}` : "preia adresa după locația telefonului"}</small></button>
+        <label className="mbField">Adresa bunului<textarea className="mbIn" rows={2} value={f.address} onChange={(e) => { set("address", e.target.value); setLl(null); }} placeholder="Str., nr., localitate, județ" /></label>
+        <small className="mbCap">TIPUL BUNULUI</small>
+        <span className="mbOpts">{PROP_TYPES.map((t) => <button key={t} type="button" aria-pressed={f.prop_type === t} onClick={() => pickType(t)}>{t}</button>)}</span>
+        <label className="mbField">Fișa de inspecție<select className="mbIn" value={f.template_id} onChange={(e) => set("template_id", e.target.value)}>
+          {tpls.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+        </select></label>
+        <span className="mbGrid2">
+          <label className="mbField">Nr. cadastral<input className="mbIn" inputMode="numeric" value={f.cad_nr} onChange={(e) => set("cad_nr", e.target.value)} /></label>
+          <label className="mbField">Carte funciară<input className="mbIn" value={f.cf_nr} onChange={(e) => set("cf_nr", e.target.value)} /></label>
+        </span>
+        <small className="mbCap">PERSOANA DE CONTACT</small>
+        <input className="mbIn" placeholder="Nume" value={f.contact_name} onChange={(e) => set("contact_name", e.target.value)} />
+        <input className="mbIn" placeholder="Telefon" inputMode="tel" value={f.contact_phone} onChange={(e) => set("contact_phone", e.target.value)} />
+        <span className="mbOpts">{CONTACT_ROLES.map((t) => <button key={t} type="button" aria-pressed={f.contact_role === t} onClick={() => set("contact_role", f.contact_role === t ? "" : t)}>{t}</button>)}</span>
+        <small className="mbCap">CÂND</small>
+        <span className="mbOpts">
+          <button type="button" aria-pressed={when === "now"} onClick={() => setWhen("now")}>Acum, sunt acolo</button>
+          <button type="button" aria-pressed={when === "later"} onClick={() => setWhen("later")}>O programez</button>
+        </span>
+        {when === "later" && <input className="mbIn" type="datetime-local" value={at} onChange={(e) => setAt(e.target.value)} />}
+        <label className="mbField">Note<textarea className="mbIn" rows={2} value={f.notes} onChange={(e) => set("notes", e.target.value)} /></label>
+        {msg && <p className="mbErr" role="alert">{msg}</p>}
+      </div>
+      <footer className="mbFoot">
+        <button type="button" className="mbBtn gold big" disabled={busy || !online || f.address.trim().length < 5 || !f.template_id || (when === "later" && !at)} onClick={save}>
+          {when === "now" ? "Creează și începe fișa" : "Adaugă inspecția"}
+        </button>
+        <small className="mbCenterSmall">{f.address.trim().length < 5 ? "Scrie adresa sau apasă „Sunt la proprietate”." : "Actele (CF, releveu) le poți adăuga apoi pe web."}</small>
+      </footer>
+    </>
+  );
+}
+
+/* ---------- account: profile, activity, this phone, sending, security ---------- */
+
+type Perm = "granted" | "denied" | "prompt" | "unknown";
+
+function Account({ me, info, queueN, online, onSend, say }: { me: Me | null; info: Info | null; queueN: number; online: boolean; onSend: () => Promise<void>; say: (m: string) => void }) {
+  const [perm, setPerm] = useState<{ cam: Perm; loc: Perm }>({ cam: "unknown", loc: "unknown" });
+  const [used, setUsed] = useState<number | null>(null);
+  const [synced, setSynced] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const standalone = typeof window !== "undefined" && (matchMedia("(display-mode: standalone)").matches || (navigator as unknown as { standalone?: boolean }).standalone === true);
+  const check = useCallback(async () => {
+    const q = async (n: string): Promise<Perm> => { try { return (await navigator.permissions.query({ name: n as PermissionName })).state as Perm; } catch { return "unknown"; } };
+    setPerm({ cam: await q("camera"), loc: await q("geolocation") });
+    try { const e = await navigator.storage?.estimate(); setUsed(e?.usage ?? null); } catch {}
+    try { setSynced(localStorage.getItem("insp-sync")); } catch {}
+  }, []);
+  useEffect(() => { void check(); }, [check, queueN]);
+  async function askLoc() {
+    navigator.geolocation?.getCurrentPosition(() => void check(), () => { say("Locația e blocată. Pornește-o din setările telefonului, pentru browser / aplicație."); void check(); });
+  }
+  async function askCam() {
+    try { const st = await navigator.mediaDevices.getUserMedia({ video: true }); st.getTracks().forEach((t) => t.stop()); } catch { say("Camera e blocată. Pornește-o din setările telefonului."); }
+    void check();
+  }
+  async function clean() {
+    try {
+      Object.keys(localStorage).filter((k) => /^insp-[0-9a-f-]{36}$/.test(k)).forEach((k) => localStorage.removeItem(k));
+      for (const k of await caches.keys()) await caches.delete(k);
+    } catch {}
+    await check();
+    say("Memoria aplicației a fost golită. Ciornele și ce așteaptă să fie trimis au rămas.");
+  }
+  async function disconnect() {
+    if (queueN && !confirm(`Ai ${queueN} ${queueN === 1 ? "element netrimis" : "elemente netrimise"} pe telefon. Dacă deconectezi telefonul acum, se pierd. Continui?`)) return;
+    if (!confirm("Deconectezi telefonul? Iese din lista de pe web și trebuie să te conectezi din nou.")) return;
+    setBusy(true);
+    await fetch("/api/m/device", { method: "DELETE" }).catch(() => null);
+    try { localStorage.clear(); indexedDB.deleteDatabase("uvalo-insp"); } catch {}
+    location.reload();
+  }
+  const permRow = (label: string, p: Perm, ask: () => void) => (
+    <span className="mbKv"><span>{label}</span>{p === "granted" ? <b className="ok">✓ permisă</b> : <button type="button" className="mbLink" onClick={ask}>{p === "denied" ? "blocată · cum o pornesc" : "Permite"}</button>}</span>
+  );
+  const s = info?.stats;
+  return (
+    <>
+      <header className="mbHead small"><b>Contul meu</b><small>UVALO Inspecții</small></header>
+      <div className="mbBody">
+        <section className="mbCard">
+          <span className="mbMe"><Avatar me={me} big /><span><b>{me?.name}</b><small>{me?.email}</small></span></span>
+          {me?.anevar_no && <span className="mbKv"><span>Legitimație ANEVAR</span><b>{me.anevar_no}</b></span>}
+          {me?.county && <span className="mbKv"><span>Județ</span><b>{me.county}</b></span>}
+          {me?.org && <span className="mbKv mbOrg"><span>Birou</span><b>{me.org.logo && /* eslint-disable-next-line @next/next/no-img-element */ <img src={`/api/org/logo/${me.org.id}`} alt="" />}{me.org.name}</b></span>}
+        </section>
+
+        <small className="mbCap">ACTIVITATE</small>
+        <div className="mbStats flat">
+          <span><b>{s?.month ?? 0}</b><small>luna asta</small></span>
+          <span><b>{s?.total ?? 0}</b><small>în total</small></span>
+          <span><b>{s?.avg_min != null ? `${s.avg_min}′` : "—"}</b><small>timp mediu</small></span>
+          <span><b>{s?.photos ?? 0}</b><small>fotografii</small></span>
+        </div>
+        {s?.last && <small>Ultima inspecție trimisă: {fmtD(s.last, true)}</small>}
+
+        <small className="mbCap">TELEFONUL ACESTA</small>
+        <section className="mbCard">
+          <span className="mbKv"><span>Aplicația</span>{standalone ? <b className="ok">✓ instalată</b> : <b className="warn">deschisă în browser</b>}</span>
+          <span className="mbKv"><span>Conectat</span><b>{info?.device ? `${info.device.name} · din ${fmtD(info.device.created_at)}` : "—"}</b></span>
+          {permRow("Camera", perm.cam, askCam)}
+          {permRow("Locația", perm.loc, askLoc)}
+          <span className="mbKv"><span>Spațiu folosit</span><b>{used != null ? mb(used) : "—"}</b></span>
+          <button type="button" className="mbLink" onClick={clean}>Golește memoria aplicației</button>
+        </section>
+        {!standalone && <InstallHint compact />}
+
+        <small className="mbCap">SINCRONIZARE</small>
+        <section className="mbCard">
+          <span className="mbKv"><span>Ultima trimitere</span><b>{synced ? fmtD(synced, true) : "—"}</b></span>
+          <span className="mbKv"><span>De trimis</span><b className={queueN ? "warn" : "ok"}>{queueN ? `${queueN} ${queueN === 1 ? "element" : "elemente"}` : "✓ nimic"}</b></span>
+          <span className="mbKv"><span>Rețea</span><b className={online ? "ok" : "warn"}>{online ? "online" : "fără semnal"}</b></span>
+          {queueN > 0 && <button type="button" className="mbBtn gold" disabled={!online} onClick={onSend}>Trimite acum</button>}
+        </section>
+
+        <small className="mbCap">SECURITATE</small>
         <a className="mbBtn" href="https://app.uvalo.ro/inspectii" target="_blank" rel="noopener">Deschide UVALO pe web</a>
-        <button type="button" className="mbBtn" onClick={async () => { if (!confirm("Ieși din cont pe acest telefon?")) return; await fetch("/api/auth/logout", { method: "POST" }); location.reload(); }}>Ieși din cont</button>
-        <small className="mbCenterSmall">UVALO Inspecții · versiune de test</small>
+        <button type="button" className="mbBtn" disabled={busy} onClick={async () => { if (!confirm("Ieși din cont pe acest telefon? Telefonul rămâne conectat la cont.")) return; await fetch("/api/auth/logout", { method: "POST" }); location.reload(); }}>Ieși din cont</button>
+        <button type="button" className="mbBtn danger" disabled={busy} onClick={disconnect}>Deconectează telefonul</button>
+        <small className="mbCenterSmall">UVALO Inspecții · versiune de test · <a href="https://app.uvalo.ro/termeni" target="_blank" rel="noopener">Termeni</a> · <a href="https://app.uvalo.ro/confidentialitate" target="_blank" rel="noopener">Confidențialitate</a></small>
       </div>
     </>
   );

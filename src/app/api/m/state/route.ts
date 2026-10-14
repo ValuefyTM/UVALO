@@ -1,14 +1,22 @@
 import { api } from "@/lib/api";
-import { myAssigned } from "@/lib/insp";
+import { myAssigned, phoneInfo, usableTemplates } from "@/lib/insp";
 
-/** Phone app: who is signed in and the inspections they have to do (assigned to them). */
+/** Phone app: who is signed in (profile, activity, this phone), the inspections they have to do, the sheets for a new one. */
 export async function GET() {
   const a = await api();
   if ("res" in a) return a.res;
   const { db, c } = a;
   const allowed = c.modules.includes("inspectii");
+  const u = c.user, o = c.org;
+  const [items, info, tpls] = allowed
+    ? await Promise.all([myAssigned(db, u.id), phoneInfo(db, u.id, c.session.id), usableTemplates(db, c)])
+    : [[], null, []];
   return Response.json({
-    user: { id: c.user.id, name: c.user.name || c.user.email, email: c.user.email, avatar: !!c.user.has_avatar },
-    allowed, items: allowed ? await myAssigned(db, c.user.id) : [],
+    user: {
+      id: u.id, name: u.name || u.email, email: u.email, avatar: !!u.has_avatar, anevar_no: u.anevar_no, county: u.county, phone: u.phone,
+      org: o && (o.office_at || c.orgs.length > 1) ? { id: o.id, name: o.name, logo: !!o.has_logo, role: c.role } : null,
+    },
+    allowed, items, info,
+    templates: tpls.map((t) => ({ id: t.id, name: t.name, prop_type: t.prop_type })),
   }, { headers: { "Cache-Control": "no-store" } });
 }

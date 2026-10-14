@@ -1819,7 +1819,7 @@ textarea.mbIn { min-height: 0; resize: vertical; }
 .mbAv { width: 42px; height: 42px; border-radius: 50%; border: 0; padding: 0; background: none; }
 .mbAvImg { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; background: var(--acc); color: #141414; font-weight: 800; font-size: 14px; display: flex; align-items: center; justify-content: center; flex: none; }
 .mbAvImg.big { width: 56px; height: 56px; font-size: 18px; }
-.mbMe { flex-direction: row; align-items: center; gap: 14px; }
+.mbMe { display: flex; flex-direction: row; align-items: center; gap: 14px; }
 .mbMe > span { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .mbNext { background: #222; border: 1px solid #333; border-radius: 18px; padding: 14px; display: flex; flex-direction: column; gap: 12px; }
 .mbNextNone { gap: 4px; }
@@ -1933,6 +1933,21 @@ textarea.mbIn { min-height: 0; resize: vertical; }
 .mbHintDesk > span:last-child { display: flex; flex-direction: column; gap: 4px; }
 .mbQr { flex: none; width: 108px; background: #fff; }
 .mbQr svg { display: block; width: 100%; height: auto; }
+
+/* account */
+.mbKv { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: 14px; min-height: 30px; border-top: 1px solid var(--divider); padding-top: 8px; }
+.mbKv > span { color: var(--muted); }
+.mbKv > b { text-align: right; font-size: 14px; }
+.mbKv b.ok { color: var(--ok-text); }
+.mbKv b.warn { color: var(--acc-text); }
+.mbKv .mbLink { padding: 0; }
+.mbCard > .mbKv:first-child { border-top: 0; padding-top: 0; }
+.mbOrg b { display: inline-flex; align-items: center; gap: 8px; }
+.mbOrg img { width: 26px; height: 26px; border-radius: 6px; object-fit: contain; background: #fff; border: 1px solid var(--divider); }
+.mbStats.flat { margin: 0; }
+.mbBtn.danger { color: var(--err); border-color: #f1c9c5; }
+.mbCenterSmall a { text-decoration: underline; }
+.mbNextNone .mbBtn { margin-top: 8px; align-self: flex-start; }
 
 /* toast, offline, bottom menu */
 .mbToast { position: fixed; left: 50%; bottom: calc(90px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 30; background: #141414; color: #fff; padding: 12px 16px; border-radius: 12px; font-size: 14px; max-width: calc(100% - 32px); box-shadow: 0 8px 24px rgba(0,0,0,0.3); animation: vfIn 0.3s var(--ease); }

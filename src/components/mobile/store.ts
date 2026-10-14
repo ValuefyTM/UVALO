@@ -46,7 +46,9 @@ export async function flush(): Promise<number> {
       if (r.ok || r.status === 400) await delFinish(x.id);
     } catch { break; }
   }
-  return (await allFiles()).length + (await allFinish()).length;
+  const left = (await allFiles()).length + (await allFinish()).length;
+  if (!left) { try { localStorage.setItem("insp-sync", new Date().toISOString()); } catch {} }
+  return left;
 }
 
 /** Photos are reduced on the phone (max. 2000 px, JPEG) before they are kept and sent. */

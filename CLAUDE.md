@@ -326,6 +326,15 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
 - Instalare după dispozitiv (`InstallHint.tsx`): iPhone Safari → Partajează → „Adaugă pe ecranul principal” (balon cu săgeată spre bara Safari);
   iPhone în alt browser → „Deschide în Safari” (`x-safari-https://…`, nu merge peste tot) + „Copiază linkul”; Android → `beforeinstallprompt`
   sau meniul ⋮; Android în aplicații (Instagram, WhatsApp…) → `intent://…package=com.android.chrome`; calculator → QR. Ascuns 3 zile la ×.
+- **Inspecție nouă de pe telefon** (`+ Inspecție nouă` pe Acasă → ecranul `NewInsp`): „Sunt la proprietate” = GPS + adresa din
+  `GET /api/m/where` (`reverseGeocode` în `gmaps.ts`, fără cheie Google rămân coordonatele), tipul bunului (alege fișa potrivită), nr. cad., CF,
+  contact, „Acum” (programată la ora curentă, deschide fișa) sau „O programez”. `POST /api/m/new` → `saveInspection` cu `assignee_kind = me`,
+  istoricul „Creată pe telefon”, eveniment `phone_new`. Cere rețea.
+- **Contul meu** pe telefon: poza contului (`/api/avatar/<id>`), legitimația, județul, biroul (cu logo, `user.org` din `/api/m/state`);
+  activitatea (`phoneInfo`: luna asta, total, timp mediu, fotografii, ultima trimisă); telefonul acesta (instalată sau în browser, conectat din,
+  permisiuni cameră / locație cu buton, spațiul folosit, „Golește memoria aplicației” = cache-ul detaliilor și al SW, nu ciornele și coada);
+  sincronizarea (`localStorage` `insp-sync` = ultima trimitere completă, de trimis, rețea); „Ieși din cont” și „Deconectează telefonul”
+  (`DELETE /api/m/device` → `disconnectPhone`: scos din lista de pe web + sesiunea închisă, datele locale șterse).
 
 ## Instrumente în admin (`/admin/instrumente`)
 

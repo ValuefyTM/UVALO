@@ -61,6 +61,27 @@ export async function myAssigned(db: D1Database, userId: string) {
   return results;
 }
 
+/** Phone app, "Contul meu": what this person did with the app, and this phone (by its session). */
+export async function phoneInfo(db: D1Database, userId: string, sessionId: string) {
+  const month = new Date().toISOString().slice(0, 7);
+  const [st, ph, dev] = await Promise.all([
+    db.prepare(`SELECT COUNT(*) AS total, SUM(CASE WHEN substr(finished_at, 1, 7) = ? THEN 1 ELSE 0 END) AS month, MAX(finished_at) AS last,
+      AVG(CASE WHEN started_at IS NOT NULL THEN (julianday(finished_at) - julianday(started_at)) * 1440 END) AS avg_min
+      FROM inspections WHERE assignee_id = ? AND finished_at IS NOT NULL AND deleted_at IS NULL`).bind(month, userId).first<{ total: number; month: number | null; last: string | null; avg_min: number | null }>(),
+    db.prepare("SELECT COUNT(*) AS n FROM insp_files f JOIN inspections i ON i.id = f.inspection_id WHERE i.assignee_id = ? AND f.kind = 'photo'").bind(userId).first<{ n: number }>(),
+    db.prepare("SELECT name, platform, created_at, last_seen_at FROM insp_devices WHERE token_hash = ? AND user_id = ? AND revoked_at IS NULL").bind(sessionId, userId).first<{ name: string; platform: string; created_at: string; last_seen_at: string }>(),
+  ]);
+  return { stats: { total: st?.total ?? 0, month: st?.month ?? 0, last: st?.last ?? null, avg_min: st?.avg_min ? Math.round(st.avg_min) : null, photos: ph?.n ?? 0 }, device: dev ?? null };
+}
+
+/** "Deconectează telefonul": the phone leaves the list on the web and its session ends. */
+export async function disconnectPhone(db: D1Database, userId: string, sessionId: string) {
+  await db.batch([
+    db.prepare("UPDATE insp_devices SET revoked_at = ? WHERE token_hash = ? AND user_id = ?").bind(now(), sessionId, userId),
+    db.prepare("UPDATE sessions SET revoked_at = ? WHERE id = ?").bind(now(), sessionId),
+  ]);
+}
+
 /** Test mode only: a stand-in "phone" so the web part can be tried before the app exists. */
 export async function testDevice(db: D1Database, userId: string) {
   await db.prepare("INSERT INTO insp_devices (id, user_id, name, platform, last_seen_at) VALUES (?, ?, 'Mod test (fără telefon)', 'test', ?)").bind(uuid(), userId, now()).run();
@@ -233,7 +254,7 @@ export async function saveInspection(db: D1Database, c: Ctx, b: Record<string, u
   await db.prepare(`INSERT INTO inspections (address, cad_nr, cf_nr, uat, county, lat, lng, prop_type, area_util, area_land, rooms, template_id, template_name, template_version,
     template, contact_name, contact_phone, contact_role, scheduled_at, duration_min, assignee_id, assignee_kind, notes, status, id, code, created_by, org_id, test)
     VALUES (${Array(29).fill("?").join(", ")})`).bind(...cols, nid, await nextCode(db), c.user.id, c.org?.id ?? null, 1).run();
-  await logIt(db, nid, c.user.id, `Creată pe web${b.from_doc ? " din documentele încărcate" : ""}`);
+  await logIt(db, nid, c.user.id, `Creată ${b.from_phone ? "pe telefon" : "pe web"}${b.from_doc ? " din documentele încărcate" : ""}`);
   if (v.scheduled_at) await logIt(db, nid, c.user.id, `Programată pentru ${v.scheduled_at.replace("T", " ")}`);
   return { ok: true, id: nid };
 }
