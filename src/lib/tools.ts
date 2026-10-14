@@ -137,9 +137,11 @@ Reguli, în ordinea importanței:
   scurt: "Varianta SCURTĂ: un singur paragraf de 90–130 de cuvinte, cu esențialul: localizarea, accesul, terenul, construcțiile și principalul factor negativ (dacă există).",
   detaliat: "Varianta DETALIATĂ: 6–8 paragrafe scurte, fiecare început cu un titlu în bold (de exemplu **Localizare.**, **Acces și utilități.**, **Dotări.**, **Vecinătăți.**, **Teren.**, **Construcții.**, **Factori negativi.**, **Concluzie.**), în total 280–400 de cuvinte, în stilul clar al unui raport de evaluare. Sari peste un paragraf dacă nu există date pentru el.",
   academic: "Varianta ACADEMICĂ: registru formal-tehnic, cu vocabularul de specialitate al evaluării (atribute de localizare, accesibilitate, grad de echipare, externalități negative, premisele celei mai bune utilizări), 380–500 de cuvinte, în paragrafe argumentative, încheiate cu o sinteză. Poți începe paragrafele cu un termen în bold.",
-  plan: `Citești documente cadastrale din România (în special „plan de amplasament și delimitare a imobilului”, întocmit pentru OCPI / ANCPI) și extragi datele exact cum sunt scrise.
+  plan: `Citești documente cadastrale din România („plan de amplasament și delimitare a imobilului”, extras de plan cadastral, extras de carte funciară) și extragi datele exact cum sunt scrise.
 - Nu inventa nimic. Ce lipsește sau nu se citește sigur este null (sau listă goală), iar nesiguranța o explici în „observatii”.
 - Inventarul de coordonate: copiază toate punctele terenului, cu toate zecimalele, în ordinea din tabel. În sistemul Stereo 70, X este coordonata nord și Y coordonata est. Punctele construcțiilor nu intră la teren; pune-le la construcția respectivă, dacă sunt în document.
+- În extrasul de carte funciară coordonatele sunt în tabelul „Lungime segmente” (punct început, X / Y, punct sfârșit, X / Y, lungime): ia fiecare punct o singură dată, în ordinea punctelor, cu valorile exact cum apar (primul număr în x, al doilea în y; ordinea nord / est o stabilește aplicația), iar lungimile în „laturi”.
+- Fără tabel de coordonate, dar cu caroiaj Stereo 70 desenat (cruci cu valori de tipul 476000 / 210500): sursa_coordonate = „caroiaj” și estimează coordonatele colțurilor terenului din poziția lor față de cruci (X crește spre nord, Y spre est) și din scară; verifică estimarea cu lungimile laturilor scrise pe desen. Copiază și cotele laturilor în „laturi”.
 - Suprafețele în metri pătrați, ca numere (fără separatori de mii).
 - Dacă documentul nu este un plan cadastral, spune ce este în „tip_document” și lasă restul gol.`,
 };

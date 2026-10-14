@@ -21,7 +21,7 @@ const SCHEMA = {
   type: "object",
   additionalProperties: false,
   required: ["tip_document", "nr_cadastral", "nr_carte_funciara", "uat", "judet", "adresa", "suprafata_masurata_mp", "suprafata_din_acte_mp",
-    "categorie_folosinta", "intravilan", "puncte", "constructii", "vecini", "observatii"],
+    "categorie_folosinta", "intravilan", "puncte", "sursa_coordonate", "puncte_estimate", "laturi", "constructii", "vecini", "observatii"],
   properties: {
     tip_document: { type: "string", description: "ce fel de document este, de ex. „plan de amplasament și delimitare a imobilului”" },
     nr_cadastral: str, nr_carte_funciara: str,
@@ -32,7 +32,10 @@ const SCHEMA = {
     suprafata_din_acte_mp: { ...num, description: "suprafața din acte, dacă e scrisă separat, în mp" },
     categorie_folosinta: { ...str, description: "de ex. curți construcții, arabil" },
     intravilan: { anyOf: [{ type: "boolean" }, { type: "null" }] },
-    puncte: { type: "array", description: "inventarul de coordonate al TERENULUI (parcelei), în ordinea din tabel, Stereo 70: x = nord, y = est, în metri cu zecimale", items: point },
+    puncte: { type: "array", description: "inventarul de coordonate al TERENULUI (parcelei), copiat dintr-un tabel de coordonate (plan de amplasament, extras de plan cadastral, extras CF), în ordinea din tabel, Stereo 70: x = nord, y = est, în metri cu zecimale. Gol dacă documentul nu are tabel de coordonate.", items: point },
+    sursa_coordonate: { type: "string", enum: ["inventar", "caroiaj", "lipsa"], description: "inventar = există tabel cu coordonatele punctelor; caroiaj = nu există tabel, dar desenul are caroiajul Stereo 70 (cruci cu valori X și Y) și scara; lipsa = niciuna" },
+    puncte_estimate: { type: "array", description: "DOAR când sursa_coordonate = caroiaj: coordonatele Stereo 70 ale colțurilor terenului, ESTIMATE din poziția lor în desen față de crucile caroiajului (interpolare liniară între valorile X și Y ale crucilor) și din scară, în ordinea numerelor punctelor din desen. Altfel listă goală.", items: point },
+    laturi: { type: "array", description: "lungimile laturilor terenului scrise pe desen (cotele), cu punctele între care sunt; listă goală dacă nu sunt", items: { type: "object", additionalProperties: false, required: ["de_la", "pana_la", "lungime_m"], properties: { de_la: { type: "string" }, pana_la: { type: "string" }, lungime_m: { type: "number" } } } },
     constructii: {
       type: "array",
       items: {

@@ -81,6 +81,11 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   inventar de coordonate Stereo 70, construcții, vecini, adresă). Pagina reface parcela din coordonate (X=N, Y=E; le
   întoarce dacă ies din România), verifică suprafața față de cea scrisă pe plan și ia vecinii din planul ANCPI dacă UAT-ul
   există. Fără coordonate → formular manual (suprafață, deschidere, adâncime, formă, poziție, construcții). Limită 30/zi.
+  Acceptă și **extrasul CF** (coordonatele din tabelul „Lungime segmente”) și planuri **fără inventar, dar cu caroiaj** (`sursa_coordonate =
+  caroiaj` → `puncte_estimate`, aduse la suprafața de pe plan cu `fitArea`, marcate „estimate ±1–2 m”). Ordinea X/Y se decide în pagină
+  (`orientPts`): varianta care cade în România, iar dacă amândouă, cea mai apropiată de UAT-ul din document (bb din localizator sau geocodare).
+  Merge și în județe fără plan în localizator. Fig. 2 (plan de situație) arată numerele punctelor, lungimile laturilor și vecinii de pe planul încărcat.
+- Căutare după **coordonate Stereo 70** (`parseStereo`, în amplasament și în localizator): „X 476000 Y 210500” sau „476000, 210500”.
 - Deschiderea: doar laturi aproape paralele (< 30°) cu o stradă OSM la ≤ 25 m; altfel „neidentificată automat”, cu
   laturile fără vecin înscris și dreptunghiul încadrator (nu se ghicește frontul).
 - Index UAT-uri (`_localizare/c/index.json`) conține acum și `v` (versiunea datelor) și `bb`.
