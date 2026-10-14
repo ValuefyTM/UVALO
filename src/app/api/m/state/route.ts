@@ -8,7 +8,7 @@ export async function GET() {
   const { db, c } = a;
   const allowed = c.modules.includes("inspectii");
   return Response.json({
-    user: { name: c.user.name || c.user.email, email: c.user.email },
+    user: { id: c.user.id, name: c.user.name || c.user.email, email: c.user.email, avatar: !!c.user.has_avatar },
     allowed, items: allowed ? await myAssigned(db, c.user.id) : [],
   }, { headers: { "Cache-Control": "no-store" } });
 }

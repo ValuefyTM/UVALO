@@ -12,6 +12,7 @@ type Insp = InspRow & {
   files: { id: string; kind: string; name: string | null; room: string | null; taken_at: string | null }[];
 };
 type Room = { n: string; a: number | null; floor?: string; walls?: string; state?: string };
+type Me = { id: string; name: string; email: string; avatar?: boolean };
 type Draft = { answers: Record<string, string | string[]>; rooms: Room[]; findings: { diff: string; defects: string; notes: string }; started_at: string };
 type View = { v: "home" } | { v: "detail"; id: string } | { v: "form"; id: string; sec: number } | { v: "rooms"; id: string } | { v: "photos"; id: string } | { v: "sign"; id: string } | { v: "queue" } | { v: "account" };
 
@@ -34,6 +35,14 @@ function distM(a: [number, number], b: [number, number]) {
   return 2 * 6371000 * Math.asin(Math.sqrt(h));
 }
 
+/** The account's picture (as on the platform), or its initials. */
+const Avatar = ({ me, big = false }: { me: Me | null; big?: boolean }) => {
+  const [bad, setBad] = useState(false);
+  const cls = `mbAvImg${big ? " big" : ""}`;
+  // eslint-disable-next-line @next/next/no-img-element
+  return me?.avatar && !bad ? <img className={cls} src={`/api/avatar/${me.id}`} alt="" onError={() => setBad(true)} /> : <span className={cls} aria-hidden="true">{initials(me?.name ?? "U")}</span>;
+};
+
 const Back = ({ onClick }: { onClick: () => void }) => (
   <button type="button" className="mbBack" aria-label="Înapoi" onClick={onClick}>
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M15 18l-6-6 6-6" /></svg>
@@ -42,7 +51,7 @@ const Back = ({ onClick }: { onClick: () => void }) => (
 
 /** UVALO Inspecții, the phone app (PWA on inspectii.uvalo.ro): sign-in, the assigned inspections, the sheet, rooms, photos, signature. */
 export function MobileApp() {
-  const [me, setMe] = useState<{ name: string; email: string } | null>(null);
+  const [me, setMe] = useState<Me | null>(null);
   const [state, setState] = useState<"boot" | "login" | "noaccess" | "app">("boot");
   const [items, setItems] = useState<InspRow[]>([]);
   const [cur, setCur] = useState<Insp | null>(null);
@@ -69,7 +78,7 @@ export function MobileApp() {
     if (!r) { setState((s) => (s === "boot" ? "app" : s)); return; } // offline: keep what we have
     if (r.status === 401) { setState("login"); return; }
     const j = await J(r);
-    setMe(j.user as { name: string; email: string });
+    setMe(j.user as Me);
     if (!j.allowed) { setState("noaccess"); return; }
     setItems(j.items as InspRow[]);
     try { localStorage.setItem("insp-items", JSON.stringify(j.items)); } catch {}
@@ -270,7 +279,7 @@ function Login({ onDone }: { onDone: () => void }) {
 
 /* ---------- home ---------- */
 
-function Home({ me, items, queueN, onOpen, onStart, onRefresh }: { me: { name: string } | null; items: InspRow[]; queueN: number; onOpen: (id: string) => void; onStart: (id: string) => void; onRefresh: () => void }) {
+function Home({ me, items, queueN, onOpen, onStart, onRefresh }: { me: Me | null; items: InspRow[]; queueN: number; onOpen: (id: string) => void; onStart: (id: string) => void; onRefresh: () => void }) {
   const [f, setF] = useState<"week" | "prog" | "done" | "all">("week");
   const now = new Date(), today = ymd(now);
   const wkEnd = ymd(new Date(now.getTime() + 7 * 864e5));
@@ -286,7 +295,7 @@ function Home({ me, items, queueN, onOpen, onStart, onRefresh }: { me: { name: s
       <header className="mbHead">
         <div className="mbHeadRow">
           <span><small>{WEEKDAYS[now.getDay()]}, {now.getDate()} {MONTHS[now.getMonth()]}</small><b>Bună{first ? `, ${first}` : ""}!</b></span>
-          <button type="button" className="mbAv" onClick={onRefresh} aria-label="Reîncarcă">{initials(me?.name ?? "U")}</button>
+          <button type="button" className="mbAv" onClick={onRefresh} aria-label="Reîncarcă"><Avatar me={me} /></button>
         </div>
         {next ? (
           <div className="mbNext">
@@ -589,12 +598,12 @@ function Queue({ pending, finishN, items, online, onSend }: { pending: QPhoto[];
   );
 }
 
-function Account({ me }: { me: { name: string; email: string } | null }) {
+function Account({ me }: { me: Me | null }) {
   return (
     <>
       <header className="mbHead small"><b>Contul meu</b><small>{me?.email}</small></header>
       <div className="mbBody">
-        <section className="mbCard"><b>{me?.name}</b><small>{me?.email}</small></section>
+        <section className="mbCard mbMe"><Avatar me={me} big /><span><b>{me?.name}</b><small>{me?.email}</small></span></section>
         <InstallHint compact />
         <a className="mbBtn" href="https://app.uvalo.ro/inspectii" target="_blank" rel="noopener">Deschide UVALO pe web</a>
         <button type="button" className="mbBtn" onClick={async () => { if (!confirm("Ieși din cont pe acest telefon?")) return; await fetch("/api/auth/logout", { method: "POST" }); location.reload(); }}>Ieși din cont</button>

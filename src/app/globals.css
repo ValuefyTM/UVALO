@@ -1816,7 +1816,11 @@ textarea.mbIn { min-height: 0; resize: vertical; }
 .mbHeadRow { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .mbHeadRow > span { display: flex; flex-direction: column; gap: 2px; }
 .mbHeadRow b { font-size: 22px; letter-spacing: -0.01em; }
-.mbAv { width: 42px; height: 42px; border-radius: 50%; border: 0; background: var(--acc); color: #141414; font-weight: 800; font-size: 14px; }
+.mbAv { width: 42px; height: 42px; border-radius: 50%; border: 0; padding: 0; background: none; }
+.mbAvImg { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; background: var(--acc); color: #141414; font-weight: 800; font-size: 14px; display: flex; align-items: center; justify-content: center; flex: none; }
+.mbAvImg.big { width: 56px; height: 56px; font-size: 18px; }
+.mbMe { flex-direction: row; align-items: center; gap: 14px; }
+.mbMe > span { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .mbNext { background: #222; border: 1px solid #333; border-radius: 18px; padding: 14px; display: flex; flex-direction: column; gap: 12px; }
 .mbNextNone { gap: 4px; }
 .mbNextNone small { color: var(--on-navy-2); }
