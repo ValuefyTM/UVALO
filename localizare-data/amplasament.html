@@ -530,15 +530,48 @@ function parseStereo(q){
   let ll=S70(e,n);if(!ok(ll)){[n,e]=[e,n];ll=S70(e,n);if(!ok(ll))return null}
   return{lat:ll[0],lng:ll[1],label:'Stereo 70: X '+fmt(n,2)+' · Y '+fmt(e,2)};
 }
-async function geocode(q){
-  const st=parseStereo(q);if(st)return st;
-  try{const r=await fetch('/api/localizare/geocode?q='+encodeURIComponent(q));if(r.status===200){const j=await r.json();if(j&&j[0])return{lat:j[0].lat,lng:j[0].lng,label:j[0].label}}}catch(e){}
-  const m=q.match(/^\s*(-?\d{1,2}[.,]\d+)\s*[,; ]\s*(-?\d{1,3}[.,]\d+)\s*$/);
-  if(m)return{lat:+m[1].replace(',','.'),lng:+m[2].replace(',','.'),label:q};
+/* Adresele copiate din CF / acte („Jud. Cluj, UAT Cluj-Napoca, Loc. Cluj-Napoca, Str TRAIAN VUIA, Nr. 21-23, …”) nu sunt găsite așa de
+   căutarea gratuită: le desfacem în stradă, număr, localitate și județ și încercăm formulări curate, de la cea mai precisă. */
+const tc=t=>t.toLowerCase().replace(/(^|[\s.\-])(\p{L})/gu,(m,a,b)=>a+b.toUpperCase());
+const fixCase=t=>t===t.toUpperCase()&&/\p{L}{3}/u.test(t)?tc(t):t;
+function parseAddr(q){
+  const o={street:'',nr:'',loc:'',uat:'',jud:'',other:[]};
+  String(q).split(/[,;\n]+/).map(x=>x.trim()).filter(Boolean).forEach(x=>{let m;
+    if(m=x.match(/^(?:jud(?:e[tț]ul)?\.?|j\.)\s*(.+)$/i))o.jud=fixCase(m[1]);
+    else if(m=x.match(/^u\.?a\.?t\.?\s+(.+)$/i))o.uat=fixCase(m[1]);
+    else if(m=x.match(/^(?:loc(?:alitatea)?\.?|sat(?:ul)?|ora[sș](?:ul)?|mun(?:icipiul)?\.?|com(?:una)?\.?)\s+(.+)$/i))o.loc=fixCase(m[1]);
+    else if(m=x.match(/^(str(?:ada)?|b-?dul|bd|bulevardul|calea|aleea|al|pia[tț]a|pța|[sș]os(?:eaua)?|intr(?:area)?|splaiul|drumul)\.?\s+(.+)$/i)){
+      const T={str:'Strada',strada:'Strada',bd:'Bulevardul','b-dul':'Bulevardul',bdul:'Bulevardul',bulevardul:'Bulevardul',al:'Aleea',sos:'Șoseaua','șos':'Șoseaua',intr:'Intrarea','pța':'Piața'};
+      let name=m[2];const n=name.match(/^(.*?)\s+(?:nr\.?\s*)?(\d+[A-Za-z]?)(?:\s*[-–\/]\s*\d+[A-Za-z]?)?$/i);if(n){name=n[1];o.nr=o.nr||n[2]}
+      o.street=(T[m[1].toLowerCase()]||tc(m[1]))+' '+fixCase(name)}
+    else if(m=x.match(/^nr\.?\s*(\d+[A-Za-z]?)/i))o.nr=m[1];
+    else if(/^(bl|sc|et|ap|cam|cod|cp|t\d|p\d|lot|parcela|tarla|tarlaua|cf|cad|nr\.?\s*cad)\b/i.test(x)){}
+    else o.other.push(fixCase(x))});
+  if(!o.loc)o.loc=o.other.find(x=>!/\d/.test(x)&&normN(x)!==normN(o.jud))||o.uat;
+  return o;
+}
+function addrVariants(q){
+  const o=parseAddr(q),loc=o.loc||o.uat,J=o.jud&&normN(o.jud)!==normN(loc)?o.jud:'';
+  if(!o.street||!loc)return[q];
+  const v=[[o.street+(o.nr?' '+o.nr:''),loc,J].filter(Boolean).join(', '),[o.street,loc,J].filter(Boolean).join(', ')];
+  if(o.uat&&normN(o.uat)!==normN(loc))v.push([o.street+(o.nr?' '+o.nr:''),o.uat,J].filter(Boolean).join(', '));
+  return[...new Set(v.concat(q))];
+}
+async function nominatim(q){
   const r=await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&addressdetails=1&countrycodes=ro&accept-language=ro&q='+encodeURIComponent(q));
   if(!r.ok)return null;const j=await r.json();if(!j[0])return null;
   const a=j[0].address||{};const street=[a.road,a.house_number].filter(Boolean).join(' ');const place=a.city||a.town||a.village||a.municipality||'';
-  return{lat:+j[0].lat,lng:+j[0].lon,label:[street||a.suburb,place].filter(Boolean).join(', ')||j[0].display_name};
+  return{lat:+j[0].lat,lng:+j[0].lon,label:[street||a.suburb,place].filter(Boolean).join(', ')||j[0].display_name,noNr:!a.house_number};
+}
+async function geocode(q){
+  const st=parseStereo(q);if(st)return st;
+  const m=q.match(/^\s*(-?\d{1,2}[.,]\d+)\s*[,; ]\s*(-?\d{1,3}[.,]\d+)\s*$/);
+  if(m)return{lat:+m[1].replace(',','.'),lng:+m[2].replace(',','.'),label:q};
+  const V=addrVariants(q);
+  try{const r=await fetch('/api/localizare/geocode?q='+encodeURIComponent(V[0]));if(r.status===200){const j=await r.json();if(j&&j[0])return{lat:j[0].lat,lng:j[0].lng,label:j[0].label}}}catch(e){}
+  for(let i=0;i<V.length;i++){if(i)await new Promise(r=>setTimeout(r,1100)); // Nominatim: o cerere pe secundă
+    const g=await nominatim(V[i]).catch(()=>null);if(g){if(g.noNr&&parseAddr(q).nr)toast('Am găsit strada, fără numărul '+parseAddr(q).nr+': verifică punctul pe hartă.',6000);return g}}
+  return null;
 }
 async function byAddress(q,hintUat){
   loading('Caut adresa…');

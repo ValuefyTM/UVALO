@@ -94,6 +94,8 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   Nr. cadastral găsit și în localizator → `p.anc` (conturul ANCPI, suprafața, distanța maximă între contururi): pe harta zonei și în fig. 2
   conturul din document roșu, cel ANCPI albastru punctat, cu legendă; în caseta planului „coincid” sub 0,5 m.
   Merge și în județe fără plan în localizator. Fig. 2 (plan de situație) arată numerele punctelor, lungimile laturilor și vecinii de pe planul încărcat.
+- Adresele în format de act („Jud. Cluj, UAT Cluj-Napoca, Loc. …, Str TRAIAN VUIA, Nr. 21-23”, și cele citite din CF) se desfac
+  (`parseAddr`/`addrVariants` în amplasament.html) în stradă + număr + localitate + județ; se încearcă pe rând formulările curate, apoi originalul.
 - Căutare după **coordonate Stereo 70** (`parseStereo`, în amplasament și în localizator): „X 476000 Y 210500” sau „476000, 210500”.
 - Deschiderea: doar laturi aproape paralele (< 30°) cu o stradă OSM la ≤ 25 m; altfel „neidentificată automat”, cu
   laturile fără vecin înscris și dreptunghiul încadrator (nu se ghicește frontul).
