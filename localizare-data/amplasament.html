@@ -1142,7 +1142,7 @@ $('bWord').addEventListener('click',async()=>{
 
 /* ---------- planul de amplasament încărcat (citit cu AI) ---------- */
 const normN=t=>String(t||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/^(municipiul|orasul|oras|comuna|com\.|mun\.)\s+/,'').replace(/[^a-z0-9]+/g,' ').trim();
-function upHTML(){return'<label class="upz"><input type="file" accept="application/pdf,image/jpeg,image/png,image/webp" hidden><b>Încarcă planul de amplasament și delimitare</b><span>PDF sau poză clară · îl citim cu AI: coordonatele Stereo 70, suprafețele, construcțiile, vecinii</span></label>'}
+function upHTML(){return'<label class="upz"><input type="file" accept="application/pdf,image/jpeg,image/png,image/webp" hidden><b>Încarcă planul de amplasament sau extrasul CF</b><span>PDF sau poză clară · îl citim cu AI: coordonatele Stereo 70 (inventar, tabelul de segmente din CF sau caroiaj), suprafețele, construcțiile, vecinii · localizăm parcela pe hartă</span></label>'}
 function mountUploads(){document.querySelectorAll('[data-up]').forEach(box=>{if(box.dataset.on)return;box.dataset.on='1';box.innerHTML=upHTML();const z=box.querySelector('.upz'),inp=box.querySelector('input');
   inp.addEventListener('change',()=>{if(inp.files[0])uploadPlan(inp.files[0],z);inp.value=''});
   z.addEventListener('dragover',e=>{e.preventDefault();z.classList.add('over')});z.addEventListener('dragleave',()=>z.classList.remove('over'));
