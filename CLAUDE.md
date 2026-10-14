@@ -326,6 +326,12 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
 - Instalare după dispozitiv (`InstallHint.tsx`): iPhone Safari → Partajează → „Adaugă pe ecranul principal” (balon cu săgeată spre bara Safari);
   iPhone în alt browser → „Deschide în Safari” (`x-safari-https://…`, nu merge peste tot) + „Copiază linkul”; Android → `beforeinstallprompt`
   sau meniul ⋮; Android în aplicații (Instagram, WhatsApp…) → `intent://…package=com.android.chrome`; calculator → QR. Ascuns 3 zile la ×.
+- **Acasă pe telefon**: bara compactă = filtrul ca listă derulantă (Săptămâna asta / Neprogramate / Finalizate / Toate, cu număr),
+  comutatorul Listă / Hartă / Calendar (`localStorage` `insp-view`) și „+”. Harta: Leaflet de pe cdnjs + OSM, pini numerotați pe culoarea stării,
+  punctul albastru = telefonul, atingerea unui pin dă cardul inspecției. Calendarul: săptămâna (‹ ›, Azi), punctele = inspecții pe zi, agenda
+  zilei alese și „De programat” cu buton.
+- **Programare de pe telefon**: foaia `ScheduleSheet` (Azi / Mâine / Poimâine, zi, oră, durată 30 min–2 h) din calendar și din detaliul
+  inspecției (cardul „Programare”, doar la stările prog / plan) → `POST /api/inspectii {action: schedule, scheduled_at, duration_min}`.
 - **Inspecție nouă de pe telefon** (`+ Inspecție nouă` pe Acasă → ecranul `NewInsp`): „Sunt la proprietate” = GPS + adresa din
   `GET /api/m/where` (`reverseGeocode` în `gmaps.ts`, fără cheie Google rămân coordonatele), tipul bunului (alege fișa potrivită), nr. cad., CF,
   contact, „Acum” (programată la ora curentă, deschide fișa) sau „O programez”. `POST /api/m/new` → `saveInspection` cu `assignee_kind = me`,

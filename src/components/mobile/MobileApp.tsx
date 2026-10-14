@@ -67,6 +67,7 @@ export function MobileApp() {
   const [online, setOnline] = useState(true);
   const [toast, setToast] = useState("");
   const pos = useRef<[number, number] | null>(null);
+  const [sched, setSched] = useState<Sched | null>(null);
 
   const say = (m: string) => { setToast(m); setTimeout(() => setToast(""), 3500); };
   const go = useCallback((v: View) => { setViewState(v); history.pushState({ mbv: v }, ""); window.scrollTo(0, 0); }, []);
@@ -203,8 +204,8 @@ export function MobileApp() {
   return (
     <div className={`mb${nav ? " withNav" : ""}`}>
       {!online && <div className="mbOffline">Fără semnal · lucrezi pe telefon, se trimite când revine rețeaua</div>}
-      {view.v === "home" && <Home me={me} items={items} queueN={queueN} onNew={() => go({ v: "new" })} onOpen={(id) => open(id, { v: "detail", id })} onStart={(id) => open(id, { v: "form", id, sec: 0 })} onRefresh={load} />}
-      {view.v === "detail" && cur && <Detail x={cur} draft={draft} onBack={() => history.back()} onStart={() => go({ v: "form", id: cur.id, sec: 0 })} />}
+      {view.v === "home" && <Home me={me} items={items} queueN={queueN} pos={pos} onSchedule={setSched} onNew={() => go({ v: "new" })} onOpen={(id) => open(id, { v: "detail", id })} onStart={(id) => open(id, { v: "form", id, sec: 0 })} onRefresh={load} />}
+      {view.v === "detail" && cur && <Detail x={cur} draft={draft} onSchedule={setSched} onBack={() => history.back()} onStart={() => go({ v: "form", id: cur.id, sec: 0 })} />}
       {view.v === "form" && cur && draft && (
         <Form x={cur} d={draft} sec={view.sec} photos={pending.filter((p) => p.insp === cur.id).length + cur.files.filter((f) => f.kind === "photo").length}
           onBack={() => go({ v: "detail", id: cur.id })} onSec={(s) => setViewState({ v: "form", id: cur.id, sec: s })} change={change} onPhoto={addPhoto}
@@ -226,6 +227,15 @@ export function MobileApp() {
           <button type="button" aria-current={view.v === "account" ? "page" : undefined} onClick={() => go({ v: "account" })}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="8" r="4" /><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6" /></svg>Contul meu</button>
         </nav>
       )}
+      {sched && <ScheduleSheet x={sched} online={online} onClose={() => setSched(null)} onSave={async (when, dur) => {
+        const r = await fetch("/api/inspectii", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "schedule", id: sched.id, scheduled_at: when, duration_min: dur }) }).catch(() => null);
+        if (!r) return "Fără semnal. Încearcă din nou.";
+        if (!r.ok) return String((await J(r)).error || "Nu a mers.");
+        await load();
+        if (curId.current === sched.id) { const x = await fetchInsp(sched.id); if (x) setCur(x); }
+        say(`Programată ${fmtWhen(when)}.`);
+        return null;
+      }} />}
       {toast && <div className="mbToast" role="status">{toast}</div>}
     </div>
   );
@@ -290,17 +300,31 @@ function Login({ onDone }: { onDone: () => void }) {
 
 /* ---------- home ---------- */
 
-function Home({ me, items, queueN, onNew, onOpen, onStart, onRefresh }: { me: Me | null; items: InspRow[]; queueN: number; onNew: () => void; onOpen: (id: string) => void; onStart: (id: string) => void; onRefresh: () => void }) {
+type Sched = { id: string; address: string; scheduled_at: string | null; duration_min: number; day?: string };
+type HView = "list" | "map" | "cal";
+const isDone = (i: InspRow) => i.status === "gata" || i.status === "pred";
+const canSchedule = (i: { status: string }) => i.status === "prog" || i.status === "plan";
+
+function Home({ me, items, queueN, pos, onNew, onOpen, onStart, onRefresh, onSchedule }: {
+  me: Me | null; items: InspRow[]; queueN: number; pos: React.RefObject<[number, number] | null>; onNew: () => void; onOpen: (id: string) => void;
+  onStart: (id: string) => void; onRefresh: () => void; onSchedule: (x: Sched) => void;
+}) {
   const [f, setF] = useState<"week" | "prog" | "done" | "all">("week");
+  const [hv, setHv] = useState<HView>("list");
+  useEffect(() => { try { const v = localStorage.getItem("insp-view"); if (v === "map" || v === "cal" || v === "list") setHv(v); } catch {} }, []);
+  const pickView = (v: HView) => { setHv(v); try { localStorage.setItem("insp-view", v); } catch {} };
   const now = new Date(), today = ymd(now);
   const wkEnd = ymd(new Date(now.getTime() + 7 * 864e5));
-  const active = items.filter((i) => i.status !== "gata" && i.status !== "pred");
+  const active = items.filter((i) => !isDone(i));
   const next = active.filter((i) => i.scheduled_at && i.scheduled_at >= today).sort((a, b) => a.scheduled_at!.localeCompare(b.scheduled_at!))[0] ?? active.find((i) => i.status === "lucru");
   const inWeek = active.filter((i) => i.scheduled_at && i.scheduled_at.slice(0, 10) >= today && i.scheduled_at.slice(0, 10) <= wkEnd);
-  const list = f === "week" ? [...active.filter((i) => i.status === "lucru"), ...inWeek.filter((i) => i.status !== "lucru")] : f === "prog" ? active.filter((i) => !i.scheduled_at)
-    : f === "done" ? items.filter((i) => i.status === "gata" || i.status === "pred") : items;
+  const weekList = [...active.filter((i) => i.status === "lucru"), ...inWeek.filter((i) => i.status !== "lucru")];
+  const unsched = active.filter((i) => !i.scheduled_at);
+  const done = items.filter(isDone);
+  const list = f === "week" ? weekList : f === "prog" ? unsched : f === "done" ? done : items;
   const first = (me?.name ?? "").split(/\s+/)[0];
   const mins = next?.scheduled_at ? Math.round((new Date(next.scheduled_at).getTime() - now.getTime()) / 60000) : null;
+  const FILTERS = [["week", "Săptămâna asta", weekList.length], ["prog", "Neprogramate", unsched.length], ["done", "Finalizate", done.length], ["all", "Toate", items.length]] as const;
   return (
     <>
       <header className="mbHead">
@@ -329,37 +353,212 @@ function Home({ me, items, queueN, onNew, onOpen, onStart, onRefresh }: { me: Me
         <span><b>{active.filter((i) => i.scheduled_at?.startsWith(today)).length}</b><small>azi</small></span>
         <span><b>{inWeek.length}</b><small>săptămâna asta</small></span>
         <span><b className={queueN ? "red" : ""}>{queueN}</b><small>de trimis</small></span>
-        <span><b className="green">{items.filter((i) => i.status === "gata" || i.status === "pred").length}</b><small>finalizate</small></span>
+        <span><b className="green">{done.length}</b><small>finalizate</small></span>
       </div>
-      <div className="mbSecHead mbRowBetween"><b>Inspecțiile mele</b><button type="button" className="mbLink" onClick={onNew}>+ Inspecție nouă</button></div>
-      <div className="mbChips" role="group" aria-label="Filtru">
-        {([["week", `Săptămâna asta · ${inWeek.length + active.filter((i) => i.status === "lucru" && !inWeek.includes(i)).length}`], ["prog", `Neprogramate · ${active.filter((i) => !i.scheduled_at).length}`], ["done", "Finalizate"], ["all", "Toate"]] as const).map(([k, l]) => (
-          <button key={k} type="button" aria-pressed={f === k} onClick={() => setF(k)}>{l}</button>
-        ))}
+      <div className="mbTools">
+        {hv === "cal" ? <b className="mbToolsT">Calendar</b> : (
+          <label className="mbSel">
+            <span className="sr-only">Arată</span>
+            <select value={f} onChange={(e) => setF(e.target.value as typeof f)}>
+              {FILTERS.map(([k, l, n]) => <option key={k} value={k}>{l} · {n}</option>)}
+            </select>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
+          </label>
+        )}
+        <span className="mbSeg" role="group" aria-label="Vedere">
+          <button type="button" aria-pressed={hv === "list"} aria-label="Listă" onClick={() => pickView("list")}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01" /></svg></button>
+          <button type="button" aria-pressed={hv === "map"} aria-label="Hartă" onClick={() => pickView("map")}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z" /><circle cx="12" cy="9.5" r="2.5" /></svg></button>
+          <button type="button" aria-pressed={hv === "cal"} aria-label="Calendar" onClick={() => pickView("cal")}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5" /><path d="M3.5 10h17M8 3v4M16 3v4" /></svg></button>
+        </span>
+        <button type="button" className="mbAdd" aria-label="Inspecție nouă" onClick={onNew}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg></button>
+      </div>
+      {hv === "list" && <ItemList list={list} today={today} onOpen={onOpen} />}
+      {hv === "map" && <MapList list={list} today={today} pos={pos} onOpen={onOpen} />}
+      {hv === "cal" && <Calendar items={items} today={today} onOpen={onOpen} onSchedule={onSchedule} />}
+    </>
+  );
+}
+
+function ItemRow({ i, today, onOpen, n }: { i: InspRow; today: string; onOpen: (id: string) => void; n?: number }) {
+  const d = i.scheduled_at ? new Date(i.scheduled_at) : null, isToday = i.scheduled_at?.startsWith(today);
+  return (
+    <button type="button" className="mbItem" onClick={() => onOpen(i.id)}>
+      {n != null ? <span className="mbPinN" style={{ background: STATUS[i.status].fg }}>{n}</span>
+        : <span className={`mbDay${isToday ? " today" : ""}`}>{d ? <><small>{isToday ? "AZI" : `${DAYS[d.getDay()]} ${d.getDate()}`}</small><b>{i.scheduled_at!.slice(11, 16)}</b></> : <><small>FĂRĂ</small><small>DATĂ</small></>}</span>}
+      <span className="mbItemTxt">
+        <span><em>{(i.prop_type ?? "IMOBIL").toUpperCase()}</em><i style={{ color: STATUS[i.status].fg }}>● {STATUS[i.status].label}</i></span>
+        <b>{i.address}</b>
+        <small>{n != null ? fmtWhen(i.scheduled_at) : [i.contact_name, i.cad_nr && `nr. cad. ${i.cad_nr}`].filter(Boolean).join(" · ") || fmtWhen(i.scheduled_at)}</small>
+      </span>
+    </button>
+  );
+}
+
+function ItemList({ list, today, onOpen }: { list: InspRow[]; today: string; onOpen: (id: string) => void }) {
+  return (
+    <div className="mbList">
+      {list.map((i) => <ItemRow key={i.id} i={i} today={today} onOpen={onOpen} />)}
+      {!list.length && <p className="mbEmpty">Nimic aici. Inspecțiile se pregătesc pe web sau cu „+”.</p>}
+    </div>
+  );
+}
+
+/* map: Leaflet from cdnjs, loaded once */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let leafletP: Promise<any> | null = null;
+function loadLeaflet() {
+  leafletP ??= new Promise((res, rej) => {
+    const css = document.createElement("link"); css.rel = "stylesheet"; css.href = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"; document.head.appendChild(css);
+    const sc = document.createElement("script"); sc.src = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js";
+    sc.onload = () => res((window as unknown as { L: unknown }).L); sc.onerror = () => { leafletP = null; rej(); }; document.head.appendChild(sc);
+  });
+  return leafletP;
+}
+
+function MapList({ list, today, pos, onOpen }: { list: InspRow[]; today: string; pos: React.RefObject<[number, number] | null>; onOpen: (id: string) => void }) {
+  const el = useRef<HTMLDivElement>(null);
+  const placed = useMemo(() => list.filter((r) => r.lat != null && r.lng != null), [list]);
+  const [sel, setSel] = useState<string | null>(null);
+  const [fail, setFail] = useState(false);
+  useEffect(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let m: any = null, gone = false;
+    loadLeaflet().then((L) => {
+      if (gone || !el.current) return;
+      m = L.map(el.current, { zoomControl: false, attributionControl: false });
+      L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 }).addTo(m);
+      const pts: [number, number][] = [];
+      placed.forEach((r, i) => {
+        const icon = L.divIcon({ className: "", html: `<span class="mbPin" style="background:${STATUS[r.status].fg}"><b>${i + 1}</b></span>`, iconSize: [30, 30], iconAnchor: [15, 30] });
+        L.marker([r.lat, r.lng], { icon }).addTo(m).on("click", () => setSel(r.id));
+        pts.push([r.lat!, r.lng!]);
+      });
+      const me = pos.current;
+      if (me) L.circleMarker(me, { radius: 7, color: "#fff", weight: 3, fillColor: "#2F6BD8", fillOpacity: 1 }).addTo(m);
+      if (pts.length) m.fitBounds(L.latLngBounds(me ? [...pts, me] : pts), { padding: [36, 36], maxZoom: 15 });
+      else m.setView(me ?? [45.75, 21.23], me ? 13 : 9);
+    }).catch(() => setFail(true));
+    return () => { gone = true; m?.remove(); };
+  }, [placed, pos]);
+  const s = placed.find((r) => r.id === sel);
+  return (
+    <div className="mbMapWrap">
+      <div className="mbMapBox">
+        <div ref={el} className="mbMap" role="region" aria-label="Harta inspecțiilor" />
+        {fail && <p className="mbMapFail">Harta nu se poate încărca fără semnal.</p>}
+        {s && (
+          <div className="mbMapCard">
+            <button type="button" className="mbHintX" aria-label="Închide" onClick={() => setSel(null)}>×</button>
+            <ItemRow i={s} today={today} onOpen={onOpen} />
+          </div>
+        )}
       </div>
       <div className="mbList">
-        {list.map((i) => {
-          const d = i.scheduled_at ? new Date(i.scheduled_at) : null, isToday = i.scheduled_at?.startsWith(today);
+        {placed.map((r, i) => <ItemRow key={r.id} i={r} n={i + 1} today={today} onOpen={onOpen} />)}
+        {list.length > placed.length && <p className="mbEmpty">{list.length - placed.length} fără poziție pe hartă (adresa nu a fost găsită).</p>}
+        {!list.length && <p className="mbEmpty">Nicio inspecție în filtrul ales.</p>}
+      </div>
+    </div>
+  );
+}
+
+/* calendar: a week strip, the chosen day's agenda, and what is still to be scheduled */
+function Calendar({ items, today, onOpen, onSchedule }: { items: InspRow[]; today: string; onOpen: (id: string) => void; onSchedule: (x: Sched) => void }) {
+  const [day, setDay] = useState(today);
+  const [wk, setWk] = useState(0);
+  const base = new Date(`${today}T12:00`);
+  const monday = new Date(base.getTime() - ((base.getDay() + 6) % 7) * 864e5 + wk * 7 * 864e5);
+  const days = Array.from({ length: 7 }, (_, k) => new Date(monday.getTime() + k * 864e5));
+  const byDay = (d: string) => items.filter((i) => i.scheduled_at?.startsWith(d)).sort((a, b) => a.scheduled_at!.localeCompare(b.scheduled_at!));
+  const agenda = byDay(day);
+  const unsched = items.filter((i) => !i.scheduled_at && !isDone(i));
+  const label = `${days[0].getDate()} ${MONTHS[days[0].getMonth()].slice(0, 3)} – ${days[6].getDate()} ${MONTHS[days[6].getMonth()].slice(0, 3)}`;
+  const dd = new Date(`${day}T12:00`);
+  return (
+    <div className="mbCal">
+      <div className="mbCalHead">
+        <button type="button" aria-label="Săptămâna trecută" onClick={() => setWk(wk - 1)}>‹</button>
+        <b>{label}</b>
+        <button type="button" aria-label="Săptămâna viitoare" onClick={() => setWk(wk + 1)}>›</button>
+        {wk !== 0 && <button type="button" className="mbLink" onClick={() => { setWk(0); setDay(today); }}>Azi</button>}
+      </div>
+      <div className="mbWeek">
+        {days.map((d) => {
+          const k = ymd(d), n = byDay(k).length;
           return (
-            <button key={i.id} type="button" className="mbItem" onClick={() => onOpen(i.id)}>
-              <span className={`mbDay${isToday ? " today" : ""}`}><small>{d ? (isToday ? "AZI" : DAYS[d.getDay()]) : "—"}</small><b>{i.scheduled_at?.slice(11, 16) ?? "?"}</b></span>
-              <span className="mbItemTxt">
-                <span><em>{(i.prop_type ?? "IMOBIL").toUpperCase()}</em><i style={{ color: STATUS[i.status].fg }}>● {STATUS[i.status].label}</i></span>
-                <b>{i.address}</b>
-                <small>{[i.contact_name, i.cad_nr && `nr. cad. ${i.cad_nr}`].filter(Boolean).join(" · ") || fmtWhen(i.scheduled_at)}</small>
-              </span>
+            <button key={k} type="button" aria-pressed={k === day} className={k === today ? "today" : ""} onClick={() => setDay(k)}>
+              <small>{DAYS[d.getDay()].slice(0, 2)}</small><b>{d.getDate()}</b><i>{Array.from({ length: Math.min(n, 3) }, (_, j) => <em key={j} />)}</i>
             </button>
           );
         })}
-        {!list.length && <p className="mbEmpty">Nimic aici. Inspecțiile se pregătesc pe web, în UVALO → Inspecții.</p>}
       </div>
-    </>
+      <div className="mbAgenda">
+        <span className="mbRowBetween"><b>{WEEKDAYS[dd.getDay()]}, {dd.getDate()} {MONTHS[dd.getMonth()]}</b><small>{agenda.length ? `${agenda.length} ${agenda.length === 1 ? "inspecție" : "inspecții"}` : "liber"}</small></span>
+        {agenda.map((i) => (
+          <div key={i.id} className="mbSlot">
+            <span className="mbSlotT"><b>{i.scheduled_at!.slice(11, 16)}</b><small>{i.duration_min}′</small></span>
+            <button type="button" className="mbSlotB" style={{ borderLeftColor: STATUS[i.status].fg }} onClick={() => onOpen(i.id)}>
+              <b>{i.address}</b><small>{[i.prop_type, STATUS[i.status].label].filter(Boolean).join(" · ")}</small>
+            </button>
+            {canSchedule(i) && <button type="button" className="mbSlotE" aria-label="Reprogramează" onClick={() => onSchedule({ id: i.id, address: i.address, scheduled_at: i.scheduled_at, duration_min: i.duration_min })}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5" /><path d="M3.5 10h17M8 3v4M16 3v4" /></svg></button>}
+          </div>
+        ))}
+      </div>
+      <div className="mbSecHead"><b>De programat · {unsched.length}</b></div>
+      <div className="mbList">
+        {unsched.map((i) => (
+          <div key={i.id} className="mbItem mbUnsched">
+            <button type="button" className="mbItemTxt" onClick={() => onOpen(i.id)}>
+              <span><em>{(i.prop_type ?? "IMOBIL").toUpperCase()}</em></span><b>{i.address}</b><small>{i.contact_name ?? ""}</small>
+            </button>
+            <button type="button" className="mbBtn gold" onClick={() => onSchedule({ id: i.id, address: i.address, scheduled_at: null, duration_min: i.duration_min, day })}>Programează</button>
+          </div>
+        ))}
+        {!unsched.length && <p className="mbEmpty">Totul e programat.</p>}
+      </div>
+    </div>
+  );
+}
+
+/* the scheduling sheet (from the calendar, the inspection's page) */
+function ScheduleSheet({ x, online, onClose, onSave }: { x: Sched; online: boolean; onClose: () => void; onSave: (when: string, dur: number) => Promise<string | null> }) {
+  const [date, setDate] = useState(x.scheduled_at?.slice(0, 10) ?? x.day ?? ymd(new Date()));
+  const [time, setTime] = useState(x.scheduled_at?.slice(11, 16) ?? "10:00");
+  const [dur, setDur] = useState(x.duration_min || 60);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState("");
+  const quick = [["Azi", 0], ["Mâine", 1], ["Poimâine", 2]] as const;
+  return (
+    <div className="mbSheetBg" onClick={onClose}>
+      <div className="mbSheet" role="dialog" aria-modal="true" aria-label="Programează inspecția" onClick={(e) => e.stopPropagation()}>
+        <span className="mbSheetGrip" />
+        <b className="mbSheetT">{x.scheduled_at ? "Reprogramează" : "Programează"} inspecția</b>
+        <small>{x.address}</small>
+        <span className="mbOpts">{quick.map(([l, k]) => { const v = ymd(new Date(Date.now() + k * 864e5)); return <button key={l} type="button" aria-pressed={date === v} onClick={() => setDate(v)}>{l}</button>; })}</span>
+        <span className="mbGrid2">
+          <label className="mbField">Ziua<input className="mbIn" type="date" value={date} onChange={(e) => setDate(e.target.value)} /></label>
+          <label className="mbField">Ora<input className="mbIn" type="time" step={900} value={time} onChange={(e) => setTime(e.target.value)} /></label>
+        </span>
+        <small className="mbCap">DURATĂ</small>
+        <span className="mbOpts">{[30, 60, 90, 120].map((d) => <button key={d} type="button" aria-pressed={dur === d} onClick={() => setDur(d)}>{({ 30: "30 min", 60: "1 h", 90: "1 h 30", 120: "2 h" } as Record<number, string>)[d]}</button>)}</span>
+        {msg && <p className="mbErr" role="alert">{msg}</p>}
+        {!online && <p className="mbNote">Programarea are nevoie de semnal.</p>}
+        <button type="button" className="mbBtn gold big" disabled={busy || !online || !date || !time} onClick={async () => {
+          setBusy(true); setMsg("");
+          const e = await onSave(`${date}T${time}`, dur);
+          setBusy(false);
+          if (e) setMsg(e); else onClose();
+        }}>Salvează programarea</button>
+        <button type="button" className="mbLink mbCenterSmall" onClick={onClose}>Renunță</button>
+      </div>
+    </div>
   );
 }
 
 /* ---------- inspection detail ---------- */
 
-function Detail({ x, draft, onBack, onStart }: { x: Insp; draft: Draft | null; onBack: () => void; onStart: () => void }) {
+function Detail({ x, draft, onBack, onStart, onSchedule }: { x: Insp; draft: Draft | null; onBack: () => void; onStart: () => void; onSchedule: (s: Sched) => void }) {
   const done = x.status === "gata" || x.status === "pred";
   const dest = x.lat != null ? `${x.lat},${x.lng}` : encodeURIComponent(x.address);
   const docs = x.files.filter((f) => f.kind !== "photo" && f.kind !== "signature");
@@ -371,6 +570,12 @@ function Detail({ x, draft, onBack, onStart }: { x: Insp; draft: Draft | null; o
           <button type="button" className="mbStart" onClick={onStart}>
             <b>{draft?.started_at ? "Continuă fișa" : "Începe fișa acum"}</b><small>{x.scheduled_at ? `programată ${fmtWhen(x.scheduled_at)}` : "sunt la proprietate"}</small>
           </button>
+        )}
+        {canSchedule(x) && (
+          <section className="mbCard">
+            <span className="mbRowBetween"><span><small className="mbCap">PROGRAMARE</small><b>{x.scheduled_at ? fmtWhen(x.scheduled_at) : "Neprogramată"}</b></span>
+              <button type="button" className="mbBtn" onClick={() => onSchedule({ id: x.id, address: x.address, scheduled_at: x.scheduled_at, duration_min: x.duration_min })}>{x.scheduled_at ? "Reprogramează" : "Programează"}</button></span>
+          </section>
         )}
         <section className="mbCard">
           <b>{x.address}</b>

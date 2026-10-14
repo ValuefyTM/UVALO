@@ -1842,10 +1842,6 @@ textarea.mbIn { min-height: 0; resize: vertical; }
 .mbStats b.green { color: var(--ok-text); }
 .mbStats small { font-size: 11px; line-height: 1.2; }
 .mbSecHead { margin: 20px var(--mb-pad) 8px; font-size: 16px; }
-.mbChips { display: flex; gap: 8px; overflow-x: auto; padding: 0 var(--mb-pad) 4px; scrollbar-width: none; }
-.mbChips::-webkit-scrollbar { display: none; }
-.mbChips button { flex: none; border: 1px solid var(--line); background: #fff; color: var(--ink); border-radius: 999px; padding: 8px 14px; font-size: 13px; font-weight: 700; }
-.mbChips button[aria-pressed="true"] { background: #141414; border-color: #141414; color: #fff; }
 .mbList { display: flex; flex-direction: column; gap: 8px; padding: 12px var(--mb-pad) 0; }
 .mbItem { display: flex; gap: 12px; align-items: center; background: #fff; border: 0; border-radius: 16px; padding: 12px; text-align: left; color: var(--ink); }
 .mbDay { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: none; width: 54px; height: 54px; border-radius: 12px; background: var(--cream-2); }
@@ -1933,6 +1929,62 @@ textarea.mbIn { min-height: 0; resize: vertical; }
 .mbHintDesk > span:last-child { display: flex; flex-direction: column; gap: 4px; }
 .mbQr { flex: none; width: 108px; background: #fff; }
 .mbQr svg { display: block; width: 100%; height: auto; }
+
+/* list toolbar: filter (select), view switch, add */
+.mbTools { display: flex; align-items: center; gap: 8px; margin: 18px var(--mb-pad) 0; }
+.mbToolsT { font-size: 16px; flex: 1; }
+.mbSel { position: relative; flex: 1; min-width: 0; display: flex; align-items: center; }
+.mbSel select { appearance: none; -webkit-appearance: none; width: 100%; height: 40px; border: 0; background: transparent; font-size: 16px; font-weight: 800; color: var(--ink); padding: 0 26px 0 0; text-overflow: ellipsis; }
+.mbSel svg { position: absolute; right: 6px; pointer-events: none; color: var(--muted-2); }
+.mbSeg { display: inline-flex; background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 3px; gap: 2px; flex: none; }
+.mbSeg button { width: 38px; height: 32px; border: 0; border-radius: 9px; background: none; color: var(--muted-2); display: flex; align-items: center; justify-content: center; }
+.mbSeg button[aria-pressed="true"] { background: #141414; color: var(--acc); }
+.mbAdd { width: 40px; height: 40px; flex: none; border: 0; border-radius: 12px; background: var(--acc); color: #141414; display: flex; align-items: center; justify-content: center; }
+.mbPinN { flex: none; width: 34px; height: 34px; border-radius: 50%; color: #fff; font-weight: 800; font-size: 14px; display: flex; align-items: center; justify-content: center; }
+
+/* map view */
+.mbMapWrap { display: flex; flex-direction: column; }
+.mbMapBox { position: relative; margin: 12px var(--mb-pad) 0; border-radius: 18px; overflow: hidden; background: #e8e2d6; }
+.mbMap { height: 52svh; min-height: 280px; }
+.mbMapFail { position: absolute; inset: 0; margin: 0; display: flex; align-items: center; justify-content: center; text-align: center; padding: 20px; color: var(--muted); font-size: 14px; }
+.mbMapCard { position: absolute; left: 8px; right: 8px; bottom: 8px; z-index: 500; box-shadow: 0 8px 24px rgba(0,0,0,0.25); border-radius: 16px; }
+.mbMapCard .mbItem { width: 100%; padding-right: 36px; }
+.mbMapCard .mbHintX { z-index: 1; }
+.mbPin { display: flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); border: 2px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.35); color: #fff; font: 800 12px var(--font); }
+.mbPin b { transform: rotate(45deg); line-height: 1; }
+
+/* calendar view */
+.mbCal { display: flex; flex-direction: column; }
+.mbCalHead { display: flex; align-items: center; gap: 8px; margin: 12px var(--mb-pad) 0; }
+.mbCalHead > b { flex: 1; text-align: center; font-size: 14px; }
+.mbCalHead > button:not(.mbLink) { width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--line); background: #fff; font-size: 20px; line-height: 1; color: var(--ink); }
+.mbCalHead .mbLink { padding: 0 4px; }
+.mbWeek { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin: 10px var(--mb-pad) 0; }
+.mbWeek button { border: 0; background: #fff; border-radius: 12px; padding: 8px 0 6px; display: flex; flex-direction: column; align-items: center; gap: 2px; color: var(--ink); }
+.mbWeek small { font-size: 10px; font-weight: 800; color: var(--muted-2); }
+.mbWeek b { font-size: 16px; }
+.mbWeek i { display: flex; gap: 2px; height: 5px; }
+.mbWeek em { width: 5px; height: 5px; border-radius: 50%; background: var(--acc); }
+.mbWeek button.today b { color: var(--acc-text); }
+.mbWeek button[aria-pressed="true"] { background: #141414; color: #fff; }
+.mbWeek button[aria-pressed="true"] small { color: var(--acc); }
+.mbAgenda { margin: 12px var(--mb-pad) 0; background: #fff; border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.mbSlot { display: flex; align-items: stretch; gap: 10px; }
+.mbSlotT { width: 46px; flex: none; display: flex; flex-direction: column; padding-top: 4px; }
+.mbSlotT b { font-size: 14px; }
+.mbSlotB { flex: 1; min-width: 0; text-align: left; border: 0; border-left: 4px solid var(--acc); background: var(--cream-2); border-radius: 10px; padding: 8px 10px; display: flex; flex-direction: column; gap: 2px; color: var(--ink); }
+.mbSlotB b { font-size: 14px; line-height: 1.3; }
+.mbSlotE { width: 40px; flex: none; border: 1px solid var(--line); background: #fff; border-radius: 10px; color: var(--muted); display: flex; align-items: center; justify-content: center; }
+.mbUnsched { align-items: center; }
+.mbUnsched .mbItemTxt { border: 0; background: none; text-align: left; padding: 0; color: var(--ink); }
+.mbUnsched .mbBtn { flex: none; min-height: 38px; font-size: 13px; }
+
+/* scheduling sheet */
+.mbSheetBg { position: fixed; inset: 0; z-index: 40; background: rgba(20,20,20,0.45); display: flex; align-items: flex-end; justify-content: center; animation: vfIn 0.2s var(--ease); }
+.mbSheet { width: 100%; max-width: 560px; background: #F4EFE6; border-radius: 22px 22px 0 0; padding: 10px var(--mb-pad, 16px) calc(16px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 10px; }
+.mbSheetGrip { align-self: center; width: 40px; height: 5px; border-radius: 3px; background: var(--dashed); }
+.mbSheetT { font-size: 18px; }
+.mbSheet .mbLink { text-align: center; }
 
 /* account */
 .mbKv { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: 14px; min-height: 30px; border-top: 1px solid var(--divider); padding-top: 8px; }

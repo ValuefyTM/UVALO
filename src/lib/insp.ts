@@ -271,7 +271,9 @@ export async function inspAction(db: D1Database, c: Ctx, b: Record<string, unkno
     const when = s(b.scheduled_at, 16);
     if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(when)) return { error: "Alege data și ora." };
     if (r.status !== "prog" && r.status !== "plan") return { error: "Inspecția a început deja." };
-    await db.prepare("UPDATE inspections SET scheduled_at = ?, status = 'plan', updated_at = ? WHERE id = ?").bind(when, now(), id).run();
+    const dur = num(b.duration_min);
+    await db.prepare("UPDATE inspections SET scheduled_at = ?, duration_min = COALESCE(?, duration_min), status = 'plan', updated_at = ? WHERE id = ?")
+      .bind(when, dur ? Math.max(15, Math.min(480, Math.round(dur))) : null, now(), id).run();
     await logIt(db, id, c.user.id, `Programată pentru ${when.replace("T", " ")}`);
     return { ok: true, id };
   }
