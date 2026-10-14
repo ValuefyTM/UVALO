@@ -1179,23 +1179,28 @@ function ringPts(pts,swap){
   return s.length>2?s:null;
 }
 const llOf=s=>{const c=centroid(s),ll=S70(c[0],c[1]);return ll[0]>43.5&&ll[0]<48.4&&ll[1]>20.1&&ll[1]<30?ll:null};
-async function orientPts(pts,hint){
+/* Centrele județelor (reședințele), ca reper fără rețea pentru ordinea X/Y. */
+const JUD={alba:[46.07,23.58],arad:[46.18,21.32],arges:[44.86,24.87],bacau:[46.57,26.91],bihor:[47.05,21.93],'bistrita nasaud':[47.13,24.49],botosani:[47.75,26.67],brasov:[45.65,25.6],braila:[45.27,27.96],bucuresti:[44.43,26.1],buzau:[45.15,26.82],'caras severin':[45.3,21.89],calarasi:[44.2,27.33],cluj:[46.77,23.6],constanta:[44.18,28.63],covasna:[45.86,25.79],dambovita:[44.93,25.46],dolj:[44.32,23.8],galati:[45.44,28.05],giurgiu:[43.9,25.97],gorj:[45.04,23.27],harghita:[46.36,25.8],hunedoara:[45.75,22.9],ialomita:[44.56,27.37],iasi:[47.16,27.59],ilfov:[44.5,26.1],maramures:[47.66,23.58],mehedinti:[44.63,22.66],mures:[46.54,24.56],neamt:[46.93,26.37],olt:[44.43,24.36],prahova:[44.94,26.02],'satu mare':[47.79,22.88],salaj:[47.18,23.06],sibiu:[45.79,24.15],suceava:[47.65,26.26],teleorman:[43.97,25.33],timis:[45.75,21.23],tulcea:[45.18,28.8],vaslui:[46.64,27.73],valcea:[45.1,24.37],vrancea:[45.7,27.18]};
+const judOf=t=>{const k=normN(t).replace(/^judetul\s+/,'');return JUD[k]||null};
+/* preferSwap: extrasele CF scriu în coloana „X / Y” întâi valoarea Y (est), apoi X (nord) — invers față de planuri. */
+async function orientPts(pts,hint,preferSwap){
   const a=ringPts(pts,false),b=ringPts(pts,true);if(!a)return null;
   const la=llOf(a),lb=llOf(b);
   if(la&&!lb)return{s:a,swap:false};if(lb&&!la)return{s:b,swap:true};if(!la)return null;
   const h=await hint().catch(()=>null);
-  if(h){const d=l=>Math.hypot(l[0]-h[0],(l[1]-h[1])*.7);return d(la)<=d(lb)?{s:a,swap:false}:{s:b,swap:true}}
-  return{s:a,swap:false};
+  if(h){const d=l=>Math.hypot(l[0]-h[0],(l[1]-h[1])*.7),da=d(la),db=d(lb);if(Math.abs(da-db)>.15)return da<db?{s:a,swap:false}:{s:b,swap:true}}
+  return preferSwap?{s:b,swap:true}:{s:a,swap:false};
 }
 /* Colțurile estimate din caroiaj: forma și poziția din estimare, dimensiunea adusă la suprafața scrisă pe plan. */
 function fitArea(s,target){const A=ringArea(s);if(!(target>0)||!(A>0))return s;const k=Math.sqrt(target/A);if(Math.abs(k-1)>.25)return s;const c=centroid(s);return s.map(q=>[c[0]+(q[0]-c[0])*k,c[1]+(q[1]-c[1])*k])}
 async function fromPlan(j){
   if(!j||!/plan|amplasament|cadastr|funciar|extras/i.test(j.tip_document||'')&&!(j.puncte||[]).length&&!(j.puncte_estimate||[]).length){toast('Documentul nu pare a fi un plan cadastral sau un extras CF'+(j&&j.tip_document?' ('+j.tip_document+')':'')+'.',6000);return}
   const u0=UATS.find(u=>normN(u.name)===normN(j.uat)&&(!j.judet||normN(u.county)===normN(j.judet)));
-  const hint=async()=>{if(u0&&u0.bb)return[(u0.bb[0]+u0.bb[2])/2,(u0.bb[1]+u0.bb[3])/2];const q=[j.uat,j.judet&&'județul '+j.judet].filter(Boolean).join(', ');if(!q)return null;const g=await geocode(q);return g?[g.lat,g.lng]:null};
+  const hint=async()=>{if(u0&&u0.bb)return[(u0.bb[0]+u0.bb[2])/2,(u0.bb[1]+u0.bb[3])/2];const jc=judOf(j.judet);if(jc)return jc;const q=[j.uat,j.judet&&'județul '+j.judet].filter(Boolean).join(', ');if(!q)return null;const g=await geocode(q);return g?[g.lat,g.lng]:null};
   const est=!(j.puncte||[]).length&&(j.puncte_estimate||[]).length>2;
   loading('Citesc coordonatele Stereo 70…');
-  const O=await orientPts(est?j.puncte_estimate:j.puncte,hint);
+  const isCF=/funciar|extras de carte/i.test(j.tip_document||'');
+  const O=await orientPts(est?j.puncte_estimate:j.puncte,hint,isCF);
   let s=O&&O.s;if(s&&est)s=fitArea(s,j.suprafata_masurata_mp||j.suprafata_din_acte_mp);
   const set=(k,v)=>{const el=$('extra').querySelector('[data-k='+k+']');if(el&&v!=null&&v!=='')el.value=v};
   set('adresa',j.adresa);set('suprafata_din_act',j.suprafata_din_acte_mp?String(j.suprafata_din_acte_mp).replace('.',','):'');

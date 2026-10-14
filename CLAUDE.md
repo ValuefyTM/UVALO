@@ -83,7 +83,9 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   există. Fără coordonate → formular manual (suprafață, deschidere, adâncime, formă, poziție, construcții). Limită 30/zi.
   Acceptă și **extrasul CF** (coordonatele din tabelul „Lungime segmente”) și planuri **fără inventar, dar cu caroiaj** (`sursa_coordonate =
   caroiaj` → `puncte_estimate`, aduse la suprafața de pe plan cu `fitArea`, marcate „estimate ±1–2 m”). Ordinea X/Y se decide în pagină
-  (`orientPts`): varianta care cade în România, iar dacă amândouă, cea mai apropiată de UAT-ul din document (bb din localizator sau geocodare).
+  (`orientPts`): varianta care cade în România, iar dacă amândouă, cea mai apropiată de UAT-ul din document (bb din localizator, apoi
+  centrul județului din `JUD`, apoi geocodare; decide doar la diferență > 0,15°). Extrasele CF scriu „X / Y” cu **Y (est) întâi** →
+  la CF, în caz de dubiu, se inversează implicit (Argeș pus greșit lângă Sibiu înainte de corecție).
   Nr. cadastral găsit și în localizator → `p.anc` (conturul ANCPI, suprafața, distanța maximă între contururi): pe harta zonei și în fig. 2
   conturul din document roșu, cel ANCPI albastru punctat, cu legendă; în caseta planului „coincid” sub 0,5 m.
   Merge și în județe fără plan în localizator. Fig. 2 (plan de situație) arată numerele punctelor, lungimile laturilor și vecinii de pe planul încărcat.
