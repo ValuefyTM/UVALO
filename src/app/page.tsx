@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { firstName, page } from "@/lib/guard";
 import { uats } from "@/lib/cadastre";
 import { AppShell } from "@/components/AppShell";
-import { CollabArt, CompsThumb, HeroArt, MarketArt, SiteThumb } from "@/components/Art";
+import { CollabArt, CompsThumb, MarketArt, SiteThumb } from "@/components/Art";
 import { NotifyButton } from "@/components/NotifyButton";
 import { QuickSearch } from "@/components/QuickSearch";
 import { Referral } from "@/components/Referral";
@@ -73,21 +73,15 @@ export default async function Home() {
       <div className="home">
         {launch && <CollabLaunch l={launch} />}
         <section className="homeHero" aria-label="Localizator cadastral">
-          <HeroArt />
-          <div className="heroText">
-            <h2>Localizator cadastral{counties.length > 0 && <small> ({counties.length === 1 ? `jud. ${counties[0]}` : counties.map((x) => `jud. ${x}`).join(", ")})</small>}</h2>
-            <p>Găsește orice imobil din planurile ANCPI: număr cadastral, topo, adresă, coordonate GPS sau Stereo 70, ori poziția ta pe teren.{amp ? " Încarcă un extras CF sau un plan de amplasament: îl citim automat și localizăm imobilul și acolo unde nu avem încă plan cadastral." : " Vecini, construcții, fișă PDF."}</p>
+          <div className="heroHead">
+            <h2>Localizator cadastral</h2>
+            {parcels > 0 && <span className="heroMeta">{counties.length === 1 ? `jud. ${counties[0]}` : `${counties.length} județe`} · {parcels.toLocaleString("ro-RO")} imobile · {list.length} UAT</span>}
+            {loc && <a className="heroOpen" href="/localizare">Deschide harta →</a>}
           </div>
           {loc ? (
             <QuickSearch uats={list.map((u) => ({ key: u.key, name: u.name, county: u.county ?? "Timiș" }))} amp={amp} dark />
           ) : (
             <p className="heroNote">{c.off.includes("localizare") ? "Localizatorul cadastral este dezactivat temporar. Revine în curând." : "Abonamentul firmei tale nu include localizatorul cadastral."}</p>
-          )}
-          {parcels > 0 && (
-            <p className="heroTotals">
-              <span><b>{parcels.toLocaleString("ro-RO")}</b> imobile în {counties.length === 1 ? counties[0] : `${counties.length} județe`} · <b>{list.length}</b> UAT</span>
-              <a href="/localizare">Deschide harta →</a>
-            </p>
           )}
         </section>
 

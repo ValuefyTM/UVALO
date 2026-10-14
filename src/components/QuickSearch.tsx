@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 
 type Uat = { key: string; name: string; county: string };
 
@@ -28,14 +28,36 @@ function read(text: string, uats: Uat[]) {
   return { kind: "number" as const, nr, uat: null, ask: "unknown" as const };
 }
 
+type Place = { lat: number; lng: number; estimated: boolean; area: number; uat: { key: string; name: string; county: string | null } | null; inPlan: boolean };
+type Doc = { tip_document?: string; nr_cadastral?: string | null; uat?: string | null; judet?: string | null;
+  suprafata_masurata_mp?: number | null; suprafata_din_acte_mp?: number | null; _place?: Place | null };
+
+/** Big photos are reduced in the browser (max. 3000 px), as on the site analysis page. */
+async function shrink(f: File): Promise<File> {
+  if (!/^image\//.test(f.type) || (f.size < 3.5e6 && f.type !== "image/webp")) return f;
+  const im = await new Promise<HTMLImageElement>((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = URL.createObjectURL(f); });
+  const k = Math.min(1, 3000 / Math.max(im.naturalWidth, im.naturalHeight)), cv = document.createElement("canvas");
+  cv.width = Math.round(im.naturalWidth * k); cv.height = Math.round(im.naturalHeight * k);
+  cv.getContext("2d")!.drawImage(im, 0, 0, cv.width, cv.height);
+  return new Promise((res) => cv.toBlob((b) => res(new File([b!], "plan.jpg", { type: "image/jpeg" })), "image/jpeg", 0.9));
+}
+const nf = (n: number) => n.toLocaleString("ro-RO", { maximumFractionDigits: 0 });
+const EXAMPLES = ["413830 Giroc", "Str. Lavandei 11, Dumbrăvița", "X 476000 Y 210500"];
+
 /**
- * Home search bar of the cadastral locator: one text field. A cadastral or topo number goes with its locality
- * ("413830 Giroc", "413830, Giroc, Timiș"): the bar finds the UAT and county in the text and says so; without them it
- * asks for them. An address or coordinates go to the locator's address search.
+ * Home search bar of the cadastral locator, on one line: a cadastral or topo number with its locality ("413830 Giroc"),
+ * an address, GPS or Stereo 70 coordinates. With the site analysis module, "CF / plan" inside the field (or a file dropped
+ * on it) reads a CF extract / site plan with AI (/api/amplasament/plan); the result is one line: what was read, how it was
+ * placed (Stereo 70, the locator's plan) and the way on — the site analysis (read data passed on, no re-read) or the map.
  */
 export function QuickSearch({ uats, amp = false, dark = false }: { uats: Uat[]; amp?: boolean; dark?: boolean }) {
   const [text, setText] = useState("");
   const [tried, setTried] = useState(false);
+  const [doc, setDoc] = useState<Doc | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [over, setOver] = useState(false);
+  const [err, setErr] = useState("");
+  const file = useRef<HTMLInputElement>(null);
   const r = useMemo(() => read(text, uats), [text, uats]);
 
   const msg = r.kind !== "number" || r.uat ? "" :
@@ -55,128 +77,85 @@ export function QuickSearch({ uats, amp = false, dark = false }: { uats: Uat[]; 
       : `/localizare?uat=${encodeURIComponent(r.uat.key)}&q=${encodeURIComponent(r.nr)}`;
   };
 
-  return (
-    <div className={amp ? "quickWrap withDoc" : "quickWrap"}>
-      <form className={dark ? "quickMain onDark" : "quickMain"} onSubmit={go} noValidate>
-        <label className="quickLbl" htmlFor="quickQ">Caută un imobil</label>
-        <div className="quickRow">
-          <input id="quickQ" className="quickInput" name="q" value={text} onChange={(e) => { setText(e.target.value); setTried(false); }}
-            placeholder="Nr. cadastral și localitatea (413830 Giroc), adresă, GPS sau Stereo 70" autoComplete="off" />
-          <button type="submit" className="quickBtn" value="loc">Localizează</button>
-          {amp && <button type="submit" className="quickBtn alt" value="amp">Analiză amplasament</button>}
-        </div>
-        {r.kind === "number" && r.uat && <p className="quickHint">Nr. <b>{r.nr}</b> în <b>{r.uat.name}</b>, județul {r.uat.county}</p>}
-        {r.kind === "address" && <p className="quickHint">Caut adresa sau coordonatele pe hartă</p>}
-        {r.kind === "stereo" && <p className="quickHint">Coordonate <b>Stereo 70</b>: le convertesc și le arăt pe hartă</p>}
-        {msg && (tried || r.ask === "county") && <p className="quickMsg" role="alert">{msg}</p>}
-        {r.kind === "empty" && tried && <p className="quickMsg" role="alert">Scrie un număr cadastral cu localitatea, o adresă sau coordonate.</p>}
-        {r.kind === "empty" && !tried && (
-          <p className="quickHint">
-            Caută după <b>nr. cadastral</b>, <b>adresă</b>, <b>GPS</b> sau <b>Stereo 70</b> (X 476000 Y 210500){amp && <> · sau trage <b>extrasul CF</b> ori <b>planul de amplasament</b> în caseta „CF sau plan”: îl citim automat</>}.
-          </p>
-        )}
-      </form>
-      {amp && <DocDrop />}
-    </div>
-  );
-}
-
-type Place = { lat: number; lng: number; estimated: boolean; area: number; uat: { key: string; name: string; county: string | null } | null; inPlan: boolean };
-type Doc = { tip_document?: string; nr_cadastral?: string | null; nr_carte_funciara?: string | null; uat?: string | null; judet?: string | null;
-  suprafata_masurata_mp?: number | null; suprafata_din_acte_mp?: number | null; puncte?: unknown[]; puncte_estimate?: unknown[]; _place?: Place | null };
-
-/** Big photos are reduced in the browser (max. 3000 px), as on the site analysis page. */
-async function shrink(f: File): Promise<File> {
-  if (!/^image\//.test(f.type) || (f.size < 3.5e6 && f.type !== "image/webp")) return f;
-  const im = await new Promise<HTMLImageElement>((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = URL.createObjectURL(f); });
-  const k = Math.min(1, 3000 / Math.max(im.naturalWidth, im.naturalHeight)), cv = document.createElement("canvas");
-  cv.width = Math.round(im.naturalWidth * k); cv.height = Math.round(im.naturalHeight * k);
-  cv.getContext("2d")!.drawImage(im, 0, 0, cv.width, cv.height);
-  return new Promise((res) => cv.toBlob((b) => res(new File([b!], "plan.jpg", { type: "image/jpeg" })), "image/jpeg", 0.9));
-}
-
-const nf = (n: number, d = 0) => n.toLocaleString("ro-RO", { minimumFractionDigits: d, maximumFractionDigits: d });
-
-/**
- * Square drop zone next to the home search: a CF extract or a site plan is read with AI (/api/amplasament/plan), then
- * the card says what was read and how the property was identified — in the locator's cadastral plan (its number) and/or
- * by its Stereo 70 coordinates — and offers the cadastral map or the site analysis (which gets the read data, no re-read).
- */
-function DocDrop() {
-  const [st, setSt] = useState<"idle" | "busy" | "done" | "err">("idle");
-  const [over, setOver] = useState(false);
-  const [err, setErr] = useState("");
-  const [doc, setDoc] = useState<Doc | null>(null);
-
-  async function read(f: File) {
-    if (!/^(application\/pdf|image\/(jpeg|png|webp))$/.test(f.type)) { setSt("err"); setErr("Documentul trebuie să fie PDF sau imagine (JPG, PNG)."); return; }
-    if (f.size > 15 * 1024 * 1024 && f.type === "application/pdf") { setSt("err"); setErr("PDF-ul are peste 15 MB. Trimite doar paginile cu planul."); return; }
-    setSt("busy"); setErr("");
+  async function readDoc(f: File) {
+    if (!/^(application\/pdf|image\/(jpeg|png|webp))$/.test(f.type)) { setErr("Documentul trebuie să fie PDF sau imagine (JPG, PNG)."); return; }
+    if (f.size > 15 * 1024 * 1024 && f.type === "application/pdf") { setErr("PDF-ul are peste 15 MB. Trimite doar paginile cu planul."); return; }
+    setBusy(true); setErr(""); setDoc(null);
     try {
       const fd = new FormData();
       fd.append("file", await shrink(f));
-      const r = await fetch("/api/amplasament/plan", { method: "POST", body: fd });
-      const j = (await r.json().catch(() => ({}))) as Doc & { error?: string };
-      if (!r.ok) { setSt("err"); setErr(j.error || "Documentul nu a putut fi citit."); return; }
-      setDoc(j); setSt("done");
-    } catch { setSt("err"); setErr("Conexiunea a căzut. Încearcă din nou."); }
+      const res = await fetch("/api/amplasament/plan", { method: "POST", body: fd });
+      const j = (await res.json().catch(() => ({}))) as Doc & { error?: string };
+      if (!res.ok) setErr(j.error || "Documentul nu a putut fi citit.");
+      else setDoc(j);
+    } catch { setErr("Conexiunea a căzut. Încearcă din nou."); }
+    finally { setBusy(false); }
   }
+  const drop = amp ? {
+    onDragOver: (e: React.DragEvent) => { if (e.dataTransfer.types.includes("Files")) { e.preventDefault(); setOver(true); } },
+    onDragLeave: () => setOver(false),
+    onDrop: (e: React.DragEvent) => { if (!e.dataTransfer.files[0]) return; e.preventDefault(); setOver(false); void readDoc(e.dataTransfer.files[0]); },
+  } : {};
 
-  const pick = (f?: File | null) => { if (f) void read(f); };
+  const p = doc?._place ?? null;
+  const nr = doc?.nr_cadastral?.match(/\d+/)?.[0] ?? null;
+  const toMap = p?.uat ? (p.inPlan && nr ? `/localizare?uat=${encodeURIComponent(p.uat.key)}&q=${encodeURIComponent(nr)}` : `/localizare?adr=${p.lat.toFixed(6)},${p.lng.toFixed(6)}`)
+    : p ? `https://www.google.com/maps?q=${p.lat.toFixed(6)},${p.lng.toFixed(6)}` : null;
+  const stated = doc?.suprafata_masurata_mp ?? doc?.suprafata_din_acte_mp ?? null;
+  const kind = /funciar|extras de carte/i.test(doc?.tip_document ?? "") ? "Extras CF" : /plan/i.test(doc?.tip_document ?? "") ? "Plan" : "Document";
   const toAmp = () => {
     try { sessionStorage.setItem("uvalo-doc", JSON.stringify(doc)); } catch { /* full or blocked: the page asks for the file again */ }
     location.href = "/amplasament?doc=1";
   };
-  const p = doc?._place ?? null;
-  const nr = doc?.nr_cadastral?.match(/\d+/)?.[0] ?? null;
-  const toMap = p?.uat ? (p.inPlan && nr ? `/localizare?uat=${encodeURIComponent(p.uat.key)}&q=${encodeURIComponent(nr)}` : `/localizare?adr=${p.lat.toFixed(6)},${p.lng.toFixed(6)}`) : null;
-  const stated = doc?.suprafata_masurata_mp ?? doc?.suprafata_din_acte_mp ?? null;
-  const kind = /funciar|extras de carte/i.test(doc?.tip_document ?? "") ? "Extrasul CF" : /plan/i.test(doc?.tip_document ?? "") ? "Planul" : "Documentul";
 
   return (
-    <>
-      <label className={`docDrop${over ? " over" : ""}${st === "busy" ? " busy" : ""}`}
-        onDragOver={(e) => { e.preventDefault(); setOver(true); }} onDragLeave={() => setOver(false)}
-        onDrop={(e) => { e.preventDefault(); setOver(false); pick(e.dataTransfer.files[0]); }}>
-        <input type="file" accept="application/pdf,image/jpeg,image/png,image/webp" hidden disabled={st === "busy"}
-          onChange={(e) => { pick(e.target.files?.[0]); e.target.value = ""; }} />
-        {st === "busy" ? (
-          <><span className="docSpin" aria-hidden="true" /><b>Citesc…</b><small>20–60 s</small></>
-        ) : (
-          <>
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" /><path d="M14 3v5h5" /><path d="M12 17v-6" /><path d="m9.5 13.5 2.5-2.5 2.5 2.5" /></svg>
-            <b>CF sau plan</b><small>trage aici sau alege</small>
-          </>
-        )}
-      </label>
-      {(st === "done" || st === "err") && (
-        <div className={`docCard${st === "err" ? " bad" : ""}`} role="status">
-          <button type="button" className="docX" aria-label="Închide" onClick={() => { setSt("idle"); setDoc(null); }}>×</button>
-          {st === "err" ? <p className="docErr">{err}</p> : doc && (
+    <form className={dark ? "quickMain onDark" : "quickMain"} onSubmit={go} noValidate>
+      <div className="quickRow">
+        <div className={`quickField${over ? " over" : ""}`} {...drop}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+          <input id="quickQ" name="q" aria-label="Caută un imobil" value={text} onChange={(e) => { setText(e.target.value); setTried(false); }}
+            placeholder={over ? "Eliberează ca să citim documentul" : "Nr. cadastral și localitatea, adresă, GPS sau Stereo 70"} autoComplete="off" />
+          {amp && (
             <>
-              <p className="docHead"><span className="docOk">✓</span> {kind} a fost citit
-                {nr && <> · nr. cad. <b>{doc.nr_cadastral}</b></>}{doc.uat && <> · {doc.uat}</>}{doc.judet && <>, jud. {doc.judet}</>}
-                {stated ? <> · {nf(stated)} mp</> : null}</p>
-              <ul className="docChecks">
-                <li className={p?.inPlan ? "ok" : "no"}>
-                  {p?.inPlan ? <>Identificat în <b>planul cadastral</b> din localizator: nr. {nr}, {p.uat!.name}</>
-                    : p?.uat ? <>Numărul {nr ?? "cadastral"} nu apare în planul {p.uat.name} din localizator</>
-                    : <>Localitatea nu are încă plan cadastral în localizator</>}
-                </li>
-                <li className={p ? "ok" : "no"}>
-                  {p ? <>Localizat după <b>coordonatele Stereo 70</b>{p.estimated && " (estimate din caroiaj)"}: {nf(p.lat, 5)} N, {nf(p.lng, 5)} E · suprafață calculată {nf(p.area)} mp{stated ? ` (pe document ${nf(stated)} mp)` : ""}</>
-                    : <>Documentul nu are coordonate Stereo 70 lizibile</>}
-                </li>
-              </ul>
-              <div className="docGo">
-                {toMap && <a className="quickBtn" href={toMap}>Vezi pe harta cadastrală</a>}
-                <button type="button" className={toMap ? "quickBtn alt" : "quickBtn"} onClick={toAmp}>Analiză amplasament</button>
-                {!toMap && p && <a className="docMap" href={`https://www.google.com/maps?q=${p.lat.toFixed(6)},${p.lng.toFixed(6)}`} target="_blank" rel="noopener">Vezi punctul pe Google Maps ↗</a>}
-              </div>
+              <input ref={file} type="file" accept="application/pdf,image/jpeg,image/png,image/webp" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) void readDoc(f); e.target.value = ""; }} />
+              <button type="button" className="quickDoc" disabled={busy} onClick={() => file.current?.click()} title="Încarcă un extras CF sau un plan de amplasament: îl citim automat">
+                {busy ? <span className="docSpin" aria-hidden="true" /> : <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m21 12-8.5 8.5a5 5 0 0 1-7-7L14 5a3.3 3.3 0 0 1 4.7 4.7l-8.5 8.5a1.7 1.7 0 0 1-2.4-2.4L15.5 8" /></svg>}
+                {busy ? "Citesc…" : "CF / plan"}
+              </button>
             </>
           )}
         </div>
-      )}
-    </>
+        <button type="submit" className="quickBtn" value="loc">Localizează</button>
+        {amp && <button type="submit" className="quickBtn alt" value="amp">Analiză amplasament</button>}
+      </div>
+
+      {busy ? <p className="quickHint">Citesc documentul cu AI: coordonatele Stereo 70, suprafața, numărul cadastral · durează de obicei 20–60 de secunde</p>
+        : err ? <p className="quickMsg" role="alert">{err}</p>
+        : doc ? (
+          <div className="docLine" role="status">
+            <span className="docOk" aria-hidden="true">✓</span>
+            <span className="docWhat">{kind}{nr && <> <b>{nr}</b></>}{doc.uat && <> · {doc.uat}</>}{doc.judet && <>, {doc.judet}</>}{stated ? <> · {nf(stated)} mp</> : null}</span>
+            {p ? <span className="docYes" title={`${p.lat.toFixed(5)} N, ${p.lng.toFixed(5)} E · suprafață calculată ${nf(p.area)} mp`}>✓ Stereo 70{p.estimated ? " (estimat)" : ""}</span> : <span className="docNo">fără coordonate Stereo 70</span>}
+            {p?.inPlan ? <span className="docYes">✓ în planul cadastral</span> : <span className="docNo">{p?.uat ? "nu e în planul cadastral" : "fără plan cadastral"}</span>}
+            <span className="docGo">
+              <button type="button" className="quickBtn sm" onClick={toAmp}>Analiză amplasament</button>
+              {toMap && <a className="quickBtn sm alt" href={toMap} {...(p?.uat ? {} : { target: "_blank", rel: "noopener" })}>{p?.uat ? "Hartă" : "Google Maps ↗"}</a>}
+              <button type="button" className="docX" aria-label="Închide" onClick={() => setDoc(null)}>×</button>
+            </span>
+          </div>
+        )
+        : r.kind === "number" && r.uat ? <p className="quickHint">Nr. <b>{r.nr}</b> în <b>{r.uat.name}</b>, județul {r.uat.county}</p>
+        : r.kind === "address" ? <p className="quickHint">Caut adresa sau coordonatele pe hartă</p>
+        : r.kind === "stereo" ? <p className="quickHint">Coordonate <b>Stereo 70</b>: le convertesc și le arăt pe hartă</p>
+        : msg && (tried || r.ask === "county") ? <p className="quickMsg" role="alert">{msg}</p>
+        : r.kind === "empty" && tried ? <p className="quickMsg" role="alert">Scrie un număr cadastral cu localitatea, o adresă sau coordonate.</p>
+        : r.kind === "empty" ? (
+          <p className="quickEx">
+            <span>Exemple:</span>
+            {EXAMPLES.map((x) => <button key={x} type="button" onClick={() => { setText(x); document.getElementById("quickQ")?.focus(); }}>{x}</button>)}
+            {amp && <span>· sau trage un extras CF / plan de amplasament peste câmp</span>}
+          </p>
+        ) : null}
+    </form>
   );
 }

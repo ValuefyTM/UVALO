@@ -98,7 +98,9 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
 - Deschiderea: doar laturi aproape paralele (< 30°) cu o stradă OSM la ≤ 25 m; altfel „neidentificată automat”, cu
   laturile fără vecin înscris și dreptunghiul încadrator (nu se ghicește frontul).
 - Index UAT-uri (`_localizare/c/index.json`) conține acum și `v` (versiunea datelor) și `bb`.
-- **Caseta „CF sau plan” de pe Acasă** (`DocDrop` în `src/components/QuickSearch.tsx`, doar cu modulul `amplasament`): fișierul merge la
+- **Bara de pe Acasă** (varianta A din canvas, `src/components/QuickSearch.tsx`): un rând — titlu + `heroMeta` + „Deschide harta”, câmpul `.quickField` cu
+  butonul „CF / plan” în interior (și drag & drop peste câmp), Localizează, Analiză amplasament; sub el exemple (`quickEx`) sau rezultatul citirii
+  pe o linie (`docLine`). „CF / plan” doar cu modulul `amplasament`: fișierul merge la
   `/api/amplasament/plan`, care întoarce acum și `_place` (`placeDoc` în `src/lib/cadastre.ts`, conversia în `src/lib/stereo70.ts`: ordinea X/Y,
   GPS, UAT-ul din localizator în care cade, `inPlan` = nr. cadastral găsit în planul lui). Cardul arată ce s-a citit, „identificat în planul
   cadastral” și „localizat după Stereo 70”, cu „Vezi pe harta cadastrală” (doar unde există plan) și „Analiză amplasament” (datele trec prin
