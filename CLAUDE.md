@@ -64,6 +64,10 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   planurile prin migrația 0012). Intrări: `?uat=&nr=` (bara de pe pagina de start → „Analiză amplasament”, butonul din
   fișa parcelei din localizator), `?adr=` (adresă/coordonate), `?lat=&lng=`. Nr. negăsit → cere adresa; dacă adresa
   cade pe o parcelă din planuri, o identifică (WGS84 → Stereo 70 prin iterații Newton).
+  Căutare după adresă (formularul din pagina goală `#addrF`, `?adr=`, „nr. negăsit”): dacă în jurul punctului (250 m) există parcele
+  din planurile localizatorului → fereastra `#pickDlg` cu harta satelit și parcelele, evaluatorul alege parcela (cea de sub punct e preselectată)
+  sau „Doar zona”; fără plan în zonă → starea `#noplan`: încărcarea planului de amplasament pentru reconstrucția parcelei sau „Continuă doar
+  cu analiza zonei”. Evenimente `pick_open`, `pick_parcel`, `no_plan`.
 - Calculele parcelei se fac în browser, din datele localizatorului (`/api/localizare/data/<uat>`): formă, regularitate,
   deschidere (laturi fără vecin înscris la ≤ 25 m de axul străzii OSM), adâncime, orientare, construcții, POT, vecini.
   Intravilanul NU se deduce (limita din plan e incompletă) — îl completează evaluatorul.

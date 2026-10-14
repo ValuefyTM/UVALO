@@ -24,6 +24,21 @@
   .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
   [hidden]{display:none!important}
   /* atenționare la PDF: paranteze drepte necompletate în text */
+  .pickDlg{border:0;border-radius:20px;padding:0;width:min(920px,calc(100% - 24px));max-height:calc(100dvh - 24px);box-shadow:0 30px 70px rgba(20,16,10,.35);color:var(--ink);overflow:hidden}
+  .pickDlg[open]{display:flex;flex-direction:column}
+  .pickDlg::backdrop{background:rgba(20,16,10,.6)}
+  .pickDlg .ph{padding:16px 20px;display:flex;justify-content:space-between;gap:12px;align-items:flex-start;border-bottom:1px solid var(--divider)}
+  .pickDlg .ph h2{margin:0;font-size:17px}
+  .pickDlg .ph p{margin:3px 0 0;font-size:12.5px;color:var(--muted)}
+  .pickDlg .px{flex:none;width:36px;height:36px;border-radius:999px;border:1px solid var(--divider);background:#fff;font-size:18px;cursor:pointer}
+  #pmap{height:min(60dvh,520px);background:#1b1b1b}
+  .pickDlg .pf{padding:12px 20px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;border-top:1px solid var(--divider)}
+  .pickDlg .pf .sel{font-size:13px}
+  .pickDlg .pf .acts{display:flex;gap:8px;flex-wrap:wrap}
+  .pickTip{background:#141414;color:#fff;border:0;border-radius:8px;font-weight:700;font-size:12px;box-shadow:none}
+  .pickTip::before{display:none}
+  .addrBox{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 4px}
+  .addrBox input{flex:1 1 260px;height:48px;border:1px solid var(--divider);border-radius:12px;padding:0 14px;font:inherit;font-size:14px;background:#fff}
   .warnDlg{border:0;border-radius:18px;padding:0;max-width:520px;width:calc(100% - 32px);box-shadow:0 30px 70px rgba(20,16,10,.35);color:var(--ink)}
   .warnDlg::backdrop{background:rgba(20,16,10,.55)}
   .warnDlg .wd{padding:20px 22px;display:flex;flex-direction:column;gap:12px}
@@ -214,7 +229,13 @@
 <main>
   <section class="state" id="empty">
     <h1>Analiza amplasamentului</h1>
-    <p>Alege localitatea și scrie numărul cadastral, sau scrie direct adresa imobilului. Primești fișa amplasamentului: parcela din planul cadastral (formă, deschidere, adâncime, construcții, vecini), încadrarea în zonă cu dotările din jur și factorii negativi, plus textul pentru raport generat cu AI.</p>
+    <form class="addrBox" id="addrF" novalidate>
+      <label class="sr" for="addrQ">Adresa imobilului</label>
+      <input id="addrQ" autocomplete="off" placeholder="Adresa imobilului, ex. Str. Florilor 7, Giroc">
+      <button class="btn gold" type="submit">Caută adresa</button>
+    </form>
+    <p class="muted" style="margin:0 0 8px">Dacă în zonă avem plan cadastral, îți arătăm harta și alegi parcela.</p>
+    <p>Sau alege localitatea sus și scrie numărul cadastral. Primești fișa amplasamentului: parcela din planul cadastral (formă, deschidere, adâncime, construcții, vecini), încadrarea în zonă cu dotările din jur și factorii negativi, plus textul pentru raport generat cu AI.</p>
     <ul>
       <li>Planul cadastral: exporturile ANCPI din localizator.</li>
       <li>Zona: OpenStreetMap; distanțele sunt în linie dreaptă.</li>
@@ -251,6 +272,16 @@
     <p class="muted" id="askM"></p>
     <p class="muted" style="margin-top:6px">Sau, dacă ai documentația cadastrală:</p>
     <div data-up></div>
+  </section>
+
+  <section class="state" id="noplan" hidden>
+    <h1>Nu avem plan cadastral pentru această zonă</h1>
+    <p id="npP"></p>
+    <p>Pentru o analiză completă (forma și dimensiunile terenului, deschiderea la stradă, construcțiile, vecinii) e nevoie de <b>planul de amplasament și delimitare</b>, ca să reconstruim planul parcelar din coordonatele lui.</p>
+    <div data-up></div>
+    <p class="muted" style="margin-top:6px">Nu ai planul acum?</p>
+    <button class="btn" type="button" id="npZone">Continuă doar cu analiza zonei</button>
+    <p class="muted">Primești dotările din jur, accesul și factorii negativi; datele terenului le completezi manual.</p>
   </section>
 
   <div id="res" hidden style="display:flex;flex-direction:column;gap:20px">
@@ -359,6 +390,12 @@
   </div>
 </main>
 <div class="toast" id="toast"></div>
+<dialog class="pickDlg" id="pickDlg" aria-labelledby="pickT">
+  <div class="ph"><div><h2 id="pickT">Alege parcela</h2><p id="pickP"></p></div><button class="px" type="button" id="pickX" aria-label="Închide">×</button></div>
+  <div id="pmap"></div>
+  <div class="pf"><span class="sel" id="pickSel">Atinge parcela de pe hartă.</span>
+    <span class="acts"><button class="btn" type="button" id="pickZone">Doar zona, fără parcelă</button><button class="btn gold" type="button" id="pickGo" disabled>Analizează parcela</button></span></div>
+</dialog>
 <dialog class="warnDlg" id="warnDlg" aria-labelledby="warnT">
   <div class="wd">
     <h2 id="warnT">Textul are locuri necompletate</h2>
@@ -450,7 +487,7 @@ const S={uat:null,D:null,p:null,pt:null,label:'',osm:null,radius:1000,A:null,tex
   if(!ME.plans){sel.disabled=true;sel.title='Abonamentul nu include planurile cadastrale: caută după adresă.'}
 })();
 
-function show(id){['empty','loading','ask','res'].forEach(k=>$(k).hidden=k!==id);document.body.classList.toggle('mid',id!=='res');if(id!=='res')scrollTo(0,0)}
+function show(id){['empty','loading','ask','noplan','res'].forEach(k=>$(k).hidden=k!==id);document.body.classList.toggle('mid',id!=='res');if(id!=='res')scrollTo(0,0)}
 function loading(m){const el=$('loadMsg');if(!$('loading').hidden&&el.textContent!==m){el.style.opacity=0;setTimeout(()=>{el.textContent=m;el.style.opacity=1},180)}else el.textContent=m;show('loading')}
 
 /* ---------- datele planului cadastral ---------- */
@@ -496,18 +533,51 @@ async function byAddress(q,hintUat){
   loading('Caut adresa…');
   let g=null;try{g=await geocode(q)}catch(e){}
   if(!g){askAddress('Nu am găsit adresa','Încearcă altă formulare: strada, numărul și localitatea (ex. „Str. Florilor 12, Giroc”), sau coordonatele GPS (ex. 45.7840, 21.2470).');$('askA').value=q;return}
-  // dacă punctul cade pe o parcelă din planurile din localizator, analiza se face pe parcelă
-  if(ME.plans){
-    const EN=toS70(g.lat,g.lng);
-    const cands=UATS.filter(u=>u.bb&&g.lat>=u.bb[0]-.01&&g.lat<=u.bb[2]+.01&&g.lng>=u.bb[1]-.01&&g.lng<=u.bb[3]+.01);
-    if(hintUat&&!cands.includes(hintUat))cands.unshift(hintUat);
-    for(const u of cands.slice(0,4)){
-      loading('Caut imobilul în '+u.name+'…');
-      try{const D=await getData(u);const p=parcelAt(D,EN);if(p){await analyse(u,D,p,{lat:g.lat,lng:g.lng,label:g.label,byAddr:true});return}}catch(e){}
-    }
+  const pt={lat:g.lat,lng:g.lng,label:g.label,byAddr:true};
+  if(!ME.plans){await analyse(null,null,null,pt);return}
+  // în zonă e un plan cadastral din localizator? → harta cu parcelele din jur, evaluatorul alege parcela
+  const EN=toS70(g.lat,g.lng), R=250, box=[EN[0]-R,EN[1]-R,EN[0]+R,EN[1]+R];
+  const cands=UATS.filter(u=>u.bb&&g.lat>=u.bb[0]-.01&&g.lat<=u.bb[2]+.01&&g.lng>=u.bb[1]-.01&&g.lng<=u.bb[3]+.01);
+  if(hintUat&&!cands.includes(hintUat))cands.unshift(hintUat);
+  for(const u of cands.slice(0,4)){
+    loading('Caut planul cadastral în '+u.name+'…');
+    try{const D=await getData(u);const near=D.parcels.filter(p=>!p.o&&boxNear(pBox(p),box,0));
+      if(near.length){show('empty');pickParcel(u,D,near,EN,pt);return}}catch(e){}
   }
-  await analyse(null,null,null,{lat:g.lat,lng:g.lng,label:g.label});
+  // fără plan în zonă: planul de amplasament pentru o analiză completă, sau doar zona
+  S.npPt=pt;$('npP').textContent='Adresa „'+(g.label||q)+'” este în afara planurilor cadastrale din UVALO.';show('noplan');track('no_plan',g.label||q);
 }
+$('npZone').onclick=()=>{if(S.npPt)analyse(null,null,null,S.npPt)};
+
+/* ---------- alegerea parcelei pe hartă (adresa cade într-un plan din localizator) ---------- */
+let PK=null;
+function pickParcel(u,D,near,EN,pt){
+  const dlg=$('pickDlg');$('pickP').textContent=(pt.label||'')+' · plan cadastral '+u.name+(u.date?' la '+u.date:'');
+  const under=near.find(p=>inRing(EN,p.s))||null;
+  PK={u,D,pt,sel:null,lay:null};
+  dlg.showModal();
+  if(!window.L){$('pmap').innerHTML='<p class="muted" style="padding:18px;color:#ccc">Harta nu s-a încărcat. Verifică conexiunea.</p>';return}
+  if(!PK.map){
+    PK.map=L.map('pmap',{zoomControl:true});PK.map.attributionControl.setPrefix(false);
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:21,maxNativeZoom:19,attribution:'Imagini © Esri'}).addTo(PK.map);
+    pickParcel.map=PK.map;
+  }else PK.map=pickParcel.map;
+  if(pickParcel.lay)pickParcel.lay.remove();
+  const lay=L.layerGroup().addTo(PK.map);pickParcel.lay=lay;
+  const base={color:'#F2A93B',weight:1.5,fillColor:'#F2A93B',fillOpacity:.08},on={color:'#fff',weight:3,fillColor:'#C23A2E',fillOpacity:.55};
+  let cur=null;
+  const pick=(p,poly)=>{if(cur)cur.setStyle(base).unbindTooltip();cur=poly;poly.setStyle(on).bindTooltip(p.id,{permanent:true,direction:'center',className:'pickTip'}).bringToFront();PK.sel=p;
+    $('pickSel').innerHTML='Parcela <b>'+esc(p.id)+'</b> · '+fmt(p.a||ringArea(p.s),0)+' mp';$('pickGo').disabled=false};
+  near.forEach(p=>{const poly=L.polygon(p.s.map(q=>S70(q[0],q[1])),base).addTo(lay);poly.on('click',()=>pick(p,poly));if(p===under)pick(p,poly)});
+  L.circleMarker([pt.lat,pt.lng],{radius:7,color:'#fff',weight:2,fillColor:'#2F6BD8',fillOpacity:1,interactive:false}).bindTooltip('Adresa căutată').addTo(lay);
+  if(!under){PK.sel=null;$('pickSel').textContent='Adresa nu cade exact pe o parcelă: atinge parcela imobilului.';$('pickGo').disabled=true}
+  setTimeout(()=>{PK.map.invalidateSize();PK.map.setView([pt.lat,pt.lng],18)},40);
+  track('pick_open',u.name,{under:!!under});
+}
+$('pickGo').onclick=async()=>{if(!PK||!PK.sel)return;$('pickDlg').close();track('pick_parcel',PK.sel.id);await analyse(PK.u,PK.D,PK.sel,PK.pt)};
+$('pickZone').onclick=async()=>{if(!PK)return;$('pickDlg').close();await analyse(null,null,null,PK.pt)};
+$('pickX').onclick=()=>$('pickDlg').close();
+$('addrF').addEventListener('submit',e=>{e.preventDefault();const q=$('addrQ').value.trim();if(!q){toast('Scrie adresa imobilului.');return}go({adr:q})});
 
 $('sf').addEventListener('submit',e=>{
   e.preventDefault();
