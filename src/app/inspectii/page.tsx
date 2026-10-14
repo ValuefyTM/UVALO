@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { page } from "@/lib/guard";
 import { track } from "@/lib/track";
-import { devices, listInspections } from "@/lib/insp";
+import { devices, inspUrl, listInspections } from "@/lib/insp";
 import { AppShell } from "@/components/AppShell";
 import { InspActivate } from "@/components/InspActivate";
 import { InspList } from "@/components/InspList";
@@ -24,7 +24,7 @@ export default async function InspectiiPage() {
   if (!devs.length) {
     return (
       <AppShell c={c} active="inspectii" title="Inspecții" subtitle="Modul în test · vizibil doar pentru administratorii UVALO">
-        <InspActivate testMode={c.super} />
+        <InspActivate testMode={c.super} appUrl={inspUrl()} />
       </AppShell>
     );
   }

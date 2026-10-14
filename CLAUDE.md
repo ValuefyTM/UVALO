@@ -288,11 +288,12 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
 
 ## Inspecții (`/inspectii`, modulul `inspectii`) — ÎN TEST, doar super-adminii
 
-- Pregătite pe web, făcute pe telefon (aplicația UVALO, încă de construit), văzute pe web. Mockup: canvasul „UVALO — Inspecții” (pagini Web / Mobil).
+- Pregătite pe web, făcute pe telefon (aplicația PWA de pe `inspectii.uvalo.ro`, vezi mai jos), văzute pe web. Mockup: canvasul „UVALO — Inspecții” (pagini Web / Mobil).
 - Acces: `context()` adaugă `inspectii` în `c.modules` doar pentru super-admini (nu e în planuri); meniul arată „Inspecții” cu eticheta TEST.
   Pentru lansare: un mod ca la Colaborări (off/test/on) sau modulul în planuri.
-- Fără telefon conectat (`insp_devices`) → pagina de activare (`InspActivate`: cod de 6 cifre în `insp_pair_codes`, 10 min, pentru aplicație);
-  în test, „Continuă fără telefon (test)” creează un dispozitiv `platform = 'test'`.
+- Fără telefon conectat (`insp_devices`) → pagina de activare (`InspActivate`: cod QR spre `<INSP_URL>/?pair=<cod>` + codul de 6 cifre din
+  `insp_pair_codes`, 10 min; pagina întreabă `device_status` la 3 s și se deschide singură după conectare). Modulul pornește doar după o
+  autentificare din aplicație (telefon sau aplicația instalată; browserul unui calculator nu se numără — `registerDevice`); în test, „Continuă fără telefon (test)” creează un dispozitiv `platform = 'test'`.
 - Migrația 0023: `inspections` (bunul, contact, programare, fișa ca instantaneu `template` + versiune, `answers`, `room_answers`, `findings`, semnătura,
   `test = 1`), `insp_templates` (fișele firmei `org` — pot fi impuse — și ale persoanei `user`; `draft` + `published` + `version`), `insp_files`
   (poze/acte, fișierele vor sta în R2 — bucket de legat), `insp_log` (istoric), `insp_devices`, `insp_pair_codes`. Fișele UVALO stau în cod
@@ -308,6 +309,23 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   (doar proprietarul, cel care face inspecția, super-adminii), `DELETE` la fel. Formularul urcă CF-ul citit și releveul după salvare; fișa are
   „Adaugă extras CF / releveu / alt document” și, în test, „Adaugă fotografii (test)”. Confidențialitatea (secțiunea 6) spune că doar actele
   atașate la o inspecție se păstrează.
+
+### Aplicația de telefon (PWA, `inspectii.uvalo.ro`)
+
+- `worker.ts`: pe `INSP_HOSTS` (implicit `inspectii.uvalo.ro`) `/` → pagina `/m` (cu query), `/sw.js` → `/api/m/sw`, `/manifest.webmanifest` →
+  `/api/m/manifest`; trec `/api/`, `/_next/`, iconițele și logo-urile; orice altă cale → 302 la `/`. Linkul din web: `inspUrl()` (var `INSP_URL`).
+  Domeniul trebuie adăugat ca custom domain pe workerul `tools`. Cookie-ul `vf_tools` e host-only: telefonul are sesiunea lui.
+- `src/app/m/page.tsx` → `src/components/mobile/MobileApp.tsx` (UI după canvasul aplicației mobile, clase `.mb*` în `globals.css`): autentificare cu
+  codul din email (ca platforma: `/api/auth/request|verify`) sau cu codul / QR-ul de pe web (`POST /api/m/pair` → `usePairCode` + `createSession`);
+  `POST /api/m/device` înregistrează telefonul; `GET /api/m/state` = utilizatorul + inspecțiile atribuite lui (`myAssigned`); `GET /api/m/insp/<id>`.
+- Ecrane: Acasă (următoarea, statistici, filtre), detaliu (navigație, contact, acte), fișa pe secțiuni + Constatări, Încăperi, Fotografii pe
+  încăperi, Semnătură → finalizare; meniu jos Acasă / De trimis / Contul meu. Butonul Înapoi al telefonului e prins înaintea routerului Next
+  (`popstate` în captură, starea `mbv`), altfel pagina se reîncarcă.
+- Offline: ciorna în `localStorage` `insp-draft-<id>` (trimisă ca `progress` la 4 s), pozele (micșorate 2000 px) și finalizările în IndexedDB
+  `uvalo-insp` (`store.ts`, `flush()` la revenirea rețelei și la 30 s); service worker: cache pentru `/_next/static/`, paginile rețea-apoi-cache.
+- Instalare după dispozitiv (`InstallHint.tsx`): iPhone Safari → Partajează → „Adaugă pe ecranul principal” (balon cu săgeată spre bara Safari);
+  iPhone în alt browser → „Deschide în Safari” (`x-safari-https://…`, nu merge peste tot) + „Copiază linkul”; Android → `beforeinstallprompt`
+  sau meniul ⋮; Android în aplicații (Instagram, WhatsApp…) → `intent://…package=com.android.chrome`; calculator → QR. Ascuns 3 zile la ×.
 
 ## Instrumente în admin (`/admin/instrumente`)
 
@@ -361,7 +379,7 @@ decide utilizatorul să-l oprească.
   Oprește serverul cu `pkill -f "wrangler dev --port 8797"` într-o comandă separată (exit 144 e normal).
 
 Variabile/secret-uri worker: `APP_URL`, `OLD_HOSTS`, `SITE_HOSTS`, `RESEND_API_KEY`, `TOOLS_EMAIL_FROM`,
-`TOOLS_SUPERADMINS`, `GOOGLE_MAPS_KEY`, `LOCATOR_API_TOKEN`, `PLANS_GITHUB_*`, `ANTHROPIC_API_KEY`, `OVERPASS_URL` (opțional).
+`TOOLS_SUPERADMINS`, `GOOGLE_MAPS_KEY`, `LOCATOR_API_TOKEN`, `PLANS_GITHUB_*`, `ANTHROPIC_API_KEY`, `OVERPASS_URL` (opțional), `INSP_HOSTS`/`INSP_URL` (opționale).
 
 ## Legături cu VALUEFY (de separat treptat)
 

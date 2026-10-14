@@ -21,7 +21,7 @@ export async function devices(db: D1Database, userId: string) {
     .bind(userId).all<Device>()).results;
 }
 
-/** A 6-digit code the app asks for, valid 10 minutes (the phone app is not built yet: it will exchange it for its token). */
+/** A 6-digit code (shown on the web, also as a QR to inspectii.uvalo.ro/?pair=…), valid 10 minutes: the phone signs in with it. */
 export async function pairCode(db: D1Database, userId: string) {
   const code = randomCode();
   await db.batch([
@@ -29,6 +29,36 @@ export async function pairCode(db: D1Database, userId: string) {
     db.prepare("INSERT INTO insp_pair_codes (code_hash, user_id, expires_at) VALUES (?, ?, ?)").bind(await sha256(code), userId, new Date(Date.now() + 10 * 60e3).toISOString()),
   ]);
   return code;
+}
+
+/** Where the phone app lives (PWA on its own domain, the same worker). */
+export const inspUrl = () => (process.env.INSP_URL || "https://inspectii.uvalo.ro").replace(/\/$/, "");
+
+/** QR code / link from the web: the phone opens it and is signed in as the person who showed the code. */
+export async function usePairCode(db: D1Database, code: string) {
+  const h = await sha256(code.replace(/\D/g, ""));
+  const r = await db.prepare("SELECT user_id FROM insp_pair_codes WHERE code_hash = ? AND expires_at > ?").bind(h, now()).first<{ user_id: string }>();
+  if (r) await db.prepare("DELETE FROM insp_pair_codes WHERE code_hash = ?").bind(h).run();
+  return r?.user_id ?? null;
+}
+
+/** The phone app signed in (QR or email code): the device is recorded once per session — this is what turns the module on. */
+export async function registerDevice(db: D1Database, userId: string, sessionId: string, ua: string, standalone: boolean) {
+  const platform = /iPhone|iPad|iPod/i.test(ua) ? "ios" : /Android/i.test(ua) ? "android" : "other";
+  if (platform === "other" && !standalone) return; // a computer's browser is not "the app": only phones (or the installed app) count
+  const name = /iPad/i.test(ua) ? "iPad" : /iPhone/i.test(ua) ? "iPhone" : /Android/i.test(ua) ? (ua.match(/;\s*([^;)]+?)\s+Build\//)?.[1] ?? "Android") : "Browser";
+  const old = await db.prepare("SELECT id FROM insp_devices WHERE token_hash = ? AND user_id = ?").bind(sessionId, userId).first<{ id: string }>();
+  if (old) await db.prepare("UPDATE insp_devices SET last_seen_at = ?, platform = ?, name = ?, revoked_at = NULL WHERE id = ?").bind(now(), platform, `${name}${standalone ? " · aplicație" : ""}`.slice(0, 60), old.id).run();
+  else await db.prepare("INSERT INTO insp_devices (id, user_id, name, platform, token_hash, last_seen_at) VALUES (?, ?, ?, ?, ?, ?)")
+    .bind(uuid(), userId, `${name}${standalone ? " · aplicație" : ""}`.slice(0, 60), platform, sessionId, now()).run();
+}
+
+/** The phone's list: what this person has to do (assigned to them), plus what they finished lately. */
+export async function myAssigned(db: D1Database, userId: string) {
+  const { results } = await db.prepare(`${ROW_SQL} AND i.assignee_id = ?1 AND (i.status IN ('prog', 'plan', 'lucru') OR i.finished_at > ?2)
+    ORDER BY CASE WHEN i.status IN ('gata', 'pred') THEN 1 ELSE 0 END, COALESCE(i.scheduled_at, '9999'), i.created_at LIMIT 200`)
+    .bind(userId, new Date(Date.now() - 30 * 864e5).toISOString()).all<InspRow>();
+  return results;
 }
 
 /** Test mode only: a stand-in "phone" so the web part can be tried before the app exists. */
@@ -229,6 +259,23 @@ export async function inspAction(db: D1Database, c: Ctx, b: Record<string, unkno
     if (!STATUSES.includes(st)) return { error: "Stare necunoscută." };
     await db.prepare("UPDATE inspections SET status = ?, updated_at = ? WHERE id = ?").bind(st, now(), id).run();
     await logIt(db, id, c.user.id, st === "pred" ? "Marcată ca predată" : `Stare: ${st}`);
+    return { ok: true, id };
+  }
+  if (action === "progress" || action === "finish") {
+    // from the phone: the answers so far (in progress) or the finished sheet, signed by the person present
+    if (r.status === "gata" || r.status === "pred") return { error: "Inspecția a fost deja trimisă." };
+    const answers = typeof b.answers === "object" && b.answers ? b.answers : {};
+    const rooms = Array.isArray(b.room_answers) ? b.room_answers.slice(0, 80) : [];
+    const f = (b.findings ?? {}) as Record<string, unknown>;
+    const findings = { diff: t(f.diff, 2000), defects: t(f.defects, 2000), notes: t(f.notes, 2000) };
+    const ts = now(), fin = action === "finish";
+    if (fin && !s(b.signed_name, 120)) return { error: "Scrie numele persoanei prezente." };
+    await db.prepare(`UPDATE inspections SET answers = ?, room_answers = ?, findings = ?, status = ?, started_at = COALESCE(started_at, ?), finished_at = ?,
+      signed_name = COALESCE(?, signed_name), signed_at = ?, updated_at = ? WHERE id = ?`)
+      .bind(JSON.stringify(answers).slice(0, 200000), JSON.stringify(rooms).slice(0, 100000), JSON.stringify(findings), fin ? "gata" : "lucru", s(b.started_at, 30) || ts,
+        fin ? ts : null, fin ? s(b.signed_name, 120) : null, fin ? ts : null, ts, id).run();
+    if (r.status !== "lucru" && !fin) await logIt(db, id, c.user.id, `Începută pe teren${b.near ? ` (la ${Math.round(Number(b.near))} m de adresă)` : ""}`);
+    if (fin) await logIt(db, id, c.user.id, `Finalizată și semnată pe telefon de ${s(b.signed_name, 120)}`);
     return { ok: true, id };
   }
   if (action === "simulate") {
