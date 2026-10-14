@@ -21,5 +21,12 @@
 			"migrations_dir": "migrations"
 		}
 	],
+	"r2_buckets": [
+		{
+			// Inspecții: photos and documents (CF, floor plans, signatures). Private: served only through /api/inspectii/file/<id>.
+			"binding": "FILES",
+			"bucket_name": "uvalo-inspectii"
+		}
+	],
 	"observability": { "enabled": true }
 }

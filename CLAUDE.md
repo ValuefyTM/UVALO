@@ -303,6 +303,11 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   „Descarcă PDF” = print; în test „Simulează inspecția” completează fișa ca telefonul), `/inspectii/fise` (`InspTemplates`: editor de grupuri și
   întrebări, răspunsuri precompletate, publicare pe versiuni).
 - `merge.ts` (unire/ștergere conturi) acoperă tabelele noi. Evenimente `inspectii` (meta `{test:1}`).
+- Fișiere: bucket R2 privat **`uvalo-inspectii`**, binding `FILES` în `wrangler.jsonc` (`getFiles()` în `db.ts`). Încărcare `POST /api/inspectii/files`
+  (multipart: id, kind cf|releveu|doc|photo|signature, file; ≤ 15 MB; cheie `insp/<inspecție>/<id>.<ext>`), servire `GET /api/inspectii/file/<id>`
+  (doar proprietarul, cel care face inspecția, super-adminii), `DELETE` la fel. Formularul urcă CF-ul citit și releveul după salvare; fișa are
+  „Adaugă extras CF / releveu / alt document” și, în test, „Adaugă fotografii (test)”. Confidențialitatea (secțiunea 6) spune că doar actele
+  atașate la o inspecție se păstrează.
 
 ## Instrumente în admin (`/admin/instrumente`)
 

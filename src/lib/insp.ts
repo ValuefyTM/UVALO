@@ -253,3 +253,45 @@ export async function inspAction(db: D1Database, c: Ctx, b: Record<string, unkno
   }
   return { error: "Acțiune necunoscută." };
 }
+
+/* ---------- files (R2): documents and photos of an inspection ---------- */
+
+export const FILE_KINDS = ["cf", "releveu", "doc", "photo", "signature"] as const;
+export type FileKind = (typeof FILE_KINDS)[number];
+const MIME: Record<string, string> = { "application/pdf": "pdf", "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" };
+export const FILE_MAX = 15 * 1024 * 1024;
+
+/** Who may see / add files: the owner of the work, the one who does it, super-admins. */
+async function canTouch(db: D1Database, c: Ctx, inspId: string) {
+  const r = await db.prepare("SELECT created_by, assignee_id FROM inspections WHERE id = ? AND deleted_at IS NULL").bind(inspId).first<{ created_by: string; assignee_id: string | null }>();
+  return !!r && (c.super || r.created_by === c.user.id || r.assignee_id === c.user.id);
+}
+
+export async function addFile(db: D1Database, bucket: R2Bucket, c: Ctx, inspId: string, f: File, meta: { kind: string; name?: string; room?: string; taken_at?: string; lat?: unknown; lng?: unknown }): Promise<{ error: string } | { ok: true; id: string }> {
+  if (!(await canTouch(db, c, inspId))) return { error: "Inspecția nu există." };
+  const ext = MIME[f.type];
+  if (!ext) return { error: "Fișierul trebuie să fie PDF sau imagine (JPG, PNG, WEBP)." };
+  if (f.size > FILE_MAX) return { error: "Fișierul are peste 15 MB." };
+  const kind = (FILE_KINDS as readonly string[]).includes(meta.kind) ? meta.kind : "doc";
+  const id = uuid(), key = `insp/${inspId}/${id}.${ext}`;
+  await bucket.put(key, f.stream(), { httpMetadata: { contentType: f.type } });
+  await db.prepare("INSERT INTO insp_files (id, inspection_id, kind, name, room, r2_key, taken_at, lat, lng, meta) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+    .bind(id, inspId, kind, s(meta.name ?? f.name, 120) || null, s(meta.room, 60) || null, key, s(meta.taken_at, 30) || null, num(meta.lat), num(meta.lng),
+      JSON.stringify({ type: f.type, size: f.size, by: c.user.id })).run();
+  await logIt(db, inspId, c.user.id, `${kind === "photo" ? "Fotografie" : "Document"} adăugat: ${s(meta.name ?? f.name, 80) || kind}`);
+  return { ok: true, id };
+}
+
+export async function fileFor(db: D1Database, c: Ctx, id: string) {
+  const f = await db.prepare("SELECT id, inspection_id, name, r2_key, meta FROM insp_files WHERE id = ?").bind(id).first<{ id: string; inspection_id: string; name: string | null; r2_key: string; meta: string | null }>();
+  return f && (await canTouch(db, c, f.inspection_id)) ? f : null;
+}
+
+export async function removeFile(db: D1Database, bucket: R2Bucket | null, c: Ctx, id: string): Promise<{ error: string } | { ok: true; id: string }> {
+  const f = await fileFor(db, c, id);
+  if (!f) return { error: "Fișierul nu există." };
+  if (bucket) await bucket.delete(f.r2_key).catch(() => {});
+  await db.prepare("DELETE FROM insp_files WHERE id = ?").bind(id).run();
+  await logIt(db, f.inspection_id, c.user.id, `Fișier șters: ${f.name ?? ""}`);
+  return { ok: true, id: f.inspection_id };
+}

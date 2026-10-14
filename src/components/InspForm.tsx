@@ -18,6 +18,7 @@ export function InspForm({ init, tpls, colleagues, canRead }: { init: FormInit; 
   const [reading, setReading] = useState(false);
   const [msg, setMsg] = useState("");
   const [read, setRead] = useState<string[]>([]);
+  const [files, setFiles] = useState<{ f: File; kind: "cf" | "releveu" | "doc" }[]>([]);
   const set = <K extends keyof FormInit>(k: K, x: FormInit[K]) => setV((o) => ({ ...o, [k]: x }));
 
   async function readDoc(f: File) {
@@ -36,6 +37,7 @@ export function InspForm({ init, tpls, colleagues, canRead }: { init: FormInit; 
         cad_nr: j.nr_cadastral || o.cad_nr, cf_nr: j.nr_carte_funciara || o.cf_nr, uat: j.uat || o.uat, county: j.judet || o.county,
         area_land: area ? String(area).replace(".", ",") : o.area_land, lat: j._place?.lat ?? o.lat, lng: j._place?.lng ?? o.lng,
       }));
+      setFiles((x) => [...x, { f, kind: isCF ? "cf" : "doc" }]);
       setRead((x) => [...new Set([...x, isCF ? `Extras CF${j.nr_cadastral ? ` ${j.nr_cadastral}` : ""}` : `Plan${j.nr_cadastral ? ` ${j.nr_cadastral}` : ""}`])]);
     } catch (e) { setMsg((e as Error).message); } finally { setReading(false); }
   }
@@ -48,7 +50,12 @@ export function InspForm({ init, tpls, colleagues, canRead }: { init: FormInit; 
       }) });
       const j = (await r.json().catch(() => ({}))) as any;
       if (!r.ok) throw new Error(j.error || "Nu am putut salva.");
-      location.href = "/inspectii";
+      // the documents read (and the floor plan) go to the inspection's private storage
+      for (const x of files) {
+        const fd = new FormData(); fd.append("id", j.id); fd.append("kind", x.kind); fd.append("file", x.f); fd.append("name", x.f.name);
+        await fetch("/api/inspectii/files", { method: "POST", body: fd }).catch(() => null);
+      }
+      location.href = files.length ? `/inspectii/${j.id}` : "/inspectii";
     } catch (e) { setMsg((e as Error).message); setBusy(false); }
   }
   async function remove() {
@@ -80,6 +87,11 @@ export function InspForm({ init, tpls, colleagues, canRead }: { init: FormInit; 
             <label className="field">Suprafață utilă (acte, mp)<input className="input" inputMode="decimal" value={v.area_util} onChange={(e) => set("area_util", e.target.value)} /></label>
             <label className="field">Teren (acte, mp)<input className="input" inputMode="decimal" value={v.area_land} onChange={(e) => set("area_land", e.target.value)} /></label>
           </div>
+          <label className="inRlv">
+            <input type="file" hidden accept="application/pdf,image/jpeg,image/png,image/webp" onChange={(e) => { const f = e.target.files?.[0]; if (f) { setFiles((x) => [...x.filter((y) => y.kind !== "releveu"), { f, kind: "releveu" }]); } e.target.value = ""; }} />
+            <span className="btn btnGhost btnSm">{files.some((x) => x.kind === "releveu") ? `✓ Releveu: ${files.find((x) => x.kind === "releveu")!.f.name}` : "Atașează releveul"}</span>
+            <small>se păstrează la inspecție; încăperile le scrii mai jos</small>
+          </label>
           <div className="inRooms">
             <span className="field">Încăperi (din releveu) <small>apar gata în fișă, pe telefon</small></span>
             {v.rooms.map((r, i) => (

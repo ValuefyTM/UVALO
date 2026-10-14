@@ -10,6 +10,16 @@ export async function getDb(): Promise<D1Database | null> {
   }
 }
 
+/** The private file bucket (R2 `uvalo-inspectii`): inspection photos and documents. Null when not bound. */
+export async function getFiles(): Promise<R2Bucket | null> {
+  try {
+    const { env } = await getCloudflareContext({ async: true });
+    return (env as { FILES?: R2Bucket }).FILES ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export async function requireDb(): Promise<D1Database> {
   const db = await getDb();
   if (!db) throw new Error("Database unavailable");

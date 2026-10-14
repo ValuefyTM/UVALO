@@ -5,6 +5,7 @@ import { getInspection } from "@/lib/insp";
 import { fmtWhen, STATUS } from "@/lib/insp-shared";
 import { AppShell } from "@/components/AppShell";
 import { InspDocActions } from "@/components/InspDocActions";
+import { InspFileDelete, InspFileUpload } from "@/components/InspFileUpload";
 
 export const metadata: Metadata = { title: "Fișa de inspecție | UVALO" };
 export const dynamic = "force-dynamic";
@@ -107,14 +108,27 @@ export default async function InspDoc({ params }: { params: Promise<{ id: string
 
           <section id="fotografii" className="inSec">
             {sec(String(groups.length + 3).padStart(2, "0"), "Fotografii")}
-            {photos.length ? <div className="inPhotos">{photos.map((p) => <figure key={p.id}><span className="inPh" /><figcaption><b>{p.room ?? p.name}</b><span>{p.taken_at ? fmtDate(p.taken_at, true) : ""}</span></figcaption></figure>)}</div>
+            {photos.length ? <div className="inPhotos">{photos.map((p, i) => (
+              <figure key={p.id}>
+                <a className="inPhBox" href={`/api/inspectii/file/${p.id}`} target="_blank" rel="noopener">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={`/api/inspectii/file/${p.id}`} alt={p.room ?? p.name ?? "Fotografie"} loading="lazy" /><span className="inPhN">{i + 1}</span>
+                </a>
+                <figcaption><b>{p.room ?? p.name}</b><span>{p.taken_at ? fmtDate(p.taken_at, true) : ""}</span><InspFileDelete id={p.id} /></figcaption>
+              </figure>
+            ))}</div>
               : <p className="hint">Fotografiile vin din aplicația de telefon, cu ora și locul fiecăreia, grupate pe încăperi.</p>}
+            {c.super && <InspFileUpload id={x.id} kind="photo" label="Adaugă fotografii (test)" accept="image/jpeg,image/png,image/webp" multiple />}
           </section>
 
           <section id="acte" className="inSec">
             {sec(String(groups.length + 4).padStart(2, "0"), "Acte")}
-            {docs.length ? <ul className="inDocs">{docs.map((d) => <li key={d.id}><b>{d.name ?? d.kind}</b><small>{d.kind}</small></li>)}</ul>
-              : <p className="hint">Actele (extras CF, releveu) se păstrează aici după ce se leagă stocarea de fișiere (R2). Acum sunt doar citite, nu salvate.</p>}
+            {docs.length ? <ul className="inDocs">{docs.map((d) => (
+              <li key={d.id}><a href={`/api/inspectii/file/${d.id}`} target="_blank" rel="noopener"><span className="inDocIco">{d.kind === "cf" ? "CF" : d.kind === "releveu" ? "RLV" : "DOC"}</span>
+                <b>{d.name ?? d.kind}</b><small>{d.kind === "cf" ? "Extras de carte funciară" : d.kind === "releveu" ? "Releveu" : "Document"}</small></a><InspFileDelete id={d.id} /></li>
+            ))}</ul>
+              : <p className="hint">Niciun act atașat. Extrasul CF și releveul încărcate la pregătire apar aici.</p>}
+            <span className="inUps"><InspFileUpload id={x.id} kind="cf" label="Adaugă extras CF" /><InspFileUpload id={x.id} kind="releveu" label="Adaugă releveu" /><InspFileUpload id={x.id} kind="doc" label="Alt document" /></span>
           </section>
 
           <section id="semnaturi" className="inSec inSigns">

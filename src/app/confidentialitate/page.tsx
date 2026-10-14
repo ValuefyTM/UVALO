@@ -82,6 +82,7 @@ export default function Confidentialitate() {
           <li><b>Nu îl partajăm</b> cu alți utilizatori, cu firma ta, cu colegii din Colaborări sau cu terți. Singurul furnizor care îl primește este Anthropic, ca persoană împuternicită, numai pentru citire; conform termenilor săi comerciali, datele trimise prin API nu sunt folosite pentru antrenarea modelelor și sunt păstrate de Anthropic doar temporar, pentru siguranță și prevenirea abuzurilor, apoi șterse conform politicii sale.</li>
           <li><b>Datele citite</b> rămân doar în browserul tău, în pagina deschisă (și în memoria tab-ului cât treci de la pagina de start la analiză), ca să le vezi pe hartă și în analiză. Dispar când închizi pagina, cu excepția a ceea ce alegi tu să exporți (PDF, Word, PNG).</li>
           <li>În jurnalul de activitate păstrăm doar faptul că ai folosit citirea automată: data, numărul cadastral citit, tipul și mărimea fișierului și numărul de puncte de coordonate, pentru limitele de utilizare și statistici. Nu păstrăm conținutul documentului și nici numele proprietarilor sau alte date personale din el.</li>
+          <li><b>Excepție: modulul Inspecții.</b> Când atașezi un document (extras CF, releveu, alt act) sau fotografii la o inspecție, acestea se păstrează în contul tău, într-un spațiu de stocare privat (Cloudflare R2), ca să le vezi în fișa inspecției. Le văd doar tu, colegul care face inspecția pentru tine și administratorii UVALO, pentru suport. Le poți șterge oricând din fișă; la ștergerea inspecției sau a contului se șterg și ele.</li>
           <li>Extrasul de carte funciară poate conține date personale ale proprietarilor. Încarcă doar documente pe care ai dreptul să le folosești în lucrarea de evaluare; noi nu extragem, nu afișăm și nu păstrăm aceste date.</li>
         </ul>
       </section>
@@ -120,6 +121,7 @@ export default function Confidentialitate() {
           <li>Jurnalul de activitate: cât timp contul este activ, apoi ca mai sus.</li>
           <li>Solicitările de cont respinse: cel mult 12 luni.</li>
           <li>Extrasele CF și planurile încărcate pentru citire automată <b>nu se păstrează</b>: nu le salvăm nicăieri după citire (vezi secțiunea 6).</li>
+          <li>Documentele și fotografiile atașate la o inspecție: cât timp există inspecția și contul, până le ștergi.</li>
           <li>Comparabilele trimise din UVALO pentru Chrome în Word: cel mult 7 zile, sau până la următoarea trimitere.</li>
           <li>Colaborări: profilul, anunțurile și conversațiile cât timp contul este activ; anunțurile arhivate rămân doar pentru tine și pentru cei cu care ai discutat. Datele introduse în perioada de test a modulului se pot șterge la încheierea testului.</li>
         </ul>
