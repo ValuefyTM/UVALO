@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   title: "UVALO Inspecții",
   description: "Inspecțiile tale pe teren: fișa, fotografiile cu ora și locul, semnătura.",
   manifest: "/manifest.webmanifest",
-  appleWebApp: { capable: true, title: "Inspecții", statusBarStyle: "black-translucent" },
+  appleWebApp: { capable: true, title: "Inspecții", statusBarStyle: "black" },
   icons: { apple: "/loc-icon-apple.png" },
   robots: { index: false, follow: false },
 };

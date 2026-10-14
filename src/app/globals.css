@@ -1937,4 +1937,6 @@ textarea.mbIn { min-height: 0; resize: vertical; }
 .mbNav button { position: relative; background: none; border: 0; color: #9a9a9a; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 0; font-size: 11px; font-weight: 700; }
 .mbNav button[aria-current="page"] { color: var(--acc); }
 .mbNav button i { position: absolute; top: 2px; left: calc(50% + 6px); background: var(--err); color: #fff; font-style: normal; font-size: 10px; min-width: 18px; height: 18px; border-radius: 9px; display: flex; align-items: center; justify-content: center; padding: 0 4px; }
+/* iOS, installed app: the page must reach the bottom edge, or the fixed menu floats above it by the status bar's height */
+html:has(.mb) { min-height: calc(100% + env(safe-area-inset-top)); background: #F4EFE6; }
 @media (min-width: 561px) { body:has(.mb) { background: #141414; } }
