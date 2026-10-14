@@ -142,6 +142,7 @@ Reguli, în ordinea importanței:
 - Inventarul de coordonate: copiază toate punctele terenului, cu toate zecimalele, în ordinea din tabel. În sistemul Stereo 70, X este coordonata nord și Y coordonata est. Punctele construcțiilor nu intră la teren; pune-le la construcția respectivă, dacă sunt în document.
 - În extrasul de carte funciară coordonatele sunt în tabelul „Lungime segmente” (punct început, X / Y, punct sfârșit, X / Y, lungime): ia fiecare punct o singură dată, în ordinea punctelor, cu valorile exact cum apar (primul număr în x, al doilea în y; ordinea nord / est o stabilește aplicația), iar lungimile în „laturi”.
 - Fără tabel de coordonate, dar cu caroiaj Stereo 70 desenat (cruci cu valori de tipul 476000 / 210500): sursa_coordonate = „caroiaj” și estimează coordonatele colțurilor terenului din poziția lor față de cruci (X crește spre nord, Y spre est) și din scară; verifică estimarea cu lungimile laturilor scrise pe desen. Copiază și cotele laturilor în „laturi”.
+- Parcelele vecine desenate în schiță (cu numărul cadastral scris în ele) intră în „parcele_vecine”: colțurile lor estimate din desen față de punctele terenului, în aceeași convenție x / y ca la „puncte”. Dacă nu se văd, lista rămâne goală.
 - Suprafețele în metri pătrați, ca numere (fără separatori de mii).
 - Dacă documentul nu este un plan cadastral, spune ce este în „tip_document” și lasă restul gol.`,
 };

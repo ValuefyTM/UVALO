@@ -76,7 +76,7 @@ export default async function Home() {
           <HeroArt />
           <div className="heroText">
             <h2>Localizator cadastral{counties.length > 0 && <small> ({counties.length === 1 ? `jud. ${counties[0]}` : counties.map((x) => `jud. ${x}`).join(", ")})</small>}</h2>
-            <p>Găsește orice imobil din planurile ANCPI: număr cadastral, topo, adresă sau poziția ta pe teren. Coordonate Stereo 70, vecini, construcții, fișă PDF.</p>
+            <p>Găsește orice imobil din planurile ANCPI: număr cadastral, topo, adresă, coordonate GPS sau Stereo 70, ori poziția ta pe teren.{amp ? " Încarcă un extras CF sau un plan de amplasament: îl citim automat și localizăm imobilul și acolo unde nu avem încă plan cadastral." : " Vecini, construcții, fișă PDF."}</p>
           </div>
           {loc ? (
             <QuickSearch uats={list.map((u) => ({ key: u.key, name: u.name, county: u.county ?? "Timiș" }))} amp={amp} dark />

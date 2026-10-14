@@ -2,6 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { api, err } from "@/lib/api";
 import { track } from "@/lib/track";
 import { aiLimitError, prompts } from "@/lib/tools";
+import { placeDoc } from "@/lib/cadastre";
 
 // Site analysis (/amplasament) without a cadastral plan in the locator: the valuer uploads the "plan de amplasament și
 // delimitare" (PDF or photo) and Claude reads it into data: cadastral number, areas, the Stereo 70 coordinate inventory,
@@ -21,7 +22,7 @@ const SCHEMA = {
   type: "object",
   additionalProperties: false,
   required: ["tip_document", "nr_cadastral", "nr_carte_funciara", "uat", "judet", "adresa", "suprafata_masurata_mp", "suprafata_din_acte_mp",
-    "categorie_folosinta", "intravilan", "puncte", "sursa_coordonate", "puncte_estimate", "laturi", "constructii", "vecini", "observatii"],
+    "categorie_folosinta", "intravilan", "puncte", "sursa_coordonate", "puncte_estimate", "laturi", "constructii", "vecini", "parcele_vecine", "observatii"],
   properties: {
     tip_document: { type: "string", description: "ce fel de document este, de ex. „plan de amplasament și delimitare a imobilului”" },
     nr_cadastral: str, nr_carte_funciara: str,
@@ -46,6 +47,11 @@ const SCHEMA = {
     vecini: {
       type: "array",
       items: { type: "object", additionalProperties: false, required: ["latura", "descriere"], properties: { latura: { type: "string", description: "direcția sau punctele laturii, de ex. „N” sau „1-2”" }, descriere: { type: "string" } } },
+    },
+    parcele_vecine: {
+      type: "array",
+      description: "parcelele vecine DESENATE în document (în schița din extrasul CF sau pe planul de amplasament), fiecare cu numărul cadastral scris în ea. Colțurile: din inventar dacă există, altfel ESTIMATE din desen față de punctele parcelei (aceeași scară), în același sistem Stereo 70 și aceeași convenție x / y ca la „puncte”. Doar ce se vede în desen; listă goală dacă nu sunt.",
+      items: { type: "object", additionalProperties: false, required: ["nr_cadastral", "puncte"], properties: { nr_cadastral: str, puncte: { type: "array", items: point } } },
     },
     observatii: { ...str, description: "ce nu se citește clar sau orice neconcordanță din document" },
   },
@@ -103,5 +109,7 @@ export async function POST(req: Request) {
   }
   await track(a.db, a.c, "amplasament", "ai_plan", typeof out.nr_cadastral === "string" ? out.nr_cadastral : null,
     { type, kb: Math.round(file.size / 1024), pts: Array.isArray(out.puncte) ? out.puncte.length : 0, in: msg.usage.input_tokens, out: msg.usage.output_tokens });
-  return Response.json(out);
+  // where it lies (X/Y order, GPS, the locator UAT, the cadastral number in its plan), for the home page's drop zone
+  const place = await placeDoc(req, out as Parameters<typeof placeDoc>[1]).catch(() => null);
+  return Response.json({ ...out, _place: place });
 }

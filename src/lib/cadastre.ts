@@ -1,6 +1,7 @@
 // Server-only: centre of a cadastral parcel from the locator plans (Timiș), for placing a property on a map.
 // The centres are computed at build time (scripts/copy-localizare.mjs → /_localizare/c/<uat>.json).
 import { locatorAsset } from "./locator";
+import { COUNTY_CENTRES, normName, orient, ringArea } from "./stereo70";
 
 type Uat = { key: string; name: string; county?: string | null; n: number; v?: string | null; bb?: [number, number, number, number] | null };
 const cache = new Map<string, Promise<Record<string, [number, number]> | null>>();
@@ -70,4 +71,31 @@ export async function locateParcel(req: Request, nrRaw: string, city?: string | 
   if (hits.length === 1) return { nr, uat: hits[0].name, lat: hits[0].p[0], lng: hits[0].p[1], match: "search" };
   if (hits.length > 1) return { nr, error: `Numărul ${nr} apare în mai multe UAT-uri; precizează localitatea.`, candidates: hits.map((h) => h.name) };
   return { nr, error: `Numărul ${nr} nu apare în planurile din localizator${city ? ` (localitatea ${city} nu are plan)` : ""}.` };
+}
+
+type DocRead = { tip_document?: unknown; nr_cadastral?: unknown; uat?: unknown; judet?: unknown; puncte?: { x: unknown; y: unknown }[]; puncte_estimate?: { x: unknown; y: unknown }[] };
+export type DocPlace = {
+  lat: number; lng: number; swap: boolean; estimated: boolean; area: number;
+  uat: { key: string; name: string; county: string | null } | null; // the UAT of the locator where the parcel falls (or named by the document)
+  inPlan: boolean; // the cadastral number is in that UAT's plan
+};
+
+/**
+ * Where a plan / CF read with AI lies: its Stereo 70 points oriented (X/Y order) and converted to GPS, the locator UAT
+ * (named in the document or containing the point) and whether its cadastral number is in that plan. null = no usable points.
+ */
+export async function placeDoc(req: Request, j: DocRead): Promise<DocPlace | null> {
+  const est = !(j.puncte ?? []).length && (j.puncte_estimate ?? []).length > 2;
+  const list = await uats(req).catch(() => [] as Uat[]);
+  const named = list.find((u) => normName(u.name) === normName(j.uat) && (!j.judet || normName(u.county ?? "Timiș") === normName(j.judet)));
+  const hint: [number, number] | null = named?.bb ? [(named.bb[0] + named.bb[2]) / 2, (named.bb[1] + named.bb[3]) / 2] : COUNTY_CENTRES[normName(j.judet)] ?? null;
+  const isCF = /funciar|extras de carte/i.test(String(j.tip_document ?? ""));
+  const o = orient(est ? j.puncte_estimate : j.puncte, hint, isCF);
+  if (!o) return null;
+  const [lat, lng] = o.ll;
+  const inside = (u: Uat) => !!u.bb && lat >= u.bb[0] && lat <= u.bb[2] && lng >= u.bb[1] && lng <= u.bb[3];
+  const u = named && inside(named) ? named : list.find(inside) ?? null;
+  const nr = cadastralRoot(typeof j.nr_cadastral === "string" ? j.nr_cadastral : null);
+  const inPlan = !!(u && nr && (await centres(u.key, req))?.[nr]);
+  return { lat, lng, swap: o.swap, estimated: est, area: Math.round(ringArea(o.ring)), uat: u ? { key: u.key, name: u.name, county: u.county ?? "Timiș" } : null, inPlan };
 }
