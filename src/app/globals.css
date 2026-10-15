@@ -2299,3 +2299,16 @@ html:has(.mb) { min-height: calc(100% + env(safe-area-inset-top)); background: #
 .mbTabs2 { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 3px; }
 .mbTabs2 button { border: 0; border-radius: 9px; background: none; padding: 8px 6px; font: inherit; font-size: 12.5px; font-weight: 700; color: var(--muted-2); }
 .mbTabs2 button[aria-selected="true"] { background: #141414; color: var(--acc); }
+/* phone: the top card on Acasă, compact */
+.mbNext { padding: 9px 10px; gap: 7px; border-radius: 14px; }
+.mbNextTop small { font-size: 10px; }
+.mbNextMain { gap: 10px; }
+.mbNextMain > span:last-child { gap: 1px; }
+.mbNextMain b { font-size: 13.5px; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.mbNextMain small { font-size: 11.5px; -webkit-line-clamp: 1; }
+.mbNext .mbTime { width: 44px; height: 44px; border-radius: 10px; }
+.mbNext .mbTime b { font-size: 14px; display: block; }
+.mbNext .mbTime small { font-size: 9.5px; }
+.mbNextBtns { gap: 6px; grid-template-columns: 1fr 1fr 1.2fr; }
+.mbNextBtns .mbBtn { min-height: 34px; padding: 6px 8px; font-size: 12.5px; white-space: nowrap; border-radius: 10px; }
+.mbNext .mbTime small { display: block; -webkit-line-clamp: unset; overflow: visible; white-space: nowrap; }

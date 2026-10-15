@@ -553,7 +553,7 @@ function Home({ me, items, queueN, onQueue, pos, unread, scope, setScope, st, se
               : mins != null && mins < 0 ? "ACUM" : mins != null && mins < 24 * 60 ? `URMĂTOAREA · ÎN ${mins < 60 ? `${mins} MIN` : `${Math.round(mins / 60)} H`}` : "URMĂTOAREA"}</small></span>
             <button type="button" className="mbNextMain" onClick={() => onOpen(next.id)}>
               <span className="mbTime">{next.scheduled_at && !next.scheduled_at.startsWith(today)
-                ? <><b>{Number(next.scheduled_at.slice(8, 10))}</b><small>{MONTHS[Number(next.scheduled_at.slice(5, 7)) - 1].slice(0, 3)} · {next.scheduled_at.slice(11, 16)}</small></>
+                ? <><small>{Number(next.scheduled_at.slice(8, 10))} {MONTHS[Number(next.scheduled_at.slice(5, 7)) - 1].slice(0, 3)}</small><b>{next.scheduled_at.slice(11, 16)}</b></>
                 : <><b>{next.scheduled_at?.slice(11, 16) ?? "—"}</b><small>{next.duration_min} min</small></>}</span>
               <span><b>{next.address}</b><small>{nextKind === "redo" && next.redo_note ? next.redo_note : [next.prop_type, next.contact_name].filter(Boolean).join(" · ")}</small></span>
             </button>
