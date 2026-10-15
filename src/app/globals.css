@@ -1433,6 +1433,32 @@ span.meOfficeLogo { background: #2a2a2a; color: var(--acc); }
 .ldToast > span:last-child { display: flex; flex-direction: column; }
 .ldToast b { font-size: 13.5px; } .ldToast small { font-size: 12px; color: #5C5C5C; }
 .ldToastIc { width: 36px; height: 36px; border-radius: 10px; background: #141414; color: #E0AD4F; display: flex; align-items: center; justify-content: center; }
+/* hero slider: slides stacked in one grid cell (height = the tallest), only the active one visible */
+.ldSlides { display: grid; }
+.ldSlides > * { grid-area: 1 / 1; transition: opacity .6s ease, transform .6s ease, visibility 0s linear .6s; opacity: 0; visibility: hidden; }
+.ldSlides > .on { opacity: 1; visibility: visible; transform: none; transition: opacity .6s ease, transform .6s ease, visibility 0s; }
+.ldSlideTxt { display: flex; flex-direction: column; gap: 20px; transform: translateY(8px); align-self: start; }
+.ldSlideArt { transform: translateX(16px); align-self: center; }
+.ldDots { display: flex; gap: 8px; align-items: center; margin-top: 4px; }
+.ldDots button { position: relative; overflow: hidden; height: 34px; padding: 0 14px; border-radius: 999px; border: 1px solid #3A3A3A; background: none; color: #A8A8A8; font: 600 13px/1 Manrope, sans-serif; cursor: pointer; }
+.ldDots button:hover { color: #fff; border-color: #5A5A5A; }
+.ldDots button.on { color: #141414; background: #E0AD4F; border-color: #E0AD4F; }
+.ldDots button > span { position: relative; z-index: 1; }
+.ldDots button > i { position: absolute; left: 0; bottom: 0; height: 3px; width: 100%; background: rgba(20,20,20,.35); transform-origin: left; animation: ldProg linear forwards; }
+@keyframes ldProg { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+.ldDots .ldDotArrow { width: 34px; padding: 0; font-size: 18px; }
+.ldDuo { position: relative; aspect-ratio: 1 / .74; }
+.ldBrowser { position: absolute; right: 0; top: 6%; width: 82%; border-radius: 14px; overflow: hidden; background: #1F1F1F; border: 1px solid #2A2A2A; box-shadow: 0 30px 70px rgba(0,0,0,.5); }
+.ldBrowserBar { height: 32px; display: flex; align-items: center; gap: 6px; padding: 0 12px; background: #262626; }
+.ldBrowserBar i { width: 10px; height: 10px; border-radius: 50%; background: #FF5F57; }
+.ldBrowserBar i:nth-child(2) { background: #FEBC2E; } .ldBrowserBar i:nth-child(3) { background: #28C840; }
+.ldBrowserBar span { margin-left: 12px; flex: 1; max-width: 60%; background: #1A1A1A; border-radius: 6px; padding: 4px 10px; font-size: 11px; color: #8A8A8A; }
+.ldBrowser img { display: block; width: 100%; height: auto; }
+.ldPhone { position: absolute; left: 2%; bottom: 0; width: 28%; aspect-ratio: 390 / 844; padding: 7px; border-radius: 34px; background: #0B0B0B;
+  box-shadow: 0 0 0 2px #3A3A3A, 0 0 0 4px #1A1A1A, 0 30px 70px rgba(0,0,0,.6), 0 0 0 5px rgba(224,173,79,.25); }
+.ldPhoneScr { width: 100%; height: 100%; border-radius: 27px; overflow: hidden; background: #141414; padding-top: 10%; }
+.ldPhoneScr img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: top; }
+.ldPhoneIsland { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); width: 32%; height: 5.5%; max-height: 18px; background: #000; border-radius: 999px; z-index: 1; }
 .ldSec { padding: 88px 0; } .ldSecTop { padding: 80px 0 40px; } .ldSecBottom { padding: 0 0 80px; }
 .ldSec.ldSecBottom { padding: 40px 0 80px; }
 .ldHead { display: flex; flex-direction: column; gap: 10px; max-width: 760px; }
@@ -1531,6 +1557,7 @@ span.meOfficeLogo { background: #2a2a2a; color: var(--acc); }
   .ldH2, .ldCenter .ldH2 { font-size: 30px; }
   .ldH3 { font-size: 24px; }
   .ldToast { display: none; }
+  .ldSlides > .ldSlideTxt:not(.on) { display: none; }
   .ldSticky { position: static; }
   .ldIndent { margin-left: 0; }
   .ldPanel, .ldFeature { padding: 22px; }
