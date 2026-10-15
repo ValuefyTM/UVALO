@@ -2081,6 +2081,13 @@ textarea.mbIn { min-height: 0; resize: vertical; }
 .mbNotifIco { flex: none; width: 30px; height: 30px; border-radius: 50%; background: var(--cream-2); display: flex; align-items: center; justify-content: center; font-size: 14px; }
 .mbNotif.rem .mbNotifIco { background: #2a2a2a; }
 
+/* sent back to the phone to complete */
+.mbRedo { background: #FBEBD0; border: 1px solid var(--acc-line); border-left: 4px solid var(--acc); border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 4px; }
+.mbRedo b { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--acc-text); }
+.mbRedo span { font-size: 14px; font-weight: 700; line-height: 1.4; }
+.mbRedo.small { padding: 9px 11px; }
+.mbRedo.small span { font-size: 13px; }
+
 /* push notifications card */
 .mbPushHead { display: flex; gap: 10px; align-items: flex-start; }
 .mbPushHead > span:last-child { display: flex; flex-direction: column; gap: 2px; }
@@ -2113,3 +2120,8 @@ html:has(.mb) { min-height: calc(100% + env(safe-area-inset-top)); background: #
 .inSubQ { display: flex; flex-direction: column; gap: 6px; background: var(--cream); border: 1px solid var(--divider); border-radius: 10px; padding: 8px; }
 .inSubRow { display: flex; gap: 6px; align-items: center; }
 .inSubRow > .input, .inSubRow > .select { flex: 1; min-width: 0; }
+
+/* Inspecții (web): sent back to the phone */
+.inRedo { flex-basis: 100%; display: flex; flex-direction: column; gap: 8px; background: var(--cream); border: 1px solid var(--line); border-radius: 14px; padding: 14px; margin-top: 6px; }
+.inRedo p { margin: 0; }
+.inRedoNote { border-left: 4px solid var(--acc); }

@@ -309,6 +309,18 @@ export async function inspAction(db: D1Database, c: Ctx, b: Record<string, unkno
     await logIt(db, id, c.user.id, `Programată pentru ${when.replace("T", " ")}`);
     return { ok: true, id };
   }
+  if (action === "reopen") {
+    // back to the phone, to complete details: the answers, photos and documents stay; the signature is taken again
+    if (!(c.super || r.created_by === c.user.id)) return { error: "Doar cine a pregătit inspecția o poate retrimite." };
+    if (r.status !== "gata" && r.status !== "pred") return { error: "Inspecția nu este finalizată." };
+    if (!r.assignee_id) return { error: "Inspecția nu are cine să o facă." };
+    const note = t(b.note, 1000);
+    if (!note) return { error: "Scrie ce trebuie completat." };
+    await db.prepare("UPDATE inspections SET status = 'lucru', finished_at = NULL, signed_at = NULL, redo_note = ?, redo_at = ?, updated_at = ? WHERE id = ?")
+      .bind(note, now(), now(), id).run();
+    await logIt(db, id, c.user.id, `Retrimisă pe telefon pentru completare: ${note}`);
+    return { ok: true, id };
+  }
   if (action === "status") {
     const st = s(b.status, 10) as Status;
     if (!STATUSES.includes(st)) return { error: "Stare necunoscută." };
@@ -330,7 +342,10 @@ export async function inspAction(db: D1Database, c: Ctx, b: Record<string, unkno
       .bind(JSON.stringify(answers).slice(0, 200000), JSON.stringify(rooms).slice(0, 100000), JSON.stringify(findings), fin ? "gata" : "lucru", s(b.started_at, 30) || ts,
         fin ? ts : null, fin ? s(b.signed_name, 120) : null, fin ? ts : null, ts, id).run();
     if (r.status !== "lucru" && !fin) await logIt(db, id, c.user.id, `Începută pe teren${b.near ? ` (la ${Math.round(Number(b.near))} m de adresă)` : ""}`);
-    if (fin) await logIt(db, id, c.user.id, `Finalizată și semnată pe telefon de ${s(b.signed_name, 120)}`);
+    if (fin) {
+      if (r.redo_note) await db.prepare("UPDATE inspections SET redo_note = NULL WHERE id = ?").bind(id).run();
+      await logIt(db, id, c.user.id, `${r.redo_note ? "Completată și semnată din nou" : "Finalizată și semnată"} pe telefon de ${s(b.signed_name, 120)}`);
+    }
     return { ok: true, id };
   }
   if (action === "simulate") {

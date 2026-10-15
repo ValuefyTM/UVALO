@@ -10,7 +10,7 @@ type Insp = InspRow & {
   contact_phone: string | null; contact_role: string | null; answers: Record<string, string | string[]>; room_answers: Room[];
   findings: { diff?: string; defects?: string; notes?: string }; started_at: string | null; notes: string | null;
   files: { id: string; kind: string; name: string | null; room: string | null; taken_at: string | null }[];
-  uat?: string | null; county?: string | null; template_version?: number | null; created_at?: string;
+  uat?: string | null; county?: string | null; template_version?: number | null; created_at?: string; redo_note?: string | null;
 };
 type Room = { n: string; a: number | null; floor?: string; walls?: string; ceiling?: string; state?: string };
 type Me = { id: string; name: string; email: string; avatar?: boolean; anevar_no?: string | null; county?: string | null; phone?: string | null;
@@ -706,6 +706,7 @@ function Detail({ x, draft, onBack, onStart, onSchedule }: { x: Insp; draft: Dra
         </section>
 
         {done && <div className="mbOk">✓ Inspecția a fost trimisă. Fișa se vede în UVALO, pe web.</div>}
+        {!done && x.redo_note && <div className="mbRedo"><b>De completat</b><span>{x.redo_note}</span><small>Ce ai completat deja a rămas. La final se semnează din nou.</small></div>}
 
         {canSchedule(x) && (
           <section className="mbCard mbSched">
@@ -856,6 +857,7 @@ function Form({ x, d, sec, photos, onBack, onSec, change, onPhoto, onRooms, onPh
         </nav>
       </header>
       <div className="mbBody">
+        {x.redo_note && <div className="mbRedo small"><b>De completat</b><span>{x.redo_note}</span></div>}
         {!isFind && g && <>
           <h2 className="mbH2">{g.name}</h2>
           {g.qs.map((q) => <QInput key={q.id} q={q} v={d.answers[q.id]} onPhoto={onPhoto} answers={d.answers}

@@ -21,6 +21,9 @@ export default async function InspDoc({ params }: { params: Promise<{ id: string
   const x = await getInspection(db, c, id);
   if (!x) notFound();
   const done = x.status === "gata" || x.status === "pred";
+  const redoNote = (x as unknown as { redo_note?: string | null }).redo_note;
+  // answers are shown once the phone has started (in progress, or sent back to complete)
+  const shown = done || x.status === "lucru";
   // the firm the inspection belongs to: its logo heads the sheet (and the PDF)
   const orgId = (x as unknown as { org_id?: string | null }).org_id;
   const firm = orgId ? await db.prepare("SELECT id, name, corp_no, logo IS NOT NULL AS has_logo FROM orgs WHERE id = ?").bind(orgId)
@@ -48,9 +51,11 @@ export default async function InspDoc({ params }: { params: Promise<{ id: string
       <div className="inDocTop">
         <span className="inBadge" style={{ color: STATUS[x.status].fg, background: STATUS[x.status].bg }}>{STATUS[x.status].label}</span>
         {x.test ? <span className="inBadge inBadgeTest">DATE DE TEST</span> : null}
-        <InspDocActions id={x.id} done={done} delivered={x.status === "pred"} canSimulate={c.super} />
+        <InspDocActions id={x.id} done={done} delivered={x.status === "pred"} canSimulate={c.super}
+          canReopen={c.super || x.created_by === c.user.id} assignee={x.assignee_name} />
       </div>
-      {!done && <div className="note">Inspecția nu a fost făcută încă{x.scheduled_at ? `: e programată pentru ${fmtWhen(x.scheduled_at)}` : ""}. Fișa se completează pe telefon; aici vezi ce s-a pregătit.</div>}
+      {redoNote && x.status === "lucru" && <div className="note inRedoNote"><b>Retrimisă pe telefon pentru completare.</b> {redoNote}</div>}
+      {!done && x.status !== "lucru" && <div className="note">Inspecția nu a fost făcută încă{x.scheduled_at ? `: e programată pentru ${fmtWhen(x.scheduled_at)}` : ""}. Fișa se completează pe telefon; aici vezi ce s-a pregătit.</div>}
 
       <div className="inDoc">
         <nav className="inToc" aria-label="Cuprins">
@@ -91,7 +96,7 @@ export default async function InspDoc({ params }: { params: Promise<{ id: string
               {sec(String(i + 1).padStart(2, "0"), g.name)}
               <div className="inRows">
                 {g.qs.filter((q) => q.pdf !== false).map((q) => (
-                  <div key={q.id}><span>{q.t}</span><b>{done ? (q.kind === "comp" ? compSummary(q, x.answers) || "—" : ans(x.answers[q.id], q.unit)) : "—"}</b></div>
+                  <div key={q.id}><span>{q.t}</span><b>{shown ? (q.kind === "comp" ? compSummary(q, x.answers) || "—" : ans(x.answers[q.id], q.unit)) : "—"}</b></div>
                 ))}
               </div>
             </section>
