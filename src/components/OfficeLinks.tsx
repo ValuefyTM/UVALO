@@ -112,8 +112,8 @@ function InviteDialog({ onClose, full }: { onClose: () => void; full: boolean })
  * "Firma mea" → Oamenii biroului, într-un singur panou, grupați: administratori, evaluatori și operaționali (membri, ocupă locuri),
  * angajați și colaboratori asociați (cont propriu, fără loc), cererile de asociere și invitațiile. „Invită” deschide fereastra cu tipul.
  */
-export function OfficePeople({ people, invites, links, seats, used, canOwner }: {
-  people: PersonRow[]; invites: MemberInvite[]; links: OfficeLinkRow[]; seats: number; used: number; canOwner: boolean;
+export function OfficePeople({ people, invites, links, seats, used, canOwner, staffCreate }: {
+  people: PersonRow[]; invites: MemberInvite[]; links: OfficeLinkRow[]; seats: number; used: number; canOwner: boolean; staffCreate: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState("");
@@ -198,6 +198,11 @@ export function OfficePeople({ people, invites, links, seats, used, canOwner }: 
         <div key={g.t} className={`opGroup op-${g.k}`}>
           <h3><i className="opDot" aria-hidden="true" />{g.t} <span className="opN">{g.rows.length}</span><small>{g.note}</small></h3>
           {g.rows}
+          {g.k === "angajat" && (
+            <label className="opOpt"><input type="checkbox" checked={staffCreate} disabled={!!busy}
+              onChange={(e) => run("staff", () => act({ action: "staff_create", on: e.target.checked }))} />
+              <span><b>Angajații pot crea inspecții pentru birou de pe telefon</b><small>La „Inspecție nouă” aleg „Pentru: Contul meu / {"biroul"}”. Oprit: biroul le atribuie.</small></span></label>
+          )}
         </div>
       ))}
 

@@ -56,12 +56,47 @@ export async function registerDevice(db: D1Database, userId: string, sessionId: 
     .bind(uuid(), userId, `${name}${standalone ? " · aplicație" : ""}`.slice(0, 60), platform, sessionId, now()).run();
 }
 
-/** The phone's list: what this person has to do (assigned to them), plus what they finished lately. */
+/** This person's place towards a firm's inspections: member of it, linked now (angajat / colaborator), linked before (ended). */
+async function relations(db: D1Database, userId: string) {
+  const [m, l] = await Promise.all([
+    db.prepare("SELECT org_id FROM memberships WHERE user_id = ? AND status = 'active'").bind(userId).all<{ org_id: string }>(),
+    db.prepare("SELECT org_id, kind, status FROM office_links WHERE user_id = ? AND status IN ('active', 'ended')").bind(userId).all<{ org_id: string; kind: string; status: string }>(),
+  ]);
+  const member = new Set(m.results.map((x) => x.org_id));
+  const active = new Map(l.results.filter((x) => x.status === "active").map((x) => [x.org_id, x.kind]));
+  const ended = new Set(l.results.filter((x) => x.status === "ended").map((x) => x.org_id));
+  return { member, active, ended };
+}
+type Rel = Awaited<ReturnType<typeof relations>>;
+/** Done for a firm whose link with this person ended (and who is not its member): only reading is left. */
+const lockedFor = (rel: Rel, userId: string, r: { org_id?: unknown; created_by?: unknown }) =>
+  !!r.org_id && r.created_by !== userId && !rel.member.has(String(r.org_id)) && !rel.active.has(String(r.org_id)) && rel.ended.has(String(r.org_id));
+/** Phone: where an inspection shows. Inspections from a firm this person is a colaborator of → the Colaborări tab; the rest → Acasă. */
+const placeOf = (rel: Rel, r: { org_id?: unknown }) => (r.org_id && rel.active.get(String(r.org_id)) === "colaborator" && !rel.member.has(String(r.org_id)) ? "collab" : "home");
+
+/**
+ * The phone's list: what this person has to do (assigned to them), plus what they finished lately. Each row says where it goes
+ * (`place`: home / collab), for which firm when it is not theirs (`firm`) and whether it is read-only (`ro`: the link with that firm
+ * ended; the unfinished ones of such a firm are left out).
+ */
 export async function myAssigned(db: D1Database, userId: string) {
-  const { results } = await db.prepare(`${ROW_SQL} AND i.assignee_id = ?1 AND (i.status IN ('prog', 'plan', 'lucru') OR i.finished_at > ?2)
-    ORDER BY CASE WHEN i.status IN ('gata', 'pred') THEN 1 ELSE 0 END, COALESCE(i.scheduled_at, '9999'), i.created_at LIMIT 200`)
-    .bind(userId, new Date(Date.now() - 90 * 864e5).toISOString()).all<InspRow>();
-  return results;
+  const [{ results }, rel] = await Promise.all([
+    db.prepare(`${ROW_SQL} AND i.assignee_id = ?1 AND (i.status IN ('prog', 'plan', 'lucru') OR i.finished_at > ?2)
+      ORDER BY CASE WHEN i.status IN ('gata', 'pred') THEN 1 ELSE 0 END, COALESCE(i.scheduled_at, '9999'), i.created_at LIMIT 200`)
+      .bind(userId, new Date(Date.now() - 90 * 864e5).toISOString()).all<InspRow>(),
+    relations(db, userId),
+  ]);
+  return results.map((r) => {
+    const ro = lockedFor(rel, userId, r);
+    const foreign = !!r.org_id && !rel.member.has(String(r.org_id));
+    return { ...r, place: placeOf(rel, r), firm: foreign ? r.org_name ?? null : null, ro: ro ? 1 : 0 };
+  }).filter((r) => !r.ro || r.status === "gata" || r.status === "pred");
+}
+
+/** Offices this person may create inspections for from the phone: linked as angajat, and the office allows it. */
+export async function phoneFirms(db: D1Database, userId: string) {
+  return (await db.prepare(`SELECT o.id, o.name FROM office_links l JOIN orgs o ON o.id = l.org_id WHERE l.user_id = ? AND l.status = 'active' AND l.kind = 'angajat'
+    AND o.staff_create = 1 AND o.status = 'active' ORDER BY o.name`).bind(userId).all<{ id: string; name: string }>()).results;
 }
 
 /** Phone app, "Colaborări": inspections this person does for others (prepared by someone else) and those others do for them. */
@@ -176,10 +211,10 @@ export async function usableTemplates(db: D1Database, c: Ctx) {
 
 /* ---------- inspections ---------- */
 
-const ROW_SQL = `SELECT i.id, i.code, i.org_id, i.status, i.address, i.prop_type, i.cad_nr, i.lat, i.lng, i.contact_name, i.scheduled_at, i.duration_min, i.created_by,
+const ROW_SQL = `SELECT i.id, i.code, i.org_id, og.name AS org_name, i.status, i.address, i.prop_type, i.cad_nr, i.lat, i.lng, i.contact_name, i.scheduled_at, i.duration_min, i.created_by,
   COALESCE(NULLIF(o.name, ''), o.email) AS owner_name, o.avatar IS NOT NULL AS owner_av, i.assignee_id, COALESCE(NULLIF(a.name, ''), a.email) AS assignee_name, a.avatar IS NOT NULL AS assignee_av, i.assignee_kind, i.finished_at, i.test, i.redo_note, i.redo_prev_at, i.redo_keep_sig, i.signed_name, i.signed_at,
   (SELECT COUNT(*) FROM insp_files f WHERE f.inspection_id = i.id AND f.kind = 'photo') AS photos
-  FROM inspections i JOIN users o ON o.id = i.created_by LEFT JOIN users a ON a.id = i.assignee_id WHERE i.deleted_at IS NULL`;
+  FROM inspections i JOIN users o ON o.id = i.created_by LEFT JOIN users a ON a.id = i.assignee_id LEFT JOIN orgs og ON og.id = i.org_id WHERE i.deleted_at IS NULL`;
 
 /* ---------- the office's people (birou): operational role, firm-wide view ---------- */
 
@@ -214,7 +249,10 @@ export type Insp = InspRow & {
 export async function getInspection(db: D1Database, c: Ctx, id: string): Promise<Insp | null> {
   const r = await inspRow(db, "i.id = ?", id);
   if (!r || !(canPrepare(c, r) || r.assignee_id === c.user.id)) return null;
-  return fullInsp(db, r, id);
+  const x = await fullInsp(db, r, id);
+  if (canPrepare(c, r)) return x;
+  const rel = await relations(db, c.user.id);
+  return { ...x, ro: lockedFor(rel, c.user.id, r) ? 1 : 0, firm: r.org_id && !rel.member.has(String(r.org_id)) ? ((await db.prepare("SELECT name FROM orgs WHERE id = ?").bind(r.org_id).first<{ name: string }>())?.name ?? null) : null };
 }
 
 /** The inspection behind a public share link (/fisa/<token>), without any account. */
@@ -318,7 +356,7 @@ function readInput(b: Record<string, unknown>) {
   };
 }
 
-export async function saveInspection(db: D1Database, c: Ctx, b: Record<string, unknown>): Promise<{ ok: true; id: string } | { error: string }> {
+export async function saveInspection(db: D1Database, c: Ctx, b: Record<string, unknown>, opts: { orgId?: string } = {}): Promise<{ ok: true; id: string } | { error: string }> {
   const v = readInput(b);
   if (v.address.length < 5) return { error: "Scrie adresa bunului." };
   const id = s(b.id, 64);
@@ -350,7 +388,7 @@ export async function saveInspection(db: D1Database, c: Ctx, b: Record<string, u
   const nid = uuid();
   await db.prepare(`INSERT INTO inspections (address, cad_nr, cf_nr, uat, county, lat, lng, prop_type, area_util, area_land, rooms, template_id, template_name, template_version,
     template, contact_name, contact_phone, contact_role, scheduled_at, duration_min, assignee_id, assignee_kind, notes, status, id, code, created_by, org_id, test)
-    VALUES (${Array(29).fill("?").join(", ")})`).bind(...cols, nid, await nextCode(db), c.user.id, c.org?.id ?? null, 1).run();
+    VALUES (${Array(29).fill("?").join(", ")})`).bind(...cols, nid, await nextCode(db), c.user.id, opts.orgId ?? c.org?.id ?? null, 1).run();
   await logIt(db, nid, c.user.id, `Creată ${b.from_phone ? "pe telefon" : "pe web"}${b.from_doc ? " din documentele încărcate" : ""}`);
   if (v.scheduled_at) await logIt(db, nid, c.user.id, `Programată pentru ${v.scheduled_at.replace("T", " ")}`);
   return { ok: true, id: nid };
@@ -360,6 +398,7 @@ export async function inspAction(db: D1Database, c: Ctx, b: Record<string, unkno
   const action = s(b.action, 30), id = s(b.id, 64);
   const r = await db.prepare("SELECT * FROM inspections WHERE id = ? AND deleted_at IS NULL").bind(id).first<Record<string, unknown>>();
   if (!r || !(canPrepare(c, r) || (action !== "delete" && r.assignee_id === c.user.id))) return { error: "Inspecția nu există." };
+  if (!canPrepare(c, r) && lockedFor(await relations(db, c.user.id), c.user.id, r)) return { error: "Asocierea cu firma s-a încheiat: inspecția se poate doar citi." };
   if (action === "delete") {
     await db.prepare("UPDATE inspections SET deleted_at = ? WHERE id = ?").bind(now(), id).run();
     return { ok: true };
@@ -481,9 +520,12 @@ const MIME: Record<string, string> = { "application/pdf": "pdf", "image/jpeg": "
 export const FILE_MAX = 15 * 1024 * 1024;
 
 /** Who may see / add files: the owner of the work, the one who does it, super-admins. */
-async function canTouch(db: D1Database, c: Ctx, inspId: string) {
+async function canTouch(db: D1Database, c: Ctx, inspId: string, write = true) {
   const r = await db.prepare("SELECT created_by, org_id, assignee_id FROM inspections WHERE id = ? AND deleted_at IS NULL").bind(inspId).first<{ created_by: string; org_id: string | null; assignee_id: string | null }>();
-  return !!r && (canPrepare(c, r) || r.assignee_id === c.user.id);
+  if (!r) return false;
+  if (canPrepare(c, r)) return true;
+  // the one who does it; after the link with the firm ended, only reading
+  return r.assignee_id === c.user.id && (!write || !lockedFor(await relations(db, c.user.id), c.user.id, r));
 }
 
 export async function addFile(db: D1Database, bucket: R2Bucket, c: Ctx, inspId: string, f: File, meta: { kind: string; name?: string; room?: string; taken_at?: string; lat?: unknown; lng?: unknown }): Promise<{ error: string } | { ok: true; id: string }> {
@@ -503,13 +545,13 @@ export async function addFile(db: D1Database, bucket: R2Bucket, c: Ctx, inspId: 
 
 export async function fileFor(db: D1Database, c: Ctx, id: string) {
   const f = await db.prepare("SELECT id, inspection_id, name, r2_key, meta FROM insp_files WHERE id = ?").bind(id).first<{ id: string; inspection_id: string; name: string | null; r2_key: string; meta: string | null }>();
-  return f && (await canTouch(db, c, f.inspection_id)) ? f : null;
+  return f && (await canTouch(db, c, f.inspection_id, false)) ? f : null;
 }
 
 /** Moves a photo to another category (room) of the inspection. */
 export async function moveFile(db: D1Database, c: Ctx, id: string, room: string): Promise<{ error: string } | { ok: true; id: string }> {
   const f = await fileFor(db, c, id);
-  if (!f) return { error: "Fișierul nu există." };
+  if (!f || !(await canTouch(db, c, f.inspection_id))) return { error: "Fișierul nu există." };
   const r = s(room, 120);
   if (!r) return { error: "Alege categoria." };
   await db.prepare("UPDATE insp_files SET room = ? WHERE id = ? AND kind = 'photo'").bind(r, id).run();
@@ -518,7 +560,7 @@ export async function moveFile(db: D1Database, c: Ctx, id: string, room: string)
 
 export async function removeFile(db: D1Database, bucket: R2Bucket | null, c: Ctx, id: string): Promise<{ error: string } | { ok: true; id: string }> {
   const f = await fileFor(db, c, id);
-  if (!f) return { error: "Fișierul nu există." };
+  if (!f || !(await canTouch(db, c, f.inspection_id))) return { error: "Fișierul nu există." };
   if (bucket) await bucket.delete(f.r2_key).catch(() => {});
   await db.prepare("DELETE FROM insp_files WHERE id = ?").bind(id).run();
   await logIt(db, f.inspection_id, c.user.id, `Fișier șters: ${f.name ?? ""}`);

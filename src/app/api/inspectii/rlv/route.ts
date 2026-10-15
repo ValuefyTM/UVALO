@@ -51,7 +51,9 @@ export async function POST(req: Request) {
   const id = typeof fd?.get("id") === "string" ? (fd!.get("id") as string) : "";
   const fileId = typeof fd?.get("fileId") === "string" ? (fd!.get("fileId") as string) : "";
   const up = fd?.get("file");
-  if (!id || !(await getInspection(db, c, id))) return err("Inspecția nu există.", 404);
+  const x = id ? await getInspection(db, c, id) : null;
+  if (!x) return err("Inspecția nu există.", 404);
+  if (x.ro) return err("Asocierea cu firma s-a încheiat: inspecția se poate doar citi.", 403);
 
   let type: (typeof TYPES)[string] | undefined, bytes: ArrayBuffer, size: number;
   if (fileId) {

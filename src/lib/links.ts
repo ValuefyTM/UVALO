@@ -94,6 +94,13 @@ export async function linkAction(db: D1Database, c: Ctx, b: Record<string, unkno
     return { ok: true };
   }
 
+  if (action === "staff_create") {
+    if (!c.org?.office_at || !isOfficeAdmin(c, c.org.id)) return { error: "Doar administratorii biroului pot schimba asta." };
+    await db.prepare("UPDATE orgs SET staff_create = ? WHERE id = ?").bind(b.on ? 1 : 0, c.org.id).run();
+    await audit(db, c.user.id, "office.staff_create", "org", c.org.id, b.on ? "on" : "off");
+    return { ok: true };
+  }
+
   if (action === "request") {
     if (!c.user.anevar_no) return { error: "Asocierea cu un birou este doar pentru evaluatori (cu legitimație ANEVAR în cont)." };
     const orgId = String(b.org_id ?? "");

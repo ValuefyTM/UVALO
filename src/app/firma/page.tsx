@@ -25,6 +25,7 @@ export default async function Firm({ searchParams }: { searchParams: Promise<{ n
   // the office's people in one panel (members + associates), for now only for super-admins and offices with the function on
   const people = !!org.office_at && (c.super || officeActive(c));
   const [leaves, links] = await Promise.all([leaveRequests(db, org.id), people ? officeLinks(db, org.id) : Promise.resolve([])]);
+  const staff = people ? !!(await db.prepare("SELECT staff_create FROM orgs WHERE id = ?").bind(org.id).first<{ staff_create: number }>())?.staff_create : false;
   const logo = org.has_logo ? (await db.prepare("SELECT logo FROM orgs WHERE id = ?").bind(org.id).first<{ logo: string | null }>())?.logo ?? null : null;
   const countyOf = await countyOfUats();
   return (
@@ -34,7 +35,7 @@ export default async function Firm({ searchParams }: { searchParams: Promise<{ n
         initial={{ name: org.name, corporate: !!org.corporate, corp_no: org.corp_no ?? "", description: org.description ?? "", logo }} />
       <LeaveRequests rows={leaves.map((l) => ({ id: l.id, name: l.name, email: l.email, legit: l.legit, tablou_name: l.tablou_name, created: fmtDate(l.created_at) }))} />
       {people ? (
-        <OfficePeople seats={org.seats} used={used} canOwner={c.super || c.role === "owner"}
+        <OfficePeople seats={org.seats} used={used} canOwner={c.super || c.role === "owner"} staffCreate={staff}
           people={m.map((x) => ({ user_id: x.user_id, email: x.email, name: x.name, status: x.status, role: x.role, anevar: !!x.anevar_no, has_av: !!x.has_avatar, last_seen: x.last_seen_at ? fmtDate(x.last_seen_at, true) : "—", me: x.user_id === c.user.id }))}
           invites={inv.map((i) => ({ id: i.id, email: i.email, role: i.role, created: fmtDate(i.created_at), expires: fmtDate(i.expires_at), by: i.invited_by_name }))}
           links={links.map((l) => ({ id: l.id, kind: l.kind, status: l.status, since: fmtDate(l.status === "active" ? l.decided_at ?? l.created_at : l.created_at),

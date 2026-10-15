@@ -68,6 +68,7 @@ export function MobileApp() {
   const [state, setState] = useState<"boot" | "login" | "noaccess" | "app">("boot");
   const [items, setItems] = useState<InspRow[]>([]);
   const [collab, setCollab] = useState<InspRow[]>([]); // done for others / by others for me
+  const [firms, setFirms] = useState<{ id: string; name: string }[]>([]); // offices I may create inspections for (angajat, allowed)
   const [cur, setCur] = useState<Insp | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [view, setViewState] = useState<View>({ v: "home" });
@@ -101,6 +102,7 @@ export function MobileApp() {
     setMe(j.user as Me);
     setItems((j.items as InspRow[]) ?? []);
     setCollab((j.collab as InspRow[]) ?? []);
+    setFirms((j.firms as { id: string; name: string }[]) ?? []);
     setInfo((j.info as Info) ?? null);
     setTpls((j.templates as Tpl[]) ?? []);
     setNotifs((j.notifs as Notif[]) ?? []);
@@ -381,8 +383,8 @@ export function MobileApp() {
       )}
       <div className="mbPage" style={pull || drag ? { transform: `translateY(${pull}px)`, transition: drag ? "none" : undefined } : undefined}>
       {!online && <div className="mbOffline">Fără semnal · lucrezi pe telefon, se trimite când revine rețeaua</div>}
-      {view.v === "home" && <Home me={me} items={items.filter((i) => !isDone(i))} queueN={queueN} onQueue={() => go({ v: "queue" })} pos={pos} unread={unread} scope={scope} setScope={setScope} st={st} setSt={setSt} onBell={() => go({ v: "notifs" })} onMe={() => go({ v: "account" })} onSchedule={setSched} onNew={() => go({ v: "new" })} onOpen={(id) => open(id, { v: "detail", id })} onStart={(id) => open(id, { v: "form", id, sec: 0 })} />}
-      {view.v === "detail" && cur && <Detail x={cur} draft={draft} mine={!me || cur.assignee_id === me.id} onSchedule={setSched} onBack={() => history.back()} onStart={() => go({ v: "form", id: cur.id, sec: 0 })} />}
+      {view.v === "home" && <Home me={me} items={items.filter((i) => !isDone(i) && i.place !== "collab")} queueN={queueN} onQueue={() => go({ v: "queue" })} pos={pos} unread={unread} scope={scope} setScope={setScope} st={st} setSt={setSt} onBell={() => go({ v: "notifs" })} onMe={() => go({ v: "account" })} onSchedule={setSched} onNew={() => go({ v: "new" })} onOpen={(id) => open(id, { v: "detail", id })} onStart={(id) => open(id, { v: "form", id, sec: 0 })} />}
+      {view.v === "detail" && cur && <Detail x={cur} draft={draft} mine={!cur.ro && (!me || cur.assignee_id === me.id)} onSchedule={setSched} onBack={() => history.back()} onStart={() => go({ v: "form", id: cur.id, sec: 0 })} />}
       {view.v === "form" && cur && draft && (
         <Form x={cur} d={draft} sec={view.sec} photos={pending.filter((p) => p.insp === cur.id && p.kind === "photo").length + cur.files.filter((f) => f.kind === "photo").length}
           onBack={() => go({ v: "detail", id: cur.id })} onSec={(s) => setViewState({ v: "form", id: cur.id, sec: s })} change={change} onPhoto={addPhoto}
@@ -393,11 +395,11 @@ export function MobileApp() {
       {view.v === "sign" && cur && draft && <Sign x={cur} d={draft} photos={pending.filter((p) => p.insp === cur.id && p.kind === "photo").length + cur.files.filter((f) => f.kind === "photo").length} change={change} onBack={() => history.back()} onFinish={finish}
         onRooms={() => go({ v: "rooms", id: cur.id })} onPhotos={() => go({ v: "photos", id: cur.id })} />}
       {view.v === "queue" && <Queue pending={pending} finishN={finishQ} items={items} online={online} onSend={async () => { const n = await sendAll(); say(n ? "Mai sunt elemente de trimis." : "Totul a fost trimis."); }} />}
-      {view.v === "collab" && <Collab />}
+      {view.v === "collab" && <Collab items={items.filter((i) => i.place === "collab")} onOpen={(id) => open(id, { v: "detail", id })} />}
       {view.v === "notifs" && <Notifs notifs={notifs} reminders={reminders} seenAt={seen.at} onBack={() => { markSeen(); history.back(); }}
         onOpen={(id) => { markSeen(); void open(id, { v: "detail", id }); }} />}
       {view.v === "account" && <Account me={me} info={info} done={items.filter(isDone)} onOpen={(id) => open(id, { v: "detail", id })} queueN={queueN} online={online} onSend={async () => { const n = await sendAll(); say(n ? "Mai sunt elemente de trimis." : "Totul a fost trimis."); }} say={say} />}
-      {view.v === "new" && <NewInsp tpls={tpls} online={online} pos={pos} onBack={() => history.back()} onDone={async (id, now) => {
+      {view.v === "new" && <NewInsp tpls={tpls} firms={firms} online={online} pos={pos} onBack={() => history.back()} onDone={async (id, now) => {
         await load();
         if (now) await open(id, { v: "form", id, sec: 0 }); else { go({ v: "home" }); say("Inspecția a fost adăugată."); }
       }} />}
@@ -618,7 +620,7 @@ function ItemRow({ i, today, onOpen, n, sub }: { i: InspRow; today: string; onOp
       {n != null ? <span className="mbPinN" style={{ background: STATUS[i.status].fg }}>{n}</span>
         : <span className={`mbDay${isDone(i) ? " done" : isToday ? " today" : ""}`}>{d ? <><small>{isToday ? "AZI" : `${DAYS[d.getDay()]} ${d.getDate()}`}</small><b>{w!.slice(11, 16)}</b></> : <><small>FĂRĂ</small><small>DATĂ</small></>}</span>}
       <span className="mbItemTxt">
-        <span><em>{(i.prop_type ?? "IMOBIL").toUpperCase()}</em><i style={{ color: MSTAT[mstat(i)].fg }}>● {mstat(i) === "gata" ? (i.status === "pred" ? "Predată" : "Finalizată") : MSTAT[mstat(i)].label}</i></span>
+        <span><em>{(i.prop_type ?? "IMOBIL").toUpperCase()}</em><i style={{ color: MSTAT[mstat(i)].fg }}>● {mstat(i) === "gata" ? (i.status === "pred" ? "Predată" : "Finalizată") : MSTAT[mstat(i)].label}</i>{i.firm && <u className="mbFirm">{i.firm}</u>}</span>
         <b>{i.address}</b>
         <small>{sub ?? (i.redo_note && mstat(i) === "redo" ? `De completat: ${i.redo_note}` : isDone(i) && w ? `Făcută ${fmtWhen(w)}` : n != null ? fmtWhen(i.scheduled_at) : [i.contact_name, i.cad_nr && `nr. cad. ${i.cad_nr}`].filter(Boolean).join(" · ") || fmtWhen(i.scheduled_at))}</small>
       </span>
@@ -859,6 +861,7 @@ function Detail({ x, draft, mine, onBack, onStart, onSchedule }: { x: Insp; draf
             <span className="mbHeroTags">
               <i style={{ color: STATUS[x.status].fg, background: STATUS[x.status].bg }}>{STATUS[x.status].label}</i>
               {x.prop_type && <i>{x.prop_type}</i>}
+              {x.firm && <i className="firm">{x.firm}</i>}
             </span>
             <b>{x.address}</b>
             {(x.cad_nr || x.cf_nr) && <small>{[x.cad_nr && `nr. cad. ${x.cad_nr}`, x.cf_nr && `CF ${x.cf_nr}`].filter(Boolean).join(" · ")}</small>}
@@ -931,6 +934,7 @@ function Detail({ x, draft, mine, onBack, onStart, onSchedule }: { x: Insp; draf
 
         <section className="mbCard mbTplCard"><small className="mbCap">FIȘA</small><span><b>{x.template_name ?? "Fișa de inspecție"}</b><small>{x.template.groups.length} secțiuni · {qn} întrebări</small></span></section>
       </div>
+      {!!x.ro && <p className="mbNote">Asocierea cu {x.firm ?? "firma"} s-a încheiat: inspecția se poate doar citi.</p>}
       {!done && mine && (
         <footer className="mbFoot">
           <button type="button" className="mbBtn gold big" onClick={onStart}>{x.redo_note ? "Modifică fișa →" : draft?.started_at ? "Continuă fișa →" : "Începe fișa →"}</button>
@@ -1379,17 +1383,36 @@ function Sign({ x, d, photos, change, onBack, onFinish, onRooms, onPhotos }: {
 
 /* ---------- queue and account ---------- */
 
-/** "Colaborări": inspections done for colleagues and by colleagues — coming soon (the data is already in /api/m/state as `collab`). */
-function Collab() {
+/** "Colaborări": the inspections received from the offices this person is a colaborator of, grouped by firm. */
+function Collab({ items, onOpen }: { items: InspRow[]; onOpen: (id: string) => void }) {
+  const today = ymd(new Date());
+  const firms = [...new Set(items.map((i) => i.firm ?? "Alte firme"))];
+  const open = items.filter((i) => !isDone(i)), done = items.filter(isDone);
   return (
     <>
-      <header className="mbHead small"><b>Colaborări</b><small>Inspecții făcute pentru colegi și de colegi pentru tine</small></header>
+      <header className="mbHead small"><b>Colaborări</b><small>Inspecțiile primite de la firmele cu care colaborezi</small></header>
       <div className="mbBody">
-        <div className="mbSoon">
-          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="3.2" /><circle cx="17" cy="9" r="2.6" /><path d="M2.5 20c.8-3.4 3-5.4 5.5-5.4s4.7 2 5.5 5.4M14 15c2.6-.6 5.6.6 7 4.6" /></svg>
-          <b>În curând</b>
-          <small>Aici vei vedea inspecțiile pe care le faci pentru colegi și pe cele pe care colegii le fac pentru tine.</small>
-        </div>
+        {!items.length && (
+          <div className="mbSoon">
+            <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="3.2" /><circle cx="17" cy="9" r="2.6" /><path d="M2.5 20c.8-3.4 3-5.4 5.5-5.4s4.7 2 5.5 5.4M14 15c2.6-.6 5.6.6 7 4.6" /></svg>
+            <b>Nicio inspecție de la colaborări</b>
+            <small>Când o firmă de evaluare cu care ești asociat ca colaborator îți atribuie o inspecție, apare aici. Inspecțiile tale rămân în Acasă.</small>
+          </div>
+        )}
+        {firms.map((f) => {
+          const act = open.filter((i) => (i.firm ?? "Alte firme") === f);
+          if (!act.length) return null;
+          return (
+            <Fragment key={f}>
+              <span className="mbGroupHead mbFirmHead"><i />{f}<em>{act.length}</em></span>
+              <ItemList list={act} today={today} onOpen={onOpen} />
+            </Fragment>
+          );
+        })}
+        {done.length > 0 && <>
+          <span className="mbGroupHead" style={{ color: MSTAT.gata.fg }}><i style={{ background: MSTAT.gata.fg }} />Finalizate<em>{done.length}</em></span>
+          <div className="mbList">{done.map((i) => <ItemRow key={i.id} i={i} today={today} onOpen={onOpen} />)}</div>
+        </>}
       </div>
     </>
   );
@@ -1419,10 +1442,11 @@ const mb = (n: number) => (n < 1048576 ? `${Math.max(1, Math.round(n / 1024))} K
 
 /* ---------- new inspection, from the phone ---------- */
 
-function NewInsp({ tpls, online, pos, onBack, onDone }: { tpls: Tpl[]; online: boolean; pos: React.RefObject<[number, number] | null>; onBack: () => void; onDone: (id: string, now: boolean) => Promise<void> }) {
+function NewInsp({ tpls, firms, online, pos, onBack, onDone }: { tpls: Tpl[]; firms: { id: string; name: string }[]; online: boolean; pos: React.RefObject<[number, number] | null>; onBack: () => void; onDone: (id: string, now: boolean) => Promise<void> }) {
   const [f, setF] = useState({ address: "", prop_type: "", template_id: "", cad_nr: "", cf_nr: "", contact_name: "", contact_phone: "", contact_role: "", notes: "" });
   const [ll, setLl] = useState<[number, number] | null>(null);
   const [when, setWhen] = useState<"now" | "later">("now");
+  const [forOrg, setForOrg] = useState(""); // "" = my own account; otherwise an office I work for as angajat
   const [at, setAt] = useState("");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
@@ -1447,7 +1471,7 @@ function NewInsp({ tpls, online, pos, onBack, onDone }: { tpls: Tpl[]; online: b
     const scheduled_at = when === "now" ? `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}` : at;
     try {
       const r = await fetch("/api/m/new", { method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...f, scheduled_at, lat: ll?.[0] ?? null, lng: ll?.[1] ?? null }) });
+        body: JSON.stringify({ ...f, scheduled_at, for_org: forOrg, lat: ll?.[0] ?? null, lng: ll?.[1] ?? null }) });
       const j = await J(r);
       if (!r.ok) throw new Error(String(j.error || "Nu a mers."));
       await onDone(String(j.id), when === "now");
@@ -1458,6 +1482,14 @@ function NewInsp({ tpls, online, pos, onBack, onDone }: { tpls: Tpl[]; online: b
       <header className="mbBar"><Back onClick={onBack} /><span><b>Inspecție nouă</b><small>O faci tu; restul se completează și pe web</small></span></header>
       <div className="mbBody">
         {!online && <p className="mbNote">Fără semnal nu se poate crea o inspecție nouă. Încearcă din nou când ai rețea.</p>}
+        {firms.length > 0 && <>
+          <small className="mbCap">PENTRU</small>
+          <span className="mbOpts">
+            <button type="button" aria-pressed={!forOrg} onClick={() => setForOrg("")}>Contul meu</button>
+            {firms.map((o) => <button key={o.id} type="button" aria-pressed={forOrg === o.id} onClick={() => setForOrg(o.id)}>{o.name}</button>)}
+          </span>
+          <small className="mbCenterSmall" style={{ textAlign: "left" }}>{forOrg ? "Inspecția e a firmei: o vede biroul și intră în lucrările lui." : "Inspecția e a ta: firma nu o vede."}</small>
+        </>}
         <button type="button" className="mbStart" onClick={here}><b>📍 Sunt la proprietate</b><small>{ll ? `locație preluată · ${ll[0].toFixed(5)}, ${ll[1].toFixed(5)}` : "preia adresa după locația telefonului"}</small></button>
         <label className="mbField">Adresa bunului<textarea className="mbIn" rows={2} value={f.address} onChange={(e) => { set("address", e.target.value); setLl(null); }} placeholder="Str., nr., localitate, județ" /></label>
         <small className="mbCap">TIPUL BUNULUI</small>
