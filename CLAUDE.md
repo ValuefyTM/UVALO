@@ -406,9 +406,9 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
 - **Navigarea pe telefon**: meniul de jos = Acasă / **Colaborări** / Contul meu. Acasă arată doar inspecțiile nefinalizate (filtrul: „Toate” +
   Completări / În lucru / De făcut / De programat, fără Finalizate); finalizatele (ultimele 90 de zile, `myAssigned`) sunt în Contul meu,
   „Inspecții finalizate”. „De trimis” nu mai e în meniu: iconița cu săgeată și numărul apare lângă clopoțel doar când există fișe / poze
-  netrimise (`.mbQueueBtn` → ecranul coadă). Colaborări (`Collab`): „Fac pentru alții” (eu o fac, a pregătit-o altcineva) și „Alții pentru mine”
-  (am pregătit-o eu, o face altcineva) — `phoneCollab()` în `insp.ts`, în `/api/m/state` ca `collab`; detaliul nu are „Începe fișa” când
-  inspecția nu e a mea de făcut.
+  netrimise (`.mbQueueBtn` → ecranul coadă). Tab-ul Colaborări (`Collab`) arată deocamdată „În curând”; datele sunt pregătite: `phoneCollab()`
+  în `insp.ts` („Fac pentru alții” = eu o fac, a pregătit-o altcineva; „Alții pentru mine” = am pregătit-o eu, o face altcineva), în
+  `/api/m/state` ca `collab`. Detaliul nu are „Începe fișa” când inspecția nu e a mea de făcut.
   Cardurile obligatorii din fișă (`.mbTile`) sunt compacte: iconiță mică în stânga, titlul și starea pe două rânduri. Și cardul de sus
   (`.mbNext`) e compact: căsuța 44 px (ora; în altă zi „16 oct” deasupra orei), adresa pe max. 2 rânduri, nota pe un rând, butoane de 34 px.
   Fără nimic de arătat: doar „Nicio inspecție programată”, centrat, estompat, fără buton (inspecția nouă se adaugă din „+”).

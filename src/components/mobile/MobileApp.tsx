@@ -372,7 +372,7 @@ export function MobileApp() {
       {view.v === "sign" && cur && draft && <Sign x={cur} d={draft} photos={pending.filter((p) => p.insp === cur.id && p.kind === "photo").length + cur.files.filter((f) => f.kind === "photo").length} change={change} onBack={() => history.back()} onFinish={finish}
         onRooms={() => go({ v: "rooms", id: cur.id })} onPhotos={() => go({ v: "photos", id: cur.id })} />}
       {view.v === "queue" && <Queue pending={pending} finishN={finishQ} items={items} online={online} onSend={async () => { const n = await sendAll(); say(n ? "Mai sunt elemente de trimis." : "Totul a fost trimis."); }} />}
-      {view.v === "collab" && <Collab me={me} rows={collab} today={ymd(new Date())} onOpen={(id) => open(id, { v: "detail", id })} />}
+      {view.v === "collab" && <Collab />}
       {view.v === "notifs" && <Notifs notifs={notifs} reminders={reminders} seenAt={seen.at} onBack={() => { markSeen(); history.back(); }}
         onOpen={(id) => { markSeen(); void open(id, { v: "detail", id }); }} />}
       {view.v === "account" && <Account me={me} info={info} done={items.filter(isDone)} onOpen={(id) => open(id, { v: "detail", id })} queueN={queueN} online={online} onSend={async () => { const n = await sendAll(); say(n ? "Mai sunt elemente de trimis." : "Totul a fost trimis."); }} say={say} />}
@@ -1358,24 +1358,17 @@ function Sign({ x, d, photos, change, onBack, onFinish, onRooms, onPhotos }: {
 
 /* ---------- queue and account ---------- */
 
-/** "Colaborări": inspections I do for others (prepared by a colleague) and those colleagues do for me. */
-function Collab({ me, rows, today, onOpen }: { me: Me | null; rows: InspRow[]; today: string; onOpen: (id: string) => void }) {
-  const [tab, setTab] = useState<"for" | "by">("for");
-  const forOthers = rows.filter((i) => i.assignee_id === me?.id), byOthers = rows.filter((i) => i.created_by === me?.id);
-  const list = tab === "for" ? forOthers : byOthers;
+/** "Colaborări": inspections done for colleagues and by colleagues — coming soon (the data is already in /api/m/state as `collab`). */
+function Collab() {
   return (
     <>
       <header className="mbHead small"><b>Colaborări</b><small>Inspecții făcute pentru colegi și de colegi pentru tine</small></header>
       <div className="mbBody">
-        <span className="mbTabs2" role="tablist">
-          <button type="button" role="tab" aria-selected={tab === "for"} onClick={() => setTab("for")}>Fac pentru alții · {forOthers.length}</button>
-          <button type="button" role="tab" aria-selected={tab === "by"} onClick={() => setTab("by")}>Alții pentru mine · {byOthers.length}</button>
-        </span>
-        {list.length ? <span className="mbList flat">{list.map((i) => (
-          <ItemRow key={i.id} i={i} today={today} onOpen={onOpen}
-            sub={tab === "for" ? `Pentru ${i.owner_name}` : `Face: ${i.assignee_name ?? "—"}${isDone(i) && i.finished_at ? ` · făcută ${fmtWhen(whenOf(i))}` : ""}`} />
-        ))}</span>
-          : <div className="mbEmpty">{tab === "for" ? "Nicio inspecție pregătită de un coleg pentru tine." : "Nicio inspecție dată unui coleg."}</div>}
+        <div className="mbSoon">
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="3.2" /><circle cx="17" cy="9" r="2.6" /><path d="M2.5 20c.8-3.4 3-5.4 5.5-5.4s4.7 2 5.5 5.4M14 15c2.6-.6 5.6.6 7 4.6" /></svg>
+          <b>În curând</b>
+          <small>Aici vei vedea inspecțiile pe care le faci pentru colegi și pe cele pe care colegii le fac pentru tine.</small>
+        </div>
       </div>
     </>
   );

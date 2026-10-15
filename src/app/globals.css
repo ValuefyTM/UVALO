@@ -2315,3 +2315,6 @@ html:has(.mb) { min-height: calc(100% + env(safe-area-inset-top)); background: #
 /* phone: the top card with nothing scheduled — only a faded line in the middle */
 .mbNext.mbNextNone { align-items: center; justify-content: center; padding: 14px 10px; background: rgba(255,255,255,.03); border-style: dashed; border-color: #333; }
 .mbNextNone span { color: #8a857b; font-size: 12.5px; font-weight: 600; }
+.mbSoon { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px; padding: 40px 20px; color: var(--muted-2); }
+.mbSoon b { font-size: 16px; color: var(--ink); }
+.mbSoon small { font-size: 12.5px; max-width: 280px; }
