@@ -391,6 +391,15 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   → acțiunea `reopen`: stare `lucru`, `finished_at` / `signed_at` golite, `redo_note` + `redo_at` (migrația 0026); răspunsurile, pozele și actele rămân;
   jurnalul „Retrimisă pe telefon pentru completare: …” trimite notificare celui care o face. Pe telefon cardul „De completat” (detaliu și fișă);
   la noua finalizare (semnătură din nou) nota se golește, jurnal „Completată și semnată din nou”. Pe web, nota apare sus, iar răspunsurile se văd și în lucru.
+  La retrimitere, pe web se alege „Semnătura salvată rămâne” (implicit, dacă există) sau „Se semnează din nou” (`keep_sig`; migrația 0028:
+  `redo_keep_sig`, `redo_prev_at` = data la care fusese completată). Pe telefon, detaliul arată „Întoarsă pentru completări”: completată pe
+  data / ora, motivul, semnătura; butonul devine „Modifică fișa” (și pe cardul de sus). Cu semnătura păstrată (`keptSig`), cardul „Semnătură”
+  e verde „păstrată”, ecranul de semnare arată semnătura salvată (cu „Ia totuși o semnătură nouă”) și „Finalizează” merge fără semnătură nouă;
+  serverul păstrează `signed_at` / `signed_name` (`new_sig: false`), jurnal „Completată pe telefon (semnătura lui X păstrată)”.
+- **Cardul de sus pe Acasă (telefon)**: următoarea inspecție programată neîncepută (`plan`, cât timp nu i-a trecut intervalul; „ACUM” în interval);
+  fără ea, cea mai urgentă cu completări (retrimisă, cea mai veche întâi; eticheta roșie „DE COMPLETAT”, motivul sub adresă), apoi una în lucru.
+  Altă zi decât azi → în căsuță ziua și luna. În listă și în agenda calendarului, ora inspecțiilor finalizate e verde (`.mbDay.done`, `.mbSlotT.done`).
+  Cardurile obligatorii din fișă (`.mbTile`) sunt compacte: iconiță mică în stânga, titlul și starea pe două rânduri.
 - **Notificări push** (Web Push; pe iPhone doar cu aplicația instalată, iOS 16.4+): `src/lib/webpush.ts` = cheile VAPID făcute la prima folosire
   și ținute în `app_settings` „vapid”, criptare aes128gcm (RFC 8291) + semnătură ES256, totul cu WebCrypto (fără bibliotecă). Abonările în
   `insp_push` (migrația 0025; 404/410 de la serviciul de push → abonare ștearsă), `/api/m/push` (GET cheia, POST `{sub}` / `{action: test}`, DELETE).

@@ -54,11 +54,12 @@ export default async function InspDoc({ params }: { params: Promise<{ id: string
         <span className="inBadge" style={{ color: STATUS[x.status].fg, background: STATUS[x.status].bg }}>{STATUS[x.status].label}</span>
         {x.test ? <span className="inBadge inBadgeTest">DATE DE TEST</span> : null}
         <InspDocActions id={x.id} done={done} delivered={x.status === "pred"} canSimulate={c.super}
-          canReopen={c.super || x.created_by === c.user.id} assignee={x.assignee_name}>
+          canReopen={c.super || x.created_by === c.user.id} assignee={x.assignee_name} signer={x.signed_at ? x.signed_name : null}>
           {(c.super || x.created_by === c.user.id) && <InspShare id={x.id} token={x.share_token} />}
         </InspDocActions>
       </div>
-      {redoNote && x.status === "lucru" && <div className="note inRedoNote"><b>Retrimisă pe telefon pentru completare.</b> {redoNote}</div>}
+      {redoNote && x.status === "lucru" && <div className="note inRedoNote"><b>Retrimisă pe telefon pentru completare.</b> {redoNote}
+        <br /><small>{x.redo_prev_at ? `Fișa fusese completată pe ${fmtDate(x.redo_prev_at, true)}. ` : ""}{x.redo_keep_sig ? `Semnătura salvată${x.signed_name ? ` (${x.signed_name})` : ""} rămâne.` : "Se semnează din nou la final."}</small></div>}
       {!done && x.status !== "lucru" && <div className="note">Inspecția nu a fost făcută încă{x.scheduled_at ? `: e programată pentru ${fmtWhen(x.scheduled_at)}` : ""}. Fișa se completează pe telefon; aici vezi ce s-a pregătit.</div>}
 
       <div className="inDoc">

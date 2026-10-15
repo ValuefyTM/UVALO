@@ -48,6 +48,7 @@ export type InspRow = {
   id: string; code: string; status: Status; address: string; prop_type: string | null; cad_nr: string | null; lat: number | null; lng: number | null;
   contact_name: string | null; scheduled_at: string | null; duration_min: number; created_by: string; owner_name: string; assignee_id: string | null;
   assignee_name: string | null; assignee_kind: AssignKind; finished_at: string | null; photos: number; test: number; redo_note?: string | null;
+  redo_prev_at?: string | null; redo_keep_sig?: number; signed_name?: string | null; signed_at?: string | null;
 };
 
 /* ---------- the UVALO sheets: the same structure as the VALUEFY inspection form (v2, October 2026) ---------- */

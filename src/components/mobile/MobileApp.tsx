@@ -32,6 +32,10 @@ const ymd = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart
 const initials = (n: string) => n.trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
 const loadDraft = (id: string): Draft | null => { try { return JSON.parse(localStorage.getItem(`insp-draft-${id}`) || "null"); } catch { return null; } };
 const saveDraft = (id: string, d: Draft) => { try { localStorage.setItem(`insp-draft-${id}`, JSON.stringify(d)); } catch {} };
+const fmtDay = (iso: string) => new Date(iso).toLocaleDateString("ro-RO", { day: "numeric", month: "long", year: "numeric", timeZone: "Europe/Bucharest" });
+const fmtHour = (iso: string) => new Date(iso).toLocaleTimeString("ro-RO", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Bucharest" });
+/** Sent back with the saved signature kept: no new signature is needed to send it again. */
+const keptSig = (x: { redo_note?: string | null; redo_keep_sig?: number; signed_at?: string | null; signed_name?: string | null }) => !!(x.redo_note && x.redo_keep_sig && x.signed_at && x.signed_name);
 const answered = (v: unknown) => (Array.isArray(v) ? v.length > 0 : typeof v === "string" && v.trim() !== "");
 function distM(a: [number, number], b: [number, number]) {
   const r = (x: number) => (x * Math.PI) / 180, dLa = r(b[0] - a[0]), dLo = r(b[1] - a[1]);
@@ -310,7 +314,7 @@ export function MobileApp() {
     if (sig) await putFile({ id: crypto.randomUUID(), insp: cur.id, kind: "signature", room: "", name: "semnatura.png", taken_at: new Date().toISOString(),
       lat: pos.current?.[0] ?? null, lng: pos.current?.[1] ?? null, blob: sig });
     await putFinish({ id: cur.id, insp: cur.id, body: { action: "finish", id: cur.id, answers: draft.answers, room_answers: draft.rooms, findings: draft.findings,
-      started_at: draft.started_at, signed_name: signed } });
+      started_at: draft.started_at, signed_name: signed, new_sig: !!sig } });
     try { localStorage.removeItem(`insp-draft-${cur.id}`); } catch {}
     const left = await flush();
     await refreshQueue();
@@ -489,7 +493,14 @@ function Home({ me, items, queueN, pos, unread, scope, setScope, st, setSt, onBe
   const now = new Date(), today = ymd(now);
   const wkEnd = ymd(new Date(now.getTime() + 7 * 864e5));
   const active = items.filter((i) => !isDone(i));
-  const next = active.filter((i) => i.scheduled_at && i.scheduled_at >= today).sort((a, b) => a.scheduled_at!.localeCompare(b.scheduled_at!))[0] ?? active.find((i) => i.status === "lucru");
+  // the card on top: the next scheduled one not started yet (still shown while its time slot runs); without one, the most urgent
+  // sent back to complete (earliest first), then one in progress
+  const endOf = (i: InspRow) => new Date(i.scheduled_at!).getTime() + (i.duration_min || 60) * 60000;
+  const byWhen = (a: InspRow, b: InspRow) => (a.scheduled_at ?? "9999").localeCompare(b.scheduled_at ?? "9999");
+  const next = active.filter((i) => i.status === "plan" && i.scheduled_at && endOf(i) > now.getTime()).sort(byWhen)[0]
+    ?? active.filter((i) => mstat(i) === "redo").sort(byWhen)[0]
+    ?? active.filter((i) => mstat(i) === "lucru").sort(byWhen)[0];
+  const nextKind = next ? mstat(next) : null;
   const inWeek = active.filter((i) => i.scheduled_at && i.scheduled_at.slice(0, 10) >= today && i.scheduled_at.slice(0, 10) <= wkEnd);
   const unsched = active.filter((i) => !i.scheduled_at);
   const todayL = items.filter((i) => i.scheduled_at?.startsWith(today));
@@ -523,15 +534,18 @@ function Home({ me, items, queueN, pos, unread, scope, setScope, st, setSt, onBe
         </div>
         {next ? (
           <div className="mbNext">
-            <span className="mbNextTop"><small>{next.status === "lucru" ? "ÎN LUCRU" : mins != null && mins >= 0 && mins < 24 * 60 ? `URMĂTOAREA · ÎN ${mins < 60 ? `${mins} MIN` : `${Math.round(mins / 60)} H`}` : "URMĂTOAREA"}</small></span>
+            <span className="mbNextTop"><small className={nextKind === "redo" ? "redo" : ""}>{nextKind === "redo" ? "DE COMPLETAT" : nextKind === "lucru" ? "ÎN LUCRU"
+              : mins != null && mins < 0 ? "ACUM" : mins != null && mins < 24 * 60 ? `URMĂTOAREA · ÎN ${mins < 60 ? `${mins} MIN` : `${Math.round(mins / 60)} H`}` : "URMĂTOAREA"}</small></span>
             <button type="button" className="mbNextMain" onClick={() => onOpen(next.id)}>
-              <span className="mbTime"><b>{next.scheduled_at?.slice(11, 16) ?? "—"}</b><small>{next.duration_min} min</small></span>
-              <span><b>{next.address}</b><small>{[next.prop_type, next.contact_name].filter(Boolean).join(" · ")}</small></span>
+              <span className="mbTime">{next.scheduled_at && !next.scheduled_at.startsWith(today)
+                ? <><b>{Number(next.scheduled_at.slice(8, 10))}</b><small>{MONTHS[Number(next.scheduled_at.slice(5, 7)) - 1].slice(0, 3)} · {next.scheduled_at.slice(11, 16)}</small></>
+                : <><b>{next.scheduled_at?.slice(11, 16) ?? "—"}</b><small>{next.duration_min} min</small></>}</span>
+              <span><b>{next.address}</b><small>{nextKind === "redo" && next.redo_note ? next.redo_note : [next.prop_type, next.contact_name].filter(Boolean).join(" · ")}</small></span>
             </button>
             <span className="mbNextBtns">
               <a className="mbBtn" href={next.lat != null ? `https://www.google.com/maps/dir/?api=1&destination=${next.lat},${next.lng}` : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(next.address)}`} target="_blank" rel="noopener">Navighează</a>
               <button type="button" className="mbBtn" onClick={() => onOpen(next.id)}>Detalii</button>
-              <button type="button" className="mbBtn gold" onClick={() => onStart(next.id)}>{next.status === "lucru" ? "Continuă" : "Începe fișa"}</button>
+              <button type="button" className="mbBtn gold" onClick={() => onStart(next.id)}>{nextKind === "redo" ? "Modifică fișa" : next.status === "lucru" ? "Continuă" : "Începe fișa"}</button>
             </span>
           </div>
         ) : <div className="mbNext mbNextNone"><b>Nicio inspecție programată</b><small>Inspecțiile pregătite pentru tine pe web apar aici. Sau adaugă una chiar de aici.</small>
@@ -567,7 +581,7 @@ function ItemRow({ i, today, onOpen, n }: { i: InspRow; today: string; onOpen: (
   return (
     <button type="button" className="mbItem" onClick={() => onOpen(i.id)}>
       {n != null ? <span className="mbPinN" style={{ background: STATUS[i.status].fg }}>{n}</span>
-        : <span className={`mbDay${isToday ? " today" : ""}`}>{d ? <><small>{isToday ? "AZI" : `${DAYS[d.getDay()]} ${d.getDate()}`}</small><b>{i.scheduled_at!.slice(11, 16)}</b></> : <><small>FĂRĂ</small><small>DATĂ</small></>}</span>}
+        : <span className={`mbDay${isDone(i) ? " done" : isToday ? " today" : ""}`}>{d ? <><small>{isToday ? "AZI" : `${DAYS[d.getDay()]} ${d.getDate()}`}</small><b>{i.scheduled_at!.slice(11, 16)}</b></> : <><small>FĂRĂ</small><small>DATĂ</small></>}</span>}
       <span className="mbItemTxt">
         <span><em>{(i.prop_type ?? "IMOBIL").toUpperCase()}</em><i style={{ color: MSTAT[mstat(i)].fg }}>● {mstat(i) === "gata" ? (i.status === "pred" ? "Predată" : "Finalizată") : MSTAT[mstat(i)].label}</i></span>
         <b>{i.address}</b>
@@ -694,7 +708,7 @@ function Calendar({ items, today, onOpen, onSchedule }: { items: InspRow[]; toda
         <span className="mbRowBetween"><b>{WEEKDAYS[dd.getDay()]}, {dd.getDate()} {MONTHS[dd.getMonth()]}</b><small>{agenda.length ? `${agenda.length} ${agenda.length === 1 ? "inspecție" : "inspecții"}` : "liber"}</small></span>
         {agenda.map((i) => (
           <div key={i.id} className="mbSlot">
-            <span className="mbSlotT"><b>{i.scheduled_at!.slice(11, 16)}</b><small>{i.duration_min}′</small></span>
+            <span className={`mbSlotT${isDone(i) ? " done" : ""}`}><b>{i.scheduled_at!.slice(11, 16)}</b><small>{i.duration_min}′</small></span>
             <button type="button" className="mbSlotB" style={{ borderLeftColor: STATUS[i.status].fg }} onClick={() => onOpen(i.id)}>
               <b>{i.address}</b><small>{[i.prop_type, STATUS[i.status].label].filter(Boolean).join(" · ")}</small>
             </button>
@@ -821,7 +835,14 @@ function Detail({ x, draft, onBack, onStart, onSchedule }: { x: Insp; draft: Dra
         </section>
 
         {done && <div className="mbOk">✓ Inspecția a fost trimisă. Fișa se vede în UVALO, pe web.</div>}
-        {!done && x.redo_note && <div className="mbRedo"><b>De completat</b><span>{x.redo_note}</span><small>Ce ai completat deja a rămas. La final se semnează din nou.</small></div>}
+        {!done && x.redo_note && (
+          <div className="mbRedo">
+            <b>Întoarsă pentru completări</b>
+            {x.redo_prev_at && <small>Fișa a fost completată pe {fmtDay(x.redo_prev_at)} la ora {fmtHour(x.redo_prev_at)}.</small>}
+            <span><em>Motivul:</em> {x.redo_note}</span>
+            <small>Ce ai completat a rămas. {keptSig(x) ? `Semnătura lui ${x.signed_name} rămâne valabilă; nu mai trebuie semnat.` : "La final se semnează din nou."}</small>
+          </div>
+        )}
 
         {canSchedule(x) && (
           <section className="mbCard mbSched">
@@ -884,7 +905,7 @@ function Detail({ x, draft, onBack, onStart, onSchedule }: { x: Insp; draft: Dra
       </div>
       {!done && (
         <footer className="mbFoot">
-          <button type="button" className="mbBtn gold big" onClick={onStart}>{draft?.started_at ? "Continuă fișa →" : "Începe fișa →"}</button>
+          <button type="button" className="mbBtn gold big" onClick={onStart}>{x.redo_note ? "Modifică fișa →" : draft?.started_at ? "Continuă fișa →" : "Începe fișa →"}</button>
         </footer>
       )}
     </>
@@ -986,7 +1007,7 @@ function Form({ x, d, sec, photos, onBack, onSec, change, onPhoto, onRooms, onPh
         </>}
       </div>
       <footer className="mbFoot">
-        <Tiles d={d} photos={photos} onRooms={onRooms} onPhotos={onPhotos} onSign={onSign} />
+        <Tiles d={d} photos={photos} kept={keptSig(x) ? x.signed_name! : null} onRooms={onRooms} onPhotos={onPhotos} onSign={onSign} />
         {sec < last ? <button type="button" className="mbBtn gold big" onClick={() => { onSec(sec + 1); window.scrollTo(0, 0); }}>Secțiunea următoare: {sec + 1 < groups.length ? groups[sec + 1].name : "Constatări"} →</button>
           : <button type="button" className="mbBtn gold big" onClick={onSign}>Încheie inspecția →</button>}
       </footer>
@@ -995,7 +1016,7 @@ function Form({ x, d, sec, photos, onBack, onSec, change, onPhoto, onRooms, onPh
 }
 
 /** The three steps every inspection needs before it is sent: the rooms' finishes, the photos, the signature (green when done). */
-function Tiles({ d, photos, onRooms, onPhotos, onSign }: { d: Draft; photos: number; onRooms: () => void; onPhotos: () => void; onSign: () => void }) {
+function Tiles({ d, photos, kept, onRooms, onPhotos, onSign }: { d: Draft; photos: number; kept: string | null; onRooms: () => void; onPhotos: () => void; onSign: () => void }) {
   const done = d.rooms.filter(roomDone).length, roomsOk = done === d.rooms.length;
   const ico = (p: React.ReactNode) => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{p}</svg>;
   const tiles = [
@@ -1003,7 +1024,7 @@ function Tiles({ d, photos, onRooms, onPhotos, onSign }: { d: Draft; photos: num
       i: ico(<><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M3 12h9V3M12 12v9" /></>) },
     { k: "photos", ok: photos > 0, t: "Fotografii", s: photos ? `${photos} încărcate` : "niciuna", go: onPhotos,
       i: ico(<><path d="M4 8h3l2-3h6l2 3h3v11H4z" /><circle cx="12" cy="13" r="3.5" /></>) },
-    { k: "sign", ok: !!d.sig, t: "Semnătură", s: d.sig ? "semnată" : "nesemnată", go: onSign,
+    { k: "sign", ok: !!d.sig || !!kept, t: "Semnătură", s: d.sig ? "semnată" : kept ? "păstrată" : "nesemnată", go: onSign,
       i: ico(<path d="M3 17c3-1 4-8 6-8s0 7 2 7 3-4 4-4 1 3 3 3h3M3 21h18" />) },
   ];
   return (
@@ -1263,23 +1284,27 @@ function Sign({ x, d, photos, change, onBack, onFinish, onRooms, onPhotos }: {
   const [who, setWho] = useState<"contact" | "other">(d.signer?.who ?? (x.contact_name ? "contact" : "other"));
   const [other, setOther] = useState(d.signer?.other ?? "");
   const [busy, setBusy] = useState(false);
+  // sent back with the saved signature kept: it is enough to send again (a new signature can still be taken)
+  const [resign, setResign] = useState(false);
+  const useKept = keptSig(x) && !resign;
   const all = x.template.groups.flatMap((g) => g.qs).filter((q) => !isOptional(q));
   const req = all.filter((q) => q.req), missing = req.filter((q) => !answered(d.answers[q.id]));
   useEffect(() => {
+    if (useKept) return; // the pad is hidden; it is set up when a new signature is asked for
     const c = cv.current!; const r = c.getBoundingClientRect(), k = window.devicePixelRatio || 1;
     c.width = r.width * k; c.height = r.height * k;
     const g = c.getContext("2d")!; g.scale(k, k); g.lineWidth = 2.6; g.lineCap = "round"; g.lineJoin = "round"; g.strokeStyle = "#141414";
     // a signature given earlier is drawn back (it is kept while the rest of the sheet is completed)
     if (d.sig) { const im = new Image(); im.onload = () => g.drawImage(im, 0, 0, r.width, r.height); im.src = d.sig; }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [useKept]);
   const keep = (sig: string | null, w = who, o = other) => change((dd) => { dd.sig = sig; dd.signer = { who: w, other: o }; return dd; });
   const roomsLeft = d.rooms.filter((r) => !roomDone(r)).length;
   const pt = (e: React.PointerEvent) => { const r = cv.current!.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top] as const; };
   const name = who === "contact" ? x.contact_name ?? "" : other.trim();
   return (
     <>
-      <header className="mbBar"><Back onClick={onBack} /><span><b>Încheie inspecția</b><small>Verifică, semnează, trimite</small></span></header>
+      <header className="mbBar"><Back onClick={onBack} /><span><b>Încheie inspecția</b><small>{useKept ? "Verifică și trimite din nou" : "Verifică, semnează, trimite"}</small></span></header>
       <div className="mbBody">
         <section className="mbCard mbSum">
           <span><span>Fișa</span><b className={missing.length ? "warn" : "ok"}>{missing.length ? `lipsesc ${missing.length} obligatorii` : `✓ ${all.filter((q) => answered(d.answers[q.id])).length}/${all.length}`}</b></span>
@@ -1287,6 +1312,14 @@ function Sign({ x, d, photos, change, onBack, onFinish, onRooms, onPhotos }: {
           <button type="button" onClick={onPhotos}><span>Fotografii</span><b className={photos ? "ok" : "warn"}>{photos ? `✓ ${photos} încărcate` : "niciuna ›"}</b></button>
         </section>
         {missing.length > 0 && <p className="mbNote">Lipsesc: {missing.slice(0, 4).map((q) => q.t).join(", ")}{missing.length > 4 ? "…" : ""}. Poți trimite și așa.</p>}
+        {useKept && (
+          <section className="mbCard mbKept">
+            <b>✓ Semnătura salvată rămâne</b>
+            <span>{x.signed_name}{x.signed_at ? ` · semnat pe ${fmtDay(x.signed_at)} la ${fmtHour(x.signed_at)}` : ""}. Nu trebuie semnat din nou.</span>
+            <button type="button" className="mbLink" onClick={() => setResign(true)}>Ia totuși o semnătură nouă</button>
+          </section>
+        )}
+        <div style={useKept ? { display: "none" } : { display: "contents" }}>
         <small className="mbCap">CINE A FOST PREZENT</small>
         <span className="mbOpts">
           {x.contact_name && <button type="button" aria-pressed={who === "contact"} onClick={() => { setWho("contact"); keep(d.sig ?? null, "contact"); }}>{x.contact_name}{x.contact_role ? ` · ${x.contact_role.toLowerCase()}` : ""}</button>}
@@ -1299,17 +1332,18 @@ function Sign({ x, d, photos, change, onBack, onFinish, onRooms, onPhotos }: {
           onPointerMove={(e) => { if (!drawing.current) return; const [a, b] = pt(e); const g = cv.current!.getContext("2d")!; g.lineTo(a, b); g.stroke(); inked.current = true; setHas(true); }}
           onPointerUp={() => { if (drawing.current && inked.current) keep(cv.current!.toDataURL("image/png")); drawing.current = false; }} />
         {has && <small className="mbSigOk">✓ Semnătura e salvată pe telefon; poți completa în continuare fișa.</small>}
+        </div>
         <section className="mbDark"><b>După trimitere</b><span>Fișa, fotografiile pe încăperi și semnătura apar în UVALO, pe web, la inspecție: de acolo descarci PDF-ul și trimiți anexa foto în Word.</span></section>
       </div>
       <footer className="mbFoot">
-        <button type="button" className="mbBtn gold big" disabled={busy || !name || !has || roomsLeft > 0 || !photos} onClick={async () => {
+        <button type="button" className="mbBtn gold big" disabled={busy || roomsLeft > 0 || !photos || (!useKept && (!name || !has))} onClick={async () => {
           setBusy(true);
-          const blob = await new Promise<Blob | null>((res) => cv.current!.toBlob(res, "image/png"));
+          const blob = useKept ? null : await new Promise<Blob | null>((res) => cv.current!.toBlob(res, "image/png"));
           change((o) => o);
-          await onFinish(name, blob);
+          await onFinish(useKept ? x.signed_name! : name, blob);
           setBusy(false);
         }}>Finalizează și trimite</button>
-        <small className="mbCenterSmall">{roomsLeft ? "Completează finisajele tuturor încăperilor." : !photos ? "Adaugă cel puțin o fotografie." : !name ? "Alege cine a fost prezent." : !has ? "Cere semnătura în chenar." : "Fără semnal? Se trimite singură când revine rețeaua."}</small>
+        <small className="mbCenterSmall">{roomsLeft ? "Completează finisajele tuturor încăperilor." : !photos ? "Adaugă cel puțin o fotografie." : useKept ? "Se trimite cu semnătura salvată." : !name ? "Alege cine a fost prezent." : !has ? "Cere semnătura în chenar." : "Fără semnal? Se trimite singură când revine rețeaua."}</small>
       </footer>
     </>
   );

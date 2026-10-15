@@ -169,7 +169,7 @@ export async function usableTemplates(db: D1Database, c: Ctx) {
 /* ---------- inspections ---------- */
 
 const ROW_SQL = `SELECT i.id, i.code, i.status, i.address, i.prop_type, i.cad_nr, i.lat, i.lng, i.contact_name, i.scheduled_at, i.duration_min, i.created_by,
-  COALESCE(NULLIF(o.name, ''), o.email) AS owner_name, i.assignee_id, COALESCE(NULLIF(a.name, ''), a.email) AS assignee_name, i.assignee_kind, i.finished_at, i.test, i.redo_note,
+  COALESCE(NULLIF(o.name, ''), o.email) AS owner_name, i.assignee_id, COALESCE(NULLIF(a.name, ''), a.email) AS assignee_name, i.assignee_kind, i.finished_at, i.test, i.redo_note, i.redo_prev_at, i.redo_keep_sig, i.signed_name, i.signed_at,
   (SELECT COUNT(*) FROM insp_files f WHERE f.inspection_id = i.id AND f.kind = 'photo') AS photos
   FROM inspections i JOIN users o ON o.id = i.created_by LEFT JOIN users a ON a.id = i.assignee_id WHERE i.deleted_at IS NULL`;
 
@@ -339,9 +339,12 @@ export async function inspAction(db: D1Database, c: Ctx, b: Record<string, unkno
     if (!r.assignee_id) return { error: "Inspecția nu are cine să o facă." };
     const note = t(b.note, 1000);
     if (!note) return { error: "Scrie ce trebuie completat." };
-    await db.prepare("UPDATE inspections SET status = 'lucru', finished_at = NULL, signed_at = NULL, redo_note = ?, redo_at = ?, updated_at = ? WHERE id = ?")
-      .bind(note, now(), now(), id).run();
-    await logIt(db, id, c.user.id, `Retrimisă pe telefon pentru completare: ${note}`);
+    // keep_sig: the signature already given stays (the person present does not sign again); otherwise it is taken again
+    const keep = b.keep_sig !== false && !!r.signed_at;
+    await db.prepare(`UPDATE inspections SET status = 'lucru', redo_prev_at = COALESCE(finished_at, redo_prev_at), finished_at = NULL,
+      signed_at = CASE WHEN ? THEN signed_at ELSE NULL END, redo_keep_sig = ?, redo_note = ?, redo_at = ?, updated_at = ? WHERE id = ?`)
+      .bind(keep ? 1 : 0, keep ? 1 : 0, note, now(), now(), id).run();
+    await logIt(db, id, c.user.id, `Retrimisă pe telefon pentru completare: ${note}${keep ? " (semnătura salvată rămâne)" : " (se semnează din nou)"}`);
     return { ok: true, id };
   }
   if (action === "cover") {
@@ -380,15 +383,19 @@ export async function inspAction(db: D1Database, c: Ctx, b: Record<string, unkno
     const f = (b.findings ?? {}) as Record<string, unknown>;
     const findings = { diff: t(f.diff, 2000), defects: t(f.defects, 2000), notes: t(f.notes, 2000) };
     const ts = now(), fin = action === "finish";
-    if (fin && !s(b.signed_name, 120)) return { error: "Scrie numele persoanei prezente." };
+    // sent back with the saved signature kept: finishing needs no new signature
+    const keepSig = !!r.redo_note && !!r.redo_keep_sig && !!r.signed_at;
+    const signer = s(b.signed_name, 120) || (keepSig ? String(r.signed_name ?? "") : "");
+    if (fin && !signer) return { error: "Scrie numele persoanei prezente." };
     await db.prepare(`UPDATE inspections SET answers = ?, room_answers = ?, findings = ?, status = ?, started_at = COALESCE(started_at, ?), finished_at = ?,
       signed_name = COALESCE(?, signed_name), signed_at = ?, updated_at = ? WHERE id = ?`)
       .bind(JSON.stringify(answers).slice(0, 200000), JSON.stringify(rooms).slice(0, 100000), JSON.stringify(findings), fin ? "gata" : "lucru", s(b.started_at, 30) || ts,
-        fin ? ts : null, fin ? s(b.signed_name, 120) : null, fin ? ts : null, ts, id).run();
+        fin ? ts : null, fin ? signer : null, fin ? (keepSig && !b.new_sig ? r.signed_at : ts) : (r.signed_at ?? null), ts, id).run();
     if (r.status !== "lucru" && !fin) await logIt(db, id, c.user.id, `Începută pe teren${b.near ? ` (la ${Math.round(Number(b.near))} m de adresă)` : ""}`);
     if (fin) {
-      if (r.redo_note) await db.prepare("UPDATE inspections SET redo_note = NULL WHERE id = ?").bind(id).run();
-      await logIt(db, id, c.user.id, `${r.redo_note ? "Completată și semnată din nou" : "Finalizată și semnată"} pe telefon de ${s(b.signed_name, 120)}`);
+      if (r.redo_note) await db.prepare("UPDATE inspections SET redo_note = NULL, redo_keep_sig = 0 WHERE id = ?").bind(id).run();
+      await logIt(db, id, c.user.id, r.redo_note ? (keepSig && !b.new_sig ? `Completată pe telefon (semnătura lui ${signer} păstrată)` : `Completată și semnată din nou pe telefon de ${signer}`)
+        : `Finalizată și semnată pe telefon de ${signer}`);
     }
     return { ok: true, id };
   }
