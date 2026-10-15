@@ -250,8 +250,10 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   văd și introduc inspecțiile firmei, nu fac inspecții). Stări: `invited` (biroul invită după email sau legitimație) / `requested` (evaluatorul cere
   din „Contul meu” → „Asociază-te cu o firmă”, căutare după nume `searchOffices`, deocamdată doar cu `c.office`) → `active` → `ended` (oricare parte;
   după încheiere vede doar în citire ce a făcut pentru birou — etapa 3); `declined` / `cancelled`. Un singur link deschis per birou și persoană
-  (index unic parțial). Emailuri la invitație, cerere, acceptare/aprobare, încheiere. UI: `OfficeLinks` în „Firma mea” (`#asocieri`: cereri,
-  Angajați, Colaboratori, invitații, formularul) și `MyLinks` în „Contul meu” (invitații primite, active, cereri, încheiate). `merge.ts` acoperă tabelul.
+  (index unic parțial). Emailuri la invitație, cerere, acceptare/aprobare, încheiere. UI: în „Firma mea” un singur panou „Utilizatori” (`OfficePeople`, `#asocieri`; doar super-admini și birouri cu funcția activă —
+  `officeActive`; altfel vechiul `MembersPanel`), grupat: Cereri de asociere, Administratori, Evaluatori, Operaționali (membri, ocupă locuri),
+  Angajați asociați, Colaboratori asociați, Invitații în așteptare; „+ Invită” deschide fereastra cu tipul (Evaluator în birou / Operațional /
+  Angajat asociat / Colaborator asociat), apoi formularul potrivit și `MyLinks` în „Contul meu” (invitații primite, active, cereri, încheiate). `merge.ts` acoperă tabelul.
   Membrii existenți NU se transformă în asociați. Urmează: etapa 2 (selectorul „Cine o face” la inspecții cu asociații și disponibilitatea,
   Operaționalul care introduce inspecții), etapa 3 (telefonul: Acasă / Colaborări, „Pentru: Contul meu / Firma X” dacă biroul permite).
 - „În curând: Colaborări” (card pe Acasă, meniu) doar pentru evaluatori fără acces cât timp modul ≠ `on`; niciodată pentru nonevaluatori.

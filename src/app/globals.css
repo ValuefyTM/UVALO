@@ -2418,3 +2418,28 @@ html:has(.mb) { min-height: calc(100% + env(safe-area-inset-top)); background: #
 .lkPicked { display: flex; align-items: center; gap: 10px; }
 .lkEnded summary { cursor: pointer; font-size: 13px; color: var(--muted-2); padding: 8px 0; }
 @media (max-width: 600px) { .lkKinds { grid-template-columns: 1fr; } }
+/* Firma mea → oamenii biroului într-un panou (OfficePeople) */
+.opGroup { border-top: 1px solid var(--divider); padding-top: 10px; }
+.opGroup h3 { margin: 0 0 2px; font-size: 13.5px; display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.opGroup h3 small { font-size: 11.5px; font-weight: 500; color: var(--off); }
+.opReq { background: #fdf6e6; border-radius: 12px; padding: 10px 12px; border-top: 0; }
+.opRow { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; padding: 8px 0; }
+.opRow + .opRow { border-top: 1px dashed var(--divider); }
+.opWho { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.opWho b { font-size: 13.5px; }
+.opWho small { font-size: 12px; color: var(--muted-2); }
+.opAct { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.opAct .select { height: 34px; font-size: 13px; width: auto; min-width: 150px; }
+.opAct { flex-wrap: nowrap; }
+.opRole { font-size: 12.5px; }
+.opDlg { max-width: min(560px, calc(100vw - 24px)); }
+.opDlg .modalBox { display: flex; flex-direction: column; gap: 14px; }
+.opTypes { display: flex; flex-direction: column; gap: 8px; }
+.opTypes button { display: flex; flex-direction: column; gap: 3px; text-align: left; padding: 12px 14px; border: 1px solid var(--line); border-radius: 14px; background: #fff; font: inherit; cursor: pointer; }
+.opTypes button:hover:not(:disabled) { border-color: var(--ink); box-shadow: 0 0 0 1px var(--ink); }
+.opTypes button:disabled { opacity: .5; cursor: not-allowed; }
+.opTypes b { font-size: 14px; display: flex; align-items: center; gap: 8px; }
+.opTypes small { font-size: 12.5px; color: var(--muted-2); line-height: 1.45; }
+.opSeat { font-style: normal; font-size: 10.5px; font-weight: 800; padding: 1px 8px; border-radius: 999px; background: #f1ece2; color: var(--muted); }
+.opSeat.free { background: #e3efd3; color: #2f4a0e; }
+@media (max-width: 600px) { .opAct { flex-wrap: wrap; } .opRow { align-items: flex-start; } }

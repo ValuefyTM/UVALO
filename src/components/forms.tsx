@@ -11,7 +11,7 @@ async function send(url: string, method: string, body?: unknown) {
 const ROLES: [string, string][] = [["member", "Membru"], ["admin", "Administrator"], ["owner", "Titular cont"]];
 
 export type MemberRow = {
-  user_id: string; email: string; name: string; status: string; role: string; last_seen: string; events_30: number; searches_30: number; exports_30: number; me: boolean; ops?: boolean;
+  user_id: string; email: string; name: string; status: string; role: string; last_seen: string; events_30: number; searches_30: number; exports_30: number; me: boolean;
 };
 export type InviteRow = { id: string; email: string; role: string; created: string; expires: string; by: string | null };
 
@@ -55,7 +55,7 @@ export function MembersPanel({ org, members, invites, seats, used, canOwner, adm
           <tbody>
             {members.map((m) => (
               <tr key={m.user_id}>
-                <td><b className="block">{m.name || m.email}{m.me && <span className="muted"> (tu)</span>}{m.ops !== undefined && <em className="lkTag">{m.ops ? "Operațional" : "Evaluator"}</em>}</b><span className="muted">{m.email}</span>{m.status !== "active" && <span className={`pill ${m.status === "disabled" ? "pillErr" : m.status === "closed" ? "pillMuted" : "pillWarn"}`} style={{ marginLeft: 8 }}><i />{m.status === "disabled" ? "Dezactivat" : m.status === "closed" ? "A renunțat" : "Invitat"}</span>}</td>
+                <td><b className="block">{m.name || m.email}{m.me && <span className="muted"> (tu)</span>}</b><span className="muted">{m.email}</span>{m.status !== "active" && <span className={`pill ${m.status === "disabled" ? "pillErr" : m.status === "closed" ? "pillMuted" : "pillWarn"}`} style={{ marginLeft: 8 }}><i />{m.status === "disabled" ? "Dezactivat" : m.status === "closed" ? "A renunțat" : "Invitat"}</span>}</td>
                 <td>
                   {m.me || (m.role === "owner" && !canOwner) ? ROLES.find(([k]) => k === m.role)?.[1] : (
                     <select className="select" style={{ height: 36 }} value={m.role} disabled={busy} aria-label={`Rolul lui ${m.name || m.email}`}
