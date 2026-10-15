@@ -481,6 +481,11 @@ type StatF = "all" | MStat;
 type Sched = { id: string; address: string; scheduled_at: string | null; duration_min: number; day?: string };
 type HView = "list" | "map" | "cal";
 const isDone = (i: InspRow) => i.status === "gata" || i.status === "pred";
+/** A timestamp (UTC, "…Z") as the phone's local "YYYY-MM-DDTHH:MM", like scheduled_at. */
+const localStamp = (iso: string) => { const d = new Date(iso); return `${ymd(d)}T${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`; };
+/** The inspection's date: when the sheet was finished (done, or sent back after being finished), else when it is scheduled. */
+const whenOf = (i: InspRow): string | null => (isDone(i) && i.finished_at ? localStamp(i.finished_at)
+  : i.redo_note && i.redo_prev_at ? localStamp(i.redo_prev_at) : i.scheduled_at);
 const canSchedule = (i: { status: string }) => i.status === "prog" || i.status === "plan";
 
 function Home({ me, items, queueN, pos, unread, scope, setScope, st, setSt, onBell, onMe, onNew, onOpen, onStart, onSchedule }: {
@@ -503,8 +508,8 @@ function Home({ me, items, queueN, pos, unread, scope, setScope, st, setSt, onBe
   const nextKind = next ? mstat(next) : null;
   const inWeek = active.filter((i) => i.scheduled_at && i.scheduled_at.slice(0, 10) >= today && i.scheduled_at.slice(0, 10) <= wkEnd);
   const unsched = active.filter((i) => !i.scheduled_at);
-  const todayL = items.filter((i) => i.scheduled_at?.startsWith(today));
-  const weekL = items.filter((i) => i.scheduled_at && i.scheduled_at.slice(0, 10) >= today && i.scheduled_at.slice(0, 10) <= wkEnd);
+  const todayL = items.filter((i) => whenOf(i)?.startsWith(today));
+  const weekL = items.filter((i) => { const w = whenOf(i)?.slice(0, 10); return !!w && w >= today && w <= wkEnd; });
   // the cards choose the time (Toate / Azi / Săptămâna asta / De programat), the list below the status
   const scoped = scope === "today" ? todayL : scope === "week" ? weekL : scope === "unsched" ? unsched : items;
   const list = st === "all" ? scoped : scoped.filter((i) => mstat(i) === st);
@@ -577,15 +582,15 @@ function Home({ me, items, queueN, pos, unread, scope, setScope, st, setSt, onBe
 }
 
 function ItemRow({ i, today, onOpen, n }: { i: InspRow; today: string; onOpen: (id: string) => void; n?: number }) {
-  const d = i.scheduled_at ? new Date(i.scheduled_at) : null, isToday = i.scheduled_at?.startsWith(today);
+  const w = whenOf(i), d = w ? new Date(w) : null, isToday = w?.startsWith(today);
   return (
     <button type="button" className="mbItem" onClick={() => onOpen(i.id)}>
       {n != null ? <span className="mbPinN" style={{ background: STATUS[i.status].fg }}>{n}</span>
-        : <span className={`mbDay${isDone(i) ? " done" : isToday ? " today" : ""}`}>{d ? <><small>{isToday ? "AZI" : `${DAYS[d.getDay()]} ${d.getDate()}`}</small><b>{i.scheduled_at!.slice(11, 16)}</b></> : <><small>FĂRĂ</small><small>DATĂ</small></>}</span>}
+        : <span className={`mbDay${isDone(i) ? " done" : isToday ? " today" : ""}`}>{d ? <><small>{isToday ? "AZI" : `${DAYS[d.getDay()]} ${d.getDate()}`}</small><b>{w!.slice(11, 16)}</b></> : <><small>FĂRĂ</small><small>DATĂ</small></>}</span>}
       <span className="mbItemTxt">
         <span><em>{(i.prop_type ?? "IMOBIL").toUpperCase()}</em><i style={{ color: MSTAT[mstat(i)].fg }}>● {mstat(i) === "gata" ? (i.status === "pred" ? "Predată" : "Finalizată") : MSTAT[mstat(i)].label}</i></span>
         <b>{i.address}</b>
-        <small>{i.redo_note && mstat(i) === "redo" ? `De completat: ${i.redo_note}` : n != null ? fmtWhen(i.scheduled_at) : [i.contact_name, i.cad_nr && `nr. cad. ${i.cad_nr}`].filter(Boolean).join(" · ") || fmtWhen(i.scheduled_at)}</small>
+        <small>{i.redo_note && mstat(i) === "redo" ? `De completat: ${i.redo_note}` : isDone(i) && w ? `Făcută ${fmtWhen(w)}` : n != null ? fmtWhen(i.scheduled_at) : [i.contact_name, i.cad_nr && `nr. cad. ${i.cad_nr}`].filter(Boolean).join(" · ") || fmtWhen(i.scheduled_at)}</small>
       </span>
     </button>
   );
@@ -681,7 +686,7 @@ function Calendar({ items, today, onOpen, onSchedule }: { items: InspRow[]; toda
   const base = new Date(`${today}T12:00`);
   const monday = new Date(base.getTime() - ((base.getDay() + 6) % 7) * 864e5 + wk * 7 * 864e5);
   const days = Array.from({ length: 7 }, (_, k) => new Date(monday.getTime() + k * 864e5));
-  const byDay = (d: string) => items.filter((i) => i.scheduled_at?.startsWith(d)).sort((a, b) => a.scheduled_at!.localeCompare(b.scheduled_at!));
+  const byDay = (d: string) => items.filter((i) => whenOf(i)?.startsWith(d)).sort((a, b) => whenOf(a)!.localeCompare(whenOf(b)!));
   const agenda = byDay(day);
   const unsched = items.filter((i) => !i.scheduled_at && !isDone(i));
   const label = `${days[0].getDate()} ${MONTHS[days[0].getMonth()].slice(0, 3)} – ${days[6].getDate()} ${MONTHS[days[6].getMonth()].slice(0, 3)}`;
@@ -708,7 +713,7 @@ function Calendar({ items, today, onOpen, onSchedule }: { items: InspRow[]; toda
         <span className="mbRowBetween"><b>{WEEKDAYS[dd.getDay()]}, {dd.getDate()} {MONTHS[dd.getMonth()]}</b><small>{agenda.length ? `${agenda.length} ${agenda.length === 1 ? "inspecție" : "inspecții"}` : "liber"}</small></span>
         {agenda.map((i) => (
           <div key={i.id} className="mbSlot">
-            <span className={`mbSlotT${isDone(i) ? " done" : ""}`}><b>{i.scheduled_at!.slice(11, 16)}</b><small>{i.duration_min}′</small></span>
+            <span className={`mbSlotT${isDone(i) ? " done" : ""}`}><b>{whenOf(i)!.slice(11, 16)}</b><small>{i.duration_min}′</small></span>
             <button type="button" className="mbSlotB" style={{ borderLeftColor: STATUS[i.status].fg }} onClick={() => onOpen(i.id)}>
               <b>{i.address}</b><small>{[i.prop_type, STATUS[i.status].label].filter(Boolean).join(" · ")}</small>
             </button>
@@ -797,11 +802,12 @@ function Detail({ x, draft, onBack, onStart, onSchedule }: { x: Insp; draft: Dra
   const gmaps = `https://www.google.com/maps/dir/?api=1&destination=${dest}`;
   const docs = x.files.filter((f) => f.kind !== "photo" && f.kind !== "signature");
   const photos = x.files.filter((f) => f.kind === "photo");
-  const rooms = x.room_answers.length ? x.room_answers : x.rooms;
-  const roomsArea = rooms.reduce((t, r) => t + (r.a ?? 0), 0);
+  // the date of the inspection = when the sheet was finished (also for one sent back to complete)
+  const madeAt = done && x.finished_at ? x.finished_at : x.redo_note && x.redo_prev_at ? x.redo_prev_at : null;
   const qn = x.template.groups.reduce((t, g) => t + g.qs.length, 0);
   // everything known about the property, only what is filled in
   const facts: [string, string][] = ([
+    ["Data inspecției", madeAt ? `${fmtDay(madeAt)}, ${fmtHour(madeAt)}` : ""],
     ["Tipul bunului", x.prop_type ?? ""],
     ["Nr. cadastral", x.cad_nr ?? ""],
     ["Carte funciară", x.cf_nr ?? ""],
@@ -809,7 +815,6 @@ function Detail({ x, draft, onBack, onStart, onSchedule }: { x: Insp; draft: Dra
     ["Județ", x.county ?? ""],
     ["Suprafață utilă (acte)", x.area_util ? `${nfm(x.area_util)} mp` : ""],
     ["Teren (acte)", x.area_land ? `${nfm(x.area_land, 0)} mp` : ""],
-    ["Încăperi (releveu)", rooms.length ? `${rooms.length}${roomsArea ? ` · ${nfm(roomsArea)} mp` : ""}` : ""],
     ["Pregătită de", x.owner_name ?? ""],
     ["O face", x.assignee_name ?? ""],
   ] as [string, string][]).filter(([, v]) => v);
@@ -834,7 +839,7 @@ function Detail({ x, draft, onBack, onStart, onSchedule }: { x: Insp; draft: Dra
           </div>
         </section>
 
-        {done && <div className="mbOk">✓ Inspecția a fost trimisă. Fișa se vede în UVALO, pe web.</div>}
+        {done && <div className="mbOk">✓ Inspecție făcută{madeAt ? ` pe ${fmtDay(madeAt)} la ${fmtHour(madeAt)}` : ""}. Fișa se vede în UVALO, pe web.</div>}
         {!done && x.redo_note && (
           <div className="mbRedo">
             <b>Întoarsă pentru completări</b>
@@ -867,13 +872,6 @@ function Detail({ x, draft, onBack, onStart, onSchedule }: { x: Insp; draft: Dra
           <section className="mbCard">
             <small className="mbCap">PROPRIETATEA</small>
             <dl className="mbFacts">{facts.map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}</dl>
-          </section>
-        )}
-
-        {rooms.length > 0 && (
-          <section className="mbCard">
-            <small className="mbCap">ÎNCĂPERI DIN RELEVEU · {rooms.length}</small>
-            <ol className="mbRoomList">{rooms.map((r, i) => <li key={i}><span>{i + 1}</span><b>{r.n}</b><em>{r.a ? `${nfm(r.a)} mp` : "—"}</em></li>)}</ol>
           </section>
         )}
 

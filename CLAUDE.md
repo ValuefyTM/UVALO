@@ -399,6 +399,9 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
 - **Cardul de sus pe Acasă (telefon)**: următoarea inspecție programată neîncepută (`plan`, cât timp nu i-a trecut intervalul; „ACUM” în interval);
   fără ea, cea mai urgentă cu completări (retrimisă, cea mai veche întâi; eticheta roșie „DE COMPLETAT”, motivul sub adresă), apoi una în lucru.
   Altă zi decât azi → în căsuță ziua și luna. În listă și în agenda calendarului, ora inspecțiilor finalizate e verde (`.mbDay.done`, `.mbSlotT.done`).
+  **Data inspecției = momentul finalizării** (`whenOf()`): la cele finalizate `finished_at`, la cele întoarse pentru completări `redo_prev_at`,
+  altfel programarea; folosită în listă („Făcută …”), în cardurile Azi / Săpt. asta și în calendar. Detaliul arată „Data inspecției” în
+  Proprietatea și „Inspecție făcută pe … la …”; încăperile NU mai apar în detaliu (doar în fișă).
   Cardurile obligatorii din fișă (`.mbTile`) sunt compacte: iconiță mică în stânga, titlul și starea pe două rânduri.
 - **Notificări push** (Web Push; pe iPhone doar cu aplicația instalată, iOS 16.4+): `src/lib/webpush.ts` = cheile VAPID făcute la prima folosire
   și ținute în `app_settings` „vapid”, criptare aes128gcm (RFC 8291) + semnătură ES256, totul cu WebCrypto (fără bibliotecă). Abonările în
