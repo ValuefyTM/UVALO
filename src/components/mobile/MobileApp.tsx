@@ -10,6 +10,7 @@ type Insp = InspRow & {
   contact_phone: string | null; contact_role: string | null; answers: Record<string, string | string[]>; room_answers: Room[];
   findings: { diff?: string; defects?: string; notes?: string }; started_at: string | null; notes: string | null;
   files: { id: string; kind: string; name: string | null; room: string | null; taken_at: string | null }[];
+  uat?: string | null; county?: string | null; template_version?: number | null; created_at?: string;
 };
 type Room = { n: string; a: number | null; floor?: string; walls?: string; ceiling?: string; state?: string };
 type Me = { id: string; name: string; email: string; avatar?: boolean; anevar_no?: string | null; county?: string | null; phone?: string | null;
@@ -637,42 +638,130 @@ function ScheduleSheet({ x, online, onClose, onSave }: { x: Sched; online: boole
 
 /* ---------- inspection detail ---------- */
 
+/** A small map of the property (Leaflet + OSM), not interactive: a tap opens the navigation. */
+function MiniMap({ lat, lng, href }: { lat: number; lng: number; href: string }) {
+  const el = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let m: any = null, gone = false;
+    loadLeaflet().then((L) => {
+      if (gone || !el.current) return;
+      m = L.map(el.current, { zoomControl: false, attributionControl: false, dragging: false, scrollWheelZoom: false, doubleClickZoom: false, touchZoom: false, boxZoom: false, keyboard: false, tap: false });
+      L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 }).addTo(m);
+      L.marker([lat, lng], { icon: L.divIcon({ className: "", html: '<span class="mbPin" style="background:#141414"><b>●</b></span>', iconSize: [30, 30], iconAnchor: [15, 30] }) }).addTo(m);
+      m.setView([lat, lng], 16);
+    }).catch(() => {});
+    return () => { gone = true; m?.remove(); };
+  }, [lat, lng]);
+  return <a className="mbMini" href={href} target="_blank" rel="noopener" aria-label="Deschide navigația"><div ref={el} className="mbMiniMap" /></a>;
+}
+
+const DOC_KIND: Record<string, [string, string]> = { cf: ["CF", "Extras de carte funciară"], releveu: ["RLV", "Releveu"], doc: ["DOC", "Document"] };
+const nfm = (n: number | null | undefined, d = 2) => (n == null ? "" : n.toLocaleString("ro-RO", { maximumFractionDigits: d }));
+
 function Detail({ x, draft, onBack, onStart, onSchedule }: { x: Insp; draft: Draft | null; onBack: () => void; onStart: () => void; onSchedule: (s: Sched) => void }) {
   const done = x.status === "gata" || x.status === "pred";
   const dest = x.lat != null ? `${x.lat},${x.lng}` : encodeURIComponent(x.address);
+  const gmaps = `https://www.google.com/maps/dir/?api=1&destination=${dest}`;
   const docs = x.files.filter((f) => f.kind !== "photo" && f.kind !== "signature");
+  const photos = x.files.filter((f) => f.kind === "photo");
+  const rooms = x.room_answers.length ? x.room_answers : x.rooms;
+  const roomsArea = rooms.reduce((t, r) => t + (r.a ?? 0), 0);
+  const qn = x.template.groups.reduce((t, g) => t + g.qs.length, 0);
+  // everything known about the property, only what is filled in
+  const facts: [string, string][] = ([
+    ["Tipul bunului", x.prop_type ?? ""],
+    ["Nr. cadastral", x.cad_nr ?? ""],
+    ["Carte funciară", x.cf_nr ?? ""],
+    ["Localitate (UAT)", x.uat ?? ""],
+    ["Județ", x.county ?? ""],
+    ["Suprafață utilă (acte)", x.area_util ? `${nfm(x.area_util)} mp` : ""],
+    ["Teren (acte)", x.area_land ? `${nfm(x.area_land, 0)} mp` : ""],
+    ["Încăperi (releveu)", rooms.length ? `${rooms.length}${roomsArea ? ` · ${nfm(roomsArea)} mp` : ""}` : ""],
+    ["Pregătită de", x.owner_name ?? ""],
+    ["O face", x.assignee_name ?? ""],
+  ] as [string, string][]).filter(([, v]) => v);
   return (
     <>
-      <header className="mbBar"><Back onClick={onBack} /><span><b>{x.address}</b><small>{[x.prop_type, x.cad_nr && `nr. cad. ${x.cad_nr}`].filter(Boolean).join(" · ")}</small></span></header>
+      <header className="mbBar"><Back onClick={onBack} /><span><b>{x.code}</b><small>{x.template_name ?? "Fișa de inspecție"}{x.template_version ? ` · v${x.template_version}` : ""}</small></span></header>
       <div className="mbBody">
+        <section className="mbHero">
+          {x.lat != null && x.lng != null ? <MiniMap lat={x.lat} lng={x.lng} href={gmaps} />
+            : <div className="mbMini none"><span>Poziția nu a fost găsită pe hartă</span></div>}
+          <div className="mbHeroBody">
+            <span className="mbHeroTags">
+              <i style={{ color: STATUS[x.status].fg, background: STATUS[x.status].bg }}>{STATUS[x.status].label}</i>
+              {x.prop_type && <i>{x.prop_type}</i>}
+            </span>
+            <b>{x.address}</b>
+            {(x.cad_nr || x.cf_nr) && <small>{[x.cad_nr && `nr. cad. ${x.cad_nr}`, x.cf_nr && `CF ${x.cf_nr}`].filter(Boolean).join(" · ")}</small>}
+            <span className="mbGrid2">
+              <a className="mbBtn" href={gmaps} target="_blank" rel="noopener">Google Maps</a>
+              <a className="mbBtn" href={x.lat != null ? `https://waze.com/ul?ll=${x.lat},${x.lng}&navigate=yes` : `https://waze.com/ul?q=${dest}`} target="_blank" rel="noopener">Waze</a>
+            </span>
+          </div>
+        </section>
+
         {done && <div className="mbOk">✓ Inspecția a fost trimisă. Fișa se vede în UVALO, pe web.</div>}
+
         {canSchedule(x) && (
-          <section className="mbCard">
-            <span className="mbRowBetween"><span><small className="mbCap">PROGRAMARE</small><b>{x.scheduled_at ? fmtWhen(x.scheduled_at) : "Neprogramată"}</b></span>
-              <button type="button" className="mbBtn" onClick={() => onSchedule({ id: x.id, address: x.address, scheduled_at: x.scheduled_at, duration_min: x.duration_min })}>{x.scheduled_at ? "Reprogramează" : "Programează"}</button></span>
+          <section className="mbCard mbSched">
+            <span className="mbSchedIco" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5" /><path d="M3.5 10h17M8 3v4M16 3v4" /></svg></span>
+            <span><small className="mbCap">PROGRAMARE</small><b>{x.scheduled_at ? fmtWhen(x.scheduled_at) : "Neprogramată"}</b>{x.scheduled_at && <small>{x.duration_min} min</small>}</span>
+            <button type="button" className="mbBtn" onClick={() => onSchedule({ id: x.id, address: x.address, scheduled_at: x.scheduled_at, duration_min: x.duration_min })}>{x.scheduled_at ? "Reprogramează" : "Programează"}</button>
           </section>
         )}
-        <section className="mbCard">
-          <b>{x.address}</b>
-          <small>{[x.prop_type, x.area_util && `${x.area_util} mp utili`, x.area_land && `teren ${x.area_land} mp`].filter(Boolean).join(" · ")}</small>
-          <span className="mbGrid2">
-            <a className="mbBtn" href={`https://www.google.com/maps/dir/?api=1&destination=${dest}`} target="_blank" rel="noopener">Google Maps</a>
-            <a className="mbBtn" href={x.lat != null ? `https://waze.com/ul?ll=${x.lat},${x.lng}&navigate=yes` : `https://waze.com/ul?q=${dest}`} target="_blank" rel="noopener">Waze</a>
-          </span>
-        </section>
+
         {x.contact_name && (
-          <section className="mbCard">
-            <span className="mbRowBetween"><span><small className="mbCap">{(x.contact_role ?? "Contact").toUpperCase()}</small><b>{x.contact_name}</b></span><small>{x.contact_phone}</small></span>
-            {x.contact_phone && <span className="mbGrid2"><a className="mbBtn dark" href={`tel:${x.contact_phone.replace(/\s+/g, "")}`}>Sună</a><a className="mbBtn" href={`sms:${x.contact_phone.replace(/\s+/g, "")}`}>SMS</a></span>}
+          <section className="mbCard mbContact">
+            <span className="mbAvImg" aria-hidden="true">{initials(x.contact_name)}</span>
+            <span><small className="mbCap">{(x.contact_role ?? "Persoana de contact").toUpperCase()}</small><b>{x.contact_name}</b>{x.contact_phone && <small>{x.contact_phone}</small>}</span>
+            {x.contact_phone && <span className="mbContactBtns">
+              <a className="mbIconBtn dark" href={`tel:${x.contact_phone.replace(/\s+/g, "")}`} aria-label="Sună"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2" /></svg></a>
+              <a className="mbIconBtn" href={`sms:${x.contact_phone.replace(/\s+/g, "")}`} aria-label="SMS"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg></a>
+            </span>}
           </section>
         )}
-        <section className="mbCard">
-          <small className="mbCap">ACTE · {docs.length}</small>
-          {docs.length ? <span className="mbDocs">{docs.map((d) => <a key={d.id} className="mbBtn" href={`/api/inspectii/file/${d.id}`} target="_blank" rel="noopener">{d.kind === "cf" ? "Extras CF" : d.kind === "releveu" ? "Releveu" : d.name ?? "Document"}</a>)}</span>
-            : <small>Niciun act atașat pe web.</small>}
-        </section>
-        {x.notes && <section className="mbCard"><small className="mbCap">NOTE</small><span>{x.notes}</span></section>}
-        <section className="mbCard"><small className="mbCap">FIȘA</small><span>{x.template_name ?? "Fișa de inspecție"} · {x.template.groups.reduce((s, g) => s + g.qs.length, 0)} întrebări · {x.rooms.length} încăperi</span></section>
+
+        {facts.length > 0 && (
+          <section className="mbCard">
+            <small className="mbCap">PROPRIETATEA</small>
+            <dl className="mbFacts">{facts.map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}</dl>
+          </section>
+        )}
+
+        {rooms.length > 0 && (
+          <section className="mbCard">
+            <small className="mbCap">ÎNCĂPERI DIN RELEVEU · {rooms.length}</small>
+            <ol className="mbRoomList">{rooms.map((r, i) => <li key={i}><span>{i + 1}</span><b>{r.n}</b><em>{r.a ? `${nfm(r.a)} mp` : "—"}</em></li>)}</ol>
+          </section>
+        )}
+
+        {docs.length > 0 && (
+          <section className="mbCard">
+            <small className="mbCap">ACTE · {docs.length}</small>
+            <span className="mbDocList">{docs.map((d) => {
+              const [ico, label] = DOC_KIND[d.kind] ?? DOC_KIND.doc;
+              return (
+                <a key={d.id} href={`/api/inspectii/file/${d.id}`} target="_blank" rel="noopener">
+                  <span className="mbDocIco">{ico}</span><span><b>{d.name ?? label}</b><small>{label}</small></span><em aria-hidden="true">›</em>
+                </a>
+              );
+            })}</span>
+          </section>
+        )}
+
+        {photos.length > 0 && (
+          <section className="mbCard">
+            <small className="mbCap">FOTOGRAFII TRIMISE · {photos.length}</small>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <span className="mbThumbs">{photos.slice(0, 8).map((p) => <img key={p.id} src={`/api/inspectii/file/${p.id}`} alt={p.room ?? "Fotografie"} loading="lazy" />)}</span>
+          </section>
+        )}
+
+        {x.notes && <section className="mbCard mbNoteCard"><small className="mbCap">NOTE PENTRU INSPECȚIE</small><span>{x.notes}</span></section>}
+
+        <section className="mbCard mbTplCard"><small className="mbCap">FIȘA</small><span><b>{x.template_name ?? "Fișa de inspecție"}</b><small>{x.template.groups.length} secțiuni · {qn} întrebări</small></span></section>
       </div>
       {!done && (
         <footer className="mbFoot">

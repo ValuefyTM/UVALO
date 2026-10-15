@@ -21,6 +21,10 @@ export default async function InspDoc({ params }: { params: Promise<{ id: string
   const x = await getInspection(db, c, id);
   if (!x) notFound();
   const done = x.status === "gata" || x.status === "pred";
+  // the firm the inspection belongs to: its logo heads the sheet (and the PDF)
+  const orgId = (x as unknown as { org_id?: string | null }).org_id;
+  const firm = orgId ? await db.prepare("SELECT id, name, corp_no, logo IS NOT NULL AS has_logo FROM orgs WHERE id = ?").bind(orgId)
+    .first<{ id: string; name: string; corp_no: string | null; has_logo: number }>() : null;
   const photos = x.files.filter((f) => f.kind === "photo"), docs = x.files.filter((f) => f.kind !== "photo" && f.kind !== "signature");
   const rooms = x.room_answers.length ? x.room_answers : x.rooms;
   const util = rooms.reduce((s, r) => s + (r.a ?? 0), 0);
@@ -57,6 +61,14 @@ export default async function InspDoc({ params }: { params: Promise<{ id: string
         </nav>
 
         <article className="inPaper">
+          {firm?.has_logo ? (
+            <header className="inBrand">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={`/api/org/logo/${firm.id}`} alt={firm.name} />
+              <span><b>{firm.name}</b>{firm.corp_no && <small>Autorizație ANEVAR nr. {firm.corp_no}</small>}</span>
+              <em>Fișă de inspecție<br />{x.code}</em>
+            </header>
+          ) : null}
           <section id="rezumat" className="inSec">
             <span className="eyebrow">Fișă de inspecție · {x.code}</span>
             <h1 className="inH1">{x.prop_type ?? "Imobil"}</h1>

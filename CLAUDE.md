@@ -309,7 +309,7 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
 - Pagini: `/inspectii` (`InspList`: file Ale mele / Făcute pentru colegi / Făcute pentru mine, filtre pe stare, Listă / Hartă (Leaflet) / Calendar
   săptămânal cu „De programat” trase pe o oră → `schedule`), `/inspectii/nou[?id=]` (`InspForm`: CF citit cu `/api/amplasament/plan`, încăperi,
   fișa, contact, programare, cine o face: eu / coleg din birou / Colaborări), `/inspectii/<id>` (fișa ca document: cuprins în stânga, conținut;
-  „Descarcă PDF” = print; în test „Simulează inspecția” completează fișa ca telefonul), `/inspectii/fise` (`InspTemplates`: editor de grupuri și
+  „Descarcă PDF” = print; antetul fișei = logo-ul firmei inspecției (`inspections.org_id`, doar dacă are logo) + nr. autorizație; în test „Simulează inspecția” completează fișa ca telefonul), `/inspectii/fise` (`InspTemplates`: editor de grupuri și
   întrebări, răspunsuri precompletate, publicare pe versiuni).
 - `merge.ts` (unire/ștergere conturi) acoperă tabelele noi. Evenimente `inspectii` (meta `{test:1}`).
 - Fișiere: bucket R2 privat **`uvalo-inspectii`**, binding `FILES` în `wrangler.jsonc` (`getFiles()` în `db.ts`). Încărcare `POST /api/inspectii/files`
@@ -343,6 +343,9 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
 - **Tragere în jos = reîncărcare** (Acasă, De trimis, Contul meu, detaliul inspecției): evenimente touch pe `window` când pagina e sus
   (nu pe hartă, semnătură, foaia de programare, câmpuri), prag 64 px → `refresh()` = trimite coada, `load()`, reîncarcă inspecția deschisă;
   tot ecranul (`.mbPage`) coboară cu degetul, iar în spațiul de sus apare indicatorul `.mbPull`. `overscroll-behavior-y: none` ca să nu se suprapună cu reîncărcarea browserului.
+- **Detaliul inspecției** pe telefon (`Detail`): hartă mică (`MiniMap`, Leaflet fără interacțiune, atingerea deschide navigația), statut + tip,
+  Google Maps / Waze, programarea, contactul (Sună / SMS), „Proprietatea” (doar câmpurile completate: tip, cad., CF, UAT, județ, suprafețe din
+  acte, încăperi, cine a pregătit / cine face), încăperile din releveu, actele încărcate (doar dacă există), fotografiile trimise, notele, fișa.
 - **Notificări** (clopoțelul de lângă avatar, pe Acasă; avatarul → Contul meu): „De făcut” = inspecțiile mele de azi și mâine neîncepute
   (calculate în aplicație) + „Activitate” = `phoneNotifs` (`insp_log` pe inspecțiile atribuite mie sau ale mele, făcute de alții, 30 de zile,
   în `/api/m/state` ca `notifs`). Necitite = după `localStorage` `insp-notif-seen` (`{at, keys}`), marcate la ieșirea din ecran.
