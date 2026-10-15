@@ -5,6 +5,7 @@ import { now, uuid } from "./db";
 import { randomCode, sha256 } from "./crypto";
 import { geocode } from "./gmaps";
 import { notifyUser } from "./webpush";
+import { headers } from "next/headers";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import {
   cleanTemplate, qCount, STATUSES, UVALO_TEMPLATES, type AssignKind, type InspRow, type Status, type Template,
@@ -207,22 +208,29 @@ export async function getInspection(db: D1Database, c: Ctx, id: string): Promise
 async function logIt(db: D1Database, id: string, userId: string | null, text: string) {
   await db.prepare("INSERT INTO insp_log (inspection_id, user_id, text) VALUES (?, ?, ?)").bind(id, userId, text.slice(0, 300)).run();
   if (/^(Fotografie adăugat|Fișier șters)|simulare/i.test(text)) return; // not worth a phone notification
-  const p = notifyLog(db, id, userId, text).catch(() => {});
+  // done on the web (not in the phone app): the person's own phone is told too (e.g. sent back to complete, rescheduled)
+  let fromWeb = false;
+  try {
+    const host = ((await headers()).get("host") ?? "").split(":")[0].toLowerCase();
+    fromWeb = !(process.env.INSP_HOSTS ?? "inspectii.uvalo.ro").split(",").map((h) => h.trim().toLowerCase()).includes(host);
+  } catch {}
+  const p = notifyLog(db, id, userId, text, fromWeb).catch(() => {});
   try { (await getCloudflareContext({ async: true })).ctx.waitUntil(p); } catch { await p; }
 }
 
 /** What someone did on an inspection goes, as a phone notification, to the others involved (who prepared it, who does it). */
-async function notifyLog(db: D1Database, id: string, userId: string | null, text: string) {
+async function notifyLog(db: D1Database, id: string, userId: string | null, text: string, fromWeb = false) {
   const r = await db.prepare(`SELECT i.address, i.assignee_id, i.created_by, COALESCE(NULLIF(u.name, ''), u.email) AS who
     FROM inspections i LEFT JOIN users u ON u.id = ? WHERE i.id = ?`).bind(userId ?? "", id)
     .first<{ address: string; assignee_id: string | null; created_by: string; who: string | null }>();
   if (!r) return;
   const nice = text.replace(/(\d{4})-(\d{2})-(\d{2})[ T](\d{2}:\d{2})/, "$3.$2.$1, $4");
-  for (const to of new Set([r.assignee_id, r.created_by].filter((x): x is string => !!x && x !== userId))) {
+  for (const to of new Set([r.assignee_id, r.created_by].filter((x): x is string => !!x && (x !== userId || (fromWeb && x === r.assignee_id))))) {
     const fresh = /^Creată/.test(text) && to === r.assignee_id;
+    const redo = text.match(/^Retrimisă pe telefon pentru completare: ([\s\S]*)/);
     await notifyUser(db, to, {
-      title: fresh ? "Inspecție nouă pentru tine" : r.address,
-      body: fresh ? `${r.address}${r.who ? ` · de la ${r.who}` : ""}` : `${r.who ?? "Cineva"}: ${nice}`,
+      title: fresh ? "Inspecție nouă pentru tine" : redo ? `De completat · ${r.address}` : r.address,
+      body: fresh ? `${r.address}${r.who ? ` · de la ${r.who}` : ""}` : redo ? redo[1] : `${r.who ?? "Cineva"}: ${nice}`,
       url: `/?open=${id}`, tag: `insp-${id}`,
     });
   }
