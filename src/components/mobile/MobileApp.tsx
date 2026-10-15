@@ -2,7 +2,7 @@
 
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CONTACT_ROLES, fmtWhen, isOptional, photoCategories, PROP_TYPES, ROOM_FIELDS, STATUS, type InspRow, type Question, type SubQ, subKey, type Template } from "@/lib/insp-shared";
-import { allFiles, allFinish, flush, progress, putFile, putFinish, readExif, shrink, type QPhoto, type UploadProgress } from "./store";
+import { allFiles, allFinish, delFile, flush, progress, putFile, putFinish, readExif, shrink, type QPhoto, type UploadProgress } from "./store";
 import { InstallHint } from "./InstallHint";
 
 type Insp = InspRow & {
@@ -227,6 +227,17 @@ export function MobileApp() {
     }, 4000);
   };
 
+  /** Deletes a photo: one still on the phone from the queue, one already sent from the server (then the inspection is read again). */
+  async function deletePhoto(id: string, local: boolean) {
+    if (!cur || !confirm("Ștergi fotografia?")) return;
+    if (local) { await delFile(id); await refreshQueue(); return; }
+    const r = await fetch(`/api/inspectii/file/${id}`, { method: "DELETE" }).catch(() => null);
+    if (!r?.ok) { say(r ? "Fotografia nu a putut fi ștearsă." : "Fără semnal: fotografia se poate șterge când revine rețeaua."); return; }
+    const x = await fetchInsp(cur.id);
+    if (x) setCur(x);
+    say("Fotografia a fost ștearsă.");
+  }
+
   async function addPhoto(file: File, room: string, kind: "photo" | "signature" = "photo") {
     await addPhotos([file], room, false, kind);
   }
@@ -310,7 +321,7 @@ export function MobileApp() {
           onRooms={() => go({ v: "rooms", id: cur.id })} onPhotos={() => go({ v: "photos", id: cur.id })} onSign={() => go({ v: "sign", id: cur.id })} />
       )}
       {view.v === "rooms" && cur && draft && <Rooms d={draft} change={change} onBack={() => history.back()} onPhoto={addPhoto} />}
-      {view.v === "photos" && cur && draft && <Photos x={cur} d={draft} pending={pending.filter((p) => p.insp === cur.id && p.kind === "photo")} onBack={() => history.back()} onPhotos={addPhotos} />}
+      {view.v === "photos" && cur && draft && <Photos x={cur} d={draft} pending={pending.filter((p) => p.insp === cur.id && p.kind === "photo")} onBack={() => history.back()} onPhotos={addPhotos} onDelete={deletePhoto} />}
       {view.v === "sign" && cur && draft && <Sign x={cur} d={draft} photos={pending.filter((p) => p.insp === cur.id).length + cur.files.filter((f) => f.kind === "photo").length} change={change} onBack={() => history.back()} onFinish={finish} />}
       {view.v === "queue" && <Queue pending={pending} finishN={finishQ} items={items} online={online} onSend={async () => { const n = await sendAll(); say(n ? "Mai sunt elemente de trimis." : "Totul a fost trimis."); }} />}
       {view.v === "notifs" && <Notifs notifs={notifs} reminders={reminders} seenAt={seen.at} onBack={() => { markSeen(); history.back(); }}
@@ -942,7 +953,9 @@ function Rooms({ d, change, onBack, onPhoto }: { d: Draft; change: (f: (d: Draft
 
 /* ---------- photos ---------- */
 
-function Photos({ x, d, pending, onBack, onPhotos }: { x: Insp; d: Draft; pending: QPhoto[]; onBack: () => void; onPhotos: (f: File[], room: string, gallery: boolean) => Promise<void> }) {
+function Photos({ x, d, pending, onBack, onPhotos, onDelete }: {
+  x: Insp; d: Draft; pending: QPhoto[]; onBack: () => void; onPhotos: (f: File[], room: string, gallery: boolean) => Promise<void>; onDelete: (id: string, local: boolean) => void;
+}) {
   const cats = useMemo(() => { const c = photoCategories(x.prop_type); return [...c.before, ...d.rooms.map((r, i) => `${r.n} · rlv ${i + 1}`), ...c.after]; }, [d.rooms, x.prop_type]);
   const [room, setRoom] = useState(cats[0]);
   const [busy, setBusy] = useState(false);
@@ -982,9 +995,20 @@ function Photos({ x, d, pending, onBack, onPhotos }: { x: Insp; d: Draft; pendin
               <b>{g.c}</b><small>{g.c === room ? "aici merg pozele noi · " : ""}{g.sent.length + g.local.length} foto</small>
             </button>
             <span className="mbPhGrid">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              {g.sent.map((f) => <img key={f.id} src={`/api/inspectii/file/${f.id}`} alt={g.c} loading="lazy" />)}
-              {g.local.map((p) => <span key={p.id} className="mbPhLocal">{/* eslint-disable-next-line @next/next/no-img-element */}<img src={urls.get(p.id)} alt={g.c} /><em>PE TELEFON</em></span>)}
+              {g.sent.map((f) => (
+                <span key={f.id} className="mbPhItem">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={`/api/inspectii/file/${f.id}`} alt={g.c} loading="lazy" />
+                  <button type="button" className="mbPhDel" aria-label="Șterge fotografia" onClick={() => onDelete(f.id, false)}>×</button>
+                </span>
+              ))}
+              {g.local.map((p) => (
+                <span key={p.id} className="mbPhItem mbPhLocal">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={urls.get(p.id)} alt={g.c} /><em>PE TELEFON</em>
+                  <button type="button" className="mbPhDel" aria-label="Șterge fotografia" onClick={() => onDelete(p.id, true)}>×</button>
+                </span>
+              ))}
               <span className="mbPhAdd">
                 <button type="button" aria-label={`Fotografiază pentru ${g.c}`} onClick={() => pick(cam.current, g.c)}>
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z" /><circle cx="12" cy="13" r="3.5" /></svg>

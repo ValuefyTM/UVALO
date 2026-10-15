@@ -1928,6 +1928,10 @@ textarea.mbIn { min-height: 0; resize: vertical; }
 .mbPhGrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
 .mbPhGrid img, .mbPhGrid > button, .mbPhLocal { aspect-ratio: 1; width: 100%; border-radius: 10px; object-fit: cover; display: block; }
 .mbPhGrid > button { border: 2px dashed var(--dashed); background: transparent; font-size: 28px; color: var(--muted-2); }
+.mbPhItem { position: relative; overflow: hidden; display: block; aspect-ratio: 1; border-radius: 10px; }
+.mbPhItem img { width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 10px; }
+.mbPhDel { position: absolute; top: 4px; right: 4px; width: 28px; height: 28px; border-radius: 50%; border: 0; background: rgba(20,20,20,0.75); color: #fff;
+  font-size: 18px; line-height: 1; display: flex; align-items: center; justify-content: center; padding: 0; }
 .mbPhLocal { position: relative; overflow: hidden; }
 .mbPhLocal img { width: 100%; height: 100%; }
 .mbPhLocal em { position: absolute; left: 4px; bottom: 4px; background: rgba(20,20,20,0.8); color: var(--acc); font-style: normal; font-size: 9px; font-weight: 800; padding: 2px 5px; border-radius: 5px; }
