@@ -1,6 +1,6 @@
 // Server-only: Inspecții (module `inspectii`). Prepared on the web, done on the phone (UVALO app), seen on the web.
 // In test: only super-admins have the module (context() in access.ts); everything written now has test = 1.
-import type { Ctx } from "./access";
+import { canManageOrg, type Ctx } from "./access";
 import { now, uuid } from "./db";
 import { randomCode, sha256 } from "./crypto";
 import { geocode } from "./gmaps";
@@ -176,16 +176,29 @@ export async function usableTemplates(db: D1Database, c: Ctx) {
 
 /* ---------- inspections ---------- */
 
-const ROW_SQL = `SELECT i.id, i.code, i.status, i.address, i.prop_type, i.cad_nr, i.lat, i.lng, i.contact_name, i.scheduled_at, i.duration_min, i.created_by,
+const ROW_SQL = `SELECT i.id, i.code, i.org_id, i.status, i.address, i.prop_type, i.cad_nr, i.lat, i.lng, i.contact_name, i.scheduled_at, i.duration_min, i.created_by,
   COALESCE(NULLIF(o.name, ''), o.email) AS owner_name, i.assignee_id, COALESCE(NULLIF(a.name, ''), a.email) AS assignee_name, i.assignee_kind, i.finished_at, i.test, i.redo_note, i.redo_prev_at, i.redo_keep_sig, i.signed_name, i.signed_at,
   (SELECT COUNT(*) FROM insp_files f WHERE f.inspection_id = i.id AND f.kind = 'photo') AS photos
   FROM inspections i JOIN users o ON o.id = i.created_by LEFT JOIN users a ON a.id = i.assignee_id WHERE i.deleted_at IS NULL`;
 
-export type Who = "mine" | "forme" | "forothers";
-/** mine = my work, done by me; forme = my work, done by a colleague; forothers = I do it for a colleague's work. */
-export async function listInspections(db: D1Database, userId: string) {
-  const { results } = await db.prepare(`${ROW_SQL} AND (i.created_by = ?1 OR i.assignee_id = ?1) ORDER BY COALESCE(i.scheduled_at, i.created_at) DESC LIMIT 500`).bind(userId).all<InspRow>();
-  const who = (r: InspRow): Who => (r.created_by === userId ? (r.assignee_id && r.assignee_id !== userId) || r.assignee_kind === "collab" ? "forme" : "mine" : "forothers");
+/* ---------- the office's people (birou): operational role, firm-wide view ---------- */
+
+/** Operațional: in an office, a member without an ANEVAR card (assistant, secretariat): sees and enters the firm's inspections, does none. */
+export const isOps = (c: Ctx) => !c.super && !c.user.anevar_no?.trim() && !!c.org?.office_at;
+/** Sees all the firm's inspections: its operationals and administrators (offices only). */
+export const firmView = (c: Ctx) => !!c.org?.office_at && (isOps(c) || canManageOrg(c));
+/** May prepare / change / share an inspection: who prepared it, the firm's viewers for the firm's inspections, super-admins. */
+export const canPrepare = (c: Ctx, r: { created_by?: unknown; org_id?: unknown }) =>
+  c.super || r.created_by === c.user.id || (firmView(c) && !!r.org_id && r.org_id === c.org?.id);
+
+export type Who = "mine" | "forme" | "forothers" | "firm";
+/** mine = my work, done by me; forme = my work, done by a colleague; forothers = I do it for a colleague's work; firm = the firm's (firm viewers). */
+export async function listInspections(db: D1Database, c: Ctx) {
+  const userId = c.user.id, firm = firmView(c) ? c.org!.id : "-";
+  const { results } = await db.prepare(`${ROW_SQL} AND (i.created_by = ?1 OR i.assignee_id = ?1 OR i.org_id = ?2) ORDER BY COALESCE(i.scheduled_at, i.created_at) DESC LIMIT 800`)
+    .bind(userId, firm).all<InspRow>();
+  const who = (r: InspRow): Who => (r.created_by === userId ? (r.assignee_id && r.assignee_id !== userId) || r.assignee_kind === "collab" ? "forme" : "mine"
+    : r.assignee_id === userId ? "forothers" : "firm");
   return results.map((r) => ({ ...r, who: who(r) }));
 }
 
@@ -200,7 +213,7 @@ export type Insp = InspRow & {
 
 export async function getInspection(db: D1Database, c: Ctx, id: string): Promise<Insp | null> {
   const r = await inspRow(db, "i.id = ?", id);
-  if (!r || !(c.super || r.created_by === c.user.id || r.assignee_id === c.user.id)) return null;
+  if (!r || !(canPrepare(c, r) || r.assignee_id === c.user.id)) return null;
   return fullInsp(db, r, id);
 }
 
@@ -265,11 +278,31 @@ async function nextCode(db: D1Database) {
   return `INS-${y}-${String((r?.n ?? 0) + 1).padStart(4, "0")}`;
 }
 
-/** Colleagues of the current firm who can do an inspection (office). */
-export async function colleagues(db: D1Database, c: Ctx) {
+export type TeamGroup = "membru" | "angajat" | "colaborator";
+export type TeamMember = { id: string; name: string; group: TeamGroup; legit: string | null; busy: { id: string; at: string; min: number }[] };
+
+/**
+ * Who can do an inspection for the current firm ("Cine o face" → din birou): its members with an ANEVAR card (in an office;
+ * elsewhere every colleague, as before) and the valuers linked to the office (angajați, colaboratori). Operationals do none.
+ * `busy` = their scheduled, unfinished inspections from yesterday on (any firm; only the time, no details) for the availability.
+ */
+export async function team(db: D1Database, c: Ctx): Promise<TeamMember[]> {
   if (!c.org) return [];
-  return (await db.prepare(`SELECT u.id, COALESCE(NULLIF(u.name, ''), u.email) AS name FROM memberships m JOIN users u ON u.id = m.user_id
-    WHERE m.org_id = ? AND m.status = 'active' AND u.id != ? ORDER BY name`).bind(c.org.id, c.user.id).all<{ id: string; name: string }>()).results;
+  const office = !!c.org.office_at;
+  const { results } = await db.prepare(`SELECT u.id, COALESCE(NULLIF(u.name, ''), u.email) AS name, u.anevar_no AS legit, 'membru' AS grp FROM memberships m JOIN users u ON u.id = m.user_id
+      WHERE m.org_id = ?1 AND m.status = 'active' AND u.status NOT IN ('disabled', 'closed') AND u.id <> ?2 ${office ? "AND COALESCE(u.anevar_no, '') <> ''" : ""}
+    UNION ALL SELECT u.id, COALESCE(NULLIF(u.name, ''), u.email), u.anevar_no, l.kind FROM office_links l JOIN users u ON u.id = l.user_id
+      WHERE l.org_id = ?1 AND l.status = 'active' AND u.status NOT IN ('disabled', 'closed') AND u.id <> ?2 AND ?3 = 1`)
+    .bind(c.org.id, c.user.id, office ? 1 : 0).all<{ id: string; name: string; legit: string | null; grp: TeamGroup }>();
+  const seen = new Set<string>();
+  const people = results.filter((r) => !seen.has(r.id) && seen.add(r.id)).sort((a, b) => a.name.localeCompare(b.name, "ro"));
+  if (!people.length) return [];
+  const from = new Date(Date.now() - 864e5).toISOString().slice(0, 10);
+  const { results: busy } = await db.prepare(`SELECT id, assignee_id, scheduled_at, duration_min FROM inspections WHERE deleted_at IS NULL AND status IN ('plan', 'lucru')
+    AND scheduled_at >= ? AND assignee_id IN (${people.map(() => "?").join(", ")}) ORDER BY scheduled_at LIMIT 3000`)
+    .bind(from, ...people.map((p) => p.id)).all<{ id: string; assignee_id: string; scheduled_at: string; duration_min: number | null }>();
+  return people.map((p) => ({ id: p.id, name: p.name, group: p.grp, legit: p.legit,
+    busy: busy.filter((b) => b.assignee_id === p.id).map((b) => ({ id: b.id, at: b.scheduled_at, min: b.duration_min ?? 60 })) }));
 }
 
 function readInput(b: Record<string, unknown>) {
@@ -289,13 +322,14 @@ export async function saveInspection(db: D1Database, c: Ctx, b: Record<string, u
   const v = readInput(b);
   if (v.address.length < 5) return { error: "Scrie adresa bunului." };
   const id = s(b.id, 64);
-  const old = id ? await db.prepare("SELECT id, created_by, status FROM inspections WHERE id = ? AND deleted_at IS NULL").bind(id).first<{ id: string; created_by: string; status: Status }>() : null;
-  if (id && (!old || (old.created_by !== c.user.id && !c.super))) return { error: "Inspecția nu există." };
+  const old = id ? await db.prepare("SELECT id, created_by, org_id, status FROM inspections WHERE id = ? AND deleted_at IS NULL").bind(id).first<{ id: string; created_by: string; org_id: string | null; status: Status }>() : null;
+  if (id && (!old || !canPrepare(c, old))) return { error: "Inspecția nu există." };
   if (old && (old.status === "gata" || old.status === "pred")) return { error: "Inspecția e finalizată și nu se mai modifică." };
   // who does it: me, a colleague of the firm, or (Colaborări) nobody yet
   let assignee: string | null = c.user.id;
+  if (v.assignee_kind === "me" && isOps(c)) return { error: "Rolul operațional nu face inspecții: alege cine din birou o face." };
   if (v.assignee_kind === "office") {
-    if (!v.assignee_id || !(await colleagues(db, c)).some((x) => x.id === v.assignee_id)) return { error: "Alege colegul din birou." };
+    if (!v.assignee_id || !(await team(db, c)).some((x) => x.id === v.assignee_id)) return { error: "Alege cine din birou face inspecția." };
     assignee = v.assignee_id;
   } else if (v.assignee_kind === "collab") assignee = null;
   // the template, as a snapshot of the version used
@@ -325,7 +359,7 @@ export async function saveInspection(db: D1Database, c: Ctx, b: Record<string, u
 export async function inspAction(db: D1Database, c: Ctx, b: Record<string, unknown>): Promise<{ ok: true; id?: string; token?: string } | { error: string }> {
   const action = s(b.action, 30), id = s(b.id, 64);
   const r = await db.prepare("SELECT * FROM inspections WHERE id = ? AND deleted_at IS NULL").bind(id).first<Record<string, unknown>>();
-  if (!r || !(c.super || r.created_by === c.user.id || (action !== "delete" && r.assignee_id === c.user.id))) return { error: "Inspecția nu există." };
+  if (!r || !(canPrepare(c, r) || (action !== "delete" && r.assignee_id === c.user.id))) return { error: "Inspecția nu există." };
   if (action === "delete") {
     await db.prepare("UPDATE inspections SET deleted_at = ? WHERE id = ?").bind(now(), id).run();
     return { ok: true };
@@ -342,7 +376,7 @@ export async function inspAction(db: D1Database, c: Ctx, b: Record<string, unkno
   }
   if (action === "reopen") {
     // back to the phone, to complete details: the answers, photos and documents stay; the signature is taken again
-    if (!(c.super || r.created_by === c.user.id)) return { error: "Doar cine a pregătit inspecția o poate retrimite." };
+    if (!canPrepare(c, r)) return { error: "Doar cine a pregătit inspecția o poate retrimite." };
     if (r.status !== "gata" && r.status !== "pred") return { error: "Inspecția nu este finalizată." };
     if (!r.assignee_id) return { error: "Inspecția nu are cine să o facă." };
     const note = t(b.note, 1000);
@@ -364,7 +398,7 @@ export async function inspAction(db: D1Database, c: Ctx, b: Record<string, unkno
   }
   if (action === "share") {
     // public link to the sheet as a web page (no account): on = a random token (kept when already shared), off = the link stops working
-    if (!(c.super || r.created_by === c.user.id)) return { error: "Doar cine a pregătit inspecția o poate distribui." };
+    if (!canPrepare(c, r)) return { error: "Doar cine a pregătit inspecția o poate distribui." };
     if (b.on === false) {
       await db.prepare("UPDATE inspections SET share_token = NULL, share_at = NULL WHERE id = ?").bind(id).run();
       await logIt(db, id, c.user.id, "Linkul public a fost oprit");
@@ -448,8 +482,8 @@ export const FILE_MAX = 15 * 1024 * 1024;
 
 /** Who may see / add files: the owner of the work, the one who does it, super-admins. */
 async function canTouch(db: D1Database, c: Ctx, inspId: string) {
-  const r = await db.prepare("SELECT created_by, assignee_id FROM inspections WHERE id = ? AND deleted_at IS NULL").bind(inspId).first<{ created_by: string; assignee_id: string | null }>();
-  return !!r && (c.super || r.created_by === c.user.id || r.assignee_id === c.user.id);
+  const r = await db.prepare("SELECT created_by, org_id, assignee_id FROM inspections WHERE id = ? AND deleted_at IS NULL").bind(inspId).first<{ created_by: string; org_id: string | null; assignee_id: string | null }>();
+  return !!r && (canPrepare(c, r) || r.assignee_id === c.user.id);
 }
 
 export async function addFile(db: D1Database, bucket: R2Bucket, c: Ctx, inspId: string, f: File, meta: { kind: string; name?: string; room?: string; taken_at?: string; lat?: unknown; lng?: unknown }): Promise<{ error: string } | { ok: true; id: string }> {

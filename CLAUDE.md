@@ -254,8 +254,16 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   `officeActive`; altfel vechiul `MembersPanel`), grupat: Cereri de asociere, Administratori, Evaluatori, Operaționali (membri, ocupă locuri),
   Angajați asociați, Colaboratori asociați, Invitații în așteptare; „+ Invită” deschide fereastra cu tipul (Evaluator în birou / Operațional /
   Angajat asociat / Colaborator asociat), apoi formularul potrivit și `MyLinks` în „Contul meu” (invitații primite, active, cereri, încheiate). `merge.ts` acoperă tabelul.
-  Membrii existenți NU se transformă în asociați. Urmează: etapa 2 (selectorul „Cine o face” la inspecții cu asociații și disponibilitatea,
-  Operaționalul care introduce inspecții), etapa 3 (telefonul: Acasă / Colaborări, „Pentru: Contul meu / Firma X” dacă biroul permite).
+  Membrii existenți NU se transformă în asociați. Grupurile din panou au culori proprii (`.op-admin/eval/ops/angajat/colaborator/inv/req`),
+  iar cei invitați care n-au intrat apar doar la „Invitații în așteptare”.
+- **Etapa 2 — inspecțiile pe web** (`src/lib/insp.ts`): `isOps(c)` = membru fără legitimație într-un birou (nu e super-admin) → nu face inspecții
+  („Eu” ascuns și refuzat la salvare), nu are nevoie de telefon conectat; `firmView(c)` = operaționalii și administratorii biroului văd
+  **toate inspecțiile firmei** (`org_id`): fila „Ale firmei” în `InspList` (implicită pentru operațional), acces la fișă / editare / retrimitere /
+  link public prin `canPrepare()`. „Cine o face” → „Cineva din birou” = `team(c)`: membrii cu legitimație (în birou; în firmele fără birou toți
+  colegii, ca înainte) + asociații activi, grupați Evaluatori / Angajați / Colaboratori (`TeamPick` în `InspForm`), cu disponibilitatea
+  (`busy` = inspecțiile lor programate și neterminate, din orice firmă, doar ora): liber / N inspecții în ziua aleasă / „ocupat atunci” la
+  suprapunere / următoarea. `assignee_kind` rămâne `office` și pentru asociați (Acasă vs Colaborări pe telefon se decide în etapa 3 după `office_links.kind`).
+  Urmează etapa 3 (telefonul: Acasă / Colaborări, „Pentru: Contul meu / Firma X” dacă biroul permite).
 - „În curând: Colaborări” (card pe Acasă, meniu) doar pentru evaluatori fără acces cât timp modul ≠ `on`; niciodată pentru nonevaluatori.
 
 ## Colaborări (`/colaborari`, modulul `colaborari`)

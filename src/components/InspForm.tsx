@@ -11,7 +11,52 @@ export type FormInit = {
 };
 
 /** Inspecție nouă / editare: the property (with a CF read automatically), the template, contact and schedule, who does it. */
-export function InspForm({ init, tpls, colleagues, canRead }: { init: FormInit; tpls: FormTpl[]; colleagues: { id: string; name: string }[]; canRead: boolean }) {
+export type TeamPerson = { id: string; name: string; group: "membru" | "angajat" | "colaborator"; legit: string | null; busy: { id: string; at: string; min: number }[] };
+const GROUPS: [TeamPerson["group"], string][] = [["membru", "Evaluatori din birou"], ["angajat", "Angajați asociați"], ["colaborator", "Colaboratori asociați"]];
+const hm = (at: string) => at.slice(11, 16);
+const addMin = (at: string, m: number) => { const [h, mi] = hm(at).split(":").map(Number); const t = h * 60 + mi + m; return `${String(Math.floor(t / 60) % 24).padStart(2, "0")}:${String(t % 60).padStart(2, "0")}`; };
+const toMin = (x: string) => { const [h, m] = x.split(":").map(Number); return h * 60 + m; };
+
+/** "Cine o face" → din birou: the office's people grouped (evaluators, angajați, colaboratori), with the availability on the chosen day. */
+function TeamPick({ team, value, onPick, date, time, dur, selfId }: { team: TeamPerson[]; value: string; onPick: (id: string) => void; date: string; time: string; dur: number; selfId?: string }) {
+  const [q, setQ] = useState("");
+  const shown = team.filter((p) => !q.trim() || p.name.toLowerCase().includes(q.trim().toLowerCase()));
+  const day = (p: TeamPerson) => p.busy.filter((b) => b.id !== selfId && b.at.slice(0, 10) === date);
+  const clash = (p: TeamPerson) => !!date && !!time && day(p).some((b) => toMin(hm(b.at)) < toMin(time) + dur && toMin(time) < toMin(hm(b.at)) + b.min);
+  const next = (p: TeamPerson) => p.busy.find((b) => b.id !== selfId && b.at.slice(0, 16) >= new Date().toISOString().slice(0, 16));
+  return (
+    <div className="tpBox">
+      {team.length > 6 && <input className="input tpSearch" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Caută după nume…" aria-label="Caută în birou" />}
+      {GROUPS.map(([g, label]) => {
+        const list = shown.filter((p) => p.group === g);
+        if (!list.length) return null;
+        return (
+          <div key={g} className={`tpGroup tp-${g}`} role="radiogroup" aria-label={label}>
+            <h4><i aria-hidden="true" />{label} <span>{list.length}</span></h4>
+            {list.map((p) => {
+              const d = day(p), bad = clash(p), nx = next(p);
+              return (
+                <button key={p.id} type="button" role="radio" aria-checked={value === p.id} className={`tpRow${value === p.id ? " on" : ""}`} onClick={() => onPick(p.id)}>
+                  <i className="tpRadio" aria-hidden="true" />
+                  <span className="tpName"><b>{p.name}</b><small>{p.legit ? `leg. ANEVAR ${p.legit}` : ""}</small></span>
+                  <span className={`tpAvail${bad ? " bad" : date && !d.length ? " free" : ""}`}>
+                    {date
+                      ? bad ? `ocupat atunci · ${d.map((b) => `${hm(b.at)}–${addMin(b.at, b.min)}`).join(", ")}`
+                        : d.length ? `${d.length === 1 ? "o inspecție" : `${d.length} inspecții`} în ziua aleasă · ${d.map((b) => `${hm(b.at)}–${addMin(b.at, b.min)}`).join(", ")}` : "liber în ziua aleasă"
+                      : nx ? `următoarea: ${nx.at.slice(8, 10)}.${nx.at.slice(5, 7)}, ${hm(nx.at)}` : "nicio inspecție programată"}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        );
+      })}
+      {!shown.length && <p className="hint" style={{ margin: 0 }}>Nimeni cu acest nume.</p>}
+    </div>
+  );
+}
+
+export function InspForm({ init, tpls, team, canRead, ops }: { init: FormInit; tpls: FormTpl[]; team: TeamPerson[]; canRead: boolean; ops?: boolean }) {
   const [v, setV] = useState(init);
   const [later, setLater] = useState(!init.date);
   const [busy, setBusy] = useState(false);
@@ -137,16 +182,16 @@ export function InspForm({ init, tpls, colleagues, canRead }: { init: FormInit; 
         <section className="card">
           <h2><span className="inStep">4</span>Cine face inspecția</h2>
           <div className="inWhoPick" role="radiogroup" aria-label="Cine face inspecția">
-            {(Object.keys(ASSIGN_LABEL) as AssignKind[]).map((k) => (
-              <button key={k} type="button" role="radio" aria-checked={v.assignee_kind === k} disabled={k === "office" && !colleagues.length} onClick={() => set("assignee_kind", k)}>{ASSIGN_LABEL[k]}</button>
+            {(Object.keys(ASSIGN_LABEL) as AssignKind[]).filter((k) => !(ops && k === "me")).map((k) => (
+              <button key={k} type="button" role="radio" aria-checked={v.assignee_kind === k} disabled={k === "office" && !team.length} onClick={() => set("assignee_kind", k)}>{ASSIGN_LABEL[k]}</button>
             ))}
           </div>
-          {v.assignee_kind === "office" && (
-            <label className="field" style={{ maxWidth: 380 }}>Colegul din birou<select className="select" value={v.assignee_id} onChange={(e) => set("assignee_id", e.target.value)}>
-              <option value="">Alege…</option>{colleagues.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}</select></label>
+          {ops && <p className="hint" style={{ margin: 0 }}>Ai rol operațional: pregătești inspecția pentru firmă, iar un evaluator din birou o face.</p>}
+          {v.assignee_kind === "office" && team.length > 0 && (
+            <TeamPick team={team} value={v.assignee_id} onPick={(id) => set("assignee_id", id)} date={later ? "" : v.date} time={v.time} dur={v.duration_min} selfId={v.id} />
           )}
           {v.assignee_kind === "collab" && <p className="note">Inspecția așteaptă un coleg din Colaborări. Publică un anunț cu bunul; colegul ales o primește pe telefon, iar fișa, pozele și actele vin înapoi la tine. <a className="rowLink" href="/colaborari?compose=1">Pregătește anunțul →</a></p>}
-          {!colleagues.length && <p className="hint">„Un coleg din birou” apare când firma ta are colegi în UVALO.</p>}
+          {!team.length && <p className="hint">„Din birou” apare când biroul are evaluatori: membri sau evaluatori asociați (Firma mea → Utilizatori).</p>}
         </section>
       </div>
 
@@ -155,7 +200,7 @@ export function InspForm({ init, tpls, colleagues, canRead }: { init: FormInit; 
           <b>{v.address || "Bunul"}</b>
           <small>{[v.prop_type, v.cad_nr && `nr. cad. ${v.cad_nr}`, v.lat != null ? "poziție găsită" : null].filter(Boolean).join(" · ") || "Completează datele bunului"}</small>
           <small>{tpl ? tpl.name : "Fișa nu e aleasă"}</small>
-          <small>{later || !v.date ? "De programat" : `${v.date.split("-").reverse().join(".")}, ${v.time || "10:00"}`} · {ASSIGN_LABEL[v.assignee_kind]}</small>
+          <small>{later || !v.date ? "De programat" : `${v.date.split("-").reverse().join(".")}, ${v.time || "10:00"}`} · {v.assignee_kind === "office" && team.find((p) => p.id === v.assignee_id)?.name || ASSIGN_LABEL[v.assignee_kind]}</small>
         </section>
         {msg && <p className="note" role="alert">{msg}</p>}
         <button type="button" className="btn btnGold" disabled={busy} onClick={save}>{v.id ? "Salvează modificările" : "Salvează și trimite pe telefon"}</button>

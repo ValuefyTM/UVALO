@@ -40,14 +40,14 @@ export const STATUSES = Object.keys(STATUS) as Status[];
 
 export const PROP_TYPES = ["Apartament", "Casă", "Teren", "Spațiu comercial / Hală", "Accesoriu (parcare, garaj, boxă)"];
 export const CONTACT_ROLES = ["Proprietar", "Client", "Chiriaș", "Agent imobiliar", "Altă persoană"];
-export const ASSIGN_LABEL = { me: "Eu", office: "Un coleg din birou", collab: "Un coleg din Colaborări" } as const;
+export const ASSIGN_LABEL = { me: "Eu", office: "Cineva din birou", collab: "Un coleg din Colaborări" } as const;
 export type AssignKind = keyof typeof ASSIGN_LABEL;
 
 /** Inspection list row (the list, map and calendar views). */
 export type InspRow = {
   id: string; code: string; status: Status; address: string; prop_type: string | null; cad_nr: string | null; lat: number | null; lng: number | null;
   contact_name: string | null; scheduled_at: string | null; duration_min: number; created_by: string; owner_name: string; assignee_id: string | null;
-  assignee_name: string | null; assignee_kind: AssignKind; finished_at: string | null; photos: number; test: number; redo_note?: string | null;
+  org_id?: string | null; assignee_name: string | null; assignee_kind: AssignKind; finished_at: string | null; photos: number; test: number; redo_note?: string | null;
   redo_prev_at?: string | null; redo_keep_sig?: number; signed_name?: string | null; signed_at?: string | null;
 };
 

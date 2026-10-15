@@ -148,12 +148,15 @@ export function OfficePeople({ people, invites, links, seats, used, canOwner }: 
       </span>
     </div>
   );
-  const groups: { t: string; note: string; rows: React.ReactNode[] }[] = [
-    { t: "Administratori", note: "ocupă locuri", rows: people.filter((m) => m.role !== "member").map(member) },
-    { t: "Evaluatori", note: "membri, ocupă locuri", rows: people.filter((m) => m.role === "member" && m.anevar).map(member) },
-    { t: "Operaționali", note: "fără legitimație, ocupă locuri · văd și introduc inspecțiile firmei", rows: people.filter((m) => m.role === "member" && !m.anevar).map(member) },
+  // someone invited who has not joined yet shows only under "Invitații în așteptare"
+  const invited = new Set(invites.map((i) => i.email.toLowerCase()));
+  const ppl = people.filter((m) => !(m.status === "invited" && invited.has(m.email.toLowerCase())));
+  const groups: { k: string; t: string; note: string; rows: React.ReactNode[] }[] = [
+    { k: "admin", t: "Administratori", note: "ocupă locuri · gestionează biroul", rows: ppl.filter((m) => m.role !== "member").map(member) },
+    { k: "eval", t: "Evaluatori", note: "membri · ocupă locuri · fac inspecții", rows: ppl.filter((m) => m.role === "member" && m.anevar).map(member) },
+    { k: "ops", t: "Operaționali", note: "fără legitimație · ocupă locuri · văd și introduc inspecțiile firmei", rows: ppl.filter((m) => m.role === "member" && !m.anevar).map(member) },
     ...(["angajat", "colaborator"] as Kind[]).map((k) => ({
-      t: k === "angajat" ? "Angajați asociați" : "Colaboratori asociați", note: "cont propriu, fără loc",
+      k, t: k === "angajat" ? "Angajați asociați" : "Colaboratori asociați", note: k === "angajat" ? "cont propriu · fără loc · inspecțiile în Acasă" : "cont propriu · fără loc · inspecțiile în Colaborări",
       rows: assoc(k).map((r) => (
         <div key={r.id} className="opRow">
           <span className="opWho"><b>{nm(r)}</b><small>{lsub(r)} · asociat din {r.since}</small></span>
@@ -177,8 +180,8 @@ export function OfficePeople({ people, invites, links, seats, used, canOwner }: 
       </div>
       {err && <div role="alert" className="error">{err}</div>}
 
-      {req.length > 0 && <div className="opGroup opReq">
-        <h3>Cereri de asociere <span className="pill pillWarn"><i />{req.length}</span></h3>
+      {req.length > 0 && <div className="opGroup op-req">
+        <h3><i className="opDot" aria-hidden="true" />Cereri de asociere <span className="pill pillWarn"><i />{req.length}</span></h3>
         {req.map((r) => (
           <div key={r.id} className="opRow">
             <span className="opWho"><b>{nm(r)} <em className="lkTag">{KIND[r.kind]}</em></b><small>{lsub(r)} · cerută {r.since}</small></span>
@@ -191,14 +194,14 @@ export function OfficePeople({ people, invites, links, seats, used, canOwner }: 
       </div>}
 
       {groups.filter((g) => g.rows.length).map((g) => (
-        <div key={g.t} className="opGroup">
-          <h3>{g.t} <span className="muted">{g.rows.length}</span><small>{g.note}</small></h3>
+        <div key={g.t} className={`opGroup op-${g.k}`}>
+          <h3><i className="opDot" aria-hidden="true" />{g.t} <span className="opN">{g.rows.length}</span><small>{g.note}</small></h3>
           {g.rows}
         </div>
       ))}
 
-      {pending > 0 && <div className="opGroup">
-        <h3>Invitații în așteptare <span className="muted">{pending}</span></h3>
+      {pending > 0 && <div className="opGroup op-inv">
+        <h3><i className="opDot" aria-hidden="true" />Invitații în așteptare <span className="opN">{pending}</span><small>nu au acceptat încă</small></h3>
         {invites.map((i) => (
           <div key={i.id} className="opRow">
             <span className="opWho"><b>{i.email} <em className="lkTag">{ROLE[i.role] ?? "Membru"}</em></b><small>trimisă {i.created}{i.by ? ` de ${i.by}` : ""} · expiră {i.expires}</small></span>

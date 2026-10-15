@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { page, fmtDate } from "@/lib/guard";
-import { getInspection } from "@/lib/insp";
+import { canPrepare, getInspection } from "@/lib/insp";
 import { compSummary, coverPhoto, fmtWhen, STATUS } from "@/lib/insp-shared";
 import { AppShell } from "@/components/AppShell";
 import { InspDocActions } from "@/components/InspDocActions";
@@ -54,8 +54,8 @@ export default async function InspDoc({ params }: { params: Promise<{ id: string
         <span className="inBadge" style={{ color: STATUS[x.status].fg, background: STATUS[x.status].bg }}>{STATUS[x.status].label}</span>
         {x.test ? <span className="inBadge inBadgeTest">DATE DE TEST</span> : null}
         <InspDocActions id={x.id} done={done} delivered={x.status === "pred"} canSimulate={c.super}
-          canReopen={c.super || x.created_by === c.user.id} assignee={x.assignee_name} signer={x.signed_at ? x.signed_name : null}>
-          {(c.super || x.created_by === c.user.id) && <InspShare id={x.id} token={x.share_token} />}
+          canReopen={canPrepare(c, x)} assignee={x.assignee_name} signer={x.signed_at ? x.signed_name : null}>
+          {canPrepare(c, x) && <InspShare id={x.id} token={x.share_token} />}
         </InspDocActions>
       </div>
       {redoNote && x.status === "lucru" && <div className="note inRedoNote"><b>Retrimisă pe telefon pentru completare.</b> {redoNote}

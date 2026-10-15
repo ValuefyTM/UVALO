@@ -3,9 +3,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { fmtWhen, STATUS, STATUSES, type InspRow, type Status } from "@/lib/insp-shared";
 
-type Row = InspRow & { who: "mine" | "forme" | "forothers" };
+type Row = InspRow & { who: "mine" | "forme" | "forothers" | "firm" };
 type View = "list" | "split" | "map" | "cal";
-const WHO = [["mine", "Ale mele"], ["forothers", "Făcute pentru colegi"], ["forme", "Făcute pentru mine"]] as const;
+const WHO = [["mine", "Ale mele"], ["forothers", "Făcute pentru colegi"], ["forme", "Făcute pentru mine"], ["firm", "Ale firmei"]] as const;
 const ico = (d: React.ReactNode) => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{d}</svg>;
 const VIEWS: [View, string, React.ReactNode][] = [
   ["list", "Listă", ico(<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />)],
@@ -33,9 +33,12 @@ function Badge({ s }: { s: Status }) {
 }
 
 /** Inspecții: the list with the three tabs (mine / done for colleagues / done for me), status filters and the list / map / calendar views. */
-export function InspList({ rows: initial, meId }: { rows: Row[]; meId: string }) {
+export function InspList({ rows: initial, meId, firm, ops }: { rows: Row[]; meId: string; firm?: string | null; ops?: boolean }) {
   const [rows, setRows] = useState(initial);
-  const [who, setWho] = useState<Row["who"]>("mine");
+  // "Ale firmei" (firm viewers: administrators and operationals of an office) = every inspection of the firm, mine included
+  const inTab = (r: Row, k: Row["who"]) => (k === "firm" ? !!firm && r.org_id === firm : r.who === k);
+  const tabs = WHO.filter(([k]) => (k === "firm" ? !!firm : !(ops && (k === "forothers" || k === "mine"))));
+  const [who, setWho] = useState<Row["who"]>(ops ? "firm" : "mine");
   const [st, setSt] = useState<Status | "all">("all");
   const [q, setQ] = useState("");
   const [view, setView] = useState<View>("list");
@@ -44,7 +47,7 @@ export function InspList({ rows: initial, meId }: { rows: Row[]; meId: string })
   useEffect(() => { try { const v = localStorage.getItem("insp-view"); if (v === "map" || v === "cal" || v === "split") setView(v); } catch {} }, []);
   const pick = (v: View) => { setView(v); try { localStorage.setItem("insp-view", v); } catch {} };
 
-  const inWho = rows.filter((r) => r.who === who);
+  const inWho = rows.filter((r) => inTab(r, who));
   const shown = inWho.filter((r) => (st === "all" || r.status === st) && (!q.trim() || `${r.address} ${r.cad_nr ?? ""} ${r.contact_name ?? ""} ${r.code}`.toLowerCase().includes(q.trim().toLowerCase())));
 
   async function schedule(id: string, when: string) {
@@ -59,9 +62,9 @@ export function InspList({ rows: initial, meId }: { rows: Row[]; meId: string })
     <div className="inList">
       <div className="inBar">
         <div className="inWho" role="tablist" aria-label="Ale cui">
-          {WHO.map(([k, l]) => (
+          {tabs.map(([k, l]) => (
             <button key={k} type="button" role="tab" aria-selected={who === k} onClick={() => { setWho(k); setSt("all"); }}>
-              {l} <span>{rows.filter((r) => r.who === k).length}</span>
+              {l} <span>{rows.filter((r) => inTab(r, k)).length}</span>
             </button>
           ))}
         </div>
@@ -136,9 +139,9 @@ export function InspList({ rows: initial, meId }: { rows: Row[]; meId: string })
 function Empty({ who }: { who: Row["who"] }) {
   return (
     <div className="card inEmpty">
-      <b>{who === "mine" ? "Nicio inspecție încă" : who === "forme" ? "Niciun coleg nu face încă inspecții pentru tine" : "Nu faci încă inspecții pentru colegi"}</b>
-      <p className="hint">{who === "mine" ? "Pregătește prima inspecție: bunul, fișa, contactul și programarea. Pe telefon doar o faci." : "Le vei vedea aici când un coleg din birou sau din Colaborări îți trimite o inspecție."}</p>
-      {who === "mine" && <a className="btn btnGold" href="/inspectii/nou">Inspecție nouă</a>}
+      <b>{who === "firm" ? "Firma nu are încă inspecții" : who === "mine" ? "Nicio inspecție încă" : who === "forme" ? "Niciun coleg nu face încă inspecții pentru tine" : "Nu faci încă inspecții pentru colegi"}</b>
+      <p className="hint">{who === "firm" ? "Aici apar toate inspecțiile biroului, indiferent cine le-a pregătit sau cine le face." : who === "mine" ? "Pregătește prima inspecție: bunul, fișa, contactul și programarea. Pe telefon doar o faci." : "Le vei vedea aici când un coleg din birou sau din Colaborări îți trimite o inspecție."}</p>
+      {(who === "mine" || who === "firm") && <a className="btn btnGold" href="/inspectii/nou">Inspecție nouă</a>}
     </div>
   );
 }
