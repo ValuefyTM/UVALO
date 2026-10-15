@@ -67,8 +67,8 @@ export function MobileApp() {
   useEffect(() => { try { const v = JSON.parse(localStorage.getItem("insp-notif-seen") || "null"); if (v?.at != null) setSeen(v); } catch {} }, []);
   const [state, setState] = useState<"boot" | "login" | "noaccess" | "app">("boot");
   const [items, setItems] = useState<InspRow[]>([]);
-  const [collab, setCollab] = useState<InspRow[]>([]); // done for others / by others for me
   const [firms, setFirms] = useState<{ id: string; name: string }[]>([]); // offices I may create inspections for (angajat, allowed)
+  const [appUrl, setAppUrl] = useState(""); // the platform (app.uvalo.ro), for what is done on the web
   const [cur, setCur] = useState<Insp | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [view, setViewState] = useState<View>({ v: "home" });
@@ -101,8 +101,8 @@ export function MobileApp() {
   const apply = useCallback((j: Record<string, unknown>) => {
     setMe(j.user as Me);
     setItems((j.items as InspRow[]) ?? []);
-    setCollab((j.collab as InspRow[]) ?? []);
     setFirms((j.firms as { id: string; name: string }[]) ?? []);
+    setAppUrl(String(j.app_url ?? ""));
     setInfo((j.info as Info) ?? null);
     setTpls((j.templates as Tpl[]) ?? []);
     setNotifs((j.notifs as Notif[]) ?? []);
@@ -383,7 +383,7 @@ export function MobileApp() {
       )}
       <div className="mbPage" style={pull || drag ? { transform: `translateY(${pull}px)`, transition: drag ? "none" : undefined } : undefined}>
       {!online && <div className="mbOffline">Fără semnal · lucrezi pe telefon, se trimite când revine rețeaua</div>}
-      {view.v === "home" && <Home me={me} items={items.filter((i) => !isDone(i) && i.place !== "collab")} queueN={queueN} onQueue={() => go({ v: "queue" })} pos={pos} unread={unread} scope={scope} setScope={setScope} st={st} setSt={setSt} onBell={() => go({ v: "notifs" })} onMe={() => go({ v: "account" })} onSchedule={setSched} onNew={() => go({ v: "new" })} onOpen={(id) => open(id, { v: "detail", id })} onStart={(id) => open(id, { v: "form", id, sec: 0 })} />}
+      {view.v === "home" && <Home me={me} items={items.filter((i) => !isDone(i))} queueN={queueN} onQueue={() => go({ v: "queue" })} pos={pos} unread={unread} scope={scope} setScope={setScope} st={st} setSt={setSt} onBell={() => go({ v: "notifs" })} onMe={() => go({ v: "account" })} onSchedule={setSched} onNew={() => go({ v: "new" })} onOpen={(id) => open(id, { v: "detail", id })} onStart={(id) => open(id, { v: "form", id, sec: 0 })} />}
       {view.v === "detail" && cur && <Detail x={cur} draft={draft} mine={!cur.ro && (!me || cur.assignee_id === me.id)} onSchedule={setSched} onBack={() => history.back()} onStart={() => go({ v: "form", id: cur.id, sec: 0 })} />}
       {view.v === "form" && cur && draft && (
         <Form x={cur} d={draft} sec={view.sec} photos={pending.filter((p) => p.insp === cur.id && p.kind === "photo").length + cur.files.filter((f) => f.kind === "photo").length}
@@ -395,7 +395,7 @@ export function MobileApp() {
       {view.v === "sign" && cur && draft && <Sign x={cur} d={draft} photos={pending.filter((p) => p.insp === cur.id && p.kind === "photo").length + cur.files.filter((f) => f.kind === "photo").length} change={change} onBack={() => history.back()} onFinish={finish}
         onRooms={() => go({ v: "rooms", id: cur.id })} onPhotos={() => go({ v: "photos", id: cur.id })} />}
       {view.v === "queue" && <Queue pending={pending} finishN={finishQ} items={items} online={online} onSend={async () => { const n = await sendAll(); say(n ? "Mai sunt elemente de trimis." : "Totul a fost trimis."); }} />}
-      {view.v === "collab" && <Collab items={items.filter((i) => i.place === "collab")} onOpen={(id) => open(id, { v: "detail", id })} />}
+      {view.v === "collab" && <Collab appUrl={appUrl} online={online} />}
       {view.v === "notifs" && <Notifs notifs={notifs} reminders={reminders} seenAt={seen.at} onBack={() => { markSeen(); history.back(); }}
         onOpen={(id) => { markSeen(); void open(id, { v: "detail", id }); }} />}
       {view.v === "account" && <Account me={me} info={info} done={items.filter(isDone)} onOpen={(id) => open(id, { v: "detail", id })} queueN={queueN} online={online} onSend={async () => { const n = await sendAll(); say(n ? "Mai sunt elemente de trimis." : "Totul a fost trimis."); }} say={say} />}
@@ -519,6 +519,8 @@ function Home({ me, items, queueN, onQueue, pos, unread, scope, setScope, st, se
   onStart: (id: string) => void; onSchedule: (x: Sched) => void;
 }) {
   const [hv, setHv] = useState<HView>("list");
+  // whose: mine (my account) or received from the firms I work with (angajat / colaborator); only shown when there are such
+  const [own, setOwn] = useState<"all" | "mine" | "firms">("all");
   useEffect(() => { try { const v = localStorage.getItem("insp-view"); if (v === "map" || v === "cal" || v === "list") setHv(v); } catch {} }, []);
   const pickView = (v: HView) => { setHv(v); try { localStorage.setItem("insp-view", v); } catch {} };
   const now = new Date(), today = ymd(now);
@@ -537,7 +539,9 @@ function Home({ me, items, queueN, onQueue, pos, unread, scope, setScope, st, se
   const todayL = items.filter((i) => whenOf(i)?.startsWith(today));
   const weekL = items.filter((i) => { const w = whenOf(i)?.slice(0, 10); return !!w && w >= today && w <= wkEnd; });
   // the cards choose the time (Toate / Azi / Săptămâna asta / De programat), the list below the status
-  const scoped = scope === "today" ? todayL : scope === "week" ? weekL : scope === "unsched" ? unsched : items;
+  const firmN = items.filter((i) => i.firm).length;
+  const byOwn = (l: InspRow[]) => (own === "mine" ? l.filter((i) => !i.firm) : own === "firms" ? l.filter((i) => i.firm) : l);
+  const scoped = byOwn(scope === "today" ? todayL : scope === "week" ? weekL : scope === "unsched" ? unsched : items);
   const list = st === "all" ? scoped : scoped.filter((i) => mstat(i) === st);
   const count = (k: MStat) => scoped.filter((i) => mstat(i) === k).length;
   const first = (me?.name ?? "").split(/\s+/)[0];
@@ -606,6 +610,13 @@ function Home({ me, items, queueN, onQueue, pos, unread, scope, setScope, st, se
         </span>
         <button type="button" className="mbAdd" aria-label="Inspecție nouă" onClick={onNew}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg></button>
       </div>
+      {firmN > 0 && hv !== "cal" && (
+        <div className="mbOwn" role="group" aria-label="Ale cui">
+          <button type="button" aria-pressed={own === "all"} onClick={() => setOwn("all")}>Toate <em>{items.length}</em></button>
+          <button type="button" aria-pressed={own === "mine"} onClick={() => setOwn("mine")}>Ale mele <em>{items.length - firmN}</em></button>
+          <button type="button" aria-pressed={own === "firms"} className="firms" onClick={() => setOwn("firms")}>De la firme <em>{firmN}</em></button>
+        </div>
+      )}
       {hv === "list" && <ItemList list={list} today={today} onOpen={onOpen} grouped={st === "all"} />}
       {hv === "map" && <MapList list={list} today={today} pos={pos} onOpen={onOpen} />}
       {hv === "cal" && <Calendar items={items} today={today} onOpen={onOpen} onSchedule={onSchedule} />}
@@ -616,11 +627,12 @@ function Home({ me, items, queueN, onQueue, pos, unread, scope, setScope, st, se
 function ItemRow({ i, today, onOpen, n, sub }: { i: InspRow; today: string; onOpen: (id: string) => void; n?: number; sub?: string }) {
   const w = whenOf(i), d = w ? new Date(w) : null, isToday = w?.startsWith(today);
   return (
-    <button type="button" className="mbItem" onClick={() => onOpen(i.id)}>
+    <button type="button" className={`mbItem${i.firm ? ` byFirm ${i.place === "collab" ? "collab" : "staff"}` : ""}`} onClick={() => onOpen(i.id)}>
+      {i.firm && <u className="mbFirm" title={i.firm}>{i.firm}</u>}
       {n != null ? <span className="mbPinN" style={{ background: STATUS[i.status].fg }}>{n}</span>
         : <span className={`mbDay${isDone(i) ? " done" : isToday ? " today" : ""}`}>{d ? <><small>{isToday ? "AZI" : `${DAYS[d.getDay()]} ${d.getDate()}`}</small><b>{w!.slice(11, 16)}</b></> : <><small>FĂRĂ</small><small>DATĂ</small></>}</span>}
       <span className="mbItemTxt">
-        <span><em>{(i.prop_type ?? "IMOBIL").toUpperCase()}</em><i style={{ color: MSTAT[mstat(i)].fg }}>● {mstat(i) === "gata" ? (i.status === "pred" ? "Predată" : "Finalizată") : MSTAT[mstat(i)].label}</i>{i.firm && <u className="mbFirm">{i.firm}</u>}</span>
+        <span><em>{(i.prop_type ?? "IMOBIL").toUpperCase()}</em><i style={{ color: MSTAT[mstat(i)].fg }}>● {mstat(i) === "gata" ? (i.status === "pred" ? "Predată" : "Finalizată") : MSTAT[mstat(i)].label}</i></span>
         <b>{i.address}</b>
         <small>{sub ?? (i.redo_note && mstat(i) === "redo" ? `De completat: ${i.redo_note}` : isDone(i) && w ? `Făcută ${fmtWhen(w)}` : n != null ? fmtWhen(i.scheduled_at) : [i.contact_name, i.cad_nr && `nr. cad. ${i.cad_nr}`].filter(Boolean).join(" · ") || fmtWhen(i.scheduled_at))}</small>
       </span>
@@ -1383,36 +1395,96 @@ function Sign({ x, d, photos, change, onBack, onFinish, onRooms, onPhotos }: {
 
 /* ---------- queue and account ---------- */
 
-/** "Colaborări": the inspections received from the offices this person is a colaborator of, grouped by firm. */
-function Collab({ items, onOpen }: { items: InspRow[]; onOpen: (id: string) => void }) {
-  const today = ymd(new Date());
-  const firms = [...new Set(items.map((i) => i.firm ?? "Alte firme"))];
-  const open = items.filter((i) => !isDone(i)), done = items.filter(isDone);
+/* ---------- Colaborări: posts from other valuers (the Colaborări module), read from /api/colaborari ---------- */
+
+type CPerson = { id: string; name: string; init: string; avatar: boolean; sub?: string };
+type CPost = { id: string; kind: string; title: string; note: string | null; city: string | null; county: string | null; due: string | null; budget: number | null;
+  dist: number | null; status: string; created_at: string; author?: CPerson; own?: boolean; inZone?: boolean; myRequest?: string | null };
+type CState = { profile: { available: number } | null; feed: CPost[]; mine: (CPost & { requests: { status: string }[] })[];
+  myRequests: { id: string; status: string; post: CPost }[]; notifs: { id: number; text: string; read: boolean; created_at: string }[] };
+const REQ: Record<string, string> = { nou: "Cerere trimisă", contactat: "Te-a contactat", ales: "Ai fost ales" };
+const CAv = ({ p }: { p: CPerson }) => (p.avatar
+  // eslint-disable-next-line @next/next/no-img-element
+  ? <img className="cbAv mbCAv" src={`/api/avatar/${p.id}`} alt="" /> : <span className="cbAv mbCAv" aria-hidden="true">{p.init}</span>);
+
+/** "Colaborări": inspection / report requests from other valuers in my zones, the requests on my posts and the ones I sent. */
+function Collab({ appUrl, online }: { appUrl: string; online: boolean }) {
+  const [d, setD] = useState<CState | null>(null);
+  const [err, setErr] = useState("");
+  const [busy, setBusy] = useState("");
+  const load = useCallback(async () => {
+    const r = await fetch("/api/colaborari", { cache: "no-store" }).catch(() => null);
+    if (!r) { setErr("Fără rețea: anunțurile se văd când revine semnalul."); return; }
+    const j = await J(r);
+    if (!r.ok) { setErr(String(j.error || "Colaborările nu sunt disponibile acum.")); return; }
+    setErr(""); setD(j as unknown as CState);
+  }, []);
+  useEffect(() => { void load(); }, [load]);
+  const web = (q = "") => `${appUrl}/colaborari${q}`;
+  async function ask(id: string) {
+    setBusy(id);
+    const r = await fetch("/api/colaborari", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "request", post_id: id }) }).catch(() => null);
+    const j = r ? await J(r) : {};
+    setBusy("");
+    if (!r?.ok) { setErr(String(j.error || "Nu a mers. Încearcă din nou.")); return; }
+    await load();
+  }
+  const feed = d ? d.feed.filter((p) => !p.own && p.inZone) : [];
+  const mineAct = d ? d.mine.filter((p) => p.status === "active" || p.status === "inlucru") : [];
+  const where = (p: CPost) => [p.city, p.county && `jud. ${p.county}`].filter(Boolean).join(", ");
+  const facts = (p: CPost) => [p.due && `termen ${fmtD(p.due)}`, p.budget ? `${p.budget.toLocaleString("ro-RO")} lei` : "onorariu de stabilit", p.dist != null && `${Math.round(p.dist)} km`].filter(Boolean).join(" · ");
   return (
     <>
-      <header className="mbHead small"><b>Colaborări</b><small>Inspecțiile primite de la firmele cu care colaborezi</small></header>
+      <header className="mbHead small"><b>Colaborări</b><small>Anunțuri de la colegi evaluatori: inspecții și rapoarte</small></header>
       <div className="mbBody">
-        {!items.length && (
-          <div className="mbSoon">
-            <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="3.2" /><circle cx="17" cy="9" r="2.6" /><path d="M2.5 20c.8-3.4 3-5.4 5.5-5.4s4.7 2 5.5 5.4M14 15c2.6-.6 5.6.6 7 4.6" /></svg>
-            <b>Nicio inspecție de la colaborări</b>
-            <small>Când o firmă de evaluare cu care ești asociat ca colaborator îți atribuie o inspecție, apare aici. Inspecțiile tale rămân în Acasă.</small>
-          </div>
+        {err && <p className="mbNote">{err}</p>}
+        {!d && !err && <p className="mbEmpty">Se încarcă…</p>}
+        {d && !d.profile && (
+          <section className="mbCard mbCollabOn">
+            <b>Activează Colaborările</b>
+            <small>Primești anunțurile colegilor din zonele tale (inspecții, rapoarte) și poți cere detalii. Activarea se face o dată, pe web.</small>
+            <a className="mbBtn gold" href={web()} target="_blank" rel="noopener">Activează pe web ↗</a>
+          </section>
         )}
-        {firms.map((f) => {
-          const act = open.filter((i) => (i.firm ?? "Alte firme") === f);
-          if (!act.length) return null;
-          return (
-            <Fragment key={f}>
-              <span className="mbGroupHead mbFirmHead"><i />{f}<em>{act.length}</em></span>
-              <ItemList list={act} today={today} onOpen={onOpen} />
-            </Fragment>
-          );
-        })}
-        {done.length > 0 && <>
-          <span className="mbGroupHead" style={{ color: MSTAT.gata.fg }}><i style={{ background: MSTAT.gata.fg }} />Finalizate<em>{done.length}</em></span>
-          <div className="mbList">{done.map((i) => <ItemRow key={i.id} i={i} today={today} onOpen={onOpen} />)}</div>
+        {mineAct.length > 0 && <>
+          <small className="mbCap">ANUNȚURILE MELE</small>
+          {mineAct.map((p) => {
+            const n = p.requests.filter((r) => r.status === "nou").length;
+            return (
+              <a key={p.id} className="mbCPost" href={web("?view=mine")} target="_blank" rel="noopener">
+                <span className="mbCKind">{p.kind === "inspectie" ? "INSPECȚIE" : "RAPORT + INSPECȚIE"}</span>
+                <b>{p.title}</b><small>{where(p)}</small>
+                <small className={n ? "mbCNew" : ""}>{p.requests.length ? `${p.requests.length} ${p.requests.length === 1 ? "cerere" : "cereri"}${n ? ` · ${n} ${n === 1 ? "nouă" : "noi"}` : ""}` : "nicio cerere încă"}{p.status === "inlucru" ? " · în lucru" : ""}</small>
+              </a>
+            );
+          })}
         </>}
+        {d && d.profile && <>
+          <small className="mbCap">ÎN ZONELE TALE · {feed.length}</small>
+          {!feed.length && <p className="mbEmpty">Niciun anunț nou în zonele tale. Când un coleg cere ajutor, apare aici.</p>}
+          {feed.map((p) => (
+            <section key={p.id} className="mbCPost">
+              <span className="mbCKind">{p.kind === "inspectie" ? "INSPECȚIE" : "RAPORT + INSPECȚIE"}</span>
+              <b>{p.title}</b>
+              <small>{where(p)}</small>
+              <small>{facts(p)}</small>
+              {p.author && <span className="mbCBy"><CAv p={p.author} /><span>{p.author.name}</span></span>}
+              {p.myRequest ? <span className="mbCState">{REQ[p.myRequest] ?? "Cerere trimisă"}</span>
+                : d.profile?.available ? <button type="button" className="mbBtn gold" disabled={!!busy || !online} onClick={() => ask(p.id)}>{busy === p.id ? "…" : "Vreau detalii"}</button>
+                : <a className="mbBtn" href={web(`?post=${p.id}`)} target="_blank" rel="noopener">Vreau detalii (pe web) ↗</a>}
+            </section>
+          ))}
+        </>}
+        {d && d.myRequests.length > 0 && <>
+          <small className="mbCap">CERERILE MELE</small>
+          {d.myRequests.map((r) => (
+            <a key={r.id} className="mbCPost slim" href={web("?view=chat")} target="_blank" rel="noopener">
+              <b>{r.post.title}</b><small>{where(r.post)}{r.post.author ? ` · ${r.post.author.name}` : ""}</small>
+              <span className="mbCState">{REQ[r.status] ?? r.status}</span>
+            </a>
+          ))}
+        </>}
+        {d && <a className="mbBtn mbCWeb" href={web()} target="_blank" rel="noopener">Toate colaborările, mesajele și anunțurile pe web ↗</a>}
       </div>
     </>
   );

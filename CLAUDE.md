@@ -266,12 +266,17 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   (`busy` = inspecțiile lor programate și neterminate, din orice firmă, doar ora): liber / N inspecții în ziua aleasă / „ocupat atunci” la
   suprapunere / următoarea. `assignee_kind` rămâne `office` și pentru asociați (Acasă vs Colaborări pe telefon se decide în etapa 3 după `office_links.kind`).
 - **Etapa 3 — telefonul**: `myAssigned` marchează fiecare inspecție cu `place` (`collab` = de la un birou unde persoana e colaborator,
-  altfel `home`), `firm` (numele firmei când nu e a persoanei; eticheta mov `.mbFirm` în listă și în detaliu) și `ro` (asocierea cu firma
-  s-a încheiat → doar citire: cele nefinalizate dispar, cele finalizate rămân; `lockedFor()` blochează pe server acțiunile, fișierele și
-  „Preia din RLV”, detaliul arată nota). Tab-ul **Colaborări** de pe telefon arată inspecțiile `place = collab`, grupate pe firme, plus
-  finalizatele. Migrația 0030 `orgs.staff_create`: bifa „Angajații pot crea inspecții pentru birou de pe telefon” (grupul Angajați din
+  altfel `home`), `firm` (numele firmei când nu e a persoanei) și `ro` (asocierea cu firma s-a încheiat → doar citire, **și pentru ce a creat
+  chiar persoana pentru acea firmă**: cele nefinalizate dispar, cele finalizate rămân; `lockedFor()` blochează pe server acțiunile, editarea,
+  fișierele și „Preia din RLV”; pe web insigna „DOAR CITIRE” în locul butoanelor, pe telefon nota din detaliu). **Toate inspecțiile stau în
+  Acasă**: filtrul `.mbOwn` Toate / Ale mele / De la firme (doar când există de la firme), lista rămâne grupată pe stări; cardurile de la
+  firme au alt fundal (`.byFirm.collab` mov, `.byFirm.staff` verde) și tag-ul firmei în colțul de sus (`.mbFirm`, absolut, fără să schimbe
+  mărimea cardului). Migrația 0030 `orgs.staff_create`: bifa „Angajații pot crea inspecții pentru birou de pe telefon” (grupul Angajați din
   „Firma mea”, acțiunea `staff_create`) → `phoneFirms()` în `/api/m/state` (`firms`) → la „Inspecție nouă” pe telefon „Pentru: Contul meu /
   Firma X” (`for_org` la `/api/m/new`, verificat; `saveInspection(..., { orgId })`). Creditele pe birou vin la pricing.
+- **Tab-ul Colaborări pe telefon** = modulul Colaborări (`/api/colaborari`, aceeași sesiune): „Anunțurile mele” (cereri, noi cu roșu),
+  „În zonele tale” (anunțurile colegilor, cu „Vreau detalii” direct — acțiunea `request` — sau pe web dacă profilul e „doar mă uit”),
+  „Cererile mele” (starea); fără profil → „Activează pe web”. Linkurile spre web folosesc `app_url` din `/api/m/state` (`origin()`).
 - „În curând: Colaborări” (card pe Acasă, meniu) doar pentru evaluatori fără acces cât timp modul ≠ `on`; niciodată pentru nonevaluatori.
 
 ## Colaborări (`/colaborari`, modulul `colaborari`)
@@ -447,7 +452,7 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
 - **Navigarea pe telefon**: meniul de jos = Acasă / **Colaborări** / Contul meu. Acasă arată doar inspecțiile nefinalizate (filtrul: „Toate” +
   Completări / În lucru / De făcut / De programat, fără Finalizate); finalizatele (ultimele 90 de zile, `myAssigned`) sunt în Contul meu,
   „Inspecții finalizate”. „De trimis” nu mai e în meniu: iconița cu săgeată și numărul apare lângă clopoțel doar când există fișe / poze
-  netrimise (`.mbQueueBtn` → ecranul coadă). Tab-ul Colaborări (`Collab`) arată inspecțiile primite de la birourile unde persoana e colaborator (vezi Birou → Etapa 3); `phoneCollab()`
+  netrimise (`.mbQueueBtn` → ecranul coadă). Tab-ul Colaborări (`Collab`) arată anunțurile din modulul Colaborări (vezi Birou → Etapa 3); `phoneCollab()`
   în `insp.ts` („Fac pentru alții” = eu o fac, a pregătit-o altcineva; „Alții pentru mine” = am pregătit-o eu, o face altcineva), în
   `/api/m/state` ca `collab`. Detaliul nu are „Începe fișa” când inspecția nu e a mea de făcut.
   Cardurile obligatorii din fișă (`.mbTile`) sunt compacte: iconiță mică în stânga, titlul și starea pe două rânduri. Și cardul de sus

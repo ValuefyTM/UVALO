@@ -68,9 +68,9 @@ async function relations(db: D1Database, userId: string) {
   return { member, active, ended };
 }
 type Rel = Awaited<ReturnType<typeof relations>>;
-/** Done for a firm whose link with this person ended (and who is not its member): only reading is left. */
-const lockedFor = (rel: Rel, userId: string, r: { org_id?: unknown; created_by?: unknown }) =>
-  !!r.org_id && r.created_by !== userId && !rel.member.has(String(r.org_id)) && !rel.active.has(String(r.org_id)) && rel.ended.has(String(r.org_id));
+/** Done (or created) for a firm whose link with this person ended, and who is not its member: only reading is left. */
+const lockedFor = (rel: Rel, _userId: string, r: { org_id?: unknown }) =>
+  !!r.org_id && !rel.member.has(String(r.org_id)) && !rel.active.has(String(r.org_id)) && rel.ended.has(String(r.org_id));
 /** Phone: where an inspection shows. Inspections from a firm this person is a colaborator of → the Colaborări tab; the rest → Acasă. */
 const placeOf = (rel: Rel, r: { org_id?: unknown }) => (r.org_id && rel.active.get(String(r.org_id)) === "colaborator" && !rel.member.has(String(r.org_id)) ? "collab" : "home");
 
@@ -250,7 +250,7 @@ export async function getInspection(db: D1Database, c: Ctx, id: string): Promise
   const r = await inspRow(db, "i.id = ?", id);
   if (!r || !(canPrepare(c, r) || r.assignee_id === c.user.id)) return null;
   const x = await fullInsp(db, r, id);
-  if (canPrepare(c, r)) return x;
+  if (c.super) return x;
   const rel = await relations(db, c.user.id);
   return { ...x, ro: lockedFor(rel, c.user.id, r) ? 1 : 0, firm: r.org_id && !rel.member.has(String(r.org_id)) ? ((await db.prepare("SELECT name FROM orgs WHERE id = ?").bind(r.org_id).first<{ name: string }>())?.name ?? null) : null };
 }
@@ -362,6 +362,7 @@ export async function saveInspection(db: D1Database, c: Ctx, b: Record<string, u
   const id = s(b.id, 64);
   const old = id ? await db.prepare("SELECT id, created_by, org_id, status FROM inspections WHERE id = ? AND deleted_at IS NULL").bind(id).first<{ id: string; created_by: string; org_id: string | null; status: Status }>() : null;
   if (id && (!old || !canPrepare(c, old))) return { error: "Inspecția nu există." };
+  if (old && !c.super && lockedFor(await relations(db, c.user.id), c.user.id, old)) return { error: "Asocierea cu firma s-a încheiat: inspecția se poate doar citi." };
   if (old && (old.status === "gata" || old.status === "pred")) return { error: "Inspecția e finalizată și nu se mai modifică." };
   // who does it: me, a colleague of the firm, or (Colaborări) nobody yet
   let assignee: string | null = c.user.id;
@@ -398,7 +399,7 @@ export async function inspAction(db: D1Database, c: Ctx, b: Record<string, unkno
   const action = s(b.action, 30), id = s(b.id, 64);
   const r = await db.prepare("SELECT * FROM inspections WHERE id = ? AND deleted_at IS NULL").bind(id).first<Record<string, unknown>>();
   if (!r || !(canPrepare(c, r) || (action !== "delete" && r.assignee_id === c.user.id))) return { error: "Inspecția nu există." };
-  if (!canPrepare(c, r) && lockedFor(await relations(db, c.user.id), c.user.id, r)) return { error: "Asocierea cu firma s-a încheiat: inspecția se poate doar citi." };
+  if (!c.super && lockedFor(await relations(db, c.user.id), c.user.id, r)) return { error: "Asocierea cu firma s-a încheiat: inspecția se poate doar citi." };
   if (action === "delete") {
     await db.prepare("UPDATE inspections SET deleted_at = ? WHERE id = ?").bind(now(), id).run();
     return { ok: true };
@@ -523,9 +524,10 @@ export const FILE_MAX = 15 * 1024 * 1024;
 async function canTouch(db: D1Database, c: Ctx, inspId: string, write = true) {
   const r = await db.prepare("SELECT created_by, org_id, assignee_id FROM inspections WHERE id = ? AND deleted_at IS NULL").bind(inspId).first<{ created_by: string; org_id: string | null; assignee_id: string | null }>();
   if (!r) return false;
-  if (canPrepare(c, r)) return true;
-  // the one who does it; after the link with the firm ended, only reading
-  return r.assignee_id === c.user.id && (!write || !lockedFor(await relations(db, c.user.id), c.user.id, r));
+  if (c.super) return true;
+  // after the link with the firm ended, only reading (also for what the person created for that firm)
+  if (write && lockedFor(await relations(db, c.user.id), c.user.id, r)) return false;
+  return canPrepare(c, r) || r.assignee_id === c.user.id;
 }
 
 export async function addFile(db: D1Database, bucket: R2Bucket, c: Ctx, inspId: string, f: File, meta: { kind: string; name?: string; room?: string; taken_at?: string; lat?: unknown; lng?: unknown }): Promise<{ error: string } | { ok: true; id: string }> {

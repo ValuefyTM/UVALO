@@ -53,10 +53,11 @@ export default async function InspDoc({ params }: { params: Promise<{ id: string
       <div className="inDocTop">
         <span className="inBadge" style={{ color: STATUS[x.status].fg, background: STATUS[x.status].bg }}>{STATUS[x.status].label}</span>
         {x.test ? <span className="inBadge inBadgeTest">DATE DE TEST</span> : null}
-        <InspDocActions id={x.id} done={done} delivered={x.status === "pred"} canSimulate={c.super}
+        {x.ro ? <span className="inBadge" style={{ background: "#f4f0fa", color: "#7a5aa6" }}>DOAR CITIRE · asocierea cu {x.firm ?? "firma"} s-a încheiat</span> : null}
+        {!x.ro && <InspDocActions id={x.id} done={done} delivered={x.status === "pred"} canSimulate={c.super}
           canReopen={canPrepare(c, x)} assignee={x.assignee_name} signer={x.signed_at ? x.signed_name : null}>
           {canPrepare(c, x) && <InspShare id={x.id} token={x.share_token} />}
-        </InspDocActions>
+        </InspDocActions>}
       </div>
       {redoNote && x.status === "lucru" && <div className="note inRedoNote"><b>Retrimisă pe telefon pentru completare.</b> {redoNote}
         <br /><small>{x.redo_prev_at ? `Fișa fusese completată pe ${fmtDate(x.redo_prev_at, true)}. ` : ""}{x.redo_keep_sig ? `Semnătura salvată${x.signed_name ? ` (${x.signed_name})` : ""} rămâne.` : "Se semnează din nou la final."}</small></div>}

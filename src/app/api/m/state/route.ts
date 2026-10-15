@@ -1,4 +1,5 @@
 import { api } from "@/lib/api";
+import { origin } from "@/lib/site";
 import { myAssigned, phoneCollab, phoneFirms, phoneInfo, phoneNotifs, usableTemplates } from "@/lib/insp";
 
 /** Phone app: who is signed in (profile, activity, this phone), the inspections they have to do, the sheets for a new one. */
@@ -16,7 +17,7 @@ export async function GET() {
       id: u.id, name: u.name || u.email, email: u.email, avatar: !!u.has_avatar, anevar_no: u.anevar_no, county: u.county, phone: u.phone,
       org: o && (o.office_at || c.orgs.length > 1) ? { id: o.id, name: o.name, logo: !!o.has_logo, role: c.role } : null,
     },
-    allowed, items, info, notifs, collab, firms,
+    allowed, items, info, notifs, collab, firms, app_url: await origin(),
     templates: tpls.map((t) => ({ id: t.id, name: t.name, prop_type: t.prop_type })),
   }, { headers: { "Cache-Control": "no-store" } });
 }
