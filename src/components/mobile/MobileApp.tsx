@@ -1512,17 +1512,21 @@ const mb = (n: number) => (n < 1048576 ? `${Math.max(1, Math.round(n / 1024))} K
 function NewInsp({ tpls, firms, online, pos, onBack, onDone }: { tpls: Tpl[]; firms: { id: string; name: string }[]; online: boolean; pos: React.RefObject<[number, number] | null>; onBack: () => void; onDone: (id: string, now: boolean) => Promise<void> }) {
   const [f, setF] = useState({ address: "", prop_type: "", template_id: "", cad_nr: "", cf_nr: "", contact_name: "", contact_phone: "", contact_role: "", notes: "" });
   const [ll, setLl] = useState<[number, number] | null>(null);
-  const [when, setWhen] = useState<"now" | "later">("now");
+  // now = I am there (opens the sheet); later = a date and time now; unsched = scheduled afterwards (status „De programat”)
+  const [when, setWhen] = useState<"now" | "later" | "unsched">("now");
   const [forOrg, setForOrg] = useState(""); // "" = my own account; otherwise an office I work for as angajat
   const [at, setAt] = useState("");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
   const set = (k: keyof typeof f, v: string) => setF((o) => ({ ...o, [k]: v }));
-  const pickType = (t: string) => {
-    setF((o) => ({ ...o, prop_type: o.prop_type === t ? "" : t,
-      template_id: tpls.find((x) => x.prop_type === t)?.id ?? (o.template_id || tpls[0]?.id || "") }));
-  };
-  useEffect(() => { if (!f.template_id && tpls[0]) set("template_id", tpls[0].id); }, [tpls]); // eslint-disable-line react-hooks/exhaustive-deps
+  // as on the web: first the property type (only the types that have a sheet), then only the sheets of that type (plus the ones for any property)
+  const types = typesOf(tpls.map((t) => t.prop_type));
+  const forType = (ty: string) => (ty ? tpls.filter((t) => t.prop_type === ty || !t.prop_type) : []);
+  const shownTpls = forType(f.prop_type);
+  const pickType = (t: string) => setF((o) => {
+    const list = forType(t);
+    return { ...o, prop_type: t, template_id: list.some((x) => x.id === o.template_id) ? o.template_id : list[0]?.id ?? "" };
+  });
   async function here() {
     setMsg("");
     const p = pos.current ?? await new Promise<[number, number] | null>((res) => navigator.geolocation?.getCurrentPosition((g) => res([g.coords.latitude, g.coords.longitude]), () => res(null), { enableHighAccuracy: true, timeout: 10000 }));
@@ -1535,7 +1539,7 @@ function NewInsp({ tpls, firms, online, pos, onBack, onDone }: { tpls: Tpl[]; fi
   async function save() {
     setBusy(true); setMsg("");
     const d = new Date(), pad = (n: number) => String(n).padStart(2, "0");
-    const scheduled_at = when === "now" ? `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}` : at;
+    const scheduled_at = when === "now" ? `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}` : when === "later" ? at : "";
     try {
       const r = await fetch("/api/m/new", { method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...f, scheduled_at, for_org: forOrg, lat: ll?.[0] ?? null, lng: ll?.[1] ?? null }) });
@@ -1560,10 +1564,17 @@ function NewInsp({ tpls, firms, online, pos, onBack, onDone }: { tpls: Tpl[]; fi
         <button type="button" className="mbStart" onClick={here}><b>📍 Sunt la proprietate</b><small>{ll ? `locație preluată · ${ll[0].toFixed(5)}, ${ll[1].toFixed(5)}` : "preia adresa după locația telefonului"}</small></button>
         <label className="mbField">Adresa bunului<textarea className="mbIn" rows={2} value={f.address} onChange={(e) => { set("address", e.target.value); setLl(null); }} placeholder="Str., nr., localitate, județ" /></label>
         <small className="mbCap">TIPUL BUNULUI</small>
-        <span className="mbOpts">{typesOf(tpls.map((t) => t.prop_type)).map((t) => <button key={t} type="button" aria-pressed={f.prop_type === t} onClick={() => pickType(t)}>{t}</button>)}</span>
-        <label className="mbField">Fișa de inspecție<select className="mbIn" value={f.template_id} onChange={(e) => set("template_id", e.target.value)}>
-          {(f.prop_type ? tpls.filter((t) => t.prop_type === f.prop_type || !t.prop_type) : tpls).map((t) => <option key={t.id} value={t.id}>{t.name}{f.prop_type ? "" : t.prop_type ? ` · ${t.prop_type}` : ""}</option>)}
-        </select></label>
+        <span className="mbOpts">{types.map((t) => <button key={t} type="button" aria-pressed={f.prop_type === t} onClick={() => pickType(t)}>{t}</button>)}</span>
+        <small className="mbCap">FIȘA DE INSPECȚIE</small>
+        {!f.prop_type ? <p className="mbTplHint">Alege tipul bunului ca să vezi fișele lui.</p> : (
+          <span className="mbTplPick" role="radiogroup" aria-label="Fișa de inspecție">
+            {shownTpls.map((t) => (
+              <button key={t.id} type="button" role="radio" aria-checked={f.template_id === t.id} onClick={() => set("template_id", t.id)}>
+                <i aria-hidden="true" /><span><b>{t.name}</b><small>{t.prop_type ? t.prop_type : "pentru orice imobil"}</small></span>
+              </button>
+            ))}
+          </span>
+        )}
         <span className="mbGrid2">
           <label className="mbField">Nr. cadastral<input className="mbIn" inputMode="numeric" value={f.cad_nr} onChange={(e) => set("cad_nr", e.target.value)} /></label>
           <label className="mbField">Carte funciară<input className="mbIn" value={f.cf_nr} onChange={(e) => set("cf_nr", e.target.value)} /></label>
@@ -1575,17 +1586,19 @@ function NewInsp({ tpls, firms, online, pos, onBack, onDone }: { tpls: Tpl[]; fi
         <small className="mbCap">CÂND</small>
         <span className="mbOpts">
           <button type="button" aria-pressed={when === "now"} onClick={() => setWhen("now")}>Acum, sunt acolo</button>
-          <button type="button" aria-pressed={when === "later"} onClick={() => setWhen("later")}>O programez</button>
+          <button type="button" aria-pressed={when === "later"} onClick={() => setWhen("later")}>O programez acum</button>
+          <button type="button" aria-pressed={when === "unsched"} onClick={() => setWhen("unsched")}>Programez ulterior</button>
         </span>
         {when === "later" && <input className="mbIn" type="datetime-local" value={at} onChange={(e) => setAt(e.target.value)} />}
+        {when === "unsched" && <small className="mbCenterSmall" style={{ textAlign: "left" }}>Se adaugă cu starea „De programat”; alegi ziua și ora mai târziu, din detaliul inspecției sau din calendar.</small>}
         <label className="mbField">Note<textarea className="mbIn" rows={2} value={f.notes} onChange={(e) => set("notes", e.target.value)} /></label>
         {msg && <p className="mbErr" role="alert">{msg}</p>}
       </div>
       <footer className="mbFoot">
-        <button type="button" className="mbBtn gold big" disabled={busy || !online || f.address.trim().length < 5 || !f.template_id || (when === "later" && !at)} onClick={save}>
-          {when === "now" ? "Creează și începe fișa" : "Adaugă inspecția"}
+        <button type="button" className="mbBtn gold big" disabled={busy || !online || f.address.trim().length < 5 || !f.prop_type || !f.template_id || (when === "later" && !at)} onClick={save}>
+          {when === "now" ? "Creează și începe fișa" : when === "unsched" ? "Adaugă (de programat)" : "Adaugă inspecția"}
         </button>
-        <small className="mbCenterSmall">{f.address.trim().length < 5 ? "Scrie adresa sau apasă „Sunt la proprietate”." : "Actele (CF, releveu) le poți adăuga apoi pe web."}</small>
+        <small className="mbCenterSmall">{f.address.trim().length < 5 ? "Scrie adresa sau apasă „Sunt la proprietate”." : !f.prop_type ? "Alege tipul bunului și fișa." : "Actele (CF, releveu) le poți adăuga apoi pe web."}</small>
       </footer>
     </>
   );

@@ -525,7 +525,9 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   inspecției (cardul „Programare”, doar la stările prog / plan) → `POST /api/inspectii {action: schedule, scheduled_at, duration_min}`.
 - **Inspecție nouă de pe telefon** (`+ Inspecție nouă` pe Acasă → ecranul `NewInsp`): „Sunt la proprietate” = GPS + adresa din
   `GET /api/m/where` (`reverseGeocode` în `gmaps.ts`, fără cheie Google rămân coordonatele), tipul bunului (alege fișa potrivită), nr. cad., CF,
-  contact, „Acum” (programată la ora curentă, deschide fișa) sau „O programez”. `POST /api/m/new` → `saveInspection` cu `assignee_kind = me`,
+  contact, „Acum, sunt acolo” (programată la ora curentă, deschide fișa), „O programez acum” (zi și oră) sau **„Programez ulterior”** (fără dată →
+  starea „De programat”). Tipul bunului e obligatoriu și vine primul (doar tipurile cu fișă, `typesOf`); fișele apar abia după alegerea tipului,
+  ca listă de carduri (`.mbTplPick`): ale tipului + cele pentru orice imobil, prima preselectată. `POST /api/m/new` → `saveInspection` cu `assignee_kind = me`,
   istoricul „Creată pe telefon”, eveniment `phone_new`. Cere rețea.
 - **Contul meu** pe telefon: poza contului (`/api/avatar/<id>`), legitimația, județul, biroul (cu logo, `user.org` din `/api/m/state`);
   activitatea (`phoneInfo`: luna asta, total, timp mediu, fotografii, ultima trimisă); telefonul acesta (instalată sau în browser, conectat din,

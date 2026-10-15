@@ -2561,3 +2561,13 @@ html:has(.mb) { min-height: calc(100% + env(safe-area-inset-top)); background: #
 .mbSheetNo > span { flex: 1; display: flex; flex-direction: column; gap: 2px; background: #FBF4E6; border-radius: 10px; padding: 8px 10px; }
 .mbSheetNo > span small { font-size: 10.5px; letter-spacing: .5px; text-transform: uppercase; color: #9A5F00; font-weight: 700; }
 .mbSheetNo > span b { font-size: 14px; }
+
+/* phone, new inspection: the sheets of the chosen property type */
+.mbTplHint { margin: 0; font-size: 13px; color: #8A8A8A; padding: 10px 12px; border: 1px dashed #E0D6C2; border-radius: 12px; }
+.mbTplPick { display: flex; flex-direction: column; gap: 8px; }
+.mbTplPick button { display: flex; gap: 12px; align-items: center; text-align: left; padding: 12px 14px; border-radius: 14px; border: 1px solid #E6DFCF; background: #fff; color: #141414; font: inherit; cursor: pointer; }
+.mbTplPick button > i { flex: none; width: 18px; height: 18px; border-radius: 50%; border: 2px solid #C9BFA9; }
+.mbTplPick button[aria-checked="true"] { border-color: #141414; box-shadow: inset 0 0 0 1px #141414; }
+.mbTplPick button[aria-checked="true"] > i { border-color: #141414; background: radial-gradient(circle, #141414 45%, transparent 50%); }
+.mbTplPick button > span { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.mbTplPick b { font-size: 14.5px; } .mbTplPick small { font-size: 12px; color: #7A7A7A; }
