@@ -174,6 +174,8 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   `SiteGallery`, Chrome), firme/birouri, CTA „Creează cont gratuit” (`/solicita-cont`). Fără pricing. Stiluri `.ld*` în `globals.css`,
   fonturi Sora + Manrope (Google Fonts), imagini în `public/site/`. Linkurile spre aplicație = `origin()` (APP_URL).
 - `uvalo.ro` și `www.uvalo.ro` trebuie adăugate ca custom domains pe workerul `tools` ca site-ul să apară.
+- Bannere de promovare Inspecții: `public/site/inspectii-banner.png` (1600×900) și `inspectii-social.png` (1200×628, OG/LinkedIn): capturi reale
+  (web `/inspectii` + aplicația de telefon în ramă), cu date demonstrative fictive. Nu sunt încă puse pe `/site`.
 
 ## Feedback (buton în dreapta jos)
 
