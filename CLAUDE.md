@@ -315,7 +315,8 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
 - **Poza de profil a fișei** (migrația 0027 `inspections.cover_file_id`): `coverPhoto()` în `insp-shared.ts` = cea aleasă, altfel prima de la
   exterior, altfel prima; sus în rezumatul fișei web (`.inCover`); se alege din Fotografii cu „Alege ca profil” (`InspCoverPick`, acțiunea `cover`).
 - **Link public** (`InspShare` în bara fișei, doar cine a pregătit-o / super-admin; acțiunea `share` `{on}` → `share_token` aleator, `share_at`;
-  `on: false` îl șterge și linkul moare): pagina publică `/fisa/<token>` (`src/app/fisa/[token]/page.tsx`, fără cont, `noindex`, OG cu poza de profil):
+  `on: false` îl șterge și linkul moare): pagina publică `/fisa/<token>` (`src/app/fisa/[token]/page.tsx`, fără cont, `noindex`, OG cu poza de profil;
+  **doar brandingul firmei de evaluare** — logo, nume, autorizație în bara de sus, subsol, titlu, iconița filei; fără logo / nume UVALO, nici în OG/Twitter):
   poza de profil mare, firma (logo), datele bunului, răspunsurile (fără întrebările despre persoane — `PRIVATE_Q`), încăperile cu finisaje,
   constatările, fotografiile pe categorii. Fără contact, telefon, acte, semnătură, istoric. Pozele și logo-ul prin `/api/fisa/<token>/<fileId|logo>`
   (doar `kind = photo` ale inspecției). `sharedInspection()` în `insp.ts`. Confidențialitatea (secțiunea 6) pomenește linkul.

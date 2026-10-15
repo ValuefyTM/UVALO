@@ -16,12 +16,19 @@ const ans = (v: string | string[] | undefined, unit?: string) => (Array.isArray(
 export async function generateMetadata({ params }: { params: Promise<{ token: string }> }): Promise<Metadata> {
   const { token } = await params;
   const x = await sharedInspection(await requireDb(), token).catch(() => null);
-  if (!x) return { title: "Fișă de inspecție | UVALO", robots: { index: false, follow: false } };
+  if (!x) return { title: "Fișă de inspecție", robots: { index: false, follow: false } };
   const cover = coverPhoto(x.files, x.cover_file_id);
+  // the valuation firm's brand only (its logo also as the tab icon), not UVALO's
+  const db = await requireDb();
+  const firm = x.org_id ? await db.prepare("SELECT name, logo IS NOT NULL AS has_logo FROM orgs WHERE id = ?").bind(x.org_id).first<{ name: string; has_logo: number }>() : null;
   const title = `${x.prop_type ?? "Imobil"} · ${x.address}`;
+  const img = cover ? [`${await origin()}/api/fisa/${token}/${cover.id}`] : [];
   return {
-    title: `${title} | Fișă de inspecție`, robots: { index: false, follow: false },
-    openGraph: { title, description: `Fișă de inspecție ${x.code}`, ...(cover ? { images: [`${await origin()}/api/fisa/${token}/${cover.id}`] } : {}) },
+    title: `${title} | Fișă de inspecție${firm ? ` · ${firm.name}` : ""}`, robots: { index: false, follow: false },
+    ...(firm?.has_logo ? { icons: { icon: `/api/fisa/${token}/logo` } } : {}),
+    openGraph: { title, description: `Fișă de inspecție ${x.code}${firm ? ` · ${firm.name}` : ""}`, siteName: firm?.name ?? "", images: img },
+    // the app's own preview picture and name are not inherited
+    twitter: { card: img.length ? "summary_large_image" : "summary", title, description: firm?.name ?? "", images: img },
   };
 }
 
@@ -58,12 +65,15 @@ export default async function SharedSheet({ params }: { params: Promise<{ token:
   ];
   return (
     <div className="fs">
+      {/* only the valuation firm's brand on the public sheet (no UVALO logo) */}
       <header className="fsTop">
-        <a href="https://uvalo.ro" aria-label="UVALO">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/uvalo-lockup.svg" alt="UVALO" />
-        </a>
-        <span>Fișă de inspecție · {x.code}</span>
+        {firm ? (
+          <span className="fsFirm">
+            {firm.has_logo ? <>{/* eslint-disable-next-line @next/next/no-img-element */}<img src={src("logo")} alt={firm.name} /></> : null}
+            <span><b>{firm.name}</b>{firm.corp_no && <small>Autorizație ANEVAR nr. {firm.corp_no}</small>}</span>
+          </span>
+        ) : <span className="fsFirm"><span><b>{x.assignee_name ?? x.owner_name}</b><small>Evaluator</small></span></span>}
+        <span className="fsCode">Fișă de inspecție · {x.code}</span>
       </header>
 
       <section className={`fsHero${cover ? "" : " noImg"}`}>
@@ -72,12 +82,6 @@ export default async function SharedSheet({ params }: { params: Promise<{ token:
           <img src={src(cover.id)} alt={cover.room ?? "Imobilul"} />
         </>}
         <div className="fsHeroText">
-          {firm && (
-            <span className="fsFirm">
-              {firm.has_logo ? <>{/* eslint-disable-next-line @next/next/no-img-element */}<img src={src("logo")} alt="" /></> : null}
-              <span><b>{firm.name}</b>{firm.corp_no && <small>Autorizație ANEVAR nr. {firm.corp_no}</small>}</span>
-            </span>
-          )}
           <span className="fsEyebrow">{x.prop_type ?? "Imobil"}</span>
           <h1>{x.address}</h1>
         </div>
@@ -153,7 +157,7 @@ export default async function SharedSheet({ params }: { params: Promise<{ token:
       </main>
 
       <footer className="fsFoot">
-        Fișă de inspecție realizată cu <a href="https://uvalo.ro">UVALO</a> · Platforma evaluatorilor autorizați din România
+        Fișă de inspecție {x.code}{firm ? ` · ${firm.name}` : ""}{firm?.corp_no ? ` · Autorizație ANEVAR nr. ${firm.corp_no}` : ""}
       </footer>
     </div>
   );

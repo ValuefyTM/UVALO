@@ -2201,8 +2201,11 @@ html:has(.mb) { min-height: calc(100% + env(safe-area-inset-top)); background: #
 /* the public sheet (/fisa/<token>) */
 .fs { min-height: 100vh; background: #F4EFE6; color: #141414; }
 .fsTop { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px clamp(16px, 4vw, 40px); background: #141414; color: #fff; }
-.fsTop img { height: 26px; display: block; }
-.fsTop span { font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #bdb6a8; }
+.fsCode { font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #bdb6a8; text-align: right; }
+.fsFirm { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.fsFirm img { height: 40px; max-width: 130px; object-fit: contain; background: #fff; border-radius: 8px; padding: 4px; }
+.fsFirm > span { display: flex; flex-direction: column; font-size: 14px; min-width: 0; }
+.fsFirm small { color: #d6d0c4; font-size: 12px; }
 .fsHero { position: relative; min-height: clamp(240px, 46vw, 460px); display: flex; align-items: flex-end; background: #141414; overflow: hidden; }
 .fsHero > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .fsHero::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(20,20,20,0) 35%, rgba(20,20,20,.85)); }
@@ -2211,10 +2214,6 @@ html:has(.mb) { min-height: calc(100% + env(safe-area-inset-top)); background: #
 .fsHeroText { position: relative; z-index: 1; width: 100%; max-width: 980px; margin: 0 auto; padding: 28px clamp(16px, 4vw, 40px); color: #fff; display: flex; flex-direction: column; gap: 6px; }
 .fsHeroText h1 { margin: 0; font-size: clamp(22px, 3.6vw, 36px); line-height: 1.15; }
 .fsEyebrow { font-size: 12px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: #E0AD4F; }
-.fsFirm { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
-.fsFirm img { height: 38px; max-width: 120px; object-fit: contain; background: #fff; border-radius: 8px; padding: 4px; }
-.fsFirm span { display: flex; flex-direction: column; font-size: 13px; }
-.fsFirm small { color: #d6d0c4; }
 .fsMain { max-width: 980px; margin: 0 auto; padding: 20px clamp(16px, 4vw, 40px) 40px; display: flex; flex-direction: column; gap: 16px; }
 .fsKpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-top: -40px; position: relative; z-index: 2; }
 .fsKpis span { background: #fff; border-radius: 14px; padding: 12px 14px; display: flex; flex-direction: column; gap: 2px; box-shadow: 0 10px 30px -18px rgba(20,20,20,.4); }
@@ -2240,5 +2239,4 @@ html:has(.mb) { min-height: calc(100% + env(safe-area-inset-top)); background: #
 .fsPhotos img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .fsPhotos span { position: absolute; left: 6px; bottom: 6px; font-size: 11px; color: #fff; background: rgba(20,20,20,.6); border-radius: 6px; padding: 2px 6px; }
 .fsFoot { text-align: center; font-size: 12.5px; color: #6f685b; padding: 10px 16px 30px; }
-.fsFoot a { color: #8a5b00; font-weight: 700; }
 @media (max-width: 560px) { .fsPhotos { grid-template-columns: repeat(2, 1fr); } .fsKpis { grid-template-columns: repeat(2, 1fr); } }
