@@ -70,7 +70,7 @@ export type LeaveRow = { id: string; org_id: string; user_id: string; legit: str
 export const pendingLeave = (db: D1Database, userId: string, orgId: string) =>
   db.prepare("SELECT * FROM office_leaves WHERE user_id = ? AND org_id = ? AND status = 'pending'").bind(userId, orgId).first<LeaveRow>();
 
-async function admins(db: D1Database, orgId: string) {
+export async function admins(db: D1Database, orgId: string) {
   const { results } = await db.prepare(`SELECT u.email, u.name FROM memberships m JOIN users u ON u.id = m.user_id
     WHERE m.org_id = ? AND m.status = 'active' AND m.role IN ('owner', 'admin') AND u.status = 'active'`).bind(orgId).all<{ email: string; name: string }>();
   return results;

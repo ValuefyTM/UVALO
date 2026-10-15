@@ -243,6 +243,17 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   doar evaluatori — legitimația se verifică în Tablou (există, nu e pe alt cont, numele se potrivește) → `office_leaves` (migrația 0022),
   email către administratorii biroului; în „Firma mea” `LeaveRequests`: „Scoate din birou și creează cont individual” (`decideLeave`: membership
   `removed`, firmă individuală nouă cu persoana titular, `anevar_no`/județ/specializări din Tablou, email) sau „Respinge”.
+- **Asocieri** (etapa 1 din planul birou ↔ evaluatori; migrația 0029 `office_links`, logica în `src/lib/links.ts`, API `/api/office/links`):
+  evaluatori cu **cont propriu** legați de un birou **fără să ocupe locuri**: `kind` = `angajat` (inspecțiile atribuite vor apărea pe telefon în
+  Acasă) sau `colaborator` (vor apărea în tab-ul Colaborări al telefonului); mai târziu, la pricing, consumă creditele biroului. Doar evaluatorii
+  (`anevar_no`); cei fără legitimație rămân membri cu rol **Operațional** (eticheta din „Firma mea”: Evaluator / Operațional, după `anevar_no`;
+  văd și introduc inspecțiile firmei, nu fac inspecții). Stări: `invited` (biroul invită după email sau legitimație) / `requested` (evaluatorul cere
+  din „Contul meu” → „Asociază-te cu o firmă”, căutare după nume `searchOffices`, deocamdată doar cu `c.office`) → `active` → `ended` (oricare parte;
+  după încheiere vede doar în citire ce a făcut pentru birou — etapa 3); `declined` / `cancelled`. Un singur link deschis per birou și persoană
+  (index unic parțial). Emailuri la invitație, cerere, acceptare/aprobare, încheiere. UI: `OfficeLinks` în „Firma mea” (`#asocieri`: cereri,
+  Angajați, Colaboratori, invitații, formularul) și `MyLinks` în „Contul meu” (invitații primite, active, cereri, încheiate). `merge.ts` acoperă tabelul.
+  Membrii existenți NU se transformă în asociați. Urmează: etapa 2 (selectorul „Cine o face” la inspecții cu asociații și disponibilitatea,
+  Operaționalul care introduce inspecții), etapa 3 (telefonul: Acasă / Colaborări, „Pentru: Contul meu / Firma X” dacă biroul permite).
 - „În curând: Colaborări” (card pe Acasă, meniu) doar pentru evaluatori fără acces cât timp modul ≠ `on`; niciodată pentru nonevaluatori.
 
 ## Colaborări (`/colaborari`, modulul `colaborari`)

@@ -68,6 +68,12 @@ export async function mergeUsers(db: D1Database, by: User, keepId: string, fromI
     move("UPDATE feedback SET user_id = ? WHERE user_id = ?"),
     move("UPDATE office_leaves SET user_id = ? WHERE user_id = ?"),
     move("UPDATE office_leaves SET decided_by = ? WHERE decided_by = ?"),
+    // asocieri: an open link of the old account to an office the kept one is already linked with is dropped
+    db.prepare("DELETE FROM office_links WHERE user_id = ?1 AND status IN ('invited', 'requested', 'active') AND org_id IN (SELECT org_id FROM office_links WHERE user_id = ?2 AND status IN ('invited', 'requested', 'active'))").bind(fromId, keepId),
+    move("UPDATE office_links SET user_id = ? WHERE user_id = ?"),
+    move("UPDATE office_links SET created_by = ? WHERE created_by = ?"),
+    move("UPDATE office_links SET decided_by = ? WHERE decided_by = ?"),
+    move("UPDATE office_links SET ended_by = ? WHERE ended_by = ?"),
     db.prepare("DELETE FROM email_changes WHERE user_id = ?").bind(fromId),
     // Colaborări: one profile (the kept one, if it has one); a request twice on the same post keeps the kept account's
     move("UPDATE OR IGNORE collab_profiles SET user_id = ? WHERE user_id = ?"),
@@ -144,6 +150,10 @@ export async function deleteUser(db: D1Database, by: User, id: string) {
     one("UPDATE feedback SET user_id = NULL WHERE user_id = ?"),
     one("DELETE FROM office_leaves WHERE user_id = ?"),
     one("UPDATE office_leaves SET decided_by = NULL WHERE decided_by = ?"),
+    one("DELETE FROM office_links WHERE user_id = ?"),
+    one("UPDATE office_links SET created_by = NULL WHERE created_by = ?"),
+    one("UPDATE office_links SET decided_by = NULL WHERE decided_by = ?"),
+    one("UPDATE office_links SET ended_by = NULL WHERE ended_by = ?"),
     one("DELETE FROM referrals WHERE by_user = ?"),
     one("UPDATE account_requests SET user_id = NULL WHERE user_id = ?"),
     one("UPDATE account_requests SET decided_by = NULL WHERE decided_by = ?"),

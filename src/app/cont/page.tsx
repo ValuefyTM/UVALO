@@ -5,6 +5,8 @@ import { AccountPanel, CloseAccount, OfficeCard } from "@/components/AccountPane
 import { CLOSE_REASONS } from "@/lib/merge";
 import { canManageOrg, officeActive } from "@/lib/access";
 import { pendingLeave } from "@/lib/office";
+import { myLinks } from "@/lib/links";
+import { MyLinks } from "@/components/OfficeLinks";
 
 export const metadata: Metadata = { title: "Contul meu | UVALO" };
 export const dynamic = "force-dynamic";
@@ -17,6 +19,8 @@ export default async function Account() {
   const own = !!c.org && canManageOrg(c);
   const logo = own && c.org!.has_logo ? (await db.prepare("SELECT logo FROM orgs WHERE id = ?").bind(c.org!.id).first<{ logo: string | null }>())?.logo ?? null : null;
   const pl = c.org && !own ? await pendingLeave(db, u.id, c.org.id) : null;
+  // asocieri with offices: only valuers; asking an office is open to the testers of the office function for now
+  const links = u.anevar_no ? await myLinks(db, u.id) : [];
   const asked = !c.office && !!(await db.prepare("SELECT 1 FROM events WHERE user_id = ? AND module = 'home' AND action = 'notify' AND target = 'birou' LIMIT 1").bind(u.id).first());
   return (
     <AppShell c={c} active="cont" title="Contul meu">
@@ -27,6 +31,9 @@ export default async function Account() {
         <OfficeCard allowed={c.office} active={officeActive(c)} asked={asked} member={c.org && !canManageOrg(c) ? c.org.name : null}
           initial={{ name: own ? c.org!.name : "", corporate: own ? !!c.org!.corporate : false, corp_no: own ? c.org!.corp_no ?? "" : "", description: own ? c.org!.description ?? "" : "", logo }}
           leave={{ pending: pl ? fmtDate(pl.created_at) : null, legit: u.anevar_no }} />
+        {u.anevar_no && (links.length > 0 || c.office) && <><div style={{ height: 18 }} />
+          <MyLinks canRequest={c.office} rows={links.map((l) => ({ id: l.id, kind: l.kind, status: l.status, since: fmtDate(l.status === "active" || l.status === "ended" ? l.decided_at ?? l.created_at : l.created_at),
+            ended: l.ended_at ? fmtDate(l.ended_at) : null, org_id: l.org_id, org_name: l.org_name, corp_no: l.corp_no, has_logo: !!l.has_logo }))} /></>}
         <div style={{ height: 18 }} />
         <CloseAccount email={u.email} reasons={CLOSE_REASONS} />
       </div>
