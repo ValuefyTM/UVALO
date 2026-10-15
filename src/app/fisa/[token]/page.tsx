@@ -5,6 +5,7 @@ import { fmtDate } from "@/lib/guard";
 import { sharedInspection } from "@/lib/insp";
 import { compSummary, coverPhoto, fmtWhen } from "@/lib/insp-shared";
 import { origin } from "@/lib/site";
+import { FsGallery, FsPrint } from "@/components/FsGallery";
 
 export const dynamic = "force-dynamic";
 
@@ -63,6 +64,18 @@ export default async function SharedSheet({ params }: { params: Promise<{ token:
     ["Nr. cadastral", x.cad_nr ?? ""], ["Carte funciară", x.cf_nr ?? ""], ["UAT", x.uat ?? ""], ["Județ", x.county ?? ""],
     ["Suprafață din acte", x.area_util ? `${nf(x.area_util)} mp` : ""], ["Evaluator", x.assignee_name ?? ""],
   ];
+  const showFind = shown && x.findings && (x.findings.diff || x.findings.defects || x.findings.notes);
+  const hasMeta = meta.some(([, v]) => v);
+  // the section chips (sticky under the top bar)
+  const nav: [string, string][] = [
+    ...(hasMeta ? [["imobil", "Imobilul"] as [string, string]] : []),
+    ...(shown ? groups.map((g) => [`g-${g.id}`, g.name] as [string, string]) : []),
+    ...(rooms.length ? [["incaperi", "Încăperi"] as [string, string]] : []),
+    ...(showFind ? [["constatari", "Constatări"] as [string, string]] : []),
+    ...(photos.length ? [["foto", `Foto ${photos.length}`] as [string, string]] : []),
+  ];
+  const map = x.lat != null && x.lng != null ? `https://www.google.com/maps/search/?api=1&query=${x.lat},${x.lng}` : null;
+  const gallery = byRoom.map(({ r, ph }) => ({ r, ph: ph.map((p) => ({ id: p.id, src: src(p.id), room: r, when: p.taken_at ? fmtDate(p.taken_at, true) : "" })) }));
   return (
     <div className="fs">
       {/* only the valuation firm's brand on the public sheet (no UVALO logo) */}
@@ -73,7 +86,7 @@ export default async function SharedSheet({ params }: { params: Promise<{ token:
             <span><b>{firm.name}</b>{firm.corp_no && <small>Autorizație ANEVAR nr. {firm.corp_no}</small>}</span>
           </span>
         ) : <span className="fsFirm"><span><b>{x.assignee_name ?? x.owner_name}</b><small>Evaluator</small></span></span>}
-        <span className="fsCode">Fișă de inspecție · {x.code}</span>
+        <span className="fsCode">Fișă de inspecție<br />{x.code}</span>
       </header>
 
       <section className={`fsHero${cover ? "" : " noImg"}`}>
@@ -84,50 +97,64 @@ export default async function SharedSheet({ params }: { params: Promise<{ token:
         <div className="fsHeroText">
           <span className="fsEyebrow">{x.prop_type ?? "Imobil"}</span>
           <h1>{x.address}</h1>
+          <span className="fsHeroBtns">
+            {map && <a className="fsBtn" href={map} target="_blank" rel="noopener">Vezi pe hartă ↗</a>}
+            <FsPrint />
+          </span>
         </div>
       </section>
+
+      {nav.length > 1 && (
+        <nav className="fsNav" aria-label="Secțiuni">
+          {nav.map(([id, t]) => <a key={id} href={`#${id}`}>{t}</a>)}
+        </nav>
+      )}
 
       <main className="fsMain">
         <div className="fsKpis">
           {kpis.filter(([, v]) => v).map(([k, v]) => <span key={k}><small>{k}</small><b>{v}</b></span>)}
         </div>
 
-        {meta.some(([, v]) => v) && (
-          <section className="fsCard">
+        {hasMeta && (
+          <section id="imobil" className="fsCard">
             <h2>Imobilul</h2>
             <dl className="fsRows">{meta.filter(([, v]) => v).map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}</dl>
           </section>
         )}
 
         {shown && groups.map((g) => (
-          <section key={g.id} className="fsCard">
+          <section key={g.id} id={`g-${g.id}`} className="fsCard">
             <h2>{g.name}</h2>
             <dl className="fsRows">{g.rows.map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}</dl>
           </section>
         ))}
 
         {rooms.length > 0 && (
-          <section className="fsCard">
-            <h2>Încăperi și finisaje</h2>
-            <div className="fsRooms">
-              {rooms.map((r, i) => {
-                const ra = r as { floor?: string; walls?: string; ceiling?: string; state?: string };
-                return (
-                  <div key={i}>
-                    <span className="fsRoomHead"><b>{i + 1}. {r.n}</b>{r.a ? <em>{nf(r.a)} mp</em> : null}</span>
-                    {shown && <small>{[ra.floor && `Pardoseală: ${ra.floor}`, ra.walls && `Pereți: ${ra.walls}`, ra.ceiling && `Plafon: ${ra.ceiling}`, ra.state && `Stare: ${ra.state}`].filter(Boolean).join(" · ")}</small>}
-                  </div>
-                );
-              })}
+          <section id="incaperi" className="fsCard">
+            <h2>Încăperi și finisaje{util > 0 ? <small> · {nf(util)} mp utili</small> : null}</h2>
+            <div className="fsTblWrap">
+              <table className="fsTbl">
+                <thead><tr><th>Încăpere</th><th className="r">mp</th>{shown && <><th>Pardoseală</th><th>Pereți</th><th>Plafon</th><th>Stare</th></>}</tr></thead>
+                <tbody>
+                  {rooms.map((r, i) => {
+                    const ra = r as { floor?: string; walls?: string; ceiling?: string; state?: string };
+                    return (
+                      <tr key={i}>
+                        <td><b>{r.n}</b></td><td className="r">{r.a ? nf(r.a) : "—"}</td>
+                        {shown && <><td>{ra.floor ?? "—"}</td><td>{ra.walls ?? "—"}</td><td>{ra.ceiling ?? "—"}</td><td>{ra.state ?? "—"}</td></>}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
-            {util > 0 && <p className="fsTot">Suprafață utilă: <b>{nf(util)} mp</b></p>}
           </section>
         )}
 
-        {shown && x.findings && (x.findings.diff || x.findings.defects || x.findings.notes) && (
-          <section className="fsCard">
+        {showFind && (
+          <section id="constatari" className="fsCard">
             <h2>Constatări</h2>
-            <dl className="fsRows">
+            <dl className="fsRows one">
               {x.findings.diff && <div><dt>Diferențe față de acte</dt><dd>{x.findings.diff}</dd></div>}
               {x.findings.defects && <div><dt>Defecte vizibile</dt><dd>{x.findings.defects}</dd></div>}
               {x.findings.notes && <div><dt>Observații</dt><dd>{x.findings.notes}</dd></div>}
@@ -135,29 +162,17 @@ export default async function SharedSheet({ params }: { params: Promise<{ token:
           </section>
         )}
 
-        {byRoom.length > 0 && (
-          <section className="fsCard">
-            <h2>Fotografii · {photos.length}</h2>
-            {byRoom.map(({ r, ph }) => (
-              <div key={r} className="fsPhGroup">
-                <h3>{r} <small>{ph.length}</small></h3>
-                <div className="fsPhotos">
-                  {ph.map((p) => (
-                    <a key={p.id} href={src(p.id)} target="_blank" rel="noopener">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={src(p.id)} alt={r} loading="lazy" />
-                      {p.taken_at && <span>{fmtDate(p.taken_at, true)}</span>}
-                    </a>
-                  ))}
-                </div>
-              </div>
-            ))}
+        {photos.length > 0 && (
+          <section id="foto" className="fsCard">
+            <h2>Fotografii <small>· {photos.length}</small></h2>
+            <FsGallery groups={gallery} />
           </section>
         )}
       </main>
 
       <footer className="fsFoot">
         Fișă de inspecție {x.code}{firm ? ` · ${firm.name}` : ""}{firm?.corp_no ? ` · Autorizație ANEVAR nr. ${firm.corp_no}` : ""}
+        {x.finished_at ? ` · ${fmtDate(x.finished_at)}` : ""}
       </footer>
     </div>
   );

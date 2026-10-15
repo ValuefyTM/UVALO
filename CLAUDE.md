@@ -318,7 +318,9 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   `on: false` îl șterge și linkul moare): pagina publică `/fisa/<token>` (`src/app/fisa/[token]/page.tsx`, fără cont, `noindex`, OG cu poza de profil;
   **doar brandingul firmei de evaluare** — logo, nume, autorizație în bara de sus, subsol, titlu, iconița filei; fără logo / nume UVALO, nici în OG/Twitter):
   poza de profil mare, firma (logo), datele bunului, răspunsurile (fără întrebările despre persoane — `PRIVATE_Q`), încăperile cu finisaje,
-  constatările, fotografiile pe categorii. Fără contact, telefon, acte, semnătură, istoric. Pozele și logo-ul prin `/api/fisa/<token>/<fileId|logo>`
+  constatările, fotografiile pe categorii. Fără contact, telefon, acte, semnătură, istoric. Compactă (stiluri `.fs*`, 13 px), bara de secțiuni
+  lipicioasă (`.fsNav`), încăperile ca tabel, galeria pe tot ecranul (`FsGallery` în `src/components/FsGallery.tsx`: săgeți, taste, swipe),
+  „Vezi pe hartă” (Google Maps) și „Descarcă PDF” (print, cu stiluri de tipar). Pozele și logo-ul prin `/api/fisa/<token>/<fileId|logo>`
   (doar `kind = photo` ale inspecției). `sharedInspection()` în `insp.ts`. Confidențialitatea (secțiunea 6) pomenește linkul.
 - Fișiere: bucket R2 privat **`uvalo-inspectii`**, binding `FILES` în `wrangler.jsonc` (`getFiles()` în `db.ts`). Încărcare `POST /api/inspectii/files`
   (multipart: id, kind cf|releveu|doc|photo|signature, file; ≤ 15 MB; cheie `insp/<inspecție>/<id>.<ext>`), servire `GET /api/inspectii/file/<id>`
