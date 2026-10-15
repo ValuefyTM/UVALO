@@ -1090,9 +1090,12 @@ function Photos({ x, d, pending, onBack, onPhotos, onDelete, onMove }: {
       <input ref={gal} type="file" accept="image/*" multiple hidden onChange={(e) => take(e, true)} />
       <div className={`mbBody${drag ? " mbDragging" : ""}`}>
         {groups.map((g) => (
-          <section key={g.c} data-cat={g.c} className={`mbPhGroup${g.c === room ? " on" : ""}${drag?.over === g.c && drag.over !== drag.from ? " drop" : ""}`}>
+          // the whole group is selectable: a tap anywhere on it (photos too; a hold moves the photo) makes it the one new photos go to
+          <section key={g.c} data-cat={g.c} className={`mbPhGroup${g.c === room ? " on" : ""}${drag?.over === g.c && drag.over !== drag.from ? " drop" : ""}`}
+            onClick={(e) => { if (!(e.target as HTMLElement).closest("button")) setRoom(g.c); }}>
             <span className="mbPhHead">
               <button type="button" className="mbPhTitle" onClick={() => setRoom(g.c)} aria-pressed={g.c === room}>
+                <i className="mbPhRadio" aria-hidden="true" />
                 <b>{g.c}</b><small>{g.c === room ? "aici merg pozele noi · " : ""}{g.sent.length + g.local.length} foto</small>
               </button>
               <span className="mbPhAdd">
@@ -1133,7 +1136,11 @@ function Photos({ x, d, pending, onBack, onPhotos, onDelete, onMove }: {
         <img className="mbPhGhost" src={drag.src} alt="" style={{ left: drag.x, top: drag.y }} />
       )}
       <footer className="mbFoot">
-        <label className="mbField">Pozele noi merg la<select className="mbIn" value={room} onChange={(e) => setRoom(e.target.value)}>{cats.map((c) => <option key={c}>{c}</option>)}</select></label>
+        <label className="mbField">Pozele noi merg la<select className="mbIn" value={room} onChange={(e) => {
+          const c = e.target.value; setRoom(c);
+          // the chosen group shows up (even empty) — bring it into view
+          setTimeout(() => document.querySelector(`[data-cat="${CSS.escape(c)}"]`)?.scrollIntoView({ behavior: "smooth", block: "center" }), 50);
+        }}>{cats.map((c) => <option key={c}>{c}</option>)}</select></label>
         <span className="mbGrid2">
           <button type="button" className="mbBtn gold big" disabled={busy} onClick={() => pick(cam.current, room)}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z" /><circle cx="12" cy="13" r="3.5" /></svg>Fotografiază

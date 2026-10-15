@@ -347,7 +347,8 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
 - **Fotografii** pe telefon: „Fotografiază” (camera, o poză) și „Din galerie” (alegere multiplă din telefon); pozele merg la categoria aleasă
   (lista „Pozele noi merg la” sau atingerea titlului unei categorii, marcată cu auriu; în fiecare categorie căsuța cameră / galerie). Din galerie, ora și
   locul se iau din EXIF (`readExif` în `store.ts`: DateTimeOriginal + GPS), altfel data fișierului și fără loc; `addPhotos` le pune în coadă și trimite o dată.
-  Butoanele cameră / galerie = două iconițe mici lângă titlul categoriei (`.mbPhHead`). Mutare între categorii: ține apăsat ~0,35 s pe o poză și
+  Butoanele cameră / galerie = două iconițe mici lângă titlul categoriei (`.mbPhHead`). Fiecare grup e selectabil (atingere oriunde pe el,
+  bulina `.mbPhRadio`) → acolo merg pozele noi; o categorie fără poze se alege din lista de jos, apare ca grup gol selectat și se derulează în vedere. Mutare între categorii: ține apăsat ~0,35 s pe o poză și
   trage-o peste altă categorie (cât tragi apar toate categoriile) → `movePhoto`: în coadă se schimbă `room`, cele trimise prin
   `PATCH /api/inspectii/file/<id>` `{room}` (`moveFile` în `insp.ts`); categoria în care a căzut devine cea selectată.
   Fișierele alese se citesc imediat în copii proprii (pe iPhone, după ce câmpul se schimbă, ele pot deveni ilizibile), câmpul se golește după.

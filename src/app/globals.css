@@ -1919,7 +1919,11 @@ textarea.mbIn { min-height: 0; resize: vertical; }
 /* photos, signature, summary */
 .mbPhGroup { display: flex; flex-direction: column; gap: 8px; }
 .mbPhGroup { padding: 8px; margin: -8px; border-radius: 14px; }
+.mbPhGroup { cursor: pointer; box-shadow: inset 0 0 0 1px var(--line, rgba(0,0,0,.08)); }
 .mbPhGroup.on { background: #fff; box-shadow: inset 0 0 0 2px var(--acc); }
+.mbPhRadio { flex: none; width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--dashed, #c9c4b8); align-self: center; box-sizing: border-box; }
+.mbPhGroup.on .mbPhRadio { border-color: var(--acc); background: radial-gradient(circle, var(--acc) 0 3.5px, transparent 4px); }
+.mbPhTitle b { flex: 1; min-width: 0; }
 .mbPhHead { display: flex; align-items: center; gap: 8px; }
 .mbPhTitle { flex: 1; min-width: 0; display: flex; justify-content: space-between; align-items: baseline; gap: 10px; background: none; border: 0; padding: 0; color: var(--ink); text-align: left; }
 .mbPhGroup.on .mbPhTitle small { color: var(--acc-text); font-weight: 700; }
