@@ -503,7 +503,7 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   altfel programarea; folosită în listă („Făcută …”), în cardurile Azi / Săpt. asta și în calendar. Detaliul arată „Data inspecției” în
   Proprietatea și „Inspecție făcută pe … la …”; încăperile NU mai apar în detaliu (doar în fișă).
   La o inspecție întoarsă și trimisă din nou, `finished_at` rămâne **data primei finalizări** (`redo_prev_at`).
-- **Navigarea pe telefon**: meniul de jos = Acasă / **Colaborări** / Contul meu. Acasă arată doar inspecțiile nefinalizate (filtrul: „Toate” +
+- **Navigarea pe telefon**: meniul de jos = **Inspecții** (ecranul de start, intern `home`; iconiță de fișă) / **Colaborări** / Contul meu. Acasă arată doar inspecțiile nefinalizate (filtrul: „Toate” +
   Completări / În lucru / De făcut / De programat, fără Finalizate); finalizatele (ultimele 90 de zile, `myAssigned`) sunt în Contul meu,
   „Inspecții finalizate”. „De trimis” nu mai e în meniu: iconița cu săgeată și numărul apare lângă clopoțel doar când există fișe / poze
   netrimise (`.mbQueueBtn` → ecranul coadă). Tab-ul Colaborări (`Collab`) arată deocamdată „În curând”; `phoneCollab()`

@@ -448,7 +448,7 @@ export function MobileApp() {
       </div>
       {nav && (
         <nav className="mbNav" aria-label="Meniu">
-          <button type="button" aria-current={view.v === "home" ? "page" : undefined} onClick={() => go({ v: "home" })}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M3 11l9-7 9 7v9H3z" /></svg>Acasă</button>
+          <button type="button" aria-current={view.v === "home" ? "page" : undefined} onClick={() => go({ v: "home" })}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="4" width="14" height="17" rx="2" /><path d="M9 4V3h6v1M9 10h6M9 14h6M9 18h4" /></svg>Inspecții</button>
           <button type="button" aria-current={view.v === "collab" ? "page" : undefined} onClick={() => go({ v: "collab" })}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="8" cy="8" r="3.2" /><circle cx="17" cy="9" r="2.6" /><path d="M2.5 20c.8-3.4 3-5.4 5.5-5.4s4.7 2 5.5 5.4M14 15c2.6-.6 5.6.6 7 4.6" /></svg>Colaborări</button>
           <button type="button" aria-current={view.v === "account" ? "page" : undefined} onClick={() => go({ v: "account" })}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="8" r="4" /><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6" /></svg>Contul meu</button>
         </nav>
