@@ -6,6 +6,7 @@ import { AppShell } from "@/components/AppShell";
 import { InspActivate } from "@/components/InspActivate";
 import { InspList } from "@/components/InspList";
 import { InspPreview } from "@/components/InspPreview";
+import { InspSettings } from "@/components/InspSettings";
 
 export const metadata: Metadata = { title: "Inspecții | UVALO" };
 export const dynamic = "force-dynamic";
@@ -36,8 +37,8 @@ export default async function InspectiiPage() {
       actions={<>
         <span className="inDev" title={dev.platform === "test" ? "Mod de test, fără telefon" : "Telefonul conectat"}><i />{dev.platform === "test" ? "Mod test (fără telefon)" : `Telefon conectat · ${dev.name ?? ""}`}</span>
         <InspPreview appUrl={inspUrl()} />
-        <a className="btn btnGhost" href="/inspectii/fise">Fișe de inspecție</a>
         <a className="btn btnGold" href="/inspectii/nou">Inspecție nouă</a>
+        <InspSettings />
       </>}>
       {c.insp !== "on" && <div className="note inTestNote">Modul în test: îl văd administratorii UVALO și grupul de test. Datele introduse acum sunt marcate ca date de test.</div>}
       <InspList rows={rows} meId={c.user.id} />

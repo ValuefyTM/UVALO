@@ -2318,3 +2318,45 @@ html:has(.mb) { min-height: calc(100% + env(safe-area-inset-top)); background: #
 .mbSoon { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px; padding: 40px 20px; color: var(--muted-2); }
 .mbSoon b { font-size: 16px; color: var(--ink); }
 .mbSoon small { font-size: 12.5px; max-width: 280px; }
+
+/* Inspecții (web): settings menu, search, status tabs, list + map split view */
+.inSet { position: relative; }
+.inSetBtn { display: inline-flex; align-items: center; gap: 6px; }
+.inSetMenu { position: absolute; right: 0; top: calc(100% + 6px); z-index: 30; width: 300px; background: #fff; border: 1px solid var(--line); border-radius: 14px;
+  box-shadow: 0 18px 40px -16px rgba(20,20,20,.35); padding: 6px; display: flex; flex-direction: column; }
+.inSetCap { font-size: 10.5px; font-weight: 800; letter-spacing: .08em; color: var(--muted-2); padding: 8px 10px 4px; }
+.inSetMenu a, .inSetSoon { display: flex; gap: 10px; align-items: flex-start; padding: 9px 10px; border-radius: 10px; color: var(--ink); text-decoration: none; }
+.inSetMenu a:hover { background: var(--cream, #f4efe6); }
+.inSetMenu a > svg, .inSetSoon > svg { flex: none; margin-top: 2px; color: var(--acc-text); }
+.inSetMenu span > b { display: block; font-size: 13.5px; }
+.inSetMenu span > small { display: block; font-size: 12px; color: var(--muted-2); }
+.inSetSoon { opacity: .55; cursor: default; }
+.inSearchBox { display: flex; align-items: center; gap: 10px; height: 48px; padding: 0 14px; background: #fff; border: 1.5px solid var(--line); border-radius: 14px;
+  box-shadow: 0 6px 18px -14px rgba(20,20,20,.35); color: var(--muted-2); cursor: text; transition: border-color .15s, box-shadow .15s; }
+.inSearchBox:focus-within { border-color: var(--acc); box-shadow: 0 0 0 3px var(--acc-soft); color: var(--acc-text); }
+.inSearchBox input { flex: 1; min-width: 0; border: 0; outline: none; background: none; font: inherit; font-size: 15px; color: var(--ink); }
+.inSearchBox button { border: 0; background: var(--cream, #f4efe6); width: 26px; height: 26px; border-radius: 50%; font-size: 16px; line-height: 1; cursor: pointer; color: var(--muted-2); }
+.inSearchBox em { font-style: normal; font-size: 12px; font-weight: 700; white-space: nowrap; }
+.inTabs { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid var(--line); margin-top: -4px; }
+.inTabs::-webkit-scrollbar { display: none; }
+.inTabs button { flex: none; display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 10px; border: 0; background: none; font: inherit; font-size: 12.5px;
+  font-weight: 700; color: var(--muted-2); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.inTabs button i { width: 7px; height: 7px; border-radius: 50%; }
+.inTabs button b { font-size: 11px; background: var(--cream, #f4efe6); color: var(--muted-2); border-radius: 999px; padding: 1px 6px; }
+.inTabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--acc); }
+.inTabs button[aria-selected="true"] b { background: #141414; color: #fff; }
+.inSeg button { display: inline-flex; align-items: center; gap: 6px; }
+@media (max-width: 900px) { .inSeg button span { display: none; } .inSeg button { padding: 0 10px; } }
+.inSplit { display: grid; grid-template-columns: minmax(300px, 400px) 1fr; gap: 14px; align-items: start; }
+.inSplitList { display: flex; flex-direction: column; gap: 8px; max-height: calc(100vh - 260px); min-height: 420px; overflow: auto; padding-right: 4px; }
+.inCard { display: flex; flex-direction: column; gap: 3px; background: #fff; border: 1.5px solid var(--line); border-radius: 12px; padding: 10px 12px; text-decoration: none;
+  color: var(--ink); transition: border-color .12s, box-shadow .12s; }
+.inCard.on, .inCard:hover { border-color: var(--acc); box-shadow: 0 6px 16px -12px rgba(20,20,20,.4); }
+.inCardTop { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.inCardTop small { font-size: 12px; color: var(--muted-2); }
+.inCard > b { font-size: 14px; }
+.inCard > small { font-size: 12px; color: var(--muted-2); }
+.inCard > em { font-style: normal; font-size: 11px; color: var(--muted-2); }
+.inSplitMap { flex: none; height: calc(100vh - 260px); min-height: 420px; position: sticky; top: 12px; }
+.inPin.on { transform: rotate(-45deg) scale(1.35); box-shadow: 0 0 0 3px #fff, 0 0 0 5px var(--acc); z-index: 1000; position: relative; }
+@media (max-width: 860px) { .inSplit { grid-template-columns: 1fr; } .inSplitMap { position: static; height: 360px; min-height: 0; order: -1; } .inSplitList { max-height: none; } }

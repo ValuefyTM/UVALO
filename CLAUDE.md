@@ -314,8 +314,11 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
 - **Întrebare compusă** (`kind: "comp"`): o alegere cu întrebări de urmat pe răspuns (`sub: {răspuns: SubQ[]}`, tipuri unică / multiplă / text / număr);
   răspunsul la `answers[id]`, urmările la `answers["id.subId"]`; `compSummary()` pe o linie în fișa web. În editor: „+ Întrebare compusă” și, pe fiecare
   răspuns, „+ Întrebare după „X”” (redenumirea răspunsului mută și urmările). Migrația 0024 a șters (logic) copiile personale ale primelor fișe UVALO. Logica: `src/lib/insp.ts`; API unic `POST /api/inspectii {action}`.
-- Pagini: `/inspectii` (`InspList`: file Ale mele / Făcute pentru colegi / Făcute pentru mine, filtre pe stare, Listă / Hartă (Leaflet) / Calendar
-  săptămânal cu „De programat” trase pe o oră → `schedule`), `/inspectii/nou[?id=]` (`InspForm`: CF citit cu `/api/amplasament/plan`, încăperi,
+- Pagini: `/inspectii` (`InspList`: file Ale mele / Făcute pentru colegi / Făcute pentru mine; bara de căutare mare `.inSearchBox` (adresă,
+  nr. cad., contact, cod; numărul de rezultate); stările ca tab-uri compacte `.inTabs` cu numere; vederi Listă / **Listă + hartă** (`.inSplit`:
+  carduri în stânga, harta lipicioasă în dreapta; cardul atins aprinde pinul, pinul derulează la card) / Hartă (Leaflet) / Calendar
+  săptămânal cu „De programat” trase pe o oră → `schedule`; în colțul de sus **Setări** (`InspSettings`, meniu: Fișe de inspecție + viitoare
+  setări marcate „În curând”), lângă „Inspecție nouă”), `/inspectii/nou[?id=]` (`InspForm`: CF citit cu `/api/amplasament/plan`, încăperi,
   fișa, contact, programare, cine o face: eu / coleg din birou / Colaborări), `/inspectii/<id>` (fișa ca document: cuprins în stânga, conținut;
   „Descarcă PDF” = print; antetul fișei = logo-ul firmei inspecției (`inspections.org_id`, doar dacă are logo) + nr. autorizație; în test „Simulează inspecția” completează fișa ca telefonul), `/inspectii/fise` (`InspTemplates`: editor de grupuri și
   întrebări, răspunsuri precompletate, publicare pe versiuni).

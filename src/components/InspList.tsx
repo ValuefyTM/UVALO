@@ -4,8 +4,15 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { fmtWhen, STATUS, STATUSES, type InspRow, type Status } from "@/lib/insp-shared";
 
 type Row = InspRow & { who: "mine" | "forme" | "forothers" };
-type View = "list" | "map" | "cal";
+type View = "list" | "split" | "map" | "cal";
 const WHO = [["mine", "Ale mele"], ["forothers", "Făcute pentru colegi"], ["forme", "Făcute pentru mine"]] as const;
+const ico = (d: React.ReactNode) => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{d}</svg>;
+const VIEWS: [View, string, React.ReactNode][] = [
+  ["list", "Listă", ico(<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />)],
+  ["split", "Listă + hartă", ico(<><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M11 4v16" /></>)],
+  ["map", "Hartă", ico(<><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2z" /><path d="M9 4v14M15 6v14" /></>)],
+  ["cal", "Calendar", ico(<><rect x="3.5" y="5" width="17" height="15.5" rx="2.5" /><path d="M3.5 10h17M8 3v4M16 3v4" /></>)],
+];
 const DAYS = ["LUN", "MAR", "MIE", "JOI", "VIN", "SÂM", "DUM"];
 const H0 = 7, H1 = 20, HH = 48; // calendar: 07–20, 48 px per hour
 
@@ -33,7 +40,8 @@ export function InspList({ rows: initial, meId }: { rows: Row[]; meId: string })
   const [q, setQ] = useState("");
   const [view, setView] = useState<View>("list");
   const [msg, setMsg] = useState("");
-  useEffect(() => { try { const v = localStorage.getItem("insp-view"); if (v === "map" || v === "cal") setView(v); } catch {} }, []);
+  const [focus, setFocus] = useState<string | null>(null); // split view: the card / pin pointed at
+  useEffect(() => { try { const v = localStorage.getItem("insp-view"); if (v === "map" || v === "cal" || v === "split") setView(v); } catch {} }, []);
   const pick = (v: View) => { setView(v); try { localStorage.setItem("insp-view", v); } catch {} };
 
   const inWho = rows.filter((r) => r.who === who);
@@ -58,19 +66,24 @@ export function InspList({ rows: initial, meId }: { rows: Row[]; meId: string })
           ))}
         </div>
         <div className="inSeg" role="group" aria-label="Vizualizare">
-          {([["list", "Listă"], ["map", "Hartă"], ["cal", "Calendar"]] as const).map(([k, l]) => (
-            <button key={k} type="button" aria-pressed={view === k} onClick={() => pick(k)}>{l}</button>
+          {VIEWS.map(([k, l, ico]) => (
+            <button key={k} type="button" aria-pressed={view === k} onClick={() => pick(k)} title={l}>{ico}<span>{l}</span></button>
           ))}
         </div>
       </div>
-      <div className="inFilters">
-        <button type="button" className="inChip" aria-pressed={st === "all"} onClick={() => setSt("all")}>Toate <b>{inWho.length}</b></button>
+      <label className="inSearchBox">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" /></svg>
+        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Caută după adresă, nr. cadastral, persoană de contact sau cod…" aria-label="Caută" />
+        {q && <button type="button" aria-label="Golește căutarea" onClick={() => setQ("")}>×</button>}
+        {q && <em>{shown.length} {shown.length === 1 ? "rezultat" : "rezultate"}</em>}
+      </label>
+      <div className="inTabs" role="tablist" aria-label="Stare">
+        <button type="button" role="tab" aria-selected={st === "all"} onClick={() => setSt("all")}>Toate <b>{inWho.length}</b></button>
         {STATUSES.map((k) => (
-          <button key={k} type="button" className="inChip" aria-pressed={st === k} onClick={() => setSt(k)}>
+          <button key={k} type="button" role="tab" aria-selected={st === k} onClick={() => setSt(k)}>
             <i style={{ background: STATUS[k].fg }} />{STATUS[k].label} <b>{inWho.filter((r) => r.status === k).length}</b>
           </button>
         ))}
-        <input className="input inSearch" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Adresă, nr. cadastral, contact, cod…" aria-label="Caută" />
       </div>
       {msg && <p className="note" role="alert">{msg}</p>}
 
@@ -95,6 +108,22 @@ export function InspList({ rows: initial, meId }: { rows: Row[]; meId: string })
         </div>
       ) : <Empty who={who} />)}
 
+      {view === "split" && (shown.length ? (
+        <div className="inSplit">
+          <div className="inSplitList">
+            {shown.map((r) => (
+              <a key={r.id} id={`ic-${r.id}`} href={`/inspectii/${r.id}`} className={`inCard${focus === r.id ? " on" : ""}`}
+                onMouseEnter={() => setFocus(r.id)} onMouseLeave={() => setFocus(null)}>
+                <span className="inCardTop"><Badge s={r.status} /><small>{fmtWhen(r.scheduled_at)}</small></span>
+                <b>{r.address}</b>
+                <small>{[r.prop_type, r.cad_nr && `nr. cad. ${r.cad_nr}`, r.contact_name].filter(Boolean).join(" · ")}</small>
+                {r.lat == null && <em>fără poziție pe hartă</em>}
+              </a>
+            ))}
+          </div>
+          <MapView rows={shown} focus={focus} onPin={(id) => { setFocus(id); document.getElementById(`ic-${id}`)?.scrollIntoView({ behavior: "smooth", block: "nearest" }); }} bare />
+        </div>
+      ) : <Empty who={who} />)}
       {view === "map" && <MapView rows={shown} />}
       {view === "cal" && <CalView rows={shown} unplanned={inWho.filter((r) => r.status === "prog")} onSchedule={schedule} />}
     </div>
@@ -128,9 +157,14 @@ function loadLeaflet() {
   return leaflet;
 }
 
-function MapView({ rows }: { rows: Row[] }) {
+function MapView({ rows, focus = null, onPin, bare = false }: { rows: Row[]; focus?: string | null; onPin?: (id: string) => void; bare?: boolean }) {
   const el = useRef<HTMLDivElement>(null);
   const placed = useMemo(() => rows.filter((r) => r.lat != null && r.lng != null), [rows]);
+  // split view: the pin of the card pointed at is highlighted
+  useEffect(() => {
+    el.current?.querySelectorAll<HTMLElement>(".inPin").forEach((p) => p.classList.toggle("on", p.dataset.id === focus));
+  }, [focus]);
+  const pinRef = useRef(onPin); pinRef.current = onPin;
   useEffect(() => {
     let m: LMap | null = null, gone = false;
     loadLeaflet().then((L) => {
@@ -138,16 +172,17 @@ function MapView({ rows }: { rows: Row[] }) {
       m = L.map(el.current, { scrollWheelZoom: false });
       L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: "© OpenStreetMap" }).addTo(m);
       placed.forEach((r, i) => {
-        const icon = L.divIcon({ className: "", html: `<span class="inPin" style="background:${STATUS[r.status].fg}">${i + 1}</span>`, iconSize: [28, 28], iconAnchor: [14, 28] });
+        const icon = L.divIcon({ className: "", html: `<span class="inPin" data-id="${r.id}" style="background:${STATUS[r.status].fg}">${i + 1}</span>`, iconSize: [28, 28], iconAnchor: [14, 28] });
         const mk = L.marker([r.lat!, r.lng!], { icon });
         mk.addTo(m!).bindTooltip(`${r.address} · ${STATUS[r.status].label}`);
-        mk.on("click", () => { location.href = `/inspectii/${r.id}`; });
+        mk.on("click", () => { if (pinRef.current) pinRef.current(r.id); else location.href = `/inspectii/${r.id}`; });
       });
       if (placed.length) m.fitBounds(L.latLngBounds(placed.map((r) => [r.lat!, r.lng!])), { padding: [40, 40], maxZoom: 15 });
       else m.setView([45.75, 21.23], 9);
     }).catch(() => {});
     return () => { gone = true; m?.remove(); };
   }, [placed]);
+  if (bare) return <div ref={el} className="inMap inSplitMap" role="region" aria-label="Harta inspecțiilor" />;
   return (
     <div className="inMapWrap">
       <div ref={el} className="inMap" role="region" aria-label="Harta inspecțiilor" />
