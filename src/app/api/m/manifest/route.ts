@@ -2,7 +2,7 @@
 export function GET() {
   return Response.json(
     {
-      name: "UVALO Inspecții", short_name: "Inspecții", description: "Inspecțiile tale pe teren: fișa, fotografiile, semnătura.",
+      name: "UVALO", short_name: "UVALO", description: "Inspecțiile tale pe teren: fișa, fotografiile, semnătura.",
       lang: "ro", id: "/", start_url: "/", scope: "/", display: "standalone", orientation: "portrait",
       background_color: "#141414", theme_color: "#141414",
       icons: [

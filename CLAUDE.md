@@ -423,6 +423,7 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
 
 ### Aplicația de telefon (PWA, `inspectii.uvalo.ro`)
 
+- Numele propus la instalare = **„UVALO”** (manifest `name` / `short_name`, `appleWebApp.title` și titlul paginii `/m`).
 - `worker.ts`: pe `INSP_HOSTS` (implicit `inspectii.uvalo.ro`) `/` → pagina `/m` (cu query), `/sw.js` → `/api/m/sw`, `/manifest.webmanifest` →
   `/api/m/manifest`; trec `/api/`, `/_next/`, iconițele și logo-urile; orice altă cale → 302 la `/`. Linkul din web: `inspUrl()` (var `INSP_URL`).
   Domeniul trebuie adăugat ca custom domain pe workerul `tools`. Cookie-ul `vf_tools` e host-only: telefonul are sesiunea lui.
@@ -435,7 +436,7 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   fișă ↔ detaliu), „‹” din detaliu = Acasă (înlocuiește intrarea), iar după „Inspecție nouă” intrarea ecranului nou e înlocuită cu Acasă. În fișă, chip-ul secțiunii curente se derulează singur în vedere (`secsRef`).
 - Offline: ciorna în `localStorage` `insp-draft-<id>` (trimisă ca `progress` la 4 s), pozele (micșorate 2000 px) și finalizările în IndexedDB
   `uvalo-insp` (`store.ts`, `flush()` la revenirea rețelei și la 30 s).
-- **Pornire rapidă** (măsurat cu latență 300 ms: prima deschidere ~2,2 s, următoarele ~0,1 s): service worker-ul (`uvalo-insp-v3`) servește
+- **Pornire rapidă** (măsurat cu latență 300 ms: prima deschidere ~2,2 s, următoarele ~0,1 s): service worker-ul (`uvalo-insp-v4`; versiunea crește ca să se golească memoria veche după schimbări vizibile) servește
   pagina din memorie (stale-while-revalidate) și o reîmprospătează în fundal împreună cu scripturile ei (le adaugă în cache înainte de a
   înlocui pagina, ca după un deploy să nu lipsească nimic); `/_next/static/` = cache-first. Răspunsul `/api/m/state` se păstrează în
   `localStorage` `insp-state` → aplicația apare imediat, apoi se actualizează (golit la 401, fără acces, „Ieși din cont”). Detaliul unei

@@ -3,10 +3,10 @@ import { MobileApp } from "@/components/mobile/MobileApp";
 
 // The phone app (PWA). Served at "/" on inspectii.uvalo.ro (worker.ts rewrites it here); the data comes from /api/m/*.
 export const metadata: Metadata = {
-  title: "UVALO Inspecții",
+  title: "UVALO",
   description: "Inspecțiile tale pe teren: fișa, fotografiile cu ora și locul, semnătura.",
   manifest: "/manifest.webmanifest",
-  appleWebApp: { capable: true, title: "Inspecții", statusBarStyle: "black" },
+  appleWebApp: { capable: true, title: "UVALO", statusBarStyle: "black" },
   icons: { apple: "/loc-icon-apple.png" },
   robots: { index: false, follow: false },
 };
