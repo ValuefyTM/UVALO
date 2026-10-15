@@ -328,7 +328,8 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   sau meniul ⋮; Android în aplicații (Instagram, WhatsApp…) → `intent://…package=com.android.chrome`; calculator → QR. Ascuns 3 zile la ×.
 - **Acasă pe telefon**: bara compactă = filtrul ca listă derulantă (Săptămâna asta / Neprogramate / Finalizate / Toate, cu număr),
   comutatorul Listă / Hartă / Calendar (`localStorage` `insp-view`) și „+”. Harta: Leaflet de pe cdnjs + OSM, pini numerotați pe culoarea stării,
-  punctul albastru = telefonul, atingerea unui pin dă cardul inspecției. Calendarul: săptămâna (‹ ›, Azi), punctele = inspecții pe zi, agenda
+  punctul albastru = telefonul, atingerea unui pin dă cardul inspecției (fără listă sub hartă; `.mbMapBox` cu `isolation: isolate`,
+  altfel straturile Leaflet trec peste meniul de jos). Calendarul: săptămâna (‹ ›, Azi), punctele = inspecții pe zi, agenda
   zilei alese și „De programat” cu buton.
 - **Programare de pe telefon**: foaia `ScheduleSheet` (Azi / Mâine / Poimâine, zi, oră, durată 30 min–2 h) din calendar și din detaliul
   inspecției (cardul „Programare”, doar la stările prog / plan) → `POST /api/inspectii {action: schedule, scheduled_at, duration_min}`.

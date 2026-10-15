@@ -358,8 +358,8 @@ function Home({ me, items, queueN, pos, onNew, onOpen, onStart, onRefresh, onSch
       <div className="mbTools">
         {hv === "cal" ? <b className="mbToolsT">Calendar</b> : (
           <label className="mbSel">
-            <span className="sr-only">Arată</span>
-            <select value={f} onChange={(e) => setF(e.target.value as typeof f)}>
+            <span className="mbSelV" aria-hidden="true"><span>{FILTERS.find((x) => x[0] === f)![1]}</span><em>{FILTERS.find((x) => x[0] === f)![2]}</em></span>
+            <select value={f} onChange={(e) => setF(e.target.value as typeof f)} aria-label="Arată">
               {FILTERS.map(([k, l, n]) => <option key={k} value={k}>{l} · {n}</option>)}
             </select>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
@@ -453,11 +453,9 @@ function MapList({ list, today, pos, onOpen }: { list: InspRow[]; today: string;
           </div>
         )}
       </div>
-      <div className="mbList">
-        {placed.map((r, i) => <ItemRow key={r.id} i={r} n={i + 1} today={today} onOpen={onOpen} />)}
-        {list.length > placed.length && <p className="mbEmpty">{list.length - placed.length} fără poziție pe hartă (adresa nu a fost găsită).</p>}
-        {!list.length && <p className="mbEmpty">Nicio inspecție în filtrul ales.</p>}
-      </div>
+      {(list.length > placed.length || !list.length) && (
+        <p className="mbMapNote">{!list.length ? "Nicio inspecție în filtrul ales." : `${list.length - placed.length} fără poziție pe hartă (adresa nu a fost găsită). Le vezi în listă.`}</p>
+      )}
     </div>
   );
 }

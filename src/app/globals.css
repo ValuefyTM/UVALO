@@ -1934,18 +1934,22 @@ textarea.mbIn { min-height: 0; resize: vertical; }
 .mbTools { display: flex; align-items: center; gap: 8px; margin: 18px var(--mb-pad) 0; }
 .mbToolsT { font-size: 16px; flex: 1; }
 .mbSel { position: relative; flex: 1; min-width: 0; display: flex; align-items: center; }
-.mbSel select { appearance: none; -webkit-appearance: none; width: 100%; height: 40px; border: 0; background: transparent; font-size: 16px; font-weight: 800; color: var(--ink); padding: 0 26px 0 0; text-overflow: ellipsis; }
+.mbSel select { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; font-size: 16px; }
+.mbSelV { display: flex; align-items: center; gap: 6px; min-width: 0; height: 40px; padding-right: 22px; font-size: 15px; font-weight: 800; }
+.mbSelV > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mbSelV em { flex: none; font-style: normal; font-size: 12px; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 11px; background: #141414; color: var(--acc); display: inline-flex; align-items: center; justify-content: center; }
 .mbSel svg { position: absolute; right: 6px; pointer-events: none; color: var(--muted-2); }
 .mbSeg { display: inline-flex; background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 3px; gap: 2px; flex: none; }
-.mbSeg button { width: 38px; height: 32px; border: 0; border-radius: 9px; background: none; color: var(--muted-2); display: flex; align-items: center; justify-content: center; }
+.mbSeg button { width: 34px; height: 32px; border: 0; border-radius: 9px; background: none; color: var(--muted-2); display: flex; align-items: center; justify-content: center; }
 .mbSeg button[aria-pressed="true"] { background: #141414; color: var(--acc); }
 .mbAdd { width: 40px; height: 40px; flex: none; border: 0; border-radius: 12px; background: var(--acc); color: #141414; display: flex; align-items: center; justify-content: center; }
 .mbPinN { flex: none; width: 34px; height: 34px; border-radius: 50%; color: #fff; font-weight: 800; font-size: 14px; display: flex; align-items: center; justify-content: center; }
 
 /* map view */
 .mbMapWrap { display: flex; flex-direction: column; }
-.mbMapBox { position: relative; margin: 12px var(--mb-pad) 0; border-radius: 18px; overflow: hidden; background: #e8e2d6; }
-.mbMap { height: 52svh; min-height: 280px; }
+.mbMapBox { position: relative; isolation: isolate; z-index: 0; margin: 12px var(--mb-pad) 0; border-radius: 18px; overflow: hidden; background: #e8e2d6; }
+.mbMap { height: 58svh; min-height: 300px; }
+.mbMapNote { margin: 10px var(--mb-pad) 0; font-size: 13px; color: var(--muted-2); text-align: center; }
 .mbMapFail { position: absolute; inset: 0; margin: 0; display: flex; align-items: center; justify-content: center; text-align: center; padding: 20px; color: var(--muted); font-size: 14px; }
 .mbMapCard { position: absolute; left: 8px; right: 8px; bottom: 8px; z-index: 500; box-shadow: 0 8px 24px rgba(0,0,0,0.25); border-radius: 16px; }
 .mbMapCard .mbItem { width: 100%; padding-right: 36px; }
@@ -2010,4 +2014,6 @@ textarea.mbIn { min-height: 0; resize: vertical; }
 .mbNav button i { position: absolute; top: 2px; left: calc(50% + 6px); background: var(--err); color: #fff; font-style: normal; font-size: 10px; min-width: 18px; height: 18px; border-radius: 9px; display: flex; align-items: center; justify-content: center; padding: 0 4px; }
 /* iOS, installed app: the page must reach the bottom edge, or the fixed menu floats above it by the status bar's height */
 html:has(.mb) { min-height: calc(100% + env(safe-area-inset-top)); background: #F4EFE6; }
+/* iPhone: the status bar (time, battery) sits over the page; a dark strip under it so scrolled content does not show through */
+.mb::before { content: ""; position: fixed; top: 0; left: 0; right: 0; height: env(safe-area-inset-top); background: #141414; z-index: 50; pointer-events: none; }
 @media (min-width: 561px) { body:has(.mb) { background: #141414; } }
