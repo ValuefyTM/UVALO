@@ -1069,7 +1069,7 @@ function Form({ x, d, sec, photos, onBack, onSec, change, onPhoto, onRooms, onPh
         </>}
       </div>
       <footer className="mbFoot">
-        <Tiles d={d} photos={photos} kept={keptSig(x) ? x.signed_name! : null} onRooms={onRooms} onPhotos={onPhotos} onSign={onSign} />
+        <Tiles d={d} photos={photos} kept={keptSig(x) ? x.signed_name! : null} rooms={!!x.template.rooms} onRooms={onRooms} onPhotos={onPhotos} onSign={onSign} />
         {sec < last ? <button type="button" className="mbBtn gold big" onClick={() => { onSec(sec + 1); window.scrollTo(0, 0); }}>Secțiunea următoare: {sec + 1 < groups.length ? groups[sec + 1].name : "Constatări"} →</button>
           : <button type="button" className="mbBtn gold big" onClick={onSign}>Încheie inspecția →</button>}
       </footer>
@@ -1078,19 +1078,20 @@ function Form({ x, d, sec, photos, onBack, onSec, change, onPhoto, onRooms, onPh
 }
 
 /** The three steps every inspection needs before it is sent: the rooms' finishes, the photos, the signature (green when done). */
-function Tiles({ d, photos, kept, onRooms, onPhotos, onSign }: { d: Draft; photos: number; kept: string | null; onRooms: () => void; onPhotos: () => void; onSign: () => void }) {
+function Tiles({ d, photos, kept, rooms, onRooms, onPhotos, onSign }: { d: Draft; photos: number; kept: string | null; rooms: boolean; onRooms: () => void; onPhotos: () => void; onSign: () => void }) {
   const done = d.rooms.filter(roomDone).length, roomsOk = done === d.rooms.length;
   const ico = (p: React.ReactNode) => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{p}</svg>;
   const tiles = [
-    { k: "rooms", ok: roomsOk, t: "Finisaje încăperi", s: d.rooms.length ? `${done} din ${d.rooms.length}` : "nu e cazul", go: onRooms,
-      i: ico(<><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M3 12h9V3M12 12v9" /></>) },
+    // the rooms' finishes only when the sheet asks for them (template option)
+    ...(rooms ? [{ k: "rooms", ok: roomsOk, t: "Finisaje încăperi", s: d.rooms.length ? `${done} din ${d.rooms.length}` : "nu e cazul", go: onRooms,
+      i: ico(<><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M3 12h9V3M12 12v9" /></>) }] : []),
     { k: "photos", ok: photos > 0, t: "Fotografii", s: photos ? `${photos} încărcate` : "niciuna", go: onPhotos,
       i: ico(<><path d="M4 8h3l2-3h6l2 3h3v11H4z" /><circle cx="12" cy="13" r="3.5" /></>) },
     { k: "sign", ok: !!d.sig || !!kept, t: "Semnătură", s: d.sig ? "semnată" : kept ? "păstrată" : "nesemnată", go: onSign,
       i: ico(<path d="M3 17c3-1 4-8 6-8s0 7 2 7 3-4 4-4 1 3 3 3h3M3 21h18" />) },
   ];
   return (
-    <span className="mbTiles">
+    <span className="mbTiles" style={{ gridTemplateColumns: `repeat(${tiles.length}, 1fr)` }}>
       {tiles.map((x) => (
         <button key={x.k} type="button" className={`mbTile${x.ok ? " ok" : ""}`} onClick={x.go}>
           <span className="mbTileIco">{x.ok ? ico(<path d="M5 12.5l4.5 4.5L19 7.5" />) : x.i}</span>
@@ -1361,7 +1362,7 @@ function Sign({ x, d, photos, change, onBack, onFinish, onRooms, onPhotos }: {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [useKept]);
   const keep = (sig: string | null, w = who, o = other) => change((dd) => { dd.sig = sig; dd.signer = { who: w, other: o }; return dd; });
-  const roomsLeft = d.rooms.filter((r) => !roomDone(r)).length;
+  const roomsLeft = x.template.rooms ? d.rooms.filter((r) => !roomDone(r)).length : 0;
   const pt = (e: React.PointerEvent) => { const r = cv.current!.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top] as const; };
   const name = who === "contact" ? x.contact_name ?? "" : other.trim();
   return (
@@ -1370,7 +1371,7 @@ function Sign({ x, d, photos, change, onBack, onFinish, onRooms, onPhotos }: {
       <div className="mbBody">
         <section className="mbCard mbSum">
           <span><span>Fișa</span><b className={missing.length ? "warn" : "ok"}>{missing.length ? `lipsesc ${missing.length} obligatorii` : `✓ ${all.filter((q) => answered(d.answers[q.id])).length}/${all.length}`}</b></span>
-          <button type="button" onClick={onRooms}><span>Finisaje încăperi</span><b className={roomsLeft ? "warn" : "ok"}>{roomsLeft ? `lipsesc la ${roomsLeft} ›` : `✓ ${d.rooms.length}`}</b></button>
+          {!!x.template.rooms && <button type="button" onClick={onRooms}><span>Finisaje încăperi</span><b className={roomsLeft ? "warn" : "ok"}>{roomsLeft ? `lipsesc la ${roomsLeft} ›` : `✓ ${d.rooms.length}`}</b></button>}
           <button type="button" onClick={onPhotos}><span>Fotografii</span><b className={photos ? "ok" : "warn"}>{photos ? `✓ ${photos} încărcate` : "niciuna ›"}</b></button>
         </section>
         {missing.length > 0 && <p className="mbNote">Lipsesc: {missing.slice(0, 4).map((q) => q.t).join(", ")}{missing.length > 4 ? "…" : ""}. Poți trimite și așa.</p>}

@@ -79,6 +79,9 @@ export function InspTemplates({ items, canOrg, start }: { items: TplItem[]; canO
             <label className="field">Pentru<select className="select" value={prop} disabled={ro} onChange={(e) => { setProp(e.target.value); setChanged(true); }}>
               <option value="">Orice proprietate</option>{PROP_TYPES.map((p) => <option key={p}>{p}</option>)}</select></label>
             {cur.owner === "org" && <label className="check"><input type="checkbox" checked={enforced} disabled={ro} onChange={(e) => { setEnforced(e.target.checked); setChanged(true); }} /> Impusă colegilor din birou</label>}
+            <label className="check" title="Pe telefon apare pasul obligatoriu „Finisaje încăperi”; în fișă, tabelul încăperilor are și finisajele.">
+              <input type="checkbox" checked={!!tpl.rooms} disabled={ro} onChange={(e) => { setTpl({ ...tpl, rooms: e.target.checked || undefined }); setChanged(true); }} />
+              Finisaje pe încăperi (pardoseală, pereți, plafon, stare)</label>
           </div>
 
           {tpl.groups.map((g: Group, gi) => (

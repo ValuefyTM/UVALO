@@ -50,6 +50,7 @@ export default async function SharedSheet({ params }: { params: Promise<{ token:
   const byRoom = [...new Set(photos.map((p) => p.room ?? "Altele"))].map((r) => ({ r, ph: photos.filter((p) => (p.room ?? "Altele") === r) }));
   const rooms = x.room_answers.length ? x.room_answers : x.rooms;
   const util = rooms.reduce((s, r) => s + (r.a ?? 0), 0);
+  const fin = !!x.template.rooms || x.room_answers.some((r) => (r as { floor?: string }).floor);
   const shown = ["gata", "pred", "lucru"].includes(x.status);
   const groups = x.template.groups.map((g) => ({ ...g, qs: g.qs.filter((q) => q.pdf !== false && !PRIVATE_Q.test(q.t)) }))
     .map((g) => ({ ...g, rows: g.qs.map((q) => [q.t, q.kind === "comp" ? compSummary(q, x.answers) : ans(x.answers[q.id], q.unit)] as const).filter(([, v]) => v) }))
@@ -132,17 +133,17 @@ export default async function SharedSheet({ params }: { params: Promise<{ token:
 
         {rooms.length > 0 && (
           <section id="incaperi" className="fsCard">
-            <h2>Încăperi și finisaje{util > 0 ? <small> · {nf(util)} mp utili</small> : null}</h2>
+            <h2>{fin ? "Încăperi și finisaje" : "Încăperi"}{util > 0 ? <small> · {nf(util)} mp utili</small> : null}</h2>
             <div className="fsTblWrap">
               <table className="fsTbl">
-                <thead><tr><th>Încăpere</th><th className="r">mp</th>{shown && <><th>Pardoseală</th><th>Pereți</th><th>Plafon</th><th>Stare</th></>}</tr></thead>
+                <thead><tr><th>Încăpere</th><th className="r">mp</th>{shown && fin && <><th>Pardoseală</th><th>Pereți</th><th>Plafon</th><th>Stare</th></>}</tr></thead>
                 <tbody>
                   {rooms.map((r, i) => {
                     const ra = r as { floor?: string; walls?: string; ceiling?: string; state?: string };
                     return (
                       <tr key={i}>
                         <td><b>{r.n}</b></td><td className="r">{r.a ? nf(r.a) : "—"}</td>
-                        {shown && <><td>{ra.floor ?? "—"}</td><td>{ra.walls ?? "—"}</td><td>{ra.ceiling ?? "—"}</td><td>{ra.state ?? "—"}</td></>}
+                        {shown && fin && <><td>{ra.floor ?? "—"}</td><td>{ra.walls ?? "—"}</td><td>{ra.ceiling ?? "—"}</td><td>{ra.state ?? "—"}</td></>}
                       </tr>
                     );
                   })}

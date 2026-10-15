@@ -419,6 +419,10 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   Butoanele cameră / galerie = două iconițe mici lângă titlul categoriei (`.mbPhHead`). Fiecare grup e selectabil (atingere oriunde pe el,
   bulina `.mbPhRadio`) → acolo merg pozele noi; o categorie fără poze se alege din lista de jos, apare ca grup gol selectat și se derulează în vedere.
   „Am terminat” (`.mbDone`, în bara de sus) închide ecranul pozelor.
+- **Finisajele pe încăperi sunt o opțiune a fișei** (`Template.rooms`, implicit oprită, și la fișele UVALO; bifa „Finisaje pe încăperi” în editorul
+  de fișe `InspTemplates`): oprită → pe telefon dispar cardul „Finisaje încăperi” (și ecranul încăperilor cu „Preia din RLV”) și condiția la
+  finalizare; în fișa web și în cea publică tabelul încăperilor are doar numele și suprafața (finisajele apar dacă opțiunea e pornită sau au fost
+  completate înainte). Ce urmează despre finisaje se aplică doar cu opțiunea pornită.
 - **Cardurile obligatorii din fișă** (`Tiles`, `.mbTile`, verzi cu ✓ când sunt gata): „Finisaje încăperi” (N din M; o încăpere e gata când are
   pardoseală, pereți, plafon și stare — `roomDone` în `insp-shared.ts`), „Fotografii” (N încărcate), „Semnătură” (semnată). „Finalizează și trimite”
   cere toate trei. Semnătura se păstrează în ciornă (`draft.sig` dataURL + `draft.signer`) cât se mai completează fișa; „Șterge” o scoate.

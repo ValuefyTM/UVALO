@@ -10,7 +10,8 @@ export type SubQ = { id: string; t: string; kind: SubKind; options?: string[]; u
  */
 export type Question = { id: string; t: string; kind: QKind; options?: string[]; def?: string; unit?: string; req?: boolean; pdf?: boolean; photo?: boolean; sub?: Record<string, SubQ[]> };
 export type Group = { id: string; name: string; qs: Question[] };
-export type Template = { groups: Group[] };
+/** `rooms` = the sheet asks the finishes of each room (floor, walls, ceiling, state); off by default, turned on in the sheet editor. */
+export type Template = { groups: Group[]; rooms?: boolean };
 
 export const QKIND_LABEL: Record<QKind, string> = { one: "Alegere unică", many: "Alegere multiplă", text: "Text", number: "Număr", date: "Dată", comp: "Compusă (întrebări după răspuns)" };
 export const SUBKIND_LABEL: Record<SubKind, string> = { one: "Alegere unică", many: "Alegere multiplă", text: "Text", number: "Număr" };
@@ -326,6 +327,7 @@ export function cleanTemplate(v: unknown): Template {
   const g0 = (v && typeof v === "object" && Array.isArray((v as Template).groups) ? (v as Template).groups : []).slice(0, 30);
   const s = (x: unknown, m = 160) => (typeof x === "string" ? x.trim().slice(0, m) : "");
   return {
+    ...((v as Template | null)?.rooms === true ? { rooms: true } : {}),
     groups: g0.map((g, gi) => ({
       id: s(g?.id, 40) || `g${gi + 1}`,
       name: s(g?.name, 80) || "Grup",

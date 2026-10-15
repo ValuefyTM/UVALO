@@ -33,6 +33,8 @@ export default async function InspDoc({ params }: { params: Promise<{ id: string
   const cover = coverPhoto(x.files, x.cover_file_id);
   const rooms = x.room_answers.length ? x.room_answers : x.rooms;
   const util = rooms.reduce((s, r) => s + (r.a ?? 0), 0);
+  // the finishes per room: only when the sheet asks for them (or they were filled in before the option existed)
+  const fin = !!x.template.rooms || x.room_answers.some((r) => (r as { floor?: string }).floor);
   const groups = x.template.groups;
   // UVALO sheets have their own "Constatări" group; older ones use the free-text findings
   const ownFind = groups.some((g) => g.id === "constatari");
@@ -119,13 +121,13 @@ export default async function InspDoc({ params }: { params: Promise<{ id: string
             {sec(String(groups.length + 1).padStart(2, "0"), "Încăperi")}
             {rooms.length ? (
               <table className="inRoomsTbl">
-                <thead><tr><th>Poz.</th><th>Încăpere</th><th className="right">mp</th><th>Pardoseală</th><th>Pereți</th><th>Plafon</th><th>Stare</th></tr></thead>
+                <thead><tr><th>Poz.</th><th>Încăpere</th><th className="right">mp</th>{fin && <><th>Pardoseală</th><th>Pereți</th><th>Plafon</th><th>Stare</th></>}</tr></thead>
                 <tbody>
                   {rooms.map((r, i) => {
                     const ra = r as { floor?: string; walls?: string; ceiling?: string; state?: string };
-                    return <tr key={i}><td className="acc">{i + 1}</td><td><b>{r.n}</b></td><td className="right">{nf(r.a)}</td><td>{ra.floor ?? "—"}</td><td>{ra.walls ?? "—"}</td><td>{ra.ceiling ?? "—"}</td><td>{ra.state ?? "—"}</td></tr>;
+                    return <tr key={i}><td className="acc">{i + 1}</td><td><b>{r.n}</b></td><td className="right">{nf(r.a)}</td>{fin && <><td>{ra.floor ?? "—"}</td><td>{ra.walls ?? "—"}</td><td>{ra.ceiling ?? "—"}</td><td>{ra.state ?? "—"}</td></>}</tr>;
                   })}
-                  <tr className="tot"><td /><td><b>Suprafață utilă</b></td><td className="right"><b>{nf(util)}</b></td><td colSpan={4}>{x.area_util ? `acte: ${nf(x.area_util)} mp · diferență ${util - x.area_util >= 0 ? "+" : ""}${nf(util - x.area_util)} mp` : ""}</td></tr>
+                  <tr className="tot"><td /><td><b>Suprafață utilă</b></td><td className="right"><b>{nf(util)}</b></td><td colSpan={fin ? 4 : 1}>{x.area_util ? `acte: ${nf(x.area_util)} mp · diferență ${util - x.area_util >= 0 ? "+" : ""}${nf(util - x.area_util)} mp` : ""}</td></tr>
                 </tbody>
               </table>
             ) : <p className="hint">Încăperile din releveu nu au fost adăugate.</p>}
