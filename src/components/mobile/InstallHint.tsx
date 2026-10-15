@@ -41,6 +41,9 @@ export function InstallHint({ compact = false }: { compact?: boolean }) {
   const [hide, setHide] = useState(false);
   const [copied, setCopied] = useState(false);
   useEffect(() => {
+    // inside the web's preview frame (Inspecții → „Previzualizează aplicația”) there is nothing to install
+    let framed = false; try { framed = window.self !== window.top; } catch { framed = true; }
+    if (framed) return;
     setKind(detect());
     try { const t = Number(localStorage.getItem("insp-hint-off") || 0); if (Date.now() - t < 3 * 864e5) setHide(true); } catch {}
     const on = (e: Event) => { e.preventDefault(); setBip(e as BIPEvent); };

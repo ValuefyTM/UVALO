@@ -5,6 +5,7 @@ import { devices, inspUrl, listInspections } from "@/lib/insp";
 import { AppShell } from "@/components/AppShell";
 import { InspActivate } from "@/components/InspActivate";
 import { InspList } from "@/components/InspList";
+import { InspPreview } from "@/components/InspPreview";
 
 export const metadata: Metadata = { title: "Inspecții | UVALO" };
 export const dynamic = "force-dynamic";
@@ -23,7 +24,7 @@ export default async function InspectiiPage() {
   await track(db, c, "inspectii", "page", null, { test: 1 });
   if (!devs.length) {
     return (
-      <AppShell c={c} active="inspectii" title="Inspecții" subtitle={c.insp === "on" ? "Conectează telefonul" : "Modul în test"}>
+      <AppShell c={c} active="inspectii" title="Inspecții" subtitle={c.insp === "on" ? "Conectează telefonul" : "Modul în test"} actions={<InspPreview appUrl={inspUrl()} />}>
         <InspActivate testMode={c.super} appUrl={inspUrl()} />
       </AppShell>
     );
@@ -34,10 +35,11 @@ export default async function InspectiiPage() {
     <AppShell c={c} active="inspectii" title="Inspecții" subtitle="Le pregătești aici; pe telefon doar le faci. Fișele, pozele și actele se văd aici."
       actions={<>
         <span className="inDev" title={dev.platform === "test" ? "Mod de test, fără telefon" : "Telefonul conectat"}><i />{dev.platform === "test" ? "Mod test (fără telefon)" : `Telefon conectat · ${dev.name ?? ""}`}</span>
+        <InspPreview appUrl={inspUrl()} />
         <a className="btn btnGhost" href="/inspectii/fise">Fișe de inspecție</a>
         <a className="btn btnGold" href="/inspectii/nou">Inspecție nouă</a>
       </>}>
-      <div className="note inTestNote">Modul în test: îl văd doar administratorii UVALO. Datele introduse acum sunt marcate ca date de test.</div>
+      {c.insp !== "on" && <div className="note inTestNote">Modul în test: îl văd administratorii UVALO și grupul de test. Datele introduse acum sunt marcate ca date de test.</div>}
       <InspList rows={rows} meId={c.user.id} />
     </AppShell>
   );

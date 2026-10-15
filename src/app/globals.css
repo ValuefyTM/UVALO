@@ -2267,3 +2267,15 @@ html:has(.mb) { min-height: calc(100% + env(safe-area-inset-top)); background: #
   .fsPhotos { grid-template-columns: repeat(4, 1fr); }
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
+
+/* Inspecții (web): preview of the phone app in a phone frame */
+.inPrevBg { position: fixed; inset: 0; z-index: 60; background: rgba(20,20,20,.55); display: flex; align-items: center; justify-content: center; padding: 12px; }
+.inPrev { display: flex; flex-direction: column; align-items: center; gap: 8px; max-height: 100%; }
+.inPrevBar { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 12px; color: #fff; font-size: 13px; }
+.inPrevBar > span { display: flex; align-items: center; gap: 12px; }
+.inPrevBar .linkBtn { color: #f1dcb0; font-size: 12.5px; text-decoration: none; }
+.inPrevX { width: 30px; height: 30px; border-radius: 50%; border: 0; background: rgba(255,255,255,.15); color: #fff; font-size: 20px; line-height: 1; cursor: pointer; }
+.inPhone { width: 390px; height: min(844px, calc(100vh - 110px)); border-radius: 44px; padding: 12px; background: #0b0b0b; box-shadow: 0 30px 80px -20px rgba(0,0,0,.6), inset 0 0 0 2px #333; }
+.inPhone iframe { width: 100%; height: 100%; border: 0; border-radius: 34px; background: #F4EFE6; display: block; }
+.inPrev .hint { color: #e6dfd2; font-size: 12px; margin: 0; }
+@media (max-width: 440px) { .inPhone { width: calc(100vw - 24px); border-radius: 30px; padding: 6px; } .inPhone iframe { border-radius: 24px; } }

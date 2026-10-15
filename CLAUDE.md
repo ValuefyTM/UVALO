@@ -297,6 +297,11 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
 - Fără telefon conectat (`insp_devices`) → pagina de activare (`InspActivate`: cod QR spre `<INSP_URL>/?pair=<cod>` + codul de 6 cifre din
   `insp_pair_codes`, 10 min; pagina întreabă `device_status` la 3 s și se deschide singură după conectare). Modulul pornește doar după o
   autentificare din aplicație (telefon sau aplicația instalată; browserul unui calculator nu se numără — `registerDevice`); în test, „Continuă fără telefon (test)” creează un dispozitiv `platform = 'test'`.
+- **„Previzualizează aplicația”** (`InspPreview`, pe `/inspectii` și pe pagina de activare): aplicația de telefon reală într-o ramă de telefon
+  (iframe spre `inspUrl()`), conectată singură cu un cod de conectare (`pair_code` → `/?pair=`); dacă rama are deja sesiune, codul nu se mai
+  folosește (fără sesiuni noi). Același site (`*.uvalo.ro`), deci cookie-ul `SameSite=Lax` merge în iframe. Calculatorul nu devine „telefon
+  conectat”; `InstallHint` nu apare în ramă. Test local: Chromium cu `--host-resolver-rules=MAP *.uvalo.test 127.0.0.1:8797` și
+  `--unsafely-treat-insecure-origin-as-secure`, wrangler cu `INSP_HOSTS=inspectii.uvalo.test`, `INSP_URL=http://inspectii.uvalo.test`.
 - Migrația 0023: `inspections` (bunul, contact, programare, fișa ca instantaneu `template` + versiune, `answers`, `room_answers`, `findings`, semnătura,
   `test = 1`), `insp_templates` (fișele firmei `org` — pot fi impuse — și ale persoanei `user`; `draft` + `published` + `version`), `insp_files`
   (poze/acte, fișierele vor sta în R2 — bucket de legat), `insp_log` (istoric), `insp_devices`, `insp_pair_codes`. Fișele UVALO stau în cod

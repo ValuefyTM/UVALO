@@ -112,7 +112,10 @@ export function MobileApp() {
     const sp = new URLSearchParams(location.search), code = sp.get("pair"), openId = sp.get("open");
     const standalone = matchMedia("(display-mode: standalone)").matches || (navigator as unknown as { standalone?: boolean }).standalone === true;
     (async () => {
-      if (code) {
+      // already signed in (e.g. the web's preview frame opened again): the code is not used, no new session
+      const signed = code ? (await fetch("/api/m/state", { cache: "no-store" }).catch(() => null))?.ok : false;
+      if (code && signed) history.replaceState(null, "", location.pathname);
+      else if (code) {
         history.replaceState(null, "", location.pathname);
         const r = await fetch("/api/m/pair", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code, standalone }) });
         if (!r.ok) say(String((await J(r)).error || "Codul nu a mers."));
