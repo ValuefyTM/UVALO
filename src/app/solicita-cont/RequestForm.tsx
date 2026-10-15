@@ -7,7 +7,7 @@ type Found = { status: string; name?: string; county?: string | null; specs?: st
 export function RequestForm({ r: refToken, email }: { r?: string; email?: string }) {
   const [legit, setLegit] = useState("");
   const [found, setFound] = useState<Found | null>(null);
-  const [f, setF] = useState({ email: email ?? "", phone: "", company: "", confirm: false });
+  const [f, setF] = useState({ email: email ?? "", phone: "", company: "", confirm: false, terms: false, newsletter: false });
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState("");
@@ -32,6 +32,7 @@ export function RequestForm({ r: refToken, email }: { r?: string; email?: string
     e.preventDefault();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email.trim())) return setMsg("Introdu o adresă de email validă.");
     if (!f.confirm) return setMsg(`Confirmă că ești ${found?.name}.`);
+    if (!f.terms) return setMsg("Pentru a continua, acceptă Termenii și condițiile și Politica de confidențialitate.");
     setBusy(true); setMsg("");
     const r = await fetch("/api/request", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ legit: legit.replace(/\D/g, ""), ...f, r: refToken }) });
     const d = (await r.json().catch(() => ({}))) as { error?: string; name?: string };
@@ -68,8 +69,10 @@ export function RequestForm({ r: refToken, email }: { r?: string; email?: string
       <label className="field">Adresa de email pentru cont<input className="input" type="email" autoComplete="email" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} placeholder="nume@exemplu.ro" /></label>
       <label className="field"><span>Telefon mobil</span><input className="input" type="tel" autoComplete="tel" placeholder="07xx xxx xxx" required value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} /></label>
       <label className="field"><span>Firma de evaluare <small>(opțional)</small></span><input className="input" value={f.company} onChange={(e) => setF({ ...f, company: e.target.value })} /></label>
+      <label className="check"><input type="checkbox" checked={f.terms} onChange={(e) => setF({ ...f, terms: e.target.checked })} required /><span>Am citit și accept <a href="/termeni" target="_blank" rel="noopener">Termenii și condițiile</a> și <a href="/confidentialitate" target="_blank" rel="noopener">Politica de confidențialitate</a>.</span></label>
+      <label className="check"><input type="checkbox" checked={f.newsletter} onChange={(e) => setF({ ...f, newsletter: e.target.checked })} /><span>Vreau să primesc pe email noutățile UVALO, când lansăm instrumente noi. <small className="muted">(opțional; te poți dezabona oricând din „Contul meu”)</small></span></label>
       {msg && <div role="alert" className="error">{msg}</div>}
-      <button type="submit" className="btn btnNavy" style={{ height: 52 }} disabled={busy}>{busy ? "Se trimite…" : "Solicită contul gratuit"}</button>
+      <button type="submit" className="btn btnNavy" style={{ height: 52 }} disabled={busy || !f.terms}>{busy ? "Se trimite…" : "Solicită contul gratuit"}</button>
       <button type="button" className="linkBtn" onClick={() => { setFound(null); setMsg(""); }}>← Altă legitimație</button>
     </form>
   );

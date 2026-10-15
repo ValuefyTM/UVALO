@@ -270,7 +270,7 @@ export async function inviteByToken(db: D1Database, token: string) {
     .first<{ id: string; email: string; org_id: string | null; role: string; org_name: string | null; user_id: string; name: string; phone: string | null; status: string; anevar_no: string | null; county: string | null }>();
 }
 
-export async function acceptInvite(db: D1Database, token: string, name: string, phone: string | null, anevar: string | null) {
+export async function acceptInvite(db: D1Database, token: string, name: string, phone: string | null, anevar: string | null, newsletter = false) {
   const inv = await inviteByToken(db, token);
   if (!inv) return null;
   // Name, card, county and specializations come from the ANEVAR list and are not changed by the user.
@@ -279,8 +279,9 @@ export async function acceptInvite(db: D1Database, token: string, name: string, 
   const t = now();
   await db.batch([
     db.prepare(`UPDATE users SET name = ?, phone = ?, anevar_no = COALESCE(?, anevar_no), county = COALESCE(?, county), specs = COALESCE(?, specs),
-        status = CASE WHEN status = 'disabled' THEN status ELSE 'active' END, closed_at = NULL, activated_at = COALESCE(activated_at, ?), terms_at = ? WHERE id = ?`)
-      .bind(m?.name ?? (inv.anevar_no ? inv.name : name), phone, m ? legit : null, m?.county ?? null, m?.specs ?? null, t, t, inv.user_id),
+        status = CASE WHEN status = 'disabled' THEN status ELSE 'active' END, closed_at = NULL, activated_at = COALESCE(activated_at, ?), terms_at = ?,
+        newsletter = ?, newsletter_at = ? WHERE id = ?`)
+      .bind(m?.name ?? (inv.anevar_no ? inv.name : name), phone, m ? legit : null, m?.county ?? null, m?.specs ?? null, t, t, newsletter ? 1 : 0, t, inv.user_id),
     db.prepare("UPDATE invites SET accepted_at = ? WHERE id = ?").bind(t, inv.id),
   ]);
   await audit(db, inv.user_id, "invite.accept", inv.org_id ? "org" : "platform", inv.org_id ?? undefined, inv.email);

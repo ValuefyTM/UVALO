@@ -98,6 +98,7 @@ export default function Confidentialitate() {
           <li><b>Securitate și prevenirea abuzurilor</b> (sesiuni, IP, limite de utilizare, jurnal de activitate): interesul nostru legitim, lit. f).</li>
           <li><b>Statistici și îmbunătățirea instrumentelor</b>: interesul nostru legitim, lit. f). Folosim date agregate ori de câte ori se poate.</li>
           <li><b>Mesaje despre cont</b> (coduri de autentificare, invitații, anunțuri despre serviciu): executarea contractului. Mesajele „Anunță-mă la lansare” le primești doar dacă le ceri.</li>
+          <li><b>Noutăți pe email</b> (când lansăm instrumente noi): doar dacă bifezi acordul la crearea contului, pe baza consimțământului tău, lit. a). Îl retragi oricând din „Contul meu” → „Noutăți pe email”; retragerea nu afectează contul.</li>
           <li><b>Obligații legale</b> (contabilitate, facturare): obligația legală, lit. c).</li>
         </ul>
       </section>

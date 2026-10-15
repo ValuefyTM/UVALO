@@ -15,6 +15,11 @@ export async function PATCH(req: Request) {
     if (u.anevar_no) return err("Numele evaluatorilor vine din Tabloul ANEVAR și nu se modifică din cont.");
     if (name.length < 3) return err("Scrie numele și prenumele.");
   }
+  // the newsletter about new tools: on / off from „Contul meu” (alone, without name / phone)
+  if (typeof b.newsletter === "boolean") {
+    await a.db.prepare("UPDATE users SET newsletter = ?, newsletter_at = ? WHERE id = ?").bind(b.newsletter ? 1 : 0, new Date().toISOString(), u.id).run();
+    if (typeof b.name !== "string" && typeof b.phone !== "string") return NextResponse.json({ ok: true });
+  }
   if (typeof b.phone === "string" && b.phone.trim() && !phone) return err("Numărul de telefon nu pare valid.");
   await a.db.prepare("UPDATE users SET name = COALESCE(?, name), phone = CASE WHEN ? THEN ? ELSE phone END WHERE id = ?")
     .bind(typeof b.name === "string" ? name : null, typeof b.phone === "string" ? 1 : 0, phone || null, u.id).run();

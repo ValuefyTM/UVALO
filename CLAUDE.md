@@ -211,6 +211,13 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
 
 ## Emailuri de cont
 
+- **Acordurile la crearea contului** (migrația 0034): în „Solicită cont” (`RequestForm`) și la activarea invitației (`AcceptForm`) bifa obligatorie
+  „Am citit și accept Termenii și condițiile și Politica de confidențialitate” (butonul rămâne inactiv fără ea; verificată și pe server:
+  `account_requests.terms_at`, `users.terms_at`) și bifa opțională, nebifată implicit, „Vreau să primesc pe email noutățile UVALO, când lansăm
+  instrumente noi” (`account_requests.newsletter` → precompletată la activare; `users.newsletter` + `newsletter_at`). În „Contul meu” cardul
+  `NewsletterCard` o pornește / oprește (`PATCH /api/account {newsletter}`). Confidențialitatea (secț. 7) o menționează (consimțământ, lit. a).
+  La unirea conturilor rămâne pornită dacă unul o avea.
+
 - Aprobarea unei solicitări de cont (`approve` în `requests.ts` → `invite(..., approved = true)`) trimite „Solicitarea ta de cont UVALO a fost
   aprobată” + „Activează contul”, fără numele celui care a aprobat; retrimiterea invitației detectează singură solicitarea aprobată.
   Invitațiile în firmă păstrează „X te-a invitat”. Saluturile folosesc `greetName()` (numele din Tablou, scris cu majuscule → „Ionescu Maria”).

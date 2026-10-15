@@ -405,3 +405,25 @@ export function LeaveRequests({ rows }: { rows: { id: string; name: string; emai
     </section>
   );
 }
+
+/** „Noutăți pe email”: the opt-in chosen at account creation, changed at any time (unsubscribe). */
+export function NewsletterCard({ on: on0 }: { on: boolean }) {
+  const [on, setOn] = useState(on0);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState("");
+  const flip = async (v: boolean) => {
+    setBusy(true); setMsg("");
+    const r = await fetch("/api/account", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ newsletter: v }) }).catch(() => null);
+    setBusy(false);
+    if (!r?.ok) { setMsg("Nu a mers. Încearcă din nou."); return; }
+    setOn(v); setMsg(v ? "Te anunțăm pe email când lansăm instrumente noi." : "Nu mai primești emailuri despre noutăți.");
+  };
+  return (
+    <section className="card" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      <span className="eyebrow">Noutăți pe email</span>
+      <label className="check"><input type="checkbox" checked={on} disabled={busy} onChange={(e) => flip(e.target.checked)} />
+        <span>Vreau să primesc pe email noutățile UVALO, când lansăm instrumente noi. Emailurile despre cont (autentificare, invitații, inspecții) vin oricum.</span></label>
+      {msg && <small className="muted" role="status">{msg}</small>}
+    </section>
+  );
+}

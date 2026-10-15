@@ -64,6 +64,7 @@ export async function createRequest(db: D1Database, b: Record<string, unknown>) 
   const phone = cleanPhone(b.phone);
   if (!phone) return { ok: false as const, error: "Completează un număr de telefon valid (ex. 0722 123 456)." };
   if (b.confirm !== true) return { ok: false as const, error: `Confirmă că ești ${l.name}.` };
+  if (b.terms !== true) return { ok: false as const, error: "Pentru a continua, acceptă Termenii și condițiile și Politica de confidențialitate." };
   const taken = await findUser(db, email);
   if (taken && taken.status !== "disabled" && taken.status !== "closed") return { ok: false as const, error: "Adresa de email are deja cont. Intră cu ea sau folosește altă adresă." };
   const { ip, ua } = await ipUa();
@@ -71,8 +72,8 @@ export async function createRequest(db: D1Database, b: Record<string, unknown>) 
   const legit = cleanLegit(b.legit);
   // Came from a colleague's recommendation (link in the email)?
   const ref = await referralByToken(db, typeof b.r === "string" ? b.r : null);
-  await db.prepare("INSERT INTO account_requests (id, legit, name, email, phone, company, message, ip, user_agent, referral_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
-    .bind(id, legit, l.name, email, phone, s("company") || null, s("message", 1000) || null, ip, ua, ref?.id ?? null).run();
+  await db.prepare("INSERT INTO account_requests (id, legit, name, email, phone, company, message, ip, user_agent, referral_id, terms_at, newsletter) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+    .bind(id, legit, l.name, email, phone, s("company") || null, s("message", 1000) || null, ip, ua, ref?.id ?? null, now(), b.newsletter === true ? 1 : 0).run();
   await db.prepare("INSERT INTO events (module, action, target, meta) VALUES ('public', 'request', ?, ?)").bind(legit, JSON.stringify({ email })).run();
 
   const base = await origin();

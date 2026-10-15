@@ -90,6 +90,9 @@ export async function mergeUsers(db: D1Database, by: User, keepId: string, fromI
     move("UPDATE collab_convs SET peer_id = ? WHERE peer_id = ?"),
     move("UPDATE collab_messages SET user_id = ? WHERE user_id = ?"),
     move("UPDATE collab_notifs SET user_id = ? WHERE user_id = ?"),
+    // the newsletter: on if either account had agreed (the most recent choice date kept)
+    db.prepare(`UPDATE users SET newsletter = MAX(newsletter, (SELECT newsletter FROM users WHERE id = ?)),
+      newsletter_at = NULLIF(MAX(COALESCE(newsletter_at, ''), COALESCE((SELECT newsletter_at FROM users WHERE id = ?), '')), '') WHERE id = ?`).bind(fromId, fromId, keepId),
     db.prepare("DELETE FROM users WHERE id = ?").bind(fromId),
     db.prepare(`UPDATE users SET name = ?, phone = ?, anevar_no = ?, county = ?, specs = ?, avatar = ?, is_superadmin = ?, is_office = ?, office_allowed = ?, status = ?, terms_at = ?,
       loc_ack_at = ?, created_at = ?, activated_at = ?, last_login_at = ?, last_seen_at = ?, notes = ?, disabled_at = CASE WHEN ? = 'active' THEN NULL ELSE disabled_at END WHERE id = ?`)

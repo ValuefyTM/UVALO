@@ -14,6 +14,8 @@ export default async function Invitation({ searchParams }: { searchParams: Promi
   const token = (await searchParams).token ?? "";
   const db = await getDb();
   const inv = db && token ? await inviteByToken(db, token) : null;
+  // the newsletter choice from the account request (if the invitation comes from an approved request) is pre-checked
+  const news = !!(db && inv && (await db.prepare("SELECT newsletter FROM account_requests WHERE lower(email) = lower(?) ORDER BY created_at DESC LIMIT 1").bind(inv.email).first<{ newsletter: number }>())?.newsletter);
   return (
     <div className="authPage">
       <aside className="authSide">
@@ -34,7 +36,7 @@ export default async function Invitation({ searchParams }: { searchParams: Promi
             <>
               <h1>Activează contul</h1>
               <p>Contul <b>{inv.email}</b>{inv.org_name ? <> · firma <b>{inv.org_name}</b></> : null}</p>
-              <AcceptForm token={token} name={inv.name} phone={inv.phone ?? ""} legit={inv.anevar_no} county={inv.county} />
+              <AcceptForm token={token} name={inv.name} phone={inv.phone ?? ""} legit={inv.anevar_no} county={inv.county} news={news} />
             </>
           ) : (
             <>
