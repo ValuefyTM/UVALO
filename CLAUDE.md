@@ -349,6 +349,14 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
 - **Notificări** (clopoțelul de lângă avatar, pe Acasă; avatarul → Contul meu): „De făcut” = inspecțiile mele de azi și mâine neîncepute
   (calculate în aplicație) + „Activitate” = `phoneNotifs` (`insp_log` pe inspecțiile atribuite mie sau ale mele, făcute de alții, 30 de zile,
   în `/api/m/state` ca `notifs`). Necitite = după `localStorage` `insp-notif-seen` (`{at, keys}`), marcate la ieșirea din ecran.
+- **Notificări push** (Web Push; pe iPhone doar cu aplicația instalată, iOS 16.4+): `src/lib/webpush.ts` = cheile VAPID făcute la prima folosire
+  și ținute în `app_settings` „vapid”, criptare aes128gcm (RFC 8291) + semnătură ES256, totul cu WebCrypto (fără bibliotecă). Abonările în
+  `insp_push` (migrația 0025; 404/410 de la serviciul de push → abonare ștearsă), `/api/m/push` (GET cheia, POST `{sub}` / `{action: test}`, DELETE).
+  Se trimit: (1) din `logIt()` în `insp.ts`, ce face cineva pe o inspecție ajunge la ceilalți implicați (cine a pregătit-o / cine o face; nu pozele, nu
+  simulările; „Inspecție nouă pentru tine” la atribuire); (2) din program: `wrangler.jsonc` „triggers” la 15 minute → `worker.ts` `scheduled` →
+  `/api/m/cron` cu cheia din `app_settings` „cron_key” (făcută la prima rulare): cu o oră înainte de fiecare inspecție programată și la 7:00 (ora
+  României) „Azi ai N inspecții”; o singură dată fiecare (`insp_push_sent`). Service worker-ul arată notificarea și, la atingere, deschide
+  `/?open=<id>` (aplicația deschide detaliul). Cardul „Notificări pe telefon” (`PushCard`) în Notificări și în Contul meu: pornește / test / oprește.
 - **Programare de pe telefon**: foaia `ScheduleSheet` (Azi / Mâine / Poimâine, zi, oră, durată 30 min–2 h) din calendar și din detaliul
   inspecției (cardul „Programare”, doar la stările prog / plan) → `POST /api/inspectii {action: schedule, scheduled_at, duration_min}`.
 - **Inspecție nouă de pe telefon** (`+ Inspecție nouă` pe Acasă → ecranul `NewInsp`): „Sunt la proprietate” = GPS + adresa din

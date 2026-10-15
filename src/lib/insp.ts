@@ -4,6 +4,8 @@ import type { Ctx } from "./access";
 import { now, uuid } from "./db";
 import { randomCode, sha256 } from "./crypto";
 import { geocode } from "./gmaps";
+import { notifyUser } from "./webpush";
+import { getCloudflareContext } from "@opennextjs/cloudflare";
 import {
   cleanTemplate, qCount, STATUSES, UVALO_TEMPLATES, type AssignKind, type InspRow, type Status, type Template,
 } from "./insp-shared";
@@ -204,6 +206,26 @@ export async function getInspection(db: D1Database, c: Ctx, id: string): Promise
 
 async function logIt(db: D1Database, id: string, userId: string | null, text: string) {
   await db.prepare("INSERT INTO insp_log (inspection_id, user_id, text) VALUES (?, ?, ?)").bind(id, userId, text.slice(0, 300)).run();
+  if (/^(Fotografie adăugat|Fișier șters)|simulare/i.test(text)) return; // not worth a phone notification
+  const p = notifyLog(db, id, userId, text).catch(() => {});
+  try { (await getCloudflareContext({ async: true })).ctx.waitUntil(p); } catch { await p; }
+}
+
+/** What someone did on an inspection goes, as a phone notification, to the others involved (who prepared it, who does it). */
+async function notifyLog(db: D1Database, id: string, userId: string | null, text: string) {
+  const r = await db.prepare(`SELECT i.address, i.assignee_id, i.created_by, COALESCE(NULLIF(u.name, ''), u.email) AS who
+    FROM inspections i LEFT JOIN users u ON u.id = ? WHERE i.id = ?`).bind(userId ?? "", id)
+    .first<{ address: string; assignee_id: string | null; created_by: string; who: string | null }>();
+  if (!r) return;
+  const nice = text.replace(/(\d{4})-(\d{2})-(\d{2})[ T](\d{2}:\d{2})/, "$3.$2.$1, $4");
+  for (const to of new Set([r.assignee_id, r.created_by].filter((x): x is string => !!x && x !== userId))) {
+    const fresh = /^Creată/.test(text) && to === r.assignee_id;
+    await notifyUser(db, to, {
+      title: fresh ? "Inspecție nouă pentru tine" : r.address,
+      body: fresh ? `${r.address}${r.who ? ` · de la ${r.who}` : ""}` : `${r.who ?? "Cineva"}: ${nice}`,
+      url: `/?open=${id}`, tag: `insp-${id}`,
+    });
+  }
 }
 
 async function nextCode(db: D1Database) {

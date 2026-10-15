@@ -33,7 +33,27 @@ function clean(req: Request) {
 
 const hosts = (v: string) => v.split(",").map((h) => h.trim().toLowerCase()).filter(Boolean);
 
+/**
+ * The schedule (wrangler "triggers": every 15 minutes): the phone reminders of Inspecții, sent by the app's /api/m/cron.
+ * The call carries a key kept in the database (app_settings "cron_key", made on the first run), so nobody else can trigger it.
+ */
+async function cron(env: Env, ctx: ExecutionContext) {
+  const db = env.DB as D1Database | undefined;
+  if (!db) return;
+  let row = await db.prepare("SELECT value FROM app_settings WHERE key = 'cron_key'").first<{ value: string }>();
+  if (!row) {
+    const k = [...crypto.getRandomValues(new Uint8Array(24))].map((b) => b.toString(16).padStart(2, "0")).join("");
+    await db.prepare("INSERT OR IGNORE INTO app_settings (key, value, updated_at) VALUES ('cron_key', ?, ?)").bind(JSON.stringify(k), new Date().toISOString()).run();
+    row = await db.prepare("SELECT value FROM app_settings WHERE key = 'cron_key'").first<{ value: string }>();
+  }
+  const base = (env.APP_URL || "https://app.uvalo.ro").replace(/\/$/, "");
+  await app.fetch(new Request(`${base}/api/m/cron`, { method: "POST", headers: { "x-cron-key": JSON.parse(row!.value) } }), env, ctx);
+}
+
 export default {
+  async scheduled(_event: ScheduledController, env: Env, ctx: ExecutionContext) {
+    ctx.waitUntil(cron(env, ctx));
+  },
   async fetch(req: Request, env: Env, ctx: ExecutionContext) {
     const url = new URL(req.url);
     const host = url.hostname.toLowerCase();

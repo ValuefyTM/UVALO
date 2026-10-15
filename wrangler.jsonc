@@ -28,5 +28,7 @@
 			"bucket_name": "uvalo-inspectii"
 		}
 	],
+	// Every 15 minutes: the phone reminders of Inspecții (worker.ts → scheduled → /api/m/cron).
+	"triggers": { "crons": ["*/15 * * * *"] },
 	"observability": { "enabled": true }
 }

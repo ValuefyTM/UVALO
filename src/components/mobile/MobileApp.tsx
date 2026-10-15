@@ -100,7 +100,7 @@ export function MobileApp() {
   // start: pairing code from the QR (?pair=), the service worker (only on the app's own domain), the queue
   useEffect(() => {
     try { const c = JSON.parse(localStorage.getItem("insp-items") || "[]"); if (Array.isArray(c)) setItems(c); } catch {}
-    const sp = new URLSearchParams(location.search), code = sp.get("pair");
+    const sp = new URLSearchParams(location.search), code = sp.get("pair"), openId = sp.get("open");
     const standalone = matchMedia("(display-mode: standalone)").matches || (navigator as unknown as { standalone?: boolean }).standalone === true;
     (async () => {
       if (code) {
@@ -109,6 +109,7 @@ export function MobileApp() {
         if (!r.ok) say(String((await J(r)).error || "Codul nu a mers."));
       } else void fetch("/api/m/device", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ standalone }) }).catch(() => {});
       await load();
+      if (openId) { history.replaceState(null, "", location.pathname); void openRef.current(openId); }
     })();
     if ("serviceWorker" in navigator && !location.pathname.startsWith("/m")) navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch(() => {});
     setOnline(navigator.onLine);
@@ -188,6 +189,8 @@ export function MobileApp() {
     };
   }, []);
 
+  const openRef = useRef<(id: string) => Promise<void>>(async () => {});
+  openRef.current = (id: string) => open(id, { v: "detail", id });
   async function open(id: string, then: View) {
     let x = await fetchInsp(id);
     if (!x) { try { x = JSON.parse(localStorage.getItem(`insp-${id}`) || "null"); } catch {} }
@@ -1172,6 +1175,7 @@ function Account({ me, info, queueN, online, onSend, say }: { me: Me | null; inf
           <button type="button" className="mbLink" onClick={clean}>Golește memoria aplicației</button>
         </section>
         {!standalone && <InstallHint compact />}
+        <PushCard />
 
         <small className="mbCap">SINCRONIZARE</small>
         <section className="mbCard">
@@ -1207,6 +1211,7 @@ function Notifs({ notifs, reminders, seenAt, onBack, onOpen }: { notifs: Notif[]
     <>
       <header className="mbBar"><Back onClick={onBack} /><span><b>Notificări</b><small>Programările apropiate și ce s-a schimbat la inspecțiile tale</small></span></header>
       <div className="mbBody">
+        <PushCard />
         {reminders.length > 0 && <>
           <small className="mbCap">DE FĂCUT</small>
           {reminders.map((r) => (
@@ -1226,5 +1231,70 @@ function Notifs({ notifs, reminders, seenAt, onBack, onOpen }: { notifs: Notif[]
         {!notifs.length && <p className="mbEmpty">Nicio noutate. Aici apar inspecțiile primite, reprogramările și actele adăugate de colegi pe web.</p>}
       </div>
     </>
+  );
+}
+
+/* ---------- push notifications on this phone ---------- */
+
+type PushState = "loading" | "unsupported" | "ios-install" | "denied" | "off" | "on";
+
+/** Turns the phone's notifications on / off (Web Push; on iPhone only in the installed app, iOS 16.4+). */
+function PushCard() {
+  const [st, setSt] = useState<PushState>("loading");
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState("");
+  const check = useCallback(async () => {
+    const ios = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const standalone = matchMedia("(display-mode: standalone)").matches || (navigator as unknown as { standalone?: boolean }).standalone === true;
+    if (!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) { setSt(ios && !standalone ? "ios-install" : "unsupported"); return; }
+    if (Notification.permission === "denied") { setSt("denied"); return; }
+    const reg = await navigator.serviceWorker.getRegistration();
+    const sub = await reg?.pushManager.getSubscription();
+    setSt(sub && Notification.permission === "granted" ? "on" : "off");
+  }, []);
+  useEffect(() => { void check(); }, [check]);
+  async function turnOn() {
+    setBusy(true); setMsg("");
+    try {
+      if ((await Notification.requestPermission()) !== "granted") { await check(); return; }
+      const reg = (await navigator.serviceWorker.getRegistration()) ?? (await navigator.serviceWorker.register("/sw.js", { scope: "/" }));
+      await navigator.serviceWorker.ready;
+      const { key } = (await (await fetch("/api/m/push")).json()) as { key: string };
+      const raw = Uint8Array.from(atob(key.replace(/-/g, "+").replace(/_/g, "/") + "===".slice((key.length + 3) % 4)), (c) => c.charCodeAt(0));
+      const sub = (await reg.pushManager.getSubscription()) ?? (await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: raw }));
+      const r = await fetch("/api/m/push", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sub: sub.toJSON() }) });
+      if (!r.ok) throw new Error(String((await J(r)).error || "Nu a mers."));
+      setMsg("Notificările sunt pornite.");
+    } catch (e) { setMsg((e as Error).message || "Nu am putut porni notificările."); } finally { setBusy(false); await check(); }
+  }
+  async function turnOff() {
+    setBusy(true); setMsg("");
+    const sub = await (await navigator.serviceWorker.getRegistration())?.pushManager.getSubscription();
+    if (sub) { await fetch("/api/m/push", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ endpoint: sub.endpoint }) }).catch(() => {}); await sub.unsubscribe().catch(() => {}); }
+    setBusy(false); await check();
+  }
+  async function test() {
+    setBusy(true); setMsg("");
+    const r = await fetch("/api/m/push", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "test" }) }).catch(() => null);
+    setMsg(r?.ok ? "Ți-am trimis o notificare de test." : String((r && (await J(r)).error) || "Nu a mers."));
+    setBusy(false);
+  }
+  if (st === "loading" || st === "unsupported") return null;
+  return (
+    <section className={`mbCard mbPush${st === "on" ? " on" : ""}`}>
+      <span className="mbPushHead">
+        <span className="mbPushIco" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9" /><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0" /></svg></span>
+        <span>
+          <b>{st === "on" ? "Notificările sunt pornite" : "Notificări pe telefon"}</b>
+          <small>{st === "ios-install" ? "Pe iPhone, notificările merg doar din aplicația instalată: Partajează → „Adaugă pe ecranul principal”, apoi deschide-o de acolo."
+            : st === "denied" ? "Sunt blocate. Pornește-le din Setări → Notificări → Inspecții (sau din setările browserului)."
+            : st === "on" ? "Inspecții noi, reprogramări, acte adăugate, cu o oră înainte de fiecare inspecție și dimineața, programul zilei."
+            : "Află pe loc de inspecțiile noi, de reprogramări și primește un memento cu o oră înainte."}</small>
+        </span>
+      </span>
+      {st === "off" && <button type="button" className="mbBtn gold" disabled={busy} onClick={turnOn}>Pornește notificările</button>}
+      {st === "on" && <span className="mbGrid2"><button type="button" className="mbBtn" disabled={busy} onClick={test}>Trimite un test</button><button type="button" className="mbBtn" disabled={busy} onClick={turnOff}>Oprește</button></span>}
+      {msg && <small className="mbPushMsg" role="status">{msg}</small>}
+    </section>
   );
 }
