@@ -320,13 +320,13 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   `POST /api/m/device` înregistrează telefonul; `GET /api/m/state` = utilizatorul + inspecțiile atribuite lui (`myAssigned`); `GET /api/m/insp/<id>`.
 - Ecrane: Acasă (următoarea, statistici, filtre), detaliu (navigație, contact, acte), fișa pe secțiuni + Constatări, Încăperi, Fotografii pe
   încăperi, Semnătură → finalizare; meniu jos Acasă / De trimis / Contul meu. Butonul Înapoi al telefonului e prins înaintea routerului Next
-  (`popstate` în captură, starea `mbv`), altfel pagina se reîncarcă.
+  (`popstate` în captură, starea `mbv`), altfel pagina se reîncarcă. În fișă, chip-ul secțiunii curente se derulează singur în vedere (`secsRef`).
 - Offline: ciorna în `localStorage` `insp-draft-<id>` (trimisă ca `progress` la 4 s), pozele (micșorate 2000 px) și finalizările în IndexedDB
   `uvalo-insp` (`store.ts`, `flush()` la revenirea rețelei și la 30 s); service worker: cache pentru `/_next/static/`, paginile rețea-apoi-cache.
 - Instalare după dispozitiv (`InstallHint.tsx`): iPhone Safari → Partajează → „Adaugă pe ecranul principal” (balon cu săgeată spre bara Safari);
   iPhone în alt browser → „Deschide în Safari” (`x-safari-https://…`, nu merge peste tot) + „Copiază linkul”; Android → `beforeinstallprompt`
   sau meniul ⋮; Android în aplicații (Instagram, WhatsApp…) → `intent://…package=com.android.chrome`; calculator → QR. Ascuns 3 zile la ×.
-- **Acasă pe telefon**: sumarul (azi / săptămâna asta / neprogramate cu roșu / finalizate) e în hero, sub salut (`.mbHeroStats`, atingerea
+- **Acasă pe telefon**: sumarul (azi / săptămâna asta / neprogramate cu roșu; finalizatele doar în filtru) e în hero, sub salut (`.mbHeroStats`, atingerea
   alege filtrul listei); bara compactă = filtrul ca listă derulantă (Săptămâna asta / Neprogramate / Finalizate / Toate, cu număr),
   comutatorul Listă / Hartă / Calendar (`localStorage` `insp-view`) și „+”. Harta: Leaflet de pe cdnjs + OSM, pini numerotați pe culoarea stării,
   punctul albastru = telefonul, atingerea unui pin dă cardul inspecției (fără listă sub hartă; `.mbMapBox` cu `isolation: isolate`,

@@ -421,7 +421,6 @@ function Home({ me, items, queueN, pos, unread, onBell, onMe, onNew, onOpen, onS
           <button type="button" onClick={() => showList("week")}><b>{active.filter((i) => i.scheduled_at?.startsWith(today)).length}</b><small>azi</small></button>
           <button type="button" onClick={() => showList("week")}><b>{inWeek.length}</b><small>săptămâna asta</small></button>
           <button type="button" onClick={() => showList("prog")} className={unsched.length ? "red" : ""}><b>{unsched.length}</b><small>neprogramate</small></button>
-          <button type="button" onClick={() => showList("done")} className="green"><b>{done.length}</b><small>finalizate</small></button>
         </div>
         {next ? (
           <div className="mbNext">
@@ -723,12 +722,19 @@ function Form({ x, d, sec, photos, onBack, onSec, change, onPhoto, onRooms, onPh
   const isFind = sec >= groups.length;
   const g = groups[sec];
   const roomsDone = d.rooms.filter((r) => r.floor && r.state).length;
+  // the current section's chip is scrolled into view (the chips row is wider than the screen)
+  const secsRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const nav = secsRef.current, b = nav?.querySelector<HTMLElement>('[aria-current="step"]');
+    if (!nav || !b) return;
+    nav.scrollTo({ left: b.offsetLeft - (nav.clientWidth - b.offsetWidth) / 2, behavior: "smooth" });
+  }, [sec]);
   return (
     <>
       <header className="mbBar tall">
         <span className="mbBarRow"><Back onClick={onBack} /><span><b>Fișa · {x.prop_type ?? "imobil"}</b><small>Salvat pe telefon · {done} din {all.length} completate</small></span></span>
         <span className="mbProg"><i style={{ width: `${all.length ? Math.round((done / all.length) * 100) : 0}%` }} /></span>
-        <nav className="mbSecs" aria-label="Secțiuni">
+        <nav ref={secsRef} className="mbSecs" aria-label="Secțiuni">
           {groups.map((gr, i) => {
             const n = gr.qs.filter((q) => answered(d.answers[q.id])).length;
             return <button key={gr.id} type="button" aria-current={i === sec ? "step" : undefined} className={n === gr.qs.length && gr.qs.length ? "ok" : ""} onClick={() => onSec(i)}>{n === gr.qs.length && gr.qs.length ? "✓ " : ""}{gr.name}{i === sec ? ` ${n}/${gr.qs.length}` : ""}</button>;

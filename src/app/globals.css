@@ -1867,14 +1867,14 @@ textarea.mbIn { min-height: 0; resize: vertical; }
 .mbBar .mbProg { display: block; }
 .mbProg { display: block; height: 5px; background: #333; border-radius: 3px; overflow: hidden; }
 .mbProg i { display: block; height: 100%; background: var(--acc); transition: width 0.3s var(--ease); }
-.mbSecs { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; margin: 0 calc(-1 * var(--mb-pad)); padding: 0 var(--mb-pad); }
+.mbSecs { position: relative; display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; margin: 0 calc(-1 * var(--mb-pad)); padding: 0 var(--mb-pad); }
 .mbSecs::-webkit-scrollbar { display: none; }
-.mbSecs button { flex: none; border: 1px solid #3a3a3a; background: #222; color: #ddd; border-radius: 999px; padding: 7px 12px; font-size: 12px; font-weight: 700; }
+.mbSecs button { flex: none; border: 1px solid #3a3a3a; background: #222; color: #ddd; border-radius: 999px; padding: 6px 11px; font-size: 11.5px; font-weight: 700; }
 .mbSecs button.ok { color: #7fd6ac; }
 .mbSecs button[aria-current="step"] { background: var(--acc); border-color: var(--acc); color: #141414; }
 .mbBody { padding: 12px var(--mb-pad); display: flex; flex-direction: column; gap: 10px; flex: 1 0 auto; }
 .mbFoot { position: sticky; bottom: 0; margin-top: auto; z-index: 5; background: #F4EFE6; border-top: 1px solid var(--line); padding: 10px var(--mb-pad) calc(12px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 8px; }
-.mbH2 { margin: 2px 0 0; font-size: 18px; letter-spacing: -0.01em; }
+.mbH2 { margin: 2px 0 0; font-size: 16px; letter-spacing: -0.01em; }
 .mbCard { background: #fff; border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 7px; }
 .mbCard > b { font-size: 15px; line-height: 1.3; }
 .mbCap { font-size: 11px !important; font-weight: 800; letter-spacing: 0.08em; color: var(--muted-2); }
@@ -1894,14 +1894,18 @@ textarea.mbIn { min-height: 0; resize: vertical; }
 
 /* questions */
 .mbQ { background: #fff; border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
-.mbQT { font-weight: 700; font-size: 14px; line-height: 1.35; }
+.mbQT { font-weight: 700; font-size: 13px; line-height: 1.35; }
 .mbQT i { color: var(--err); font-style: normal; }
 .mbOpts { display: flex; flex-wrap: wrap; gap: 6px; }
-.mbOpts button { min-height: 36px; border: 1px solid var(--line); background: #fff; color: var(--ink); border-radius: 10px; padding: 6px 11px; font-size: 13px; }
+.mbOpts button { min-height: 34px; border: 1px solid var(--line); background: #fff; color: var(--ink); border-radius: 9px; padding: 5px 10px; font-size: 12.5px; }
 .mbOpts button[aria-pressed="true"] { background: #141414; border-color: #141414; color: #fff; font-weight: 700; }
 .mbNum { display: flex; align-items: center; gap: 8px; }
 .mbNum em { font-style: normal; font-weight: 700; color: var(--muted-2); }
 .mbNum.small .mbIn { width: 84px; min-height: 38px; padding: 6px 10px; text-align: right; }
+
+/* the sheet: smaller labels */
+.mbQ .mbIn, .mbBody textarea.mbIn { padding: 8px 10px; min-height: 38px; }
+.mbField { font-size: 12px; }
 
 /* photos, signature, summary */
 .mbPhGroup { display: flex; flex-direction: column; gap: 8px; }
@@ -2006,7 +2010,7 @@ textarea.mbIn { min-height: 0; resize: vertical; }
 .mbNextNone .mbBtn { margin-top: 8px; align-self: flex-start; }
 
 /* the summary in the hero */
-.mbHeroStats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.mbHeroStats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
 .mbHeroStats button { border: 1px solid #2e2e2e; background: #1f1f1f; color: #fff; border-radius: 11px; padding: 6px 2px 5px; display: flex; flex-direction: column; align-items: center; gap: 1px; }
 .mbHeroStats b { font-size: 16px; line-height: 1.15; }
 .mbHeroStats small { font-size: 10px !important; color: var(--on-navy-2) !important; white-space: nowrap; }
