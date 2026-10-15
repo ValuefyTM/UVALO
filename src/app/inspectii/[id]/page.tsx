@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { page, fmtDate } from "@/lib/guard";
-import { canPrepare, getInspection } from "@/lib/insp";
+import { canPrepare, getInspection, isOps, team } from "@/lib/insp";
+import { InspReassign } from "@/components/InspReassign";
 import { compSummary, coverPhoto, fmtWhen, STATUS } from "@/lib/insp-shared";
 import { AppShell } from "@/components/AppShell";
 import { InspDocActions } from "@/components/InspDocActions";
@@ -22,6 +23,8 @@ export default async function InspDoc({ params }: { params: Promise<{ id: string
   const x = await getInspection(db, c, id);
   if (!x) notFound();
   const done = x.status === "gata" || x.status === "pred";
+  // who can take it over (only while it is not done, for who prepared it / the firm's viewers)
+  const reassign = !done && !x.ro && canPrepare(c, x) ? await team(db, c) : null;
   const redoNote = (x as unknown as { redo_note?: string | null }).redo_note;
   // answers are shown once the phone has started (in progress, or sent back to complete)
   const shown = done || x.status === "lucru";
@@ -58,11 +61,17 @@ export default async function InspDoc({ params }: { params: Promise<{ id: string
         {x.ro ? <span className="inBadge" style={{ background: "#f4f0fa", color: "#7a5aa6" }}>DOAR CITIRE · asocierea cu {x.firm ?? "firma"} s-a încheiat</span> : null}
         {!x.ro && <InspDocActions id={x.id} done={done} delivered={x.status === "pred"} canSimulate={c.super}
           canReopen={canPrepare(c, x)} assignee={x.assignee_name} signer={x.signed_at ? x.signed_name : null}>
+          {reassign && <InspReassign id={x.id} team={reassign} current={x.assignee_id} canMe={!isOps(c)} when={x.scheduled_at} dur={x.duration_min} started={x.status === "lucru"} />}
           {canPrepare(c, x) && <InspShare id={x.id} token={x.share_token} />}
         </InspDocActions>}
       </div>
       {redoNote && x.status === "lucru" && <div className="note inRedoNote"><b>Retrimisă pe telefon pentru completare.</b> {redoNote}
         <br /><small>{x.redo_prev_at ? `Fișa fusese completată pe ${fmtDate(x.redo_prev_at, true)}. ` : ""}{x.redo_keep_sig ? `Semnătura salvată${x.signed_name ? ` (${x.signed_name})` : ""} rămâne.` : "Se semnează din nou la final."}</small></div>}
+      {x.status === "lucru" && !redoNote && (() => {
+        const qs = groups.flatMap((g) => g.qs), n = qs.filter((q) => { const v = x.answers[q.id]; return Array.isArray(v) ? v.length > 0 : !!v; }).length;
+        const upd = (x as unknown as { updated_at?: string }).updated_at;
+        return <div className="note inLive"><b>În lucru pe telefon{x.assignee_name ? ` · ${x.assignee_name}` : ""}.</b> {n} din {qs.length} răspunsuri, {photos.length} {photos.length === 1 ? "fotografie" : "fotografii"}{upd ? ` · actualizat ${fmtDate(upd, true)}` : ""}. Reîncarcă pagina ca să vezi ultimele date.</div>;
+      })()}
       {!done && x.status !== "lucru" && <div className="note">Inspecția nu a fost făcută încă{x.scheduled_at ? `: e programată pentru ${fmtWhen(x.scheduled_at)}` : ""}. Fișa se completează pe telefon; aici vezi ce s-a pregătit.</div>}
 
       <div className="inDoc">

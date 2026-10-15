@@ -20,7 +20,7 @@ const addMin = (at: string, m: number) => { const [h, mi] = hm(at).split(":").ma
 const toMin = (x: string) => { const [h, m] = x.split(":").map(Number); return h * 60 + m; };
 
 /** "Cine o face" → din birou: the office's people grouped (evaluators, angajați, colaboratori), with the availability on the chosen day. */
-function TeamPick({ team, value, onPick, date, time, dur, selfId }: { team: TeamPerson[]; value: string; onPick: (id: string) => void; date: string; time: string; dur: number; selfId?: string }) {
+export function TeamPick({ team, value, onPick, date, time, dur, selfId }: { team: TeamPerson[]; value: string; onPick: (id: string) => void; date: string; time: string; dur: number; selfId?: string }) {
   const [q, setQ] = useState("");
   const shown = team.filter((p) => !q.trim() || p.name.toLowerCase().includes(q.trim().toLowerCase()));
   const day = (p: TeamPerson) => p.busy.filter((b) => b.id !== selfId && b.at.slice(0, 10) === date);

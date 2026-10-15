@@ -302,10 +302,11 @@ async function notifyLog(db: D1Database, id: string, userId: string | null, text
   for (const to of new Set([r.assignee_id, r.created_by].filter((x): x is string => !!x && (x !== userId || (fromWeb && x === r.assignee_id))))) {
     const fresh = /^Creată/.test(text) && to === r.assignee_id;
     const ask = /^Solicitare de inspecție/.test(text) && to === r.assignee_id;
+    const moved = /^Realocată/.test(text) && to === r.assignee_id;
     const redo = text.match(/^Retrimisă pe telefon pentru completare: ([\s\S]*)/);
     await notifyUser(db, to, {
-      title: ask ? "Solicitare de inspecție" : fresh ? "Inspecție nouă pentru tine" : redo ? `De completat · ${r.address}` : r.address,
-      body: ask || fresh ? `${r.address}${r.who ? ` · de la ${r.who}` : ""}` : redo ? redo[1] : `${r.who ?? "Cineva"}: ${nice}`,
+      title: ask ? "Solicitare de inspecție" : moved ? "Inspecție nouă pentru tine" : fresh ? "Inspecție nouă pentru tine" : redo ? `De completat · ${r.address}` : r.address,
+      body: ask || fresh || moved ? `${r.address}${r.who ? ` · de la ${r.who}` : ""}` : redo ? redo[1] : `${r.who ?? "Cineva"}: ${nice}`,
       url: `/?open=${id}`, tag: `insp-${id}`,
     });
   }
@@ -416,6 +417,30 @@ export async function inspAction(db: D1Database, c: Ctx, b: Record<string, unkno
   if (action === "delete") {
     await db.prepare("UPDATE inspections SET deleted_at = ? WHERE id = ?").bind(now(), id).run();
     return { ok: true };
+  }
+  // another inspector, while the inspection is not done: the answers, photos and documents stay with it
+  if (action === "reassign") {
+    if (!canPrepare(c, r)) return { error: "Doar cine a pregătit inspecția o poate realoca." };
+    if (r.status === "gata" || r.status === "pred") return { error: "Inspecția e finalizată și nu se mai realocă." };
+    let to = c.user.id, name = c.user.name?.trim() || c.user.email, ask = false;
+    const kind = b.assignee_kind === "me" ? "me" : "office";
+    if (kind === "me") { if (isOps(c)) return { error: "Rolul operațional nu face inspecții." }; }
+    else {
+      const who = (await team(db, c)).find((x) => x.id === s(b.assignee_id, 64));
+      if (!who) return { error: "Alege cine din birou face inspecția." };
+      to = who.id; name = who.name; ask = who.group === "colaborator";
+    }
+    if (to === r.assignee_id && r.assign_state !== "declined") return { error: `Inspecția e deja la ${name}.` };
+    const prev = r.assignee_id ? String(r.assignee_id) : null;
+    await db.prepare("UPDATE inspections SET assignee_id = ?, assignee_kind = ?, assign_state = ?, updated_at = ? WHERE id = ?")
+      .bind(to, kind, ask ? "pending" : null, now(), id).run();
+    await logIt(db, id, c.user.id, ask ? `Solicitare de inspecție trimisă lui ${name} (colaborator)` : `Realocată lui ${name}`);
+    // the one who had it: told it is no longer theirs (it leaves their phone at the next refresh)
+    if (prev && prev !== to && prev !== c.user.id) {
+      const p = notifyUser(db, prev, { title: "Inspecție realocată", body: `${r.address} · a fost dată altcuiva`, url: "/", tag: `insp-${id}` }).catch(() => {});
+      try { (await getCloudflareContext({ async: true })).ctx.waitUntil(p); } catch { await p; }
+    }
+    return { ok: true, id };
   }
   // a request to a colaborator: they accept it (then it is theirs to do) or decline it (back to the office, without anyone)
   if (action === "accept" || action === "decline") {

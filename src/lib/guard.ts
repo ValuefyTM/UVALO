@@ -4,12 +4,13 @@ import { getDb } from "./db";
 import { maintenance } from "./maintenance";
 import { canManageOrg, context, type Ctx } from "./access";
 
-export async function page(): Promise<{ db: D1Database; c: Ctx }> {
+/** `maint`: the page works during maintenance too (e.g. "Contul meu", where office invitations are accepted). */
+export async function page(opts: { maint?: boolean } = {}): Promise<{ db: D1Database; c: Ctx }> {
   const db = await getDb();
   if (!db) throw new Error("Baza de date nu este disponibilă.");
   const c = await context(db);
   if (!c) redirect("/login");
-  if (!c.super && (await maintenance(db)).on) redirect("/mentenanta");
+  if (!c.super && !opts.maint && (await maintenance(db)).on) redirect("/mentenanta");
   return { db, c };
 }
 

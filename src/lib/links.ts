@@ -90,7 +90,7 @@ export async function linkAction(db: D1Database, c: Ctx, b: Record<string, unkno
     await mail(u.email, `${c.org.name} vrea să te asocieze ca ${LINK_KINDS[kind].toLowerCase()}`, `Invitație de asociere de la ${c.org.name}`,
       P(`Biroul de evaluare <b>${esc(c.org.name)}</b> te invită să te asociezi ca <b>${LINK_KINDS[kind].toLowerCase()}</b>.`) +
       P("Contul tău UVALO rămâne al tău, neschimbat. Asocierea îi permite biroului să-ți atribuie inspecții. O poți încheia oricând."),
-      "/cont#asocieri", "Vezi invitația →");
+      "/login?next=%2Fcont%23asocieri", "Vezi invitația →");
     return { ok: true };
   }
 
@@ -143,7 +143,7 @@ export async function linkAction(db: D1Database, c: Ctx, b: Record<string, unkno
     await set(action === "approve" ? "active" : "declined");
     await audit(db, c.user.id, `office.link_${action}`, "org", l.org_id, u.email);
     if (action === "approve") await mail(u.email, `Ești asociat cu ${org.name}`, `Ești asociat cu ${org.name}`,
-      P(`Biroul <b>${esc(org.name)}</b> a aprobat asocierea ta ca <b>${LINK_KINDS[l.kind].toLowerCase()}</b>. Contul tău UVALO rămâne al tău.`), "/cont#asocieri", "Vezi asocierile →");
+      P(`Biroul <b>${esc(org.name)}</b> a aprobat asocierea ta ca <b>${LINK_KINDS[l.kind].toLowerCase()}</b>. Contul tău UVALO rămâne al tău.`), "/login?next=%2Fcont%23asocieri", "Vezi asocierile →");
     return { ok: true };
   }
   if (action === "cancel") {
@@ -159,7 +159,7 @@ export async function linkAction(db: D1Database, c: Ctx, b: Record<string, unkno
     if (mine) await mailAdmins(db, l.org_id, `${who(u)} a încheiat asocierea`, `${who(u)} a încheiat asocierea`,
       P(`<b>${esc(who(u))}</b> a încheiat asocierea cu biroul <b>${esc(org.name)}</b>. Inspecțiile făcute până acum rămân ale biroului.`));
     else await mail(u.email, `Asocierea cu ${org.name} s-a încheiat`, `Asocierea cu ${org.name} s-a încheiat`,
-      P(`Biroul <b>${esc(org.name)}</b> a încheiat asocierea. Contul tău UVALO rămâne neschimbat.`), "/cont#asocieri", "Vezi asocierile →");
+      P(`Biroul <b>${esc(org.name)}</b> a încheiat asocierea. Contul tău UVALO rămâne neschimbat.`), "/login?next=%2Fcont%23asocieri", "Vezi asocierile →");
     return { ok: true };
   }
   if (action === "kind") {

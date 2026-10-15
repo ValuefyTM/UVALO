@@ -364,6 +364,15 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   fișa, contact, programare, cine o face: eu / coleg din birou / Colaborări), `/inspectii/<id>` (fișa ca document: cuprins în stânga, conținut;
   „Descarcă PDF” = print; antetul fișei = logo-ul firmei inspecției (`inspections.org_id`, doar dacă are logo) + nr. autorizație; în test „Simulează inspecția” completează fișa ca telefonul), `/inspectii/fise` (`InspTemplates`: editor de grupuri și
   întrebări, răspunsuri precompletate, publicare pe versiuni).
+- **Realocă inspectorul** (`InspReassign` în bara fișei web, cât timp inspecția nu e finalizată, pentru `canPrepare`): „Eu” (nu pentru operațional) sau
+  cineva din birou (`TeamPick` cu disponibilitatea) → acțiunea `reassign`: răspunsurile, pozele și actele rămân; la colaborator → solicitare
+  (`assign_state = pending`); jurnal „Realocată lui X” (notificare „Inspecție nouă pentru tine”), iar fostul inspector primește „Inspecție realocată”.
+- În listă, inspecțiile începute / programate deschid **fișa** (`/inspectii/<id>`), nu formularul de editare (doar „De programat” → formular);
+  în lucru, fișa web arată răspunsurile de pe telefon (salvate la 4 s după fiecare schimbare) și nota „În lucru pe telefon · N din M răspunsuri ·
+  actualizat …”.
+- **Mentenanța nu blochează asocierile**: „Contul meu” (`page({ maint: true })`) și `/api/office/links` (`api("user", { maint: true })`) merg și în
+  mentenanță, iar pagina „Revenim în curând” arată invitația de asociere în așteptare („Vezi invitația →”); linkurile din emailurile de asociere =
+  `/login?next=%2Fcont%23asocieri`. Restul platformei (inspecții, telefon) rămâne blocat pentru non-super-admini cât e mentenanța pornită.
 - `merge.ts` (unire/ștergere conturi) acoperă tabelele noi. Evenimente `inspectii` (meta `{test:1}`).
 - **Poza de profil a fișei** (migrația 0027 `inspections.cover_file_id`): `coverPhoto()` în `insp-shared.ts` = cea aleasă, altfel prima de la
   exterior, altfel prima; sus în rezumatul fișei web (`.inCover`); se alege din Fotografii cu „Alege ca profil” (`InspCoverPick`, acțiunea `cover`).

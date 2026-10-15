@@ -11,13 +11,13 @@ export const str = (v: unknown, max = 200) => (typeof v === "string" ? v.trim().
 type Need = "user" | "super" | "orgAdmin";
 
 /** The signed-in person; "super" needs a UVALO super-admin, "orgAdmin" an owner / administrator of the current firm. */
-export async function api(need: Need = "user"): Promise<{ db: D1Database; c: Ctx } | { res: NextResponse }> {
+export async function api(need: Need = "user", opts: { maint?: boolean } = {}): Promise<{ db: D1Database; c: Ctx } | { res: NextResponse }> {
   const db = await getDb();
   if (!db) return { res: err("Baza de date nu este disponibilă.", 503) };
   const c = await context(db);
   if (!c) return { res: err("Sesiunea a expirat. Autentifică-te din nou.", 401) };
   if (need === "super" && !c.super) return { res: err("Nu ai drepturi pentru această acțiune.", 403) };
-  if (!c.super && (await maintenance(db)).on) return { res: err("Platforma este în mentenanță. Revenim în curând.", 503) };
+  if (!c.super && !opts.maint && (await maintenance(db)).on) return { res: err("Platforma este în mentenanță. Revenim în curând.", 503) };
   if (need === "orgAdmin" && !(c.org && canManageOrg(c))) return { res: err("Doar administratorii firmei pot face asta.", 403) };
   return { db, c };
 }

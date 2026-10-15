@@ -12,7 +12,8 @@ export const metadata: Metadata = { title: "Contul meu | UVALO" };
 export const dynamic = "force-dynamic";
 
 export default async function Account() {
-  const { db, c } = await page();
+  // works during maintenance too: office invitations are accepted here
+  const { db, c } = await page({ maint: true });
   const u = c.user;
   const m = u.anevar_no ? await db.prepare("SELECT name, county, specs, tablou_date FROM anevar_members WHERE legit = ?").bind(u.anevar_no).first<{ name: string; county: string | null; specs: string | null; tablou_date: string | null }>() : null;
   // "Birou de evaluare": the firm this person runs (its details prefill the activation form)

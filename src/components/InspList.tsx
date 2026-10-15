@@ -111,8 +111,8 @@ export function InspList({ rows: initial, meId, firm, ops }: { rows: Row[]; meId
                         {r.assign_state === "pending" && <em className="inAsk">așteaptă acceptarea</em>}</span>
                     : r.assign_state === "declined" ? <em className="inAsk no">Refuzată · alege altcineva</em> : "—"}</td>
                   <td><Badge s={r.status} /></td>
-                  <td className="right"><a className="rowLink" href={r.status === "gata" || r.status === "pred" ? `/inspectii/${r.id}` : `/inspectii/nou?id=${r.id}`}>
-                    {r.status === "gata" || r.status === "pred" ? "Vezi fișa →" : r.status === "prog" ? "Programează" : "Detalii →"}</a></td>
+                  <td className="right"><a className="rowLink" href={r.status === "prog" ? `/inspectii/nou?id=${r.id}` : `/inspectii/${r.id}`}>
+                    {r.status === "gata" || r.status === "pred" ? "Vezi fișa →" : r.status === "lucru" ? "Fișa în lucru →" : r.status === "prog" ? "Programează" : "Detalii →"}</a></td>
                 </tr>
               ))}
             </tbody>
@@ -252,7 +252,7 @@ function CalView({ rows, unplanned, onSchedule }: { rows: Row[]; unplanned: Row[
                     const [hh, mm] = r.scheduled_at!.slice(11, 16).split(":").map(Number);
                     const top = Math.max(0, (hh + mm / 60 - H0) * HH), h = Math.max(24, (r.duration_min / 60) * HH - 4);
                     return (
-                      <a key={r.id} href={`/inspectii/${r.status === "gata" || r.status === "pred" ? r.id : `nou?id=${r.id}`}`} className="inEv"
+                      <a key={r.id} href={`/inspectii/${r.status === "prog" || r.status === "plan" ? `nou?id=${r.id}` : r.id}`} className="inEv"
                         style={{ top: top + 2, height: h, color: STATUS[r.status].fg, background: STATUS[r.status].bg }}>
                         <b>{r.scheduled_at!.slice(11, 16)} · {r.address.split(",")[0]}</b><small>{STATUS[r.status].label}</small>
                       </a>

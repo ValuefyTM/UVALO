@@ -16,6 +16,9 @@ export default async function Maintenance({ searchParams }: { searchParams: Prom
   const c = db ? await context(db) : null;
   // administrators get through; with ?preview=1 they see the page as people do
   if (!(c?.super && preview) && (!m.on || c?.super)) redirect("/");
+  // an office invitation waiting: it can be answered during maintenance too (in "Contul meu")
+  const inv = c && db ? await db.prepare(`SELECT o.name FROM office_links l JOIN orgs o ON o.id = l.org_id WHERE l.user_id = ? AND l.status = 'invited' ORDER BY l.created_at DESC LIMIT 1`)
+    .bind(c.user.id).first<{ name: string }>() : null;
   return (
     <div className="mntPage">
       <div className="mntBox">
@@ -25,6 +28,7 @@ export default async function Maintenance({ searchParams }: { searchParams: Prom
         <h1>Revenim în curând</h1>
         <p>{m.message || DEFAULT_MESSAGE}</p>
         <p className="mntSmall">Datele și contul tău sunt în siguranță. Pentru întrebări, scrie-ne la <a href="mailto:office@uvalo.ro">office@uvalo.ro</a>.</p>
+        {inv && <p className="mntInv"><b>{inv.name}</b> te-a invitat să te asociezi cu biroul. <a href="/cont#asocieri">Vezi invitația →</a></p>}
         <div className="mntActions">
           {c ? <LogoutButton /> : <a className="mntLink" href="/login">Administrator? Intră în cont →</a>}
         </div>
