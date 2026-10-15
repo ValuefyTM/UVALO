@@ -2095,6 +2095,14 @@ textarea.mbIn { min-height: 0; resize: vertical; }
 .mbRedo.small { padding: 9px 11px; }
 .mbRedo.small span { font-size: 13px; }
 
+/* upload progress */
+.mbUp { position: fixed; left: 50%; transform: translateX(-50%); top: calc(env(safe-area-inset-top) + 8px); z-index: 55; width: min(520px, calc(100% - 24px));
+  background: #141414; color: #fff; border-radius: 14px; padding: 10px 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); display: flex; flex-direction: column; gap: 7px; animation: vfIn 0.25s var(--ease); }
+.mbUp > span { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; }
+.mbUp em { font-style: normal; color: var(--acc); font-weight: 800; }
+.mbUp i { display: block; height: 5px; border-radius: 3px; background: #333; overflow: hidden; }
+.mbUp s { display: block; height: 100%; background: var(--acc); transition: width 0.3s var(--ease); }
+
 /* push notifications card */
 .mbPushHead { display: flex; gap: 10px; align-items: flex-start; }
 .mbPushHead > span:last-child { display: flex; flex-direction: column; gap: 2px; }

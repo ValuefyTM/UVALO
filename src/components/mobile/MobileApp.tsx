@@ -2,7 +2,7 @@
 
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CONTACT_ROLES, fmtWhen, isOptional, photoCategories, PROP_TYPES, ROOM_FIELDS, STATUS, type InspRow, type Question, type SubQ, subKey, type Template } from "@/lib/insp-shared";
-import { allFiles, allFinish, flush, putFile, putFinish, readExif, shrink, type QPhoto } from "./store";
+import { allFiles, allFinish, flush, progress, putFile, putFinish, readExif, shrink, type QPhoto, type UploadProgress } from "./store";
 import { InstallHint } from "./InstallHint";
 
 type Insp = InspRow & {
@@ -69,6 +69,12 @@ export function MobileApp() {
   const [finishQ, setFinishQ] = useState(0);
   const [online, setOnline] = useState(true);
   const [toast, setToast] = useState("");
+  const [up, setUp] = useState<UploadProgress>(null);
+  useEffect(() => {
+    const on = (e: Event) => setUp((e as CustomEvent<UploadProgress>).detail);
+    window.addEventListener("insp-upload", on);
+    return () => window.removeEventListener("insp-upload", on);
+  }, []);
   const pos = useRef<[number, number] | null>(null);
   const [sched, setSched] = useState<Sched | null>(null);
 
@@ -230,9 +236,9 @@ export function MobileApp() {
    */
   async function addPhotos(files: File[], room: string, gallery: boolean, kind: "photo" | "signature" = "photo") {
     if (!cur || !files.length) return;
-    if (files.length > 1) say(`Se adaugă ${files.length} fotografii la „${room}”…`);
     let i = 0;
     for (const file of files) {
+      if (kind === "photo") progress({ phase: "prep", done: i, total: files.length });
       const ex = gallery ? await readExif(file) : null;
       const blob = kind === "photo" ? await shrink(file) : file;
       const p = gallery ? null : pos.current;
@@ -240,6 +246,8 @@ export function MobileApp() {
         taken_at: ex?.taken_at ?? (gallery && file.lastModified ? new Date(file.lastModified).toISOString() : new Date().toISOString()),
         lat: ex?.lat ?? p?.[0] ?? null, lng: ex?.lng ?? p?.[1] ?? null, blob });
     }
+    // the bar goes on with the sending (flush shows it and hides it at the end)
+    progress({ phase: "send", done: 0, total: files.length });
     await refreshQueue();
     if (files.length > 1) say(`${files.length} fotografii adăugate la „${room}”.`);
     void sendAll();
@@ -329,6 +337,12 @@ export function MobileApp() {
         say(`Programată ${fmtWhen(when)}.`);
         return null;
       }} />}
+      {up && up.total > 0 && (
+        <div className="mbUp" role="status" aria-live="polite">
+          <span><b>{up.phase === "prep" ? "Se pregătesc fotografiile" : "Se trimit fotografiile"}</b><em>{Math.min(up.done + (up.phase === "prep" ? 1 : 0), up.total)} din {up.total}</em></span>
+          <i><s style={{ width: `${Math.round((up.done / up.total) * 100)}%` }} /></i>
+        </div>
+      )}
       {toast && <div className="mbToast" role="status">{toast}</div>}
     </div>
   );
@@ -941,11 +955,20 @@ function Photos({ x, d, pending, onBack, onPhotos }: { x: Insp; d: Draft; pendin
   const groups = cats.map((c) => ({ c, sent: sent.filter((f) => f.room === c), local: pending.filter((p) => p.room === c) })).filter((g) => g.sent.length || g.local.length || g.c === room);
   const pick = (input: HTMLInputElement | null, c: string) => { target.current = c; setRoom(c); input?.click(); };
   const take = async (e: React.ChangeEvent<HTMLInputElement>, gallery: boolean) => {
-    const files = Array.from(e.target.files ?? []);
-    e.target.value = "";
-    if (!files.length) return;
+    const input = e.target, room = target.current;
+    const picked = Array.from(input.files ?? []);
+    if (!picked.length) return;
     setBusy(true);
-    try { await onPhotos(files, target.current, gallery); } finally { setBusy(false); }
+    try {
+      // the files are read at once and kept as our own copies: on iPhone, the chosen files can become unreadable once the input changes
+      const files: File[] = [];
+      for (const f of picked) {
+        try { files.push(new File([await f.arrayBuffer()], f.name || "foto.jpg", { type: f.type || "image/jpeg", lastModified: f.lastModified })); } catch {}
+      }
+      input.value = "";
+      if (files.length < picked.length) alert(`${picked.length - files.length} din fotografiile alese nu au putut fi citite.`);
+      await onPhotos(files, room, gallery);
+    } finally { input.value = ""; setBusy(false); }
   };
   return (
     <>

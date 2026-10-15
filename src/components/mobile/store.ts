@@ -26,10 +26,28 @@ export const putFinish = (x: QFinish) => tx("finish", "readwrite", (s) => s.put(
 export const delFinish = (id: string) => tx("finish", "readwrite", (s) => s.delete(id));
 export const allFinish = () => tx<QFinish[]>("finish", "readonly", (s) => s.getAll() as IDBRequest<QFinish[]>).catch(() => [] as QFinish[]);
 
-/** Sends everything waiting: photos first, then the finished sheets. Returns how many items are still waiting. */
-export async function flush(): Promise<number> {
+/** Upload progress for the page: "prep" = photos being prepared on the phone, "send" = being sent. */
+export type UploadProgress = { phase: "prep" | "send"; done: number; total: number } | null;
+export const progress = (p: UploadProgress) => { try { window.dispatchEvent(new CustomEvent("insp-upload", { detail: p })); } catch {} };
+
+let running: Promise<number> | null = null;
+
+/**
+ * Sends everything waiting: photos first, then the finished sheets. Returns how many items are still waiting.
+ * One run at a time (the timer, the network coming back and a new photo may all ask at once; two runs would send a photo twice).
+ */
+export function flush(): Promise<number> {
+  if (running) return running.then(() => flush()); // what was added meanwhile goes in the next run
+  running = doFlush().finally(() => { running = null; progress(null); });
+  return running;
+}
+
+async function doFlush(): Promise<number> {
   if (typeof navigator !== "undefined" && !navigator.onLine) return (await allFiles()).length + (await allFinish()).length;
-  for (const f of await allFiles()) {
+  const files = await allFiles();
+  let done = 0;
+  if (files.length) progress({ phase: "send", done, total: files.length });
+  for (const f of files) {
     const fd = new FormData();
     fd.append("id", f.insp); fd.append("kind", f.kind); fd.append("file", new File([f.blob], f.name, { type: f.blob.type || "image/jpeg" }));
     fd.append("name", f.name); fd.append("room", f.room); fd.append("taken_at", f.taken_at);
@@ -38,6 +56,7 @@ export async function flush(): Promise<number> {
       const r = await fetch("/api/inspectii/files", { method: "POST", body: fd });
       if (r.ok || r.status === 400 || r.status === 404) await delFile(f.id); // 400/404: will never succeed (wrong type, inspection gone)
     } catch { break; }
+    progress({ phase: "send", done: ++done, total: files.length });
   }
   for (const x of await allFinish()) {
     if ((await allFiles()).some((f) => f.insp === x.insp)) continue; // its photos first

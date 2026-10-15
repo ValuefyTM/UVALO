@@ -346,6 +346,9 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
 - **Fotografii** pe telefon: „Fotografiază” (camera, o poză) și „Din galerie” (alegere multiplă din telefon); pozele merg la categoria aleasă
   (lista „Pozele noi merg la” sau atingerea titlului unei categorii, marcată cu auriu; în fiecare categorie căsuța cameră / galerie). Din galerie, ora și
   locul se iau din EXIF (`readExif` în `store.ts`: DateTimeOriginal + GPS), altfel data fișierului și fără loc; `addPhotos` le pune în coadă și trimite o dată.
+  Fișierele alese se citesc imediat în copii proprii (pe iPhone, după ce câmpul se schimbă, ele pot deveni ilizibile), câmpul se golește după.
+  Bara de progres `.mbUp` sus („Se pregătesc / Se trimit fotografiile · N din M”) din evenimentul `insp-upload` (`progress()` în `store.ts`);
+  `flush()` rulează o singură dată simultan (altfel o poză s-ar trimite de două ori), ce se adaugă între timp intră în rularea următoare.
 - **Detaliul inspecției** pe telefon (`Detail`): hartă mică (`MiniMap`, Leaflet fără interacțiune, atingerea deschide navigația), statut + tip,
   Google Maps / Waze, programarea, contactul (Sună / SMS), „Proprietatea” (doar câmpurile completate: tip, cad., CF, UAT, județ, suprafețe din
   acte, încăperi, cine a pregătit / cine face), încăperile din releveu, actele încărcate (doar dacă există), fotografiile trimise, notele, fișa.
