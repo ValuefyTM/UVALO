@@ -406,10 +406,11 @@ export function MobileApp() {
           await load();
           try { localStorage.removeItem(`insp-${cur.id}`); } catch {}
           if (ok) { setCur({ ...cur, assign_state: null }); say("Ai acceptat inspecția."); } else { go({ v: "home" }); say("Solicitarea a fost refuzată."); }
-        }} onBack={() => history.back()} onStart={() => go({ v: "form", id: cur.id, sec: 0 })} />}
+        }} onBack={() => { history.replaceState({ mbv: { v: "home" } }, ""); setViewState({ v: "home" }); window.scrollTo(0, 0); }}
+        onStart={() => go({ v: "form", id: cur.id, sec: 0 })} />}
       {view.v === "form" && cur && draft && (
         <Form x={cur} d={draft} sec={view.sec} photos={pending.filter((p) => p.insp === cur.id && p.kind === "photo").length + cur.files.filter((f) => f.kind === "photo").length}
-          onBack={() => go({ v: "detail", id: cur.id })} onSec={(s) => setViewState({ v: "form", id: cur.id, sec: s })} change={change} onPhoto={addPhoto}
+          onBack={() => history.back()} onSec={(s) => setViewState({ v: "form", id: cur.id, sec: s })} change={change} onPhoto={addPhoto}
           onRooms={() => go({ v: "rooms", id: cur.id })} onPhotos={() => go({ v: "photos", id: cur.id })} onSign={() => go({ v: "sign", id: cur.id })} />
       )}
       {view.v === "rooms" && cur && draft && <Rooms x={cur} d={draft} change={change} onBack={() => history.back()} onPhoto={addPhoto} onRlv={readRlv} />}
@@ -423,7 +424,9 @@ export function MobileApp() {
       {view.v === "account" && <Account me={me} info={info} done={items.filter(isDone)} onOpen={(id) => open(id, { v: "detail", id })} queueN={queueN} online={online} onSend={async () => { const n = await sendAll(); say(n ? "Mai sunt elemente de trimis." : "Totul a fost trimis."); }} say={say} />}
       {view.v === "new" && <NewInsp tpls={tpls} firms={firms} online={online} pos={pos} onBack={() => history.back()} onDone={async (id, now) => {
         await load();
-        if (now) await open(id, { v: "form", id, sec: 0 }); else { go({ v: "home" }); say("Inspecția a fost adăugată."); }
+        // the "new inspection" screen is replaced in the history: Back from the sheet goes home, not to an empty form
+        history.replaceState({ mbv: { v: "home" } }, "");
+        if (now) await open(id, { v: "form", id, sec: 0 }); else { setViewState({ v: "home" }); say("Inspecția a fost adăugată."); }
       }} />}
       </div>
       {nav && (

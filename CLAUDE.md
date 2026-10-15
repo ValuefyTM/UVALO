@@ -416,7 +416,8 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   `POST /api/m/device` înregistrează telefonul; `GET /api/m/state` = utilizatorul + inspecțiile atribuite lui (`myAssigned`); `GET /api/m/insp/<id>`.
 - Ecrane: Acasă (următoarea, statistici, filtre), detaliu (navigație, contact, acte), fișa pe secțiuni + Constatări, Încăperi, Fotografii pe
   încăperi, Semnătură → finalizare; meniu jos Acasă / De trimis / Contul meu. Butonul Înapoi al telefonului e prins înaintea routerului Next
-  (`popstate` în captură, starea `mbv`), altfel pagina se reîncarcă. În fișă, chip-ul secțiunii curente se derulează singur în vedere (`secsRef`).
+  (`popstate` în captură, starea `mbv`), altfel pagina se reîncarcă. Înapoi din fișă = `history.back()` (nu împinge o intrare nouă — altfel bucla
+  fișă ↔ detaliu), „‹” din detaliu = Acasă (înlocuiește intrarea), iar după „Inspecție nouă” intrarea ecranului nou e înlocuită cu Acasă. În fișă, chip-ul secțiunii curente se derulează singur în vedere (`secsRef`).
 - Offline: ciorna în `localStorage` `insp-draft-<id>` (trimisă ca `progress` la 4 s), pozele (micșorate 2000 px) și finalizările în IndexedDB
   `uvalo-insp` (`store.ts`, `flush()` la revenirea rețelei și la 30 s).
 - **Pornire rapidă** (măsurat cu latență 300 ms: prima deschidere ~2,2 s, următoarele ~0,1 s): service worker-ul (`uvalo-insp-v3`) servește
