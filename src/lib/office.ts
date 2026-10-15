@@ -174,3 +174,28 @@ export async function leaveRequests(db: D1Database, orgId: string) {
     .all<{ id: string; legit: string; created_at: string; name: string; email: string; tablou_name: string | null }>();
   return results;
 }
+
+/**
+ * „Am devenit evaluator” (an operational adds their ANEVAR card, or the office's administrator adds it for them): the card must be in
+ * the Tablou and not used by another account; when the account has a name, it must match the one in the Tablou (one word in common).
+ * The name, county and specializations are then taken from the Tablou; the person becomes "Evaluator" in the office.
+ */
+export async function claimLegit(db: D1Database, by: { id: string }, userId: string, legitRaw: unknown) {
+  const legit = (typeof legitRaw === "string" ? legitRaw : "").replace(/\D/g, "").slice(0, 7);
+  if (!legit) return { error: "Scrie numărul legitimației ANEVAR." };
+  const u = await db.prepare("SELECT id, name, email, anevar_no FROM users WHERE id = ?").bind(userId).first<{ id: string; name: string | null; email: string; anevar_no: string | null }>();
+  if (!u) return { error: "Contul nu există." };
+  if (u.anevar_no) return { error: "Contul are deja legitimația ANEVAR " + u.anevar_no + "." };
+  const m = await db.prepare("SELECT legit, name, county, specs FROM anevar_members WHERE legit = ?").bind(legit).first<{ legit: string; name: string; county: string | null; specs: string | null }>();
+  if (!m) return { error: "Nu găsim legitimația în Tabloul ANEVAR. Verifică numărul (tabloul se actualizează periodic)." };
+  if (await db.prepare("SELECT 1 FROM users WHERE anevar_no = ? AND id <> ? AND status NOT IN ('disabled', 'closed')").bind(legit, userId).first())
+    return { error: "Legitimația este folosită deja de alt cont UVALO. Scrie-ne la office@uvalo.ro." };
+  if (u.name?.trim()) {
+    const a = new Set(norm(m.name)), b = norm(u.name);
+    if (!b.some((w) => a.has(w))) return { error: `În Tabloul ANEVAR, legitimația ${legit} este a lui ${m.name}, iar numele contului este ${u.name}. Corectează numele sau scrie-ne la office@uvalo.ro.` };
+  }
+  await db.prepare("UPDATE users SET anevar_no = ?, name = ?, county = COALESCE(?, county), specs = COALESCE(?, specs) WHERE id = ?")
+    .bind(legit, m.name, m.county, m.specs, userId).run();
+  await audit(db, by.id, "user.legit", "user", userId, `${u.email} → ${legit} (${m.name})${by.id === userId ? "" : " · adăugată de administratorul biroului"}`);
+  return { ok: true as const, name: m.name };
+}

@@ -2515,3 +2515,4 @@ html:has(.mb) { min-height: calc(100% + env(safe-area-inset-top)); background: #
 .mntInv { margin: 14px 0 0; padding: 12px 14px; border-radius: 12px; background: #fdf3e4; font-size: 14px; line-height: 1.5; color: #1A1714; } .mntInv a { font-weight: 800; color: #1A1714; }
 .raList { max-height: 50vh; overflow-y: auto; } .raList .tpBox { margin-top: 0; } .opDlg .modalBox > .tpRow { margin: 0; grid-template-columns: 18px minmax(0, 1fr); }
 .opAdm { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 700; cursor: pointer; white-space: nowrap; } .opAdm input { accent-color: #2f7d4f; }
+.becomeVal { border-top: 1px solid var(--divider); padding-top: 12px; margin-top: 4px; display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }

@@ -136,6 +136,11 @@ export function OfficePeople({ people, invites, links, seats, used, canOwner, st
       <UserAv id={m.user_id} name={m.name || m.email} has={m.has_av} size={34} /><span className="opWho"><b>{m.name || m.email}{m.me && <span className="muted"> (tu)</span>}</b>
         <small>{m.email} · activ {m.last_seen}{m.status !== "active" ? (m.status === "disabled" ? " · dezactivat" : m.status === "closed" ? " · a renunțat" : " · invitat") : ""}</small></span>
       <span className="opAct">
+        {!m.anevar && (
+          <button type="button" className="linkBtn" disabled={!!busy} title="Operaționalul a devenit evaluator: legitimația se verifică în Tabloul ANEVAR și datele se preiau de acolo"
+            onClick={() => { const v = prompt(`Legitimația ANEVAR a lui ${m.name || m.email}:`); if (v?.trim()) void run(m.user_id, () => call("/api/org/legit", "POST", { user: m.user_id, legit: v.trim() })); }}>
+            Adaugă legitimația</button>
+        )}
         {m.me || (m.role === "owner" && !canOwner) ? <span className="muted opRole">{ROLE[m.role]}</span> : (
           <select className="select" value={m.role} disabled={!!busy} aria-label={`Rolul lui ${m.name || m.email}`}
             onChange={(e) => run(m.user_id, () => call("/api/org/members", "PATCH", { user: m.user_id, role: e.target.value }))}>

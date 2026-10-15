@@ -14,9 +14,10 @@ export function InspPreview({ appUrl }: { appUrl: string }) {
     setBusy(true); setErr("");
     try {
       const r = await fetch("/api/inspectii", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "pair_code" }) });
-      const j = (await r.json().catch(() => ({}))) as { code?: string; error?: string };
+      const j = (await r.json().catch(() => ({}))) as { code?: string; uid?: string; error?: string };
       if (!r.ok || !j.code) throw new Error(j.error || "Nu am putut deschide previzualizarea.");
-      setSrc(`${appUrl}/?pair=${j.code}`);
+      // u = the web's account: a frame still signed in as someone else signs in again with the code
+      setSrc(`${appUrl}/?pair=${j.code}${j.uid ? `&u=${encodeURIComponent(j.uid)}` : ""}`);
     } catch (e) { setErr((e as Error).message); } finally { setBusy(false); }
   };
   return (

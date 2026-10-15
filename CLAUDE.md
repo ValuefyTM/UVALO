@@ -257,7 +257,12 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   (migrația 0032 `office_links.admin`, acțiunea `admin`; doar `kind = angajat`, se pierde la trecerea în colaborator) îi dă toate inspecțiile
   biroului: `c.linkAdmin` (în `context()`) → `firmOrgs(c)` în `insp.ts` (biroul propriu pentru administrator / operațional + birourile care l-au
   făcut administrator) → lista (fila „Ale firmei”), fișa, editarea, realocarea (`canPrepare`); `team(db, c, orgId)` listează oamenii biroului
-  inspecției, nu ai firmei proprii. Doar evaluatorii
+  inspecției, nu ai firmei proprii.
+- **Operațional → evaluator**: în „Contul meu”, cei fără legitimație au cardul „Datele tale” (nume și telefon editabile — `PATCH /api/account`;
+  poza și emailul ca toți) și butonul **„Am devenit evaluator”** (`POST /api/account/legit`); administratorul biroului are „Adaugă legitimația”
+  la operaționali în „Firma mea” (`POST /api/org/legit`). Ambele → `claimLegit()` în `office.ts`: legitimația există în Tablou, nu e pe alt cont,
+  numele contului are un cuvânt comun cu cel din Tablou → `anevar_no`, nume, județ, specializări din Tablou; persoana devine „Evaluator”.
+  Evaluatorii își pot schimba doar telefonul (numele vine din Tablou). Doar evaluatorii
   (`anevar_no`); cei fără legitimație rămân membri cu rol **Operațional** (eticheta din „Firma mea”: Evaluator / Operațional, după `anevar_no`;
   văd și introduc inspecțiile firmei, nu fac inspecții). Stări: `invited` (biroul invită după email sau legitimație) / `requested` (evaluatorul cere
   din „Contul meu” → „Asociază-te cu o firmă”, căutare după nume `searchOffices`, deocamdată doar cu `c.office`) → `active` → `ended` (oricare parte;
@@ -345,7 +350,8 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   autentificare din aplicație (telefon sau aplicația instalată; browserul unui calculator nu se numără — `registerDevice`); în test, „Continuă fără telefon (test)” creează un dispozitiv `platform = 'test'`.
 - **„Previzualizează aplicația”** (`InspPreview`, pe `/inspectii` și pe pagina de activare): aplicația de telefon reală într-o ramă de telefon
   (iframe spre `inspUrl()`), conectată singură cu un cod de conectare (`pair_code` → `/?pair=`); dacă rama are deja sesiune, codul nu se mai
-  folosește (fără sesiuni noi). Același site (`*.uvalo.ro`), deci cookie-ul `SameSite=Lax` merge în iframe. Calculatorul nu devine „telefon
+  folosește (fără sesiuni noi) — doar dacă e același cont: `pair_code` întoarce și `uid`, rama primește `&u=` și, dacă sesiunea ei e a altcuiva
+  (alt cont în același browser, de ex. super-adminul), se conectează din nou cu codul. Același site (`*.uvalo.ro`), deci cookie-ul `SameSite=Lax` merge în iframe. Calculatorul nu devine „telefon
   conectat”; `InstallHint` nu apare în ramă. Test local: Chromium cu `--host-resolver-rules=MAP *.uvalo.test 127.0.0.1:8797` și
   `--unsafely-treat-insecure-origin-as-secure`, wrangler cu `INSP_HOSTS=inspectii.uvalo.test`, `INSP_URL=http://inspectii.uvalo.test`.
 - Migrația 0023: `inspections` (bunul, contact, programare, fișa ca instantaneu `template` + versiune, `answers`, `room_answers`, `findings`, semnătura,

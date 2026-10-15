@@ -27,7 +27,7 @@ export default async function Account() {
     <AppShell c={c} active="cont" title="Contul meu">
       <div style={{ maxWidth: 760 }}>
         <AccountPanel id={u.id} name={m?.name ?? u.name} email={u.email} legit={u.anevar_no} county={m?.county ?? u.county} specs={m?.specs ?? u.specs}
-          hasAvatar={!!u.has_avatar} initials={initials(u.name, u.email)} tablou={m?.tablou_date ? fmtDate(m.tablou_date) : null} />
+          hasAvatar={!!u.has_avatar} phone={u.phone} initials={initials(u.name, u.email)} tablou={m?.tablou_date ? fmtDate(m.tablou_date) : null} />
         <div style={{ height: 18 }} />
         <OfficeCard allowed={c.office} active={officeActive(c)} asked={asked} member={c.org && !canManageOrg(c) ? c.org.name : null}
           initial={{ name: own ? c.org!.name : "", corporate: own ? !!c.org!.corporate : false, corp_no: own ? c.org!.corp_no ?? "" : "", description: own ? c.org!.description ?? "" : "", logo }}

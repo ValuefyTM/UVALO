@@ -124,10 +124,18 @@ export function MobileApp() {
     const sp = new URLSearchParams(location.search), code = sp.get("pair"), openId = sp.get("open");
     const standalone = matchMedia("(display-mode: standalone)").matches || (navigator as unknown as { standalone?: boolean }).standalone === true;
     (async () => {
-      // already signed in (e.g. the web's preview frame opened again): the code is not used, no new session
-      const signed = code ? (await fetch("/api/m/state", { cache: "no-store" }).catch(() => null))?.ok : false;
+      // already signed in as the same person (e.g. the web's preview frame opened again): the code is not used, no new session.
+      // Signed in as someone else (another account on the same browser, e.g. a super-admin before): the code signs in the right one.
+      const want = sp.get("u");
+      let signed = false;
+      if (code) {
+        const r = await fetch("/api/m/state", { cache: "no-store" }).catch(() => null);
+        const who = r?.ok ? ((await r.json().catch(() => null)) as { user?: { id?: string } } | null)?.user?.id : null;
+        signed = !!who && (!want || who === want);
+      }
       if (code && signed) history.replaceState(null, "", location.pathname);
       else if (code) {
+        try { localStorage.removeItem("insp-state"); } catch {}
         history.replaceState(null, "", location.pathname);
         const r = await fetch("/api/m/pair", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code, standalone }) });
         if (!r.ok) say(String((await J(r)).error || "Codul nu a mers."));

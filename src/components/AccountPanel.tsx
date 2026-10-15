@@ -17,7 +17,49 @@ async function square(file: File): Promise<string> {
 }
 
 /** "Administrare cont": picture and email can be changed; name, card, specializations and county come from the ANEVAR list. */
-export function AccountPanel(p: { id: string; name: string; email: string; legit: string | null; county: string | null; specs: string | null; hasAvatar: boolean; initials: string; tablou: string | null }) {
+/** Name and phone (the name only without an ANEVAR card), and „Am devenit evaluator” for those without one. */
+function ProfileData({ name, phone, legit }: { name: string; phone: string | null; legit: string | null }) {
+  const [f, setF] = useState({ name, phone: phone ?? "" });
+  const [card, setCard] = useState("");
+  const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<{ ok: boolean; t: string } | null>(null);
+  const send = async (url: string, method: string, body: unknown, ok: string) => {
+    setBusy(true); setMsg(null);
+    const r = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }).catch(() => null);
+    const d = (await r?.json().catch(() => ({}))) as { error?: string } | undefined;
+    setBusy(false);
+    if (!r?.ok) return setMsg({ ok: false, t: d?.error || "Nu am putut salva. Încearcă din nou." });
+    setMsg({ ok: true, t: ok }); setTimeout(() => location.reload(), 900);
+  };
+  return (
+    <section className="card">
+      <h2>{legit ? "Telefon" : "Datele tale"}</h2>
+      <form className="inlineForm2" onSubmit={(e) => { e.preventDefault(); void send("/api/account", "PATCH", legit ? { phone: f.phone } : f, "Datele au fost salvate."); }}>
+        {!legit && <label className="field">Nume și prenume<input className="input" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} required /></label>}
+        <label className="field">Telefon<input className="input" inputMode="tel" value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} placeholder="07xx xxx xxx" /></label>
+        <button type="submit" className="btn btnNavy" disabled={busy}>Salvează</button>
+      </form>
+      {!legit && (
+        <div className="becomeVal">
+          {!open ? (
+            <button type="button" className="btn btnGold btnSm" onClick={() => setOpen(true)}>Am devenit evaluator</button>
+          ) : (
+            <form className="inlineForm2" onSubmit={(e) => { e.preventDefault(); void send("/api/account/legit", "POST", { legit: card }, "Legitimația a fost verificată: datele din Tabloul ANEVAR au fost preluate."); }}>
+              <label className="field">Legitimația ANEVAR<input className="input" inputMode="numeric" value={card} onChange={(e) => setCard(e.target.value)} placeholder="ex. 15902" required autoFocus /></label>
+              <button type="submit" className="btn btnNavy" disabled={busy}>Verifică și preia datele</button>
+              <button type="button" className="btn btnGhost" onClick={() => setOpen(false)}>Renunță</button>
+            </form>
+          )}
+          <span className="hint">Legitimația se verifică în Tabloul ANEVAR; numele, județul și specializările se preiau de acolo, iar contul devine cont de evaluator.</span>
+        </div>
+      )}
+      {msg && <div role={msg.ok ? "status" : "alert"} className={msg.ok ? "okMsg" : "error"}>{msg.t}</div>}
+    </section>
+  );
+}
+
+export function AccountPanel(p: { id: string; name: string; email: string; legit: string | null; county: string | null; specs: string | null; hasAvatar: boolean; initials: string; tablou: string | null; phone?: string | null }) {
   const [img, setImg] = useState<string | null>(p.hasAvatar ? `/api/avatar/${p.id}?v=${Date.now()}` : null);
   const [msg, setMsg] = useState<{ ok: boolean; t: string } | null>(null);
   const [email, setEmail] = useState("");
@@ -60,7 +102,8 @@ export function AccountPanel(p: { id: string; name: string; email: string; legit
         {msg && <div role={msg.ok ? "status" : "alert"} className={msg.ok ? "okMsg" : "error"}>{msg.t}</div>}
       </section>
 
-      <section className="card">
+      {!p.legit && <ProfileData name={p.name} phone={p.phone ?? null} legit={null} />}
+      {p.legit && <section className="card">
         <h2>Date din tabloul ANEVAR</h2>
         <dl className="kv">
           <div><dt>Nume și prenume</dt><dd>{p.name || "—"}</dd></div>
@@ -69,7 +112,8 @@ export function AccountPanel(p: { id: string; name: string; email: string; legit
           <div><dt>Specializări</dt><dd>{p.specs ? <div className="specs" style={{ justifyContent: "flex-end" }}>{p.specs.split(",").map((s) => <span key={s} className="spec" title={SPEC[s]}>{s}</span>)}</div> : "—"}</dd></div>
         </dl>
         <p className="hint">Datele vin din tabloul membrilor titulari ANEVAR{p.tablou ? ` (la ${p.tablou})` : ""} și nu se modifică din cont. Dacă nu sunt corecte, scrie-ne la office@uvalo.ro.</p>
-      </section>
+      </section>}
+      {p.legit && <ProfileData name={p.name} phone={p.phone ?? null} legit={p.legit} />}
 
       <section className="card">
         <h2>Adresa de email</h2>

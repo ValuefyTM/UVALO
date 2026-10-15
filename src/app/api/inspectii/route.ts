@@ -17,7 +17,7 @@ export async function POST(req: Request) {
   let r: { ok: true; id?: string } | { error: string };
   if (action === "save") r = await saveInspection(db, c, b);
   else if (action.startsWith("tpl_")) r = await tplAction(db, c, b);
-  else if (action === "pair_code") return Response.json({ code: await pairCode(db, c.user.id) });
+  else if (action === "pair_code") return Response.json({ code: await pairCode(db, c.user.id), uid: c.user.id });
   else if (action === "device_status") return Response.json({ devices: (await devices(db, c.user.id)).length });
   else if (action === "test_device") { await testDevice(db, c.user.id); r = { ok: true }; }
   else if (action === "revoke_device") { await revokeDevice(db, c.user.id, str(b.id, 64)); r = { ok: true }; }
