@@ -71,19 +71,21 @@ export function InspList({ rows: initial, meId }: { rows: Row[]; meId: string })
           ))}
         </div>
       </div>
-      <label className="inSearchBox">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" /></svg>
-        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Caută după adresă, nr. cadastral, persoană de contact sau cod…" aria-label="Caută" />
-        {q && <button type="button" aria-label="Golește căutarea" onClick={() => setQ("")}>×</button>}
-        {q && <em>{shown.length} {shown.length === 1 ? "rezultat" : "rezultate"}</em>}
-      </label>
-      <div className="inTabs" role="tablist" aria-label="Stare">
-        <button type="button" role="tab" aria-selected={st === "all"} onClick={() => setSt("all")}>Toate <b>{inWho.length}</b></button>
-        {STATUSES.map((k) => (
-          <button key={k} type="button" role="tab" aria-selected={st === k} onClick={() => setSt(k)}>
-            <i style={{ background: STATUS[k].fg }} />{STATUS[k].label} <b>{inWho.filter((r) => r.status === k).length}</b>
-          </button>
-        ))}
+      {/* the status tabs and the search, on one line */}
+      <div className="inFilterBar">
+        <div className="inTabs" role="tablist" aria-label="Stare">
+          <button type="button" role="tab" aria-selected={st === "all"} onClick={() => setSt("all")}>Toate <b>{inWho.length}</b></button>
+          {STATUSES.map((k) => (
+            <button key={k} type="button" role="tab" aria-selected={st === k} onClick={() => setSt(k)}>
+              {STATUS[k].label} <b>{inWho.filter((r) => r.status === k).length}</b>
+            </button>
+          ))}
+        </div>
+        <label className="inSearchBox">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" /></svg>
+          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Caută adresă, nr. cadastral, contact, cod…" aria-label="Caută" />
+          {q ? <><em>{shown.length}</em><button type="button" aria-label="Golește căutarea" onClick={() => setQ("")}>×</button></> : <kbd aria-hidden="true">↵</kbd>}
+        </label>
       </div>
       {msg && <p className="note" role="alert">{msg}</p>}
 

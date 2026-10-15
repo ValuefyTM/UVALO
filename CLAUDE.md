@@ -314,8 +314,8 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
 - **Întrebare compusă** (`kind: "comp"`): o alegere cu întrebări de urmat pe răspuns (`sub: {răspuns: SubQ[]}`, tipuri unică / multiplă / text / număr);
   răspunsul la `answers[id]`, urmările la `answers["id.subId"]`; `compSummary()` pe o linie în fișa web. În editor: „+ Întrebare compusă” și, pe fiecare
   răspuns, „+ Întrebare după „X”” (redenumirea răspunsului mută și urmările). Migrația 0024 a șters (logic) copiile personale ale primelor fișe UVALO. Logica: `src/lib/insp.ts`; API unic `POST /api/inspectii {action}`.
-- Pagini: `/inspectii` (`InspList`: file Ale mele / Făcute pentru colegi / Făcute pentru mine; bara de căutare mare `.inSearchBox` (adresă,
-  nr. cad., contact, cod; numărul de rezultate); stările ca tab-uri compacte `.inTabs` cu numere; vederi Listă / **Listă + hartă** (`.inSplit`:
+- Pagini: `/inspectii` (`InspList`: file Ale mele / Făcute pentru colegi / Făcute pentru mine; stările ca tab-uri segmentate `.inTabs` (cu numere)
+  și căutarea `.inSearchBox` (adresă, nr. cad., contact, cod; numărul de rezultate) pe același rând, în cardul `.inFilterBar`; vederi Listă / **Listă + hartă** (`.inSplit`:
   carduri în stânga, harta lipicioasă în dreapta; cardul atins aprinde pinul, pinul derulează la card) / Hartă (Leaflet) / Calendar
   săptămânal cu „De programat” trase pe o oră → `schedule`; în colțul de sus **Setări** (`InspSettings`, meniu: Fișe de inspecție + viitoare
   setări marcate „În curând”), lângă „Inspecție nouă”), `/inspectii/nou[?id=]` (`InspForm`: CF citit cu `/api/amplasament/plan`, încăperi,

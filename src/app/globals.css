@@ -2331,20 +2331,21 @@ html:has(.mb) { min-height: calc(100% + env(safe-area-inset-top)); background: #
 .inSetMenu span > b { display: block; font-size: 13.5px; }
 .inSetMenu span > small { display: block; font-size: 12px; color: var(--muted-2); }
 .inSetSoon { opacity: .55; cursor: default; }
-.inSearchBox { display: flex; align-items: center; gap: 10px; height: 48px; padding: 0 14px; background: #fff; border: 1.5px solid var(--line); border-radius: 14px;
-  box-shadow: 0 6px 18px -14px rgba(20,20,20,.35); color: var(--muted-2); cursor: text; transition: border-color .15s, box-shadow .15s; }
-.inSearchBox:focus-within { border-color: var(--acc); box-shadow: 0 0 0 3px var(--acc-soft); color: var(--acc-text); }
-.inSearchBox input { flex: 1; min-width: 0; border: 0; outline: none; background: none; font: inherit; font-size: 15px; color: var(--ink); }
-.inSearchBox button { border: 0; background: var(--cream, #f4efe6); width: 26px; height: 26px; border-radius: 50%; font-size: 16px; line-height: 1; cursor: pointer; color: var(--muted-2); }
-.inSearchBox em { font-style: normal; font-size: 12px; font-weight: 700; white-space: nowrap; }
-.inTabs { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid var(--line); margin-top: -4px; }
+.inFilterBar { display: flex; gap: 8px; align-items: center; background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 6px; flex-wrap: wrap; }
+.inTabs { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; background: var(--cream, #f4efe6); border: 1px solid var(--line); border-radius: 11px; padding: 3px; flex: 0 1 auto; min-width: 0; }
 .inTabs::-webkit-scrollbar { display: none; }
-.inTabs button { flex: none; display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 10px; border: 0; background: none; font: inherit; font-size: 12.5px;
-  font-weight: 700; color: var(--muted-2); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; }
-.inTabs button i { width: 7px; height: 7px; border-radius: 50%; }
-.inTabs button b { font-size: 11px; background: var(--cream, #f4efe6); color: var(--muted-2); border-radius: 999px; padding: 1px 6px; }
-.inTabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--acc); }
-.inTabs button[aria-selected="true"] b { background: #141414; color: #fff; }
+.inTabs button { flex: none; display: inline-flex; align-items: center; gap: 8px; height: 32px; padding: 0 12px; border: 0; border-radius: 8px; background: none; font: inherit;
+  font-size: 13px; font-weight: 700; color: var(--ink); cursor: pointer; white-space: nowrap; }
+.inTabs button b { font-size: 11.5px; font-weight: 600; color: var(--muted-2); font-variant-numeric: tabular-nums; }
+.inTabs button[aria-selected="true"] { background: #fff; box-shadow: 0 1px 3px rgba(20,20,20,.12); }
+.inTabs button[aria-selected="true"] b { background: var(--cream, #f4efe6); border-radius: 6px; padding: 2px 7px; color: var(--ink); }
+.inSearchBox { flex: 1 1 260px; display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 12px; background: var(--cream, #f4efe6); border: 1px solid var(--line);
+  border-radius: 11px; color: var(--muted-2); cursor: text; transition: border-color .15s, box-shadow .15s, background .15s; }
+.inSearchBox:focus-within { background: #fff; border-color: var(--acc); box-shadow: 0 0 0 3px var(--acc-soft); color: var(--acc-text); }
+.inSearchBox input { flex: 1; min-width: 0; border: 0; outline: none; background: none; font: inherit; font-size: 14px; color: var(--ink); }
+.inSearchBox kbd { font: inherit; font-size: 12px; color: var(--muted-2); }
+.inSearchBox em { font-style: normal; font-size: 12px; font-weight: 700; white-space: nowrap; }
+.inSearchBox button { border: 0; background: rgba(20,20,20,.07); width: 24px; height: 24px; border-radius: 50%; font-size: 15px; line-height: 1; cursor: pointer; color: var(--muted-2); }
 .inSeg button { display: inline-flex; align-items: center; gap: 6px; }
 @media (max-width: 900px) { .inSeg button span { display: none; } .inSeg button { padding: 0 10px; } }
 .inSplit { display: grid; grid-template-columns: minmax(300px, 400px) 1fr; gap: 14px; align-items: start; }
