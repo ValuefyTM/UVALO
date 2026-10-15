@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { CONTACT_ROLES, fmtWhen, isOptional, photoCategories, PROP_TYPES, ROOM_FIELDS, STATUS, type InspRow, type Question, type SubQ, subKey, type Template } from "@/lib/insp-shared";
+import { CONTACT_ROLES, fmtWhen, isOptional, photoCategories, PROP_TYPES, ROOM_FIELDS, roomDone, STANDARD_ROOMS, STATUS, type InspRow, type Question, type SubQ, subKey, type Template } from "@/lib/insp-shared";
 import { allFiles, allFinish, delFile, flush, progress, putFile, putFinish, readExif, shrink, type QPhoto, type UploadProgress } from "./store";
 import { InstallHint } from "./InstallHint";
 
@@ -12,14 +12,15 @@ type Insp = InspRow & {
   files: { id: string; kind: string; name: string | null; room: string | null; taken_at: string | null }[];
   uat?: string | null; county?: string | null; template_version?: number | null; created_at?: string; redo_note?: string | null;
 };
-type Room = { n: string; a: number | null; floor?: string; walls?: string; ceiling?: string; state?: string };
+type Room = { n: string; a: number | null; floor?: string; walls?: string; ceiling?: string; state?: string; std?: boolean };
 type Me = { id: string; name: string; email: string; avatar?: boolean; anevar_no?: string | null; county?: string | null; phone?: string | null;
   org?: { id: string; name: string; logo: boolean; role: string | null } | null };
 type Info = { stats: { total: number; month: number; last: string | null; avg_min: number | null; photos: number }; device: { name: string; platform: string; created_at: string; last_seen_at: string } | null };
 type Tpl = { id: string; name: string; prop_type: string | null };
 type Notif = { id: number; insp: string; at: string; text: string; address: string; who: string | null };
 type Reminder = { key: string; insp: string; when: string; address: string; today: boolean };
-type Draft = { answers: Record<string, string | string[]>; rooms: Room[]; findings: { diff: string; defects: string; notes: string }; started_at: string };
+type Draft = { answers: Record<string, string | string[]>; rooms: Room[]; findings: { diff: string; defects: string; notes: string }; started_at: string;
+  sig?: string | null; signer?: { who: "contact" | "other"; other: string } }; // the signature stays on the phone until the inspection is sent
 type View = { v: "home" } | { v: "detail"; id: string } | { v: "form"; id: string; sec: number } | { v: "rooms"; id: string } | { v: "photos"; id: string } | { v: "sign"; id: string } | { v: "queue" } | { v: "account" } | { v: "new" } | { v: "notifs" };
 
 const DAYS = ["DUM", "LUN", "MAR", "MIE", "JOI", "VIN", "SÂM"];
@@ -209,6 +210,8 @@ export function MobileApp() {
       rooms: x.room_answers.length ? x.room_answers : x.rooms.map((r) => ({ ...r })), findings: { diff: x.findings.diff ?? "", defects: x.findings.defects ?? "", notes: x.findings.notes ?? "" },
       started_at: x.started_at ?? "",
     };
+    // a building with no rooms from the floor survey gets the standard ones (replaced by "Preia din RLV")
+    if (!d.rooms.length && !/^teren/i.test(x.prop_type ?? "")) d.rooms = STANDARD_ROOMS.map((n) => ({ n, a: null, std: true }));
     setDraft(d);
     go(then);
   }
@@ -253,6 +256,24 @@ export function MobileApp() {
     if (!r?.ok) say(r ? "Fotografia nu a putut fi mutată." : "Fără semnal: mutarea nu s-a salvat.");
     const x = await fetchInsp(cur.id);
     if (x) setCur(x);
+  }
+
+  /** "Preia din RLV": the floor survey read with AI (an attached one, or one photographed / chosen now) → its rooms. */
+  async function readRlv(src: { fileId: string } | { file: File }): Promise<Room[] | null> {
+    if (!cur) return null;
+    if (!navigator.onLine) { say("Citirea releveului cere semnal."); return null; }
+    const fd = new FormData(); fd.set("id", cur.id);
+    if ("fileId" in src) fd.set("fileId", src.fileId);
+    else {
+      const f = src.file, pdf = f.type === "application/pdf";
+      const blob = pdf ? f : await shrink(f, 2400);
+      fd.set("file", new File([blob], pdf ? f.name || "releveu.pdf" : "releveu.jpg", { type: pdf ? f.type : blob.type || "image/jpeg" }));
+    }
+    const r = await fetch("/api/inspectii/rlv", { method: "POST", body: fd }).catch(() => null);
+    const j = r ? await J(r) : {};
+    if (!r?.ok) { say(typeof j.error === "string" ? j.error : "Releveul nu a putut fi citit."); return null; }
+    if ("file" in src) { const x = await fetchInsp(cur.id); if (x) setCur(x); }
+    return j.rooms as Room[];
   }
 
   async function addPhoto(file: File, room: string, kind: "photo" | "signature" = "photo") {
@@ -333,13 +354,14 @@ export function MobileApp() {
       {view.v === "home" && <Home me={me} items={items} queueN={queueN} pos={pos} unread={unread} scope={scope} setScope={setScope} st={st} setSt={setSt} onBell={() => go({ v: "notifs" })} onMe={() => go({ v: "account" })} onSchedule={setSched} onNew={() => go({ v: "new" })} onOpen={(id) => open(id, { v: "detail", id })} onStart={(id) => open(id, { v: "form", id, sec: 0 })} />}
       {view.v === "detail" && cur && <Detail x={cur} draft={draft} onSchedule={setSched} onBack={() => history.back()} onStart={() => go({ v: "form", id: cur.id, sec: 0 })} />}
       {view.v === "form" && cur && draft && (
-        <Form x={cur} d={draft} sec={view.sec} photos={pending.filter((p) => p.insp === cur.id).length + cur.files.filter((f) => f.kind === "photo").length}
+        <Form x={cur} d={draft} sec={view.sec} photos={pending.filter((p) => p.insp === cur.id && p.kind === "photo").length + cur.files.filter((f) => f.kind === "photo").length}
           onBack={() => go({ v: "detail", id: cur.id })} onSec={(s) => setViewState({ v: "form", id: cur.id, sec: s })} change={change} onPhoto={addPhoto}
           onRooms={() => go({ v: "rooms", id: cur.id })} onPhotos={() => go({ v: "photos", id: cur.id })} onSign={() => go({ v: "sign", id: cur.id })} />
       )}
-      {view.v === "rooms" && cur && draft && <Rooms d={draft} change={change} onBack={() => history.back()} onPhoto={addPhoto} />}
+      {view.v === "rooms" && cur && draft && <Rooms x={cur} d={draft} change={change} onBack={() => history.back()} onPhoto={addPhoto} onRlv={readRlv} />}
       {view.v === "photos" && cur && draft && <Photos x={cur} d={draft} pending={pending.filter((p) => p.insp === cur.id && p.kind === "photo")} onBack={() => history.back()} onPhotos={addPhotos} onDelete={deletePhoto} onMove={movePhoto} />}
-      {view.v === "sign" && cur && draft && <Sign x={cur} d={draft} photos={pending.filter((p) => p.insp === cur.id).length + cur.files.filter((f) => f.kind === "photo").length} change={change} onBack={() => history.back()} onFinish={finish} />}
+      {view.v === "sign" && cur && draft && <Sign x={cur} d={draft} photos={pending.filter((p) => p.insp === cur.id && p.kind === "photo").length + cur.files.filter((f) => f.kind === "photo").length} change={change} onBack={() => history.back()} onFinish={finish}
+        onRooms={() => go({ v: "rooms", id: cur.id })} onPhotos={() => go({ v: "photos", id: cur.id })} />}
       {view.v === "queue" && <Queue pending={pending} finishN={finishQ} items={items} online={online} onSend={async () => { const n = await sendAll(); say(n ? "Mai sunt elemente de trimis." : "Totul a fost trimis."); }} />}
       {view.v === "notifs" && <Notifs notifs={notifs} reminders={reminders} seenAt={seen.at} onBack={() => { markSeen(); history.back(); }}
         onOpen={(id) => { markSeen(); void open(id, { v: "detail", id }); }} />}
@@ -925,7 +947,7 @@ function Form({ x, d, sec, photos, onBack, onSec, change, onPhoto, onRooms, onPh
   const done = all.filter((q) => answered(d.answers[q.id])).length;
   const isFind = !ownFind && sec >= groups.length;
   const g = groups[sec];
-  const roomsDone = d.rooms.filter((r) => r.floor && r.state).length;
+  const roomsDone = d.rooms.filter(roomDone).length;
   // the current section's chip is scrolled into view (the chips row is wider than the screen)
   const secsRef = useRef<HTMLElement>(null);
   useEffect(() => {
@@ -961,11 +983,7 @@ function Form({ x, d, sec, photos, onBack, onSec, change, onPhoto, onRooms, onPh
         </>}
       </div>
       <footer className="mbFoot">
-        <span className="mbGrid3">
-          <button type="button" className="mbBtn" onClick={onRooms}>Încăperi {roomsDone}/{d.rooms.length}</button>
-          <button type="button" className="mbBtn" onClick={onPhotos}>Foto · {photos}</button>
-          <button type="button" className="mbBtn" onClick={onSign}>Semnătură</button>
-        </span>
+        <Tiles d={d} photos={photos} onRooms={onRooms} onPhotos={onPhotos} onSign={onSign} />
         {sec < last ? <button type="button" className="mbBtn gold big" onClick={() => { onSec(sec + 1); window.scrollTo(0, 0); }}>Secțiunea următoare: {sec + 1 < groups.length ? groups[sec + 1].name : "Constatări"} →</button>
           : <button type="button" className="mbBtn gold big" onClick={onSign}>Încheie inspecția →</button>}
       </footer>
@@ -973,23 +991,78 @@ function Form({ x, d, sec, photos, onBack, onSec, change, onPhoto, onRooms, onPh
   );
 }
 
+/** The three steps every inspection needs before it is sent: the rooms' finishes, the photos, the signature (green when done). */
+function Tiles({ d, photos, onRooms, onPhotos, onSign }: { d: Draft; photos: number; onRooms: () => void; onPhotos: () => void; onSign: () => void }) {
+  const done = d.rooms.filter(roomDone).length, roomsOk = done === d.rooms.length;
+  const ico = (p: React.ReactNode) => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{p}</svg>;
+  const tiles = [
+    { k: "rooms", ok: roomsOk, t: "Finisaje încăperi", s: d.rooms.length ? `${done} din ${d.rooms.length}` : "nu e cazul", go: onRooms,
+      i: ico(<><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M3 12h9V3M12 12v9" /></>) },
+    { k: "photos", ok: photos > 0, t: "Fotografii", s: photos ? `${photos} încărcate` : "niciuna", go: onPhotos,
+      i: ico(<><path d="M4 8h3l2-3h6l2 3h3v11H4z" /><circle cx="12" cy="13" r="3.5" /></>) },
+    { k: "sign", ok: !!d.sig, t: "Semnătură", s: d.sig ? "semnată" : "nesemnată", go: onSign,
+      i: ico(<path d="M3 17c3-1 4-8 6-8s0 7 2 7 3-4 4-4 1 3 3 3h3M3 21h18" />) },
+  ];
+  return (
+    <span className="mbTiles">
+      {tiles.map((x) => (
+        <button key={x.k} type="button" className={`mbTile${x.ok ? " ok" : ""}`} onClick={x.go}>
+          <span className="mbTileIco">{x.ok ? ico(<path d="M5 12.5l4.5 4.5L19 7.5" />) : x.i}</span>
+          <b>{x.t}</b><small>{x.s}</small>
+        </button>
+      ))}
+    </span>
+  );
+}
+
 /* ---------- rooms (from the floor plan) ---------- */
 
-function Rooms({ d, change, onBack, onPhoto }: { d: Draft; change: (f: (d: Draft) => Draft) => void; onBack: () => void; onPhoto: (f: File, room: string) => void }) {
-  const cam = useRef<HTMLInputElement>(null);
+function Rooms({ x, d, change, onBack, onPhoto, onRlv }: {
+  x: Insp; d: Draft; change: (f: (d: Draft) => Draft) => void; onBack: () => void; onPhoto: (f: File, room: string) => void;
+  onRlv: (src: { fileId: string } | { file: File }) => Promise<Room[] | null>;
+}) {
+  const cam = useRef<HTMLInputElement>(null), rlvCam = useRef<HTMLInputElement>(null), rlvFile = useRef<HTMLInputElement>(null);
   const [for_, setFor] = useState("");
+  const [sheet, setSheet] = useState(false);
+  const [reading, setReading] = useState(false);
   const pick = (i: number, k: "floor" | "walls" | "ceiling" | "state", v: string) => change((o) => { o.rooms[i][k] = o.rooms[i][k] === v ? undefined : v; return o; });
+  const rlvs = x.files.filter((f) => f.kind === "releveu");
+  const done = d.rooms.filter(roomDone).length;
+  // the rooms made so far are deleted and the survey's rooms take their place
+  const read = async (src: { fileId: string } | { file: File }) => {
+    setSheet(false);
+    if (d.rooms.length && !confirm("Încăperile de acum se șterg și se creează cele din releveu. Continui?")) return;
+    setReading(true);
+    try {
+      const rooms = await onRlv(src);
+      if (rooms?.length) change((o) => { o.rooms = rooms.map((r) => ({ n: r.n, a: r.a })); return o; });
+    } finally { setReading(false); }
+  };
+  const fileIn = (e: React.ChangeEvent<HTMLInputElement>) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) void read({ file: f }); };
   return (
     <>
-      <header className="mbBar"><Back onClick={onBack} /><span><b>Încăperi · {d.rooms.length}</b><small>Din releveu; adaugi ce lipsește</small></span></header>
+      <header className="mbBar"><Back onClick={onBack} /><span><b>Finisaje încăperi · {done}/{d.rooms.length}</b><small>Toate încăperile, cu toate finisajele</small></span></header>
       <input ref={cam} type="file" accept="image/*" capture="environment" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) onPhoto(f, for_); e.target.value = ""; }} />
+      <input ref={rlvCam} type="file" accept="image/*" capture="environment" hidden onChange={fileIn} />
+      <input ref={rlvFile} type="file" accept="application/pdf,image/*" hidden onChange={fileIn} />
       <div className="mbBody">
+        <button type="button" className="mbBtn dark mbRlvBtn" disabled={reading} onClick={() => setSheet(true)}>
+          {reading ? <><span className="mbSpin small" />Se citește releveul…</> : <>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M3 12h9V3M12 12v9" /></svg>
+            Preia din RLV</>}
+        </button>
+        {reading && <small className="mbCenterSmall">Citirea cu AI durează până la un minut.</small>}
         {d.rooms.map((r, i) => (
-          <section key={i} className="mbCard">
-            <span className="mbRowBetween"><b>{i + 1}. {r.n}</b><span className="mbNum small"><input className="mbIn" inputMode="decimal" aria-label="Suprafața" value={r.a ?? ""} onChange={(e) => change((o) => { const v = parseFloat(e.target.value.replace(",", ".")); o.rooms[i].a = Number.isFinite(v) ? v : null; return o; })} /><em>mp</em></span></span>
+          <section key={i} className={`mbCard${roomDone(r) ? " mbRoomOk" : ""}`}>
+            <span className="mbRowBetween"><b>{roomDone(r) ? "✓ " : ""}{i + 1}. {r.n}</b>
+              <span className="mbRowEnd">
+                <span className="mbNum small"><input className="mbIn" inputMode="decimal" aria-label="Suprafața" value={r.a ?? ""} onChange={(e) => change((o) => { const v = parseFloat(e.target.value.replace(",", ".")); o.rooms[i].a = Number.isFinite(v) ? v : null; return o; })} /><em>mp</em></span>
+                <button type="button" className="mbRoomDel" aria-label={`Șterge ${r.n}`} onClick={() => { if (confirm(`Ștergi încăperea „${r.n}”?`)) change((o) => { o.rooms.splice(i, 1); return o; }); }}>×</button>
+              </span>
+            </span>
             {(["floor", "walls", "ceiling", "state"] as const).map((k) => (
               <Fragment key={k}>
-                <small className="mbCap">{ROOM_FIELDS[k].label.toUpperCase()}</small>
+                <small className={`mbCap${r[k] ? "" : " need"}`}>{ROOM_FIELDS[k].label.toUpperCase()}{r[k] ? "" : " · obligatoriu"}</small>
                 <span className="mbOpts">{ROOM_FIELDS[k].opts.map((o) => <button key={o} type="button" aria-pressed={r[k] === o} onClick={() => pick(i, k, o)}>{o}</button>)}</span>
               </Fragment>
             ))}
@@ -998,6 +1071,20 @@ function Rooms({ d, change, onBack, onPhoto }: { d: Draft; change: (f: (d: Draft
         ))}
         <button type="button" className="mbBtn" onClick={() => { const n = prompt("Numele încăperii"); if (n?.trim()) change((o) => { o.rooms.push({ n: n.trim(), a: null }); return o; }); }}>+ Încăpere</button>
       </div>
+      {sheet && (
+        <div className="mbSheetBg" onClick={() => setSheet(false)}>
+          <div className="mbSheet" onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Preia din RLV">
+            <b>Preia încăperile din releveu</b>
+            <small>Releveul se citește cu AI; încăperile de acum se înlocuiesc cu cele din releveu.</small>
+            {rlvs.map((f) => <button key={f.id} type="button" className="mbBtn gold" onClick={() => void read({ fileId: f.id })}>Citește releveul atașat{f.name ? ` · ${f.name}` : ""}</button>)}
+            <span className="mbGrid2">
+              <button type="button" className={`mbBtn${rlvs.length ? "" : " gold"}`} onClick={() => rlvCam.current?.click()}>Fotografiază releveul</button>
+              <button type="button" className="mbBtn" onClick={() => rlvFile.current?.click()}>Alege fișier</button>
+            </span>
+            <button type="button" className="mbLink" onClick={() => setSheet(false)}>Renunță</button>
+          </div>
+        </div>
+      )}
     </>
   );
 }
@@ -1010,7 +1097,12 @@ function Photos({ x, d, pending, onBack, onPhotos, onDelete, onMove }: {
   x: Insp; d: Draft; pending: QPhoto[]; onBack: () => void; onPhotos: (f: File[], room: string, gallery: boolean) => Promise<void>;
   onDelete: (id: string, local: boolean) => void; onMove: (id: string, local: boolean, room: string) => Promise<void>;
 }) {
-  const cats = useMemo(() => { const c = photoCategories(x.prop_type); return [...c.before, ...d.rooms.map((r, i) => `${r.n} · rlv ${i + 1}`), ...c.after]; }, [d.rooms, x.prop_type]);
+  const cats = useMemo(() => {
+    const c = photoCategories(x.prop_type);
+    // the standard rooms keep their own name (Bucătărie is already a category); the survey's rooms get their number
+    const before = d.rooms.some((r) => r.std) ? c.before.filter((n) => n !== "Baie") : c.before; // "Băi (spații umede)" takes its place
+    return [...new Set([...before, ...d.rooms.map((r, i) => (r.std ? r.n : `${r.n} · rlv ${i + 1}`)), ...c.after])];
+  }, [d.rooms, x.prop_type]);
   const [room, setRoom] = useState(cats[0]);
   const [busy, setBusy] = useState(false);
   const [drag, setDrag] = useState<DragPh | null>(null);
@@ -1158,12 +1250,15 @@ function Photos({ x, d, pending, onBack, onPhotos, onDelete, onMove }: {
 
 /* ---------- signature and sending ---------- */
 
-function Sign({ x, d, photos, change, onBack, onFinish }: { x: Insp; d: Draft; photos: number; change: (f: (d: Draft) => Draft) => void; onBack: () => void; onFinish: (name: string, sig: Blob | null) => Promise<void> }) {
+function Sign({ x, d, photos, change, onBack, onFinish, onRooms, onPhotos }: {
+  x: Insp; d: Draft; photos: number; change: (f: (d: Draft) => Draft) => void; onBack: () => void; onFinish: (name: string, sig: Blob | null) => Promise<void>;
+  onRooms: () => void; onPhotos: () => void;
+}) {
   const cv = useRef<HTMLCanvasElement>(null);
-  const drawing = useRef(false);
-  const [has, setHas] = useState(false);
-  const [who, setWho] = useState<"contact" | "other">(x.contact_name ? "contact" : "other");
-  const [other, setOther] = useState("");
+  const drawing = useRef(false), inked = useRef(!!d.sig);
+  const [has, setHas] = useState(!!d.sig);
+  const [who, setWho] = useState<"contact" | "other">(d.signer?.who ?? (x.contact_name ? "contact" : "other"));
+  const [other, setOther] = useState(d.signer?.other ?? "");
   const [busy, setBusy] = useState(false);
   const all = x.template.groups.flatMap((g) => g.qs).filter((q) => !isOptional(q));
   const req = all.filter((q) => q.req), missing = req.filter((q) => !answered(d.answers[q.id]));
@@ -1171,7 +1266,12 @@ function Sign({ x, d, photos, change, onBack, onFinish }: { x: Insp; d: Draft; p
     const c = cv.current!; const r = c.getBoundingClientRect(), k = window.devicePixelRatio || 1;
     c.width = r.width * k; c.height = r.height * k;
     const g = c.getContext("2d")!; g.scale(k, k); g.lineWidth = 2.6; g.lineCap = "round"; g.lineJoin = "round"; g.strokeStyle = "#141414";
+    // a signature given earlier is drawn back (it is kept while the rest of the sheet is completed)
+    if (d.sig) { const im = new Image(); im.onload = () => g.drawImage(im, 0, 0, r.width, r.height); im.src = d.sig; }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  const keep = (sig: string | null, w = who, o = other) => change((dd) => { dd.sig = sig; dd.signer = { who: w, other: o }; return dd; });
+  const roomsLeft = d.rooms.filter((r) => !roomDone(r)).length;
   const pt = (e: React.PointerEvent) => { const r = cv.current!.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top] as const; };
   const name = who === "contact" ? x.contact_name ?? "" : other.trim();
   return (
@@ -1180,32 +1280,33 @@ function Sign({ x, d, photos, change, onBack, onFinish }: { x: Insp; d: Draft; p
       <div className="mbBody">
         <section className="mbCard mbSum">
           <span><span>Fișa</span><b className={missing.length ? "warn" : "ok"}>{missing.length ? `lipsesc ${missing.length} obligatorii` : `✓ ${all.filter((q) => answered(d.answers[q.id])).length}/${all.length}`}</b></span>
-          <span><span>Încăperi</span><b className={d.rooms.every((r) => r.state) ? "ok" : "warn"}>{d.rooms.filter((r) => r.state).length}/{d.rooms.length}</b></span>
-          <span><span>Fotografii</span><b className={photos ? "ok" : "warn"}>{photos ? `✓ ${photos}` : "niciuna"}</b></span>
+          <button type="button" onClick={onRooms}><span>Finisaje încăperi</span><b className={roomsLeft ? "warn" : "ok"}>{roomsLeft ? `lipsesc la ${roomsLeft} ›` : `✓ ${d.rooms.length}`}</b></button>
+          <button type="button" onClick={onPhotos}><span>Fotografii</span><b className={photos ? "ok" : "warn"}>{photos ? `✓ ${photos} încărcate` : "niciuna ›"}</b></button>
         </section>
         {missing.length > 0 && <p className="mbNote">Lipsesc: {missing.slice(0, 4).map((q) => q.t).join(", ")}{missing.length > 4 ? "…" : ""}. Poți trimite și așa.</p>}
         <small className="mbCap">CINE A FOST PREZENT</small>
         <span className="mbOpts">
-          {x.contact_name && <button type="button" aria-pressed={who === "contact"} onClick={() => setWho("contact")}>{x.contact_name}{x.contact_role ? ` · ${x.contact_role.toLowerCase()}` : ""}</button>}
-          <button type="button" aria-pressed={who === "other"} onClick={() => setWho("other")}>Altcineva</button>
+          {x.contact_name && <button type="button" aria-pressed={who === "contact"} onClick={() => { setWho("contact"); keep(d.sig ?? null, "contact"); }}>{x.contact_name}{x.contact_role ? ` · ${x.contact_role.toLowerCase()}` : ""}</button>}
+          <button type="button" aria-pressed={who === "other"} onClick={() => { setWho("other"); keep(d.sig ?? null, "other"); }}>Altcineva</button>
         </span>
-        {who === "other" && <input className="mbIn" placeholder="Numele persoanei prezente" value={other} onChange={(e) => setOther(e.target.value)} />}
-        <span className="mbRowBetween"><small className="mbCap">SEMNĂTURA PERSOANEI PREZENTE</small><button type="button" className="mbLink" onClick={() => { const c = cv.current!; c.getContext("2d")!.clearRect(0, 0, c.width, c.height); setHas(false); }}>Șterge</button></span>
+        {who === "other" && <input className="mbIn" placeholder="Numele persoanei prezente" value={other} onChange={(e) => { setOther(e.target.value); keep(d.sig ?? null, who, e.target.value); }} />}
+        <span className="mbRowBetween"><small className="mbCap">SEMNĂTURA PERSOANEI PREZENTE</small><button type="button" className="mbLink" onClick={() => { const c = cv.current!; c.getContext("2d")!.clearRect(0, 0, c.width, c.height); setHas(false); inked.current = false; keep(null); }}>Șterge</button></span>
         <canvas ref={cv} className="mbSig" aria-label="Semnează aici cu degetul"
           onPointerDown={(e) => { drawing.current = true; (e.target as HTMLElement).setPointerCapture(e.pointerId); const [a, b] = pt(e); const g = cv.current!.getContext("2d")!; g.beginPath(); g.moveTo(a, b); }}
-          onPointerMove={(e) => { if (!drawing.current) return; const [a, b] = pt(e); const g = cv.current!.getContext("2d")!; g.lineTo(a, b); g.stroke(); setHas(true); }}
-          onPointerUp={() => { drawing.current = false; }} />
+          onPointerMove={(e) => { if (!drawing.current) return; const [a, b] = pt(e); const g = cv.current!.getContext("2d")!; g.lineTo(a, b); g.stroke(); inked.current = true; setHas(true); }}
+          onPointerUp={() => { if (drawing.current && inked.current) keep(cv.current!.toDataURL("image/png")); drawing.current = false; }} />
+        {has && <small className="mbSigOk">✓ Semnătura e salvată pe telefon; poți completa în continuare fișa.</small>}
         <section className="mbDark"><b>După trimitere</b><span>Fișa, fotografiile pe încăperi și semnătura apar în UVALO, pe web, la inspecție: de acolo descarci PDF-ul și trimiți anexa foto în Word.</span></section>
       </div>
       <footer className="mbFoot">
-        <button type="button" className="mbBtn gold big" disabled={busy || !name || !has} onClick={async () => {
+        <button type="button" className="mbBtn gold big" disabled={busy || !name || !has || roomsLeft > 0 || !photos} onClick={async () => {
           setBusy(true);
           const blob = await new Promise<Blob | null>((res) => cv.current!.toBlob(res, "image/png"));
           change((o) => o);
           await onFinish(name, blob);
           setBusy(false);
         }}>Finalizează și trimite</button>
-        <small className="mbCenterSmall">{!name ? "Alege cine a fost prezent." : !has ? "Cere semnătura în chenar." : "Fără semnal? Se trimite singură când revine rețeaua."}</small>
+        <small className="mbCenterSmall">{roomsLeft ? "Completează finisajele tuturor încăperilor." : !photos ? "Adaugă cel puțin o fotografie." : !name ? "Alege cine a fost prezent." : !has ? "Cere semnătura în chenar." : "Fără semnal? Se trimite singură când revine rețeaua."}</small>
       </footer>
     </>
   );

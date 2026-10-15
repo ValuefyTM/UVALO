@@ -300,6 +300,11 @@ export const ROOM_FIELDS = {
   state: { label: "Stare", opts: STARE },
 } as const;
 
+/** Rooms filled in on every inspection of a building when the floor survey gave none (replaced by "Preia din RLV"). */
+export const STANDARD_ROOMS = ["Bucătărie", "Băi (spații umede)", "Dormitoare", "Living", "Alte dependințe"];
+/** A room's finishes are complete when all four are chosen (floor, walls, ceiling, state). */
+export const roomDone = (r: { floor?: string; walls?: string; ceiling?: string; state?: string }) => !!(r.floor && r.walls && r.ceiling && r.state);
+
 /** Photo categories (the VALUEFY list), by the kind of property; the rooms are added between them. */
 export function photoCategories(propType: string | null | undefined) {
   const t = (propType ?? "").toLowerCase();

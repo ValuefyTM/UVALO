@@ -349,7 +349,14 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   locul se iau din EXIF (`readExif` în `store.ts`: DateTimeOriginal + GPS), altfel data fișierului și fără loc; `addPhotos` le pune în coadă și trimite o dată.
   Butoanele cameră / galerie = două iconițe mici lângă titlul categoriei (`.mbPhHead`). Fiecare grup e selectabil (atingere oriunde pe el,
   bulina `.mbPhRadio`) → acolo merg pozele noi; o categorie fără poze se alege din lista de jos, apare ca grup gol selectat și se derulează în vedere.
-  „Am terminat” (`.mbDone`, în bara de sus) închide ecranul pozelor. Mutare între categorii: ține apăsat ~0,35 s pe o poză și
+  „Am terminat” (`.mbDone`, în bara de sus) închide ecranul pozelor.
+- **Cardurile obligatorii din fișă** (`Tiles`, `.mbTile`, verzi cu ✓ când sunt gata): „Finisaje încăperi” (N din M; o încăpere e gata când are
+  pardoseală, pereți, plafon și stare — `roomDone` în `insp-shared.ts`), „Fotografii” (N încărcate), „Semnătură” (semnată). „Finalizează și trimite”
+  cere toate trei. Semnătura se păstrează în ciornă (`draft.sig` dataURL + `draft.signer`) cât se mai completează fișa; „Șterge” o scoate.
+  Fără încăperi din releveu (și nu e teren) → încăperile standard `STANDARD_ROOMS` (Bucătărie, Băi (spații umede), Dormitoare, Living, Alte
+  dependințe; `std: true`, la poze cu numele lor). **„Preia din RLV”** sus pe ecranul încăperilor: releveul atașat sau fotografiat / ales pe telefon
+  → `POST /api/inspectii/rlv` (multipart `id` + `fileId` sau `file`; Claude cu structured output → `{rooms: [{n, a}]}`; fișierul nou se atașează ca
+  `releveu`; limita = `aiLimitError(..., "plan")`, eveniment `inspectii`/`ai_rlv`) → încăperile de acum se șterg și se creează cele din releveu. Mutare între categorii: ține apăsat ~0,35 s pe o poză și
   trage-o peste altă categorie (cât tragi apar toate categoriile) → `movePhoto`: în coadă se schimbă `room`, cele trimise prin
   `PATCH /api/inspectii/file/<id>` `{room}` (`moveFile` în `insp.ts`); categoria în care a căzut devine cea selectată.
   Fișierele alese se citesc imediat în copii proprii (pe iPhone, după ce câmpul se schimbă, ele pot deveni ilizibile), câmpul se golește după.
