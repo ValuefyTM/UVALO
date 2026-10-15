@@ -16,8 +16,10 @@ type Me = { id: string; name: string; email: string; avatar?: boolean; anevar_no
   org?: { id: string; name: string; logo: boolean; role: string | null } | null };
 type Info = { stats: { total: number; month: number; last: string | null; avg_min: number | null; photos: number }; device: { name: string; platform: string; created_at: string; last_seen_at: string } | null };
 type Tpl = { id: string; name: string; prop_type: string | null };
+type Notif = { id: number; insp: string; at: string; text: string; address: string; who: string | null };
+type Reminder = { key: string; insp: string; when: string; address: string; today: boolean };
 type Draft = { answers: Record<string, string | string[]>; rooms: Room[]; findings: { diff: string; defects: string; notes: string }; started_at: string };
-type View = { v: "home" } | { v: "detail"; id: string } | { v: "form"; id: string; sec: number } | { v: "rooms"; id: string } | { v: "photos"; id: string } | { v: "sign"; id: string } | { v: "queue" } | { v: "account" } | { v: "new" };
+type View = { v: "home" } | { v: "detail"; id: string } | { v: "form"; id: string; sec: number } | { v: "rooms"; id: string } | { v: "photos"; id: string } | { v: "sign"; id: string } | { v: "queue" } | { v: "account" } | { v: "new" } | { v: "notifs" };
 
 const FLOORS = ["Parchet", "Gresie", "Laminat", "Mochetă", "Beton"];
 const WALLS = ["Vopsea lavabilă", "Faianță", "Tapet", "Tencuieli simple"];
@@ -57,6 +59,9 @@ export function MobileApp() {
   const [me, setMe] = useState<Me | null>(null);
   const [info, setInfo] = useState<Info | null>(null);
   const [tpls, setTpls] = useState<Tpl[]>([]);
+  const [notifs, setNotifs] = useState<Notif[]>([]);
+  const [seen, setSeen] = useState<{ at: string; keys: string[] }>({ at: "", keys: [] });
+  useEffect(() => { try { const v = JSON.parse(localStorage.getItem("insp-notif-seen") || "null"); if (v?.at != null) setSeen(v); } catch {} }, []);
   const [state, setState] = useState<"boot" | "login" | "noaccess" | "app">("boot");
   const [items, setItems] = useState<InspRow[]>([]);
   const [cur, setCur] = useState<Insp | null>(null);
@@ -89,6 +94,7 @@ export function MobileApp() {
     setItems(j.items as InspRow[]);
     setInfo((j.info as Info) ?? null);
     setTpls((j.templates as Tpl[]) ?? []);
+    setNotifs((j.notifs as Notif[]) ?? []);
     try { localStorage.setItem("insp-items", JSON.stringify(j.items)); } catch {}
     setState("app");
   }, []);
@@ -248,6 +254,16 @@ export function MobileApp() {
 
   const queueN = pending.length + finishQ;
   const nav = view.v === "home" || view.v === "queue" || view.v === "account";
+  // the bell: today's / tomorrow's inspections not started yet, and what others did on my inspections
+  const tday = ymd(new Date()), tmrw = ymd(new Date(Date.now() + 864e5));
+  const reminders: Reminder[] = items.filter((i) => (i.status === "plan" || i.status === "prog") && i.scheduled_at && [tday, tmrw].includes(i.scheduled_at.slice(0, 10)))
+    .sort((a, b) => a.scheduled_at!.localeCompare(b.scheduled_at!))
+    .map((i) => ({ key: `${i.id}@${i.scheduled_at}`, insp: i.id, when: i.scheduled_at!, address: i.address, today: i.scheduled_at!.startsWith(tday) }));
+  const unread = notifs.filter((n) => n.at > seen.at).length + reminders.filter((r) => !seen.keys.includes(r.key)).length;
+  const markSeen = () => {
+    const v = { at: notifs[0]?.at && notifs[0].at > seen.at ? notifs[0].at : seen.at, keys: reminders.map((r) => r.key) };
+    setSeen(v); try { localStorage.setItem("insp-notif-seen", JSON.stringify(v)); } catch {}
+  };
   return (
     <div className={`mb${nav ? " withNav" : ""}`}>
       {(pull > 0 || pulling) && (
@@ -259,7 +275,7 @@ export function MobileApp() {
         </div>
       )}
       {!online && <div className="mbOffline">Fără semnal · lucrezi pe telefon, se trimite când revine rețeaua</div>}
-      {view.v === "home" && <Home me={me} items={items} queueN={queueN} pos={pos} onSchedule={setSched} onNew={() => go({ v: "new" })} onOpen={(id) => open(id, { v: "detail", id })} onStart={(id) => open(id, { v: "form", id, sec: 0 })} onRefresh={load} />}
+      {view.v === "home" && <Home me={me} items={items} queueN={queueN} pos={pos} unread={unread} onBell={() => go({ v: "notifs" })} onMe={() => go({ v: "account" })} onSchedule={setSched} onNew={() => go({ v: "new" })} onOpen={(id) => open(id, { v: "detail", id })} onStart={(id) => open(id, { v: "form", id, sec: 0 })} />}
       {view.v === "detail" && cur && <Detail x={cur} draft={draft} onSchedule={setSched} onBack={() => history.back()} onStart={() => go({ v: "form", id: cur.id, sec: 0 })} />}
       {view.v === "form" && cur && draft && (
         <Form x={cur} d={draft} sec={view.sec} photos={pending.filter((p) => p.insp === cur.id).length + cur.files.filter((f) => f.kind === "photo").length}
@@ -270,6 +286,8 @@ export function MobileApp() {
       {view.v === "photos" && cur && draft && <Photos x={cur} d={draft} pending={pending.filter((p) => p.insp === cur.id && p.kind === "photo")} onBack={() => history.back()} onPhoto={addPhoto} />}
       {view.v === "sign" && cur && draft && <Sign x={cur} d={draft} photos={pending.filter((p) => p.insp === cur.id).length + cur.files.filter((f) => f.kind === "photo").length} change={change} onBack={() => history.back()} onFinish={finish} />}
       {view.v === "queue" && <Queue pending={pending} finishN={finishQ} items={items} online={online} onSend={async () => { const n = await sendAll(); say(n ? "Mai sunt elemente de trimis." : "Totul a fost trimis."); }} />}
+      {view.v === "notifs" && <Notifs notifs={notifs} reminders={reminders} seenAt={seen.at} onBack={() => { markSeen(); history.back(); }}
+        onOpen={(id) => { markSeen(); void open(id, { v: "detail", id }); }} />}
       {view.v === "account" && <Account me={me} info={info} queueN={queueN} online={online} onSend={async () => { const n = await sendAll(); say(n ? "Mai sunt elemente de trimis." : "Totul a fost trimis."); }} say={say} />}
       {view.v === "new" && <NewInsp tpls={tpls} online={online} pos={pos} onBack={() => history.back()} onDone={async (id, now) => {
         await load();
@@ -360,9 +378,9 @@ type HView = "list" | "map" | "cal";
 const isDone = (i: InspRow) => i.status === "gata" || i.status === "pred";
 const canSchedule = (i: { status: string }) => i.status === "prog" || i.status === "plan";
 
-function Home({ me, items, queueN, pos, onNew, onOpen, onStart, onRefresh, onSchedule }: {
-  me: Me | null; items: InspRow[]; queueN: number; pos: React.RefObject<[number, number] | null>; onNew: () => void; onOpen: (id: string) => void;
-  onStart: (id: string) => void; onRefresh: () => void; onSchedule: (x: Sched) => void;
+function Home({ me, items, queueN, pos, unread, onBell, onMe, onNew, onOpen, onStart, onSchedule }: {
+  me: Me | null; items: InspRow[]; queueN: number; unread: number; onBell: () => void; onMe: () => void; pos: React.RefObject<[number, number] | null>; onNew: () => void; onOpen: (id: string) => void;
+  onStart: (id: string) => void; onSchedule: (x: Sched) => void;
 }) {
   const [f, setF] = useState<"week" | "prog" | "done" | "all">("week");
   const [hv, setHv] = useState<HView>("list");
@@ -385,7 +403,13 @@ function Home({ me, items, queueN, pos, onNew, onOpen, onStart, onRefresh, onSch
       <header className="mbHead">
         <div className="mbHeadRow">
           <span><small>{WEEKDAYS[now.getDay()]}, {now.getDate()} {MONTHS[now.getMonth()]}</small><b>Bună{first ? `, ${first}` : ""}!</b></span>
-          <button type="button" className="mbAv" onClick={onRefresh} aria-label="Reîncarcă"><Avatar me={me} /></button>
+          <span className="mbHeadBtns">
+            <button type="button" className="mbBell" onClick={onBell} aria-label={unread ? `Notificări, ${unread} noi` : "Notificări"}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9" /><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0" /></svg>
+              {unread > 0 && <i>{unread > 9 ? "9+" : unread}</i>}
+            </button>
+            <button type="button" className="mbAv" onClick={onMe} aria-label="Contul meu"><Avatar me={me} /></button>
+          </span>
         </div>
         {next ? (
           <div className="mbNext">
@@ -1039,6 +1063,44 @@ function Account({ me, info, queueN, online, onSend, say }: { me: Me | null; inf
         <button type="button" className="mbBtn" disabled={busy} onClick={async () => { if (!confirm("Ieși din cont pe acest telefon? Telefonul rămâne conectat la cont.")) return; await fetch("/api/auth/logout", { method: "POST" }); location.reload(); }}>Ieși din cont</button>
         <button type="button" className="mbBtn danger" disabled={busy} onClick={disconnect}>Deconectează telefonul</button>
         <small className="mbCenterSmall">UVALO Inspecții · versiune de test · <a href="https://app.uvalo.ro/termeni" target="_blank" rel="noopener">Termeni</a> · <a href="https://app.uvalo.ro/confidentialitate" target="_blank" rel="noopener">Confidențialitate</a></small>
+      </div>
+    </>
+  );
+}
+
+/* ---------- notifications (the bell next to the avatar) ---------- */
+
+function ago(iso: string) {
+  const m = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
+  if (m < 1) return "acum";
+  if (m < 60) return `acum ${m} min`;
+  if (m < 24 * 60) return `acum ${Math.round(m / 60)} h`;
+  if (m < 48 * 60) return "ieri";
+  return fmtD(iso);
+}
+
+function Notifs({ notifs, reminders, seenAt, onBack, onOpen }: { notifs: Notif[]; reminders: Reminder[]; seenAt: string; onBack: () => void; onOpen: (id: string) => void }) {
+  return (
+    <>
+      <header className="mbBar"><Back onClick={onBack} /><span><b>Notificări</b><small>Programările apropiate și ce s-a schimbat la inspecțiile tale</small></span></header>
+      <div className="mbBody">
+        {reminders.length > 0 && <>
+          <small className="mbCap">DE FĂCUT</small>
+          {reminders.map((r) => (
+            <button key={r.key} type="button" className="mbNotif rem" onClick={() => onOpen(r.insp)}>
+              <span className="mbNotifIco">⏰</span>
+              <span><b>{r.today ? "Azi" : "Mâine"} la {r.when.slice(11, 16)}</b><small>{r.address}</small></span>
+            </button>
+          ))}
+        </>}
+        <small className="mbCap">ACTIVITATE</small>
+        {notifs.map((n) => (
+          <button key={n.id} type="button" className={`mbNotif${n.at > seenAt ? " new" : ""}`} onClick={() => onOpen(n.insp)}>
+            <span className="mbNotifIco">{/fotografie|document|fișier/i.test(n.text) ? "📎" : /programat/i.test(n.text) ? "📅" : /creat/i.test(n.text) ? "＋" : /finaliz|predat/i.test(n.text) ? "✓" : "•"}</span>
+            <span><b>{n.text.replace(/(\d{4})-(\d{2})-(\d{2})[ T](\d{2}:\d{2})/, "$3.$2.$1, $4")}</b><small>{n.address}</small><em>{[n.who, ago(n.at)].filter(Boolean).join(" · ")}</em></span>
+          </button>
+        ))}
+        {!notifs.length && <p className="mbEmpty">Nicio noutate. Aici apar inspecțiile primite, reprogramările și actele adăugate de colegi pe web.</p>}
       </div>
     </>
   );

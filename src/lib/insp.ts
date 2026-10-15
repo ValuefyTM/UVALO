@@ -74,6 +74,16 @@ export async function phoneInfo(db: D1Database, userId: string, sessionId: strin
   return { stats: { total: st?.total ?? 0, month: st?.month ?? 0, last: st?.last ?? null, avg_min: st?.avg_min ? Math.round(st.avg_min) : null, photos: ph?.n ?? 0 }, device: dev ?? null };
 }
 
+/** Phone app, the bell: what other people did on my inspections (assigned to me or mine) in the last 30 days. */
+export async function phoneNotifs(db: D1Database, userId: string) {
+  const { results } = await db.prepare(`SELECT l.id, l.inspection_id AS insp, l.at, l.text, i.address, COALESCE(NULLIF(u.name, ''), u.email) AS who
+    FROM insp_log l JOIN inspections i ON i.id = l.inspection_id LEFT JOIN users u ON u.id = l.user_id
+    WHERE (i.assignee_id = ?1 OR i.created_by = ?1) AND i.deleted_at IS NULL AND COALESCE(l.user_id, '') <> ?1 AND l.at > ?2
+    ORDER BY l.at DESC LIMIT 40`).bind(userId, new Date(Date.now() - 30 * 864e5).toISOString())
+    .all<{ id: number; insp: string; at: string; text: string; address: string; who: string | null }>();
+  return results;
+}
+
 /** "Deconectează telefonul": the phone leaves the list on the web and its session ends. */
 export async function disconnectPhone(db: D1Database, userId: string, sessionId: string) {
   await db.batch([

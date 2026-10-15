@@ -334,6 +334,9 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
 - **Tragere în jos = reîncărcare** (Acasă, De trimis, Contul meu, detaliul inspecției): evenimente touch pe `window` când pagina e sus
   (nu pe hartă, semnătură, foaia de programare, câmpuri), prag 64 px → `refresh()` = trimite coada, `load()`, reîncarcă inspecția deschisă;
   indicatorul `.mbPull`. `overscroll-behavior-y: none` ca să nu se suprapună cu reîncărcarea browserului.
+- **Notificări** (clopoțelul de lângă avatar, pe Acasă; avatarul → Contul meu): „De făcut” = inspecțiile mele de azi și mâine neîncepute
+  (calculate în aplicație) + „Activitate” = `phoneNotifs` (`insp_log` pe inspecțiile atribuite mie sau ale mele, făcute de alții, 30 de zile,
+  în `/api/m/state` ca `notifs`). Necitite = după `localStorage` `insp-notif-seen` (`{at, keys}`), marcate la ieșirea din ecran.
 - **Programare de pe telefon**: foaia `ScheduleSheet` (Azi / Mâine / Poimâine, zi, oră, durată 30 min–2 h) din calendar și din detaliul
   inspecției (cardul „Programare”, doar la stările prog / plan) → `POST /api/inspectii {action: schedule, scheduled_at, duration_min}`.
 - **Inspecție nouă de pe telefon** (`+ Inspecție nouă` pe Acasă → ecranul `NewInsp`): „Sunt la proprietate” = GPS + adresa din
