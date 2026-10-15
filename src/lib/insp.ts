@@ -87,11 +87,11 @@ export async function phoneInfo(db: D1Database, userId: string, sessionId: strin
 
 /** Phone app, the bell: what other people did on my inspections (assigned to me or mine) in the last 30 days. */
 export async function phoneNotifs(db: D1Database, userId: string) {
-  const { results } = await db.prepare(`SELECT l.id, l.inspection_id AS insp, l.at, l.text, i.address, COALESCE(NULLIF(u.name, ''), u.email) AS who
+  const { results } = await db.prepare(`SELECT l.id, l.inspection_id AS insp, l.at, l.text, i.address, COALESCE(NULLIF(u.name, ''), u.email) AS who, l.user_id AS who_id, u.avatar IS NOT NULL AS who_av
     FROM insp_log l JOIN inspections i ON i.id = l.inspection_id LEFT JOIN users u ON u.id = l.user_id
     WHERE (i.assignee_id = ?1 OR i.created_by = ?1) AND i.deleted_at IS NULL AND COALESCE(l.user_id, '') <> ?1 AND l.at > ?2
     ORDER BY l.at DESC LIMIT 40`).bind(userId, new Date(Date.now() - 30 * 864e5).toISOString())
-    .all<{ id: number; insp: string; at: string; text: string; address: string; who: string | null }>();
+    .all<{ id: number; insp: string; at: string; text: string; address: string; who: string | null; who_id: string | null; who_av: number }>();
   return results;
 }
 
@@ -177,7 +177,7 @@ export async function usableTemplates(db: D1Database, c: Ctx) {
 /* ---------- inspections ---------- */
 
 const ROW_SQL = `SELECT i.id, i.code, i.org_id, i.status, i.address, i.prop_type, i.cad_nr, i.lat, i.lng, i.contact_name, i.scheduled_at, i.duration_min, i.created_by,
-  COALESCE(NULLIF(o.name, ''), o.email) AS owner_name, i.assignee_id, COALESCE(NULLIF(a.name, ''), a.email) AS assignee_name, i.assignee_kind, i.finished_at, i.test, i.redo_note, i.redo_prev_at, i.redo_keep_sig, i.signed_name, i.signed_at,
+  COALESCE(NULLIF(o.name, ''), o.email) AS owner_name, o.avatar IS NOT NULL AS owner_av, i.assignee_id, COALESCE(NULLIF(a.name, ''), a.email) AS assignee_name, a.avatar IS NOT NULL AS assignee_av, i.assignee_kind, i.finished_at, i.test, i.redo_note, i.redo_prev_at, i.redo_keep_sig, i.signed_name, i.signed_at,
   (SELECT COUNT(*) FROM insp_files f WHERE f.inspection_id = i.id AND f.kind = 'photo') AS photos
   FROM inspections i JOIN users o ON o.id = i.created_by LEFT JOIN users a ON a.id = i.assignee_id WHERE i.deleted_at IS NULL`;
 
@@ -279,7 +279,7 @@ async function nextCode(db: D1Database) {
 }
 
 export type TeamGroup = "membru" | "angajat" | "colaborator";
-export type TeamMember = { id: string; name: string; group: TeamGroup; legit: string | null; busy: { id: string; at: string; min: number }[] };
+export type TeamMember = { id: string; name: string; group: TeamGroup; legit: string | null; av: boolean; busy: { id: string; at: string; min: number }[] };
 
 /**
  * Who can do an inspection for the current firm ("Cine o face" → din birou): its members with an ANEVAR card (in an office;
@@ -289,11 +289,11 @@ export type TeamMember = { id: string; name: string; group: TeamGroup; legit: st
 export async function team(db: D1Database, c: Ctx): Promise<TeamMember[]> {
   if (!c.org) return [];
   const office = !!c.org.office_at;
-  const { results } = await db.prepare(`SELECT u.id, COALESCE(NULLIF(u.name, ''), u.email) AS name, u.anevar_no AS legit, 'membru' AS grp FROM memberships m JOIN users u ON u.id = m.user_id
+  const { results } = await db.prepare(`SELECT u.id, COALESCE(NULLIF(u.name, ''), u.email) AS name, u.anevar_no AS legit, u.avatar IS NOT NULL AS av, 'membru' AS grp FROM memberships m JOIN users u ON u.id = m.user_id
       WHERE m.org_id = ?1 AND m.status = 'active' AND u.status NOT IN ('disabled', 'closed') AND u.id <> ?2 ${office ? "AND COALESCE(u.anevar_no, '') <> ''" : ""}
-    UNION ALL SELECT u.id, COALESCE(NULLIF(u.name, ''), u.email), u.anevar_no, l.kind FROM office_links l JOIN users u ON u.id = l.user_id
+    UNION ALL SELECT u.id, COALESCE(NULLIF(u.name, ''), u.email), u.anevar_no, u.avatar IS NOT NULL, l.kind FROM office_links l JOIN users u ON u.id = l.user_id
       WHERE l.org_id = ?1 AND l.status = 'active' AND u.status NOT IN ('disabled', 'closed') AND u.id <> ?2 AND ?3 = 1`)
-    .bind(c.org.id, c.user.id, office ? 1 : 0).all<{ id: string; name: string; legit: string | null; grp: TeamGroup }>();
+    .bind(c.org.id, c.user.id, office ? 1 : 0).all<{ id: string; name: string; legit: string | null; av: number; grp: TeamGroup }>();
   const seen = new Set<string>();
   const people = results.filter((r) => !seen.has(r.id) && seen.add(r.id)).sort((a, b) => a.name.localeCompare(b.name, "ro"));
   if (!people.length) return [];
@@ -301,7 +301,7 @@ export async function team(db: D1Database, c: Ctx): Promise<TeamMember[]> {
   const { results: busy } = await db.prepare(`SELECT id, assignee_id, scheduled_at, duration_min FROM inspections WHERE deleted_at IS NULL AND status IN ('plan', 'lucru')
     AND scheduled_at >= ? AND assignee_id IN (${people.map(() => "?").join(", ")}) ORDER BY scheduled_at LIMIT 3000`)
     .bind(from, ...people.map((p) => p.id)).all<{ id: string; assignee_id: string; scheduled_at: string; duration_min: number | null }>();
-  return people.map((p) => ({ id: p.id, name: p.name, group: p.grp, legit: p.legit,
+  return people.map((p) => ({ id: p.id, name: p.name, group: p.grp, legit: p.legit, av: !!p.av,
     busy: busy.filter((b) => b.assignee_id === p.id).map((b) => ({ id: b.id, at: b.scheduled_at, min: b.duration_min ?? 60 })) }));
 }
 

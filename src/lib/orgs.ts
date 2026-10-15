@@ -5,7 +5,7 @@ import { ORG_SQL, seatsUsed, type Org, type Role } from "./access";
 import { validEmail } from "./crypto";
 
 export type Member = {
-  user_id: string; email: string; name: string; phone: string | null; status: string; role: Role; anevar_no: string | null;
+  user_id: string; email: string; name: string; phone: string | null; status: string; role: Role; anevar_no: string | null; has_avatar?: number;
   last_seen_at: string | null; last_login_at: string | null; activated_at: string | null; events_30: number; searches_30: number; exports_30: number;
 };
 export type Invite = { id: string; email: string; role: string; created_at: string; expires_at: string; invited_by_name: string | null };
@@ -14,7 +14,7 @@ const since = (days: number) => new Date(Date.now() - days * 864e5).toISOString(
 
 export async function members(db: D1Database, orgId: string) {
   const { results } = await db
-    .prepare(`SELECT u.id AS user_id, u.email, u.name, u.phone, u.status, m.role, u.anevar_no, u.last_seen_at, u.last_login_at, u.activated_at,
+    .prepare(`SELECT u.id AS user_id, u.email, u.name, u.phone, u.status, m.role, u.anevar_no, u.avatar IS NOT NULL AS has_avatar, u.last_seen_at, u.last_login_at, u.activated_at,
         (SELECT COUNT(*) FROM events e WHERE e.user_id = u.id AND e.org_id = m.org_id AND e.at > ?2) AS events_30,
         (SELECT COUNT(*) FROM events e WHERE e.user_id = u.id AND e.org_id = m.org_id AND e.at > ?2 AND e.action IN ('search', 'search_multi', 'address', 'gps_start')) AS searches_30,
         (SELECT COUNT(*) FROM events e WHERE e.user_id = u.id AND e.org_id = m.org_id AND e.at > ?2 AND e.action LIKE 'export%') AS exports_30

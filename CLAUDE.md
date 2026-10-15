@@ -254,11 +254,13 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   `officeActive`; altfel vechiul `MembersPanel`), grupat: Cereri de asociere, Administratori, Evaluatori, Operaționali (membri, ocupă locuri),
   Angajați asociați, Colaboratori asociați, Invitații în așteptare; „+ Invită” deschide fereastra cu tipul (Evaluator în birou / Operațional /
   Angajat asociat / Colaborator asociat), apoi formularul potrivit și `MyLinks` în „Contul meu” (invitații primite, active, cereri, încheiate). `merge.ts` acoperă tabelul.
-  Membrii existenți NU se transformă în asociați. Grupurile din panou au culori proprii (`.op-admin/eval/ops/angajat/colaborator/inv/req`),
+  Avatarele (`UserAv` în `src/components/UserAv.tsx`: poza contului sau inițialele) apar lângă oameni în „Firma mea”, „Cine o face”,
+  coloana „Cine o face” din lista de inspecții și notificări. Membrii existenți NU se transformă în asociați. Grupurile din panou au culori proprii (`.op-admin/eval/ops/angajat/colaborator/inv/req`),
   iar cei invitați care n-au intrat apar doar la „Invitații în așteptare”.
 - **Etapa 2 — inspecțiile pe web** (`src/lib/insp.ts`): `isOps(c)` = membru fără legitimație într-un birou (nu e super-admin) → nu face inspecții
   („Eu” ascuns și refuzat la salvare), nu are nevoie de telefon conectat; `firmView(c)` = operaționalii și administratorii biroului văd
-  **toate inspecțiile firmei** (`org_id`): fila „Ale firmei” în `InspList` (implicită pentru operațional), acces la fișă / editare / retrimitere /
+  **toate inspecțiile firmei** (`org_id`): pentru administrator firma e chiar contul lui → „Ale mele” le cuprinde și pe ale firmei;
+  operaționalul are fila „Ale firmei” (fără „Ale mele” / „Făcute pentru colegi”), acces la fișă / editare / retrimitere /
   link public prin `canPrepare()`. „Cine o face” → „Cineva din birou” = `team(c)`: membrii cu legitimație (în birou; în firmele fără birou toți
   colegii, ca înainte) + asociații activi, grupați Evaluatori / Angajați / Colaboratori (`TeamPick` în `InspForm`), cu disponibilitatea
   (`busy` = inspecțiile lor programate și neterminate, din orice firmă, doar ora): liber / N inspecții în ziua aleasă / „ocupat atunci” la

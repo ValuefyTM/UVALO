@@ -35,13 +35,13 @@ export default async function Firm({ searchParams }: { searchParams: Promise<{ n
       <LeaveRequests rows={leaves.map((l) => ({ id: l.id, name: l.name, email: l.email, legit: l.legit, tablou_name: l.tablou_name, created: fmtDate(l.created_at) }))} />
       {people ? (
         <OfficePeople seats={org.seats} used={used} canOwner={c.super || c.role === "owner"}
-          people={m.map((x) => ({ user_id: x.user_id, email: x.email, name: x.name, status: x.status, role: x.role, anevar: !!x.anevar_no, last_seen: x.last_seen_at ? fmtDate(x.last_seen_at, true) : "—", me: x.user_id === c.user.id }))}
+          people={m.map((x) => ({ user_id: x.user_id, email: x.email, name: x.name, status: x.status, role: x.role, anevar: !!x.anevar_no, has_av: !!x.has_avatar, last_seen: x.last_seen_at ? fmtDate(x.last_seen_at, true) : "—", me: x.user_id === c.user.id }))}
           invites={inv.map((i) => ({ id: i.id, email: i.email, role: i.role, created: fmtDate(i.created_at), expires: fmtDate(i.expires_at), by: i.invited_by_name }))}
           links={links.map((l) => ({ id: l.id, kind: l.kind, status: l.status, since: fmtDate(l.status === "active" ? l.decided_at ?? l.created_at : l.created_at),
-            user_id: l.user_id, name: l.name, email: l.email, anevar_no: l.anevar_no, county: l.county }))} />
+            user_id: l.user_id, name: l.name, email: l.email, anevar_no: l.anevar_no, county: l.county, has_av: !!l.has_avatar }))} />
       ) : (
         <MembersPanel
-          members={m.map((x) => ({ user_id: x.user_id, email: x.email, name: x.name, status: x.status, role: x.role, last_seen: x.last_seen_at ? fmtDate(x.last_seen_at, true) : "—", events_30: x.events_30, searches_30: x.searches_30, exports_30: x.exports_30, me: x.user_id === c.user.id }))}
+          members={m.map((x) => ({ user_id: x.user_id, email: x.email, name: x.name, status: x.status, role: x.role, last_seen: x.last_seen_at ? fmtDate(x.last_seen_at, true) : "—", events_30: x.events_30, searches_30: x.searches_30, exports_30: x.exports_30, me: x.user_id === c.user.id, has_av: !!x.has_avatar }))}
           invites={inv.map((i) => ({ id: i.id, email: i.email, role: i.role, created: fmtDate(i.created_at), expires: fmtDate(i.expires_at), by: i.invited_by_name }))}
           seats={org.seats} used={used} canOwner={c.super || c.role === "owner"}
         />

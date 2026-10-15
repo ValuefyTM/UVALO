@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { UserAv } from "./UserAv";
 import { fmtWhen, STATUS, STATUSES, type InspRow, type Status } from "@/lib/insp-shared";
 
 type Row = InspRow & { who: "mine" | "forme" | "forothers" | "firm" };
@@ -35,9 +36,10 @@ function Badge({ s }: { s: Status }) {
 /** Inspecții: the list with the three tabs (mine / done for colleagues / done for me), status filters and the list / map / calendar views. */
 export function InspList({ rows: initial, meId, firm, ops }: { rows: Row[]; meId: string; firm?: string | null; ops?: boolean }) {
   const [rows, setRows] = useState(initial);
-  // "Ale firmei" (firm viewers: administrators and operationals of an office) = every inspection of the firm, mine included
-  const inTab = (r: Row, k: Row["who"]) => (k === "firm" ? !!firm && r.org_id === firm : r.who === k);
-  const tabs = WHO.filter(([k]) => (k === "firm" ? !!firm : !(ops && (k === "forothers" || k === "mine"))));
+  // the office's administrator IS the firm: "Ale mele" also holds the firm's inspections prepared by colleagues. The operationals get
+  // "Ale firmei" (every inspection of the firm) instead of "Ale mele" / "Făcute pentru colegi".
+  const inTab = (r: Row, k: Row["who"]) => (k === "firm" ? !!firm && r.org_id === firm : k === "mine" && firm && !ops ? r.who === "mine" || r.who === "firm" : r.who === k);
+  const tabs = WHO.filter(([k]) => (k === "firm" ? !!firm && !!ops : !(ops && (k === "forothers" || k === "mine"))));
   const [who, setWho] = useState<Row["who"]>(ops ? "firm" : "mine");
   const [st, setSt] = useState<Status | "all">("all");
   const [q, setQ] = useState("");
@@ -103,7 +105,9 @@ export function InspList({ rows: initial, meId, firm, ops }: { rows: Row[]; meId
                   <td><a className="inAddr" href={`/inspectii/${r.id}`}><b>{r.address}</b><small>{[r.prop_type, r.cad_nr && `nr. cad. ${r.cad_nr}`, r.code].filter(Boolean).join(" · ")}</small></a></td>
                   <td>{r.contact_name || "—"}</td>
                   <td className="nowrap">{fmtWhen(r.scheduled_at)}</td>
-                  <td>{who === "forothers" ? r.owner_name : r.assignee_kind === "collab" && !r.assignee_id ? "Coleg din Colaborări (de ales)" : r.assignee_id === meId ? "Eu" : r.assignee_name}</td>
+                  <td>{who === "forothers" ? <span className="inPerson"><UserAv id={r.created_by} name={r.owner_name} has={r.owner_av} size={26} />{r.owner_name}</span>
+                    : r.assignee_kind === "collab" && !r.assignee_id ? "Coleg din Colaborări (de ales)"
+                    : r.assignee_id ? <span className="inPerson"><UserAv id={r.assignee_id} name={r.assignee_name ?? "?"} has={r.assignee_av} size={26} />{r.assignee_id === meId ? "Eu" : r.assignee_name}</span> : "—"}</td>
                   <td><Badge s={r.status} /></td>
                   <td className="right"><a className="rowLink" href={r.status === "gata" || r.status === "pred" ? `/inspectii/${r.id}` : `/inspectii/nou?id=${r.id}`}>
                     {r.status === "gata" || r.status === "pred" ? "Vezi fișa →" : r.status === "prog" ? "Programează" : "Detalii →"}</a></td>

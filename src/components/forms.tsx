@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { UserAv } from "./UserAv";
 
 async function send(url: string, method: string, body?: unknown) {
   const r = await fetch(url, { method, headers: body ? { "Content-Type": "application/json" } : undefined, body: body ? JSON.stringify(body) : undefined }).catch(() => null);
@@ -11,7 +12,7 @@ async function send(url: string, method: string, body?: unknown) {
 const ROLES: [string, string][] = [["member", "Membru"], ["admin", "Administrator"], ["owner", "Titular cont"]];
 
 export type MemberRow = {
-  user_id: string; email: string; name: string; status: string; role: string; last_seen: string; events_30: number; searches_30: number; exports_30: number; me: boolean;
+  user_id: string; email: string; name: string; status: string; role: string; last_seen: string; events_30: number; searches_30: number; exports_30: number; me: boolean; has_av?: boolean;
 };
 export type InviteRow = { id: string; email: string; role: string; created: string; expires: string; by: string | null };
 
@@ -55,7 +56,7 @@ export function MembersPanel({ org, members, invites, seats, used, canOwner, adm
           <tbody>
             {members.map((m) => (
               <tr key={m.user_id}>
-                <td><b className="block">{m.name || m.email}{m.me && <span className="muted"> (tu)</span>}</b><span className="muted">{m.email}</span>{m.status !== "active" && <span className={`pill ${m.status === "disabled" ? "pillErr" : m.status === "closed" ? "pillMuted" : "pillWarn"}`} style={{ marginLeft: 8 }}><i />{m.status === "disabled" ? "Dezactivat" : m.status === "closed" ? "A renunțat" : "Invitat"}</span>}</td>
+                <td><span className="mpWho"><UserAv id={m.user_id} name={m.name || m.email} has={m.has_av} size={32} /><span><b className="block">{m.name || m.email}{m.me && <span className="muted"> (tu)</span>}</b><span className="muted">{m.email}</span>{m.status !== "active" && <span className={`pill ${m.status === "disabled" ? "pillErr" : m.status === "closed" ? "pillMuted" : "pillWarn"}`} style={{ marginLeft: 8 }}><i />{m.status === "disabled" ? "Dezactivat" : m.status === "closed" ? "A renunțat" : "Invitat"}</span>}</span></span></td>
                 <td>
                   {m.me || (m.role === "owner" && !canOwner) ? ROLES.find(([k]) => k === m.role)?.[1] : (
                     <select className="select" style={{ height: 36 }} value={m.role} disabled={busy} aria-label={`Rolul lui ${m.name || m.email}`}

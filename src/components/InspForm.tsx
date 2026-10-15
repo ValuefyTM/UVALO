@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { UserAv } from "./UserAv";
 import { ASSIGN_LABEL, CONTACT_ROLES, PROP_TYPES, qCount, type AssignKind, type Template } from "@/lib/insp-shared";
 
 export type FormTpl = { id: string; name: string; owner: string; version: number; prop: string | null; enforced: boolean; tpl: Template };
@@ -11,7 +12,7 @@ export type FormInit = {
 };
 
 /** Inspecție nouă / editare: the property (with a CF read automatically), the template, contact and schedule, who does it. */
-export type TeamPerson = { id: string; name: string; group: "membru" | "angajat" | "colaborator"; legit: string | null; busy: { id: string; at: string; min: number }[] };
+export type TeamPerson = { id: string; name: string; group: "membru" | "angajat" | "colaborator"; legit: string | null; av?: boolean; busy: { id: string; at: string; min: number }[] };
 const GROUPS: [TeamPerson["group"], string][] = [["membru", "Evaluatori din birou"], ["angajat", "Angajați asociați"], ["colaborator", "Colaboratori asociați"]];
 const hm = (at: string) => at.slice(11, 16);
 const addMin = (at: string, m: number) => { const [h, mi] = hm(at).split(":").map(Number); const t = h * 60 + mi + m; return `${String(Math.floor(t / 60) % 24).padStart(2, "0")}:${String(t % 60).padStart(2, "0")}`; };
@@ -37,7 +38,7 @@ function TeamPick({ team, value, onPick, date, time, dur, selfId }: { team: Team
               const d = day(p), bad = clash(p), nx = next(p);
               return (
                 <button key={p.id} type="button" role="radio" aria-checked={value === p.id} className={`tpRow${value === p.id ? " on" : ""}`} onClick={() => onPick(p.id)}>
-                  <i className="tpRadio" aria-hidden="true" />
+                  <i className="tpRadio" aria-hidden="true" /><UserAv id={p.id} name={p.name} has={p.av} size={32} />
                   <span className="tpName"><b>{p.name}</b><small>{p.legit ? `leg. ANEVAR ${p.legit}` : ""}</small></span>
                   <span className={`tpAvail${bad ? " bad" : date && !d.length ? " free" : ""}`}>
                     {date

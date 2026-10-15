@@ -16,10 +16,10 @@ type LinkRow = { id: string; org_id: string; user_id: string; kind: LinkKind; st
 
 /** An office's links ("Firma mea"): active, invitations sent, requests received. */
 export async function officeLinks(db: D1Database, orgId: string) {
-  const { results } = await db.prepare(`SELECT l.id, l.kind, l.status, l.created_at, l.decided_at, u.id AS user_id, u.name, u.email, u.anevar_no, u.county, u.status AS user_status
+  const { results } = await db.prepare(`SELECT l.id, l.kind, l.status, l.created_at, l.decided_at, u.id AS user_id, u.name, u.email, u.anevar_no, u.county, u.status AS user_status, u.avatar IS NOT NULL AS has_avatar
     FROM office_links l JOIN users u ON u.id = l.user_id WHERE l.org_id = ? AND l.status IN ('invited', 'requested', 'active')
     ORDER BY CASE l.status WHEN 'requested' THEN 0 WHEN 'active' THEN 1 ELSE 2 END, u.name, u.email`).bind(orgId)
-    .all<{ id: string; kind: LinkKind; status: string; created_at: string; decided_at: string | null; user_id: string; name: string | null; email: string; anevar_no: string | null; county: string | null; user_status: string }>();
+    .all<{ id: string; kind: LinkKind; status: string; created_at: string; decided_at: string | null; user_id: string; name: string | null; email: string; anevar_no: string | null; county: string | null; user_status: string; has_avatar: number }>();
   return results;
 }
 

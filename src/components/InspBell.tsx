@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { UserAv } from "./UserAv";
 
-export type WebNotif = { id: number; insp: string; at: string; text: string; address: string; who: string | null };
+export type WebNotif = { id: number; insp: string; at: string; text: string; address: string; who: string | null; who_id?: string | null; who_av?: number };
 
 const KEY = "insp-web-notif-seen";
 const ago = (at: string) => {
@@ -51,7 +52,7 @@ export function InspBell({ items }: { items: WebNotif[] }) {
           <div className="inBellList">
             {items.map((n) => (
               <a key={n.id} role="menuitem" href={`/inspectii/${n.insp}`} className={!seen || n.at > seen ? "new" : undefined}>
-                <i aria-hidden="true" />
+                <i aria-hidden="true" /><UserAv id={n.who_id} name={n.who || "?"} has={n.who_av} size={30} />
                 <span><b>{n.text}</b><small>{n.address}</small><small>{n.who ? `${n.who} · ` : ""}{ago(n.at)}</small></span>
               </a>
             ))}

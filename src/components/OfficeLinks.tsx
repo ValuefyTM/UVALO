@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { UserAv } from "./UserAv";
 
 type Kind = "angajat" | "colaborator";
 const KIND: Record<Kind, string> = { angajat: "Angajat", colaborator: "Colaborator" };
@@ -25,8 +26,8 @@ function KindPick({ value, onChange, name }: { value: Kind; onChange: (k: Kind) 
   );
 }
 
-export type OfficeLinkRow = { id: string; kind: Kind; status: string; since: string; user_id: string; name: string | null; email: string; anevar_no: string | null; county: string | null };
-export type PersonRow = { user_id: string; email: string; name: string; status: string; role: string; anevar: boolean; last_seen: string; me: boolean };
+export type OfficeLinkRow = { id: string; kind: Kind; status: string; since: string; user_id: string; name: string | null; email: string; anevar_no: string | null; county: string | null; has_av?: boolean };
+export type PersonRow = { user_id: string; email: string; name: string; status: string; role: string; anevar: boolean; last_seen: string; me: boolean; has_av?: boolean };
 export type MemberInvite = { id: string; email: string; role: string; created: string; expires: string; by: string | null };
 
 type InvType = "member" | "ops" | "angajat" | "colaborator";
@@ -132,7 +133,7 @@ export function OfficePeople({ people, invites, links, seats, used, canOwner }: 
 
   const member = (m: PersonRow) => (
     <div key={m.user_id} className="opRow">
-      <span className="opWho"><b>{m.name || m.email}{m.me && <span className="muted"> (tu)</span>}</b>
+      <UserAv id={m.user_id} name={m.name || m.email} has={m.has_av} size={34} /><span className="opWho"><b>{m.name || m.email}{m.me && <span className="muted"> (tu)</span>}</b>
         <small>{m.email} · activ {m.last_seen}{m.status !== "active" ? (m.status === "disabled" ? " · dezactivat" : m.status === "closed" ? " · a renunțat" : " · invitat") : ""}</small></span>
       <span className="opAct">
         {m.me || (m.role === "owner" && !canOwner) ? <span className="muted opRole">{ROLE[m.role]}</span> : (
@@ -159,7 +160,7 @@ export function OfficePeople({ people, invites, links, seats, used, canOwner }: 
       k, t: k === "angajat" ? "Angajați asociați" : "Colaboratori asociați", note: k === "angajat" ? "cont propriu · fără loc · inspecțiile în Acasă" : "cont propriu · fără loc · inspecțiile în Colaborări",
       rows: assoc(k).map((r) => (
         <div key={r.id} className="opRow">
-          <span className="opWho"><b>{nm(r)}</b><small>{lsub(r)} · asociat din {r.since}</small></span>
+          <UserAv id={r.user_id} name={nm(r)} has={r.has_av} size={34} /><span className="opWho"><b>{nm(r)}</b><small>{lsub(r)} · asociat din {r.since}</small></span>
           <span className="opAct">
             <button type="button" className="linkBtn" disabled={!!busy} onClick={() => run(r.id, () => act({ action: "kind", id: r.id, kind: k === "angajat" ? "colaborator" : "angajat" }))}>
               Treci la {k === "angajat" ? "colaborator" : "angajat"}</button>
@@ -184,7 +185,7 @@ export function OfficePeople({ people, invites, links, seats, used, canOwner }: 
         <h3><i className="opDot" aria-hidden="true" />Cereri de asociere <span className="pill pillWarn"><i />{req.length}</span></h3>
         {req.map((r) => (
           <div key={r.id} className="opRow">
-            <span className="opWho"><b>{nm(r)} <em className="lkTag">{KIND[r.kind]}</em></b><small>{lsub(r)} · cerută {r.since}</small></span>
+            <UserAv id={r.user_id} name={nm(r)} has={r.has_av} size={34} /><span className="opWho"><b>{nm(r)} <em className="lkTag">{KIND[r.kind]}</em></b><small>{lsub(r)} · cerută {r.since}</small></span>
             <span className="opAct">
               <button type="button" className="linkBtn" disabled={!!busy} onClick={() => run(r.id, () => act({ action: "reject", id: r.id }))}>Respinge</button>
               <button type="button" className="btn btnNavy btnSm" disabled={!!busy} onClick={() => run(r.id, () => act({ action: "approve", id: r.id }))}>{busy === r.id ? "…" : "Aprobă"}</button>
@@ -204,7 +205,7 @@ export function OfficePeople({ people, invites, links, seats, used, canOwner }: 
         <h3><i className="opDot" aria-hidden="true" />Invitații în așteptare <span className="opN">{pending}</span><small>nu au acceptat încă</small></h3>
         {invites.map((i) => (
           <div key={i.id} className="opRow">
-            <span className="opWho"><b>{i.email} <em className="lkTag">{ROLE[i.role] ?? "Membru"}</em></b><small>trimisă {i.created}{i.by ? ` de ${i.by}` : ""} · expiră {i.expires}</small></span>
+            <UserAv name={i.email} size={34} /><span className="opWho"><b>{i.email} <em className="lkTag">{ROLE[i.role] ?? "Membru"}</em></b><small>trimisă {i.created}{i.by ? ` de ${i.by}` : ""} · expiră {i.expires}</small></span>
             <span className="opAct">
               <button type="button" className="linkBtn" disabled={!!busy} onClick={() => run(i.id, () => call("/api/org/members", "POST", { resend: i.id }))}>Retrimite</button>
               <button type="button" className="linkBtn danger" disabled={!!busy} onClick={() => run(i.id, () => call("/api/org/members", "POST", { cancel: i.id }))}>Anulează</button>
@@ -213,7 +214,7 @@ export function OfficePeople({ people, invites, links, seats, used, canOwner }: 
         ))}
         {linv.map((r) => (
           <div key={r.id} className="opRow">
-            <span className="opWho"><b>{nm(r)} <em className="lkTag">{KIND[r.kind]} asociat</em></b><small>{lsub(r)} · trimisă {r.since} · o acceptă din contul lui</small></span>
+            <UserAv id={r.user_id} name={nm(r)} has={r.has_av} size={34} /><span className="opWho"><b>{nm(r)} <em className="lkTag">{KIND[r.kind]} asociat</em></b><small>{lsub(r)} · trimisă {r.since} · o acceptă din contul lui</small></span>
             <span className="opAct"><button type="button" className="linkBtn danger" disabled={!!busy} onClick={() => run(r.id, () => act({ action: "cancel", id: r.id }))}>Anulează</button></span>
           </div>
         ))}

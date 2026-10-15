@@ -2477,3 +2477,11 @@ html:has(.mb) { min-height: calc(100% + env(safe-area-inset-top)); background: #
 .tpGroup h4 i { width: 8px; height: 8px; border-radius: 50%; background: var(--g); }
 .tp-angajat { --g: #2f7d4f; }
 .tp-colaborator { --g: #7a5aa6; }
+/* avatars next to people (Firma mea, Cine o face, liste, notificări) */
+.opRow { display: grid !important; grid-template-columns: 34px minmax(0, 1fr) auto; }
+.mpWho { display: flex; align-items: center; gap: 10px; }
+.mpWho > span { display: flex; flex-direction: column; min-width: 0; }
+.tpRow { grid-template-columns: 18px 32px minmax(0, 1fr) auto; }
+.inPerson { display: inline-flex; align-items: center; gap: 8px; }
+.inBellMenu a > .cbAv { flex: none; }
+@media (max-width: 640px) { .tpRow { grid-template-columns: 18px 32px minmax(0, 1fr); } .tpAvail { grid-column: 3; } .opRow { grid-template-columns: 34px minmax(0, 1fr); } .opAct { grid-column: 2; } }
