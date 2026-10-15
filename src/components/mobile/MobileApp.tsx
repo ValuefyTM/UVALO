@@ -21,7 +21,7 @@ type Notif = { id: number; insp: string; at: string; text: string; address: stri
 type Reminder = { key: string; insp: string; when: string; address: string; today: boolean };
 type Draft = { answers: Record<string, string | string[]>; rooms: Room[]; findings: { diff: string; defects: string; notes: string }; started_at: string;
   sig?: string | null; signer?: { who: "contact" | "other"; other: string } }; // the signature stays on the phone until the inspection is sent
-type View = { v: "home" } | { v: "detail"; id: string } | { v: "form"; id: string; sec: number } | { v: "rooms"; id: string } | { v: "photos"; id: string } | { v: "sign"; id: string } | { v: "queue" } | { v: "account" } | { v: "new" } | { v: "notifs" };
+type View = { v: "home" } | { v: "detail"; id: string } | { v: "form"; id: string; sec: number } | { v: "rooms"; id: string } | { v: "photos"; id: string } | { v: "sign"; id: string } | { v: "queue" } | { v: "collab" } | { v: "account" } | { v: "new" } | { v: "notifs" };
 
 const DAYS = ["DUM", "LUN", "MAR", "MIE", "JOI", "VIN", "SÂM"];
 const MONTHS = ["ianuarie", "februarie", "martie", "aprilie", "mai", "iunie", "iulie", "august", "septembrie", "octombrie", "noiembrie", "decembrie"];
@@ -67,6 +67,7 @@ export function MobileApp() {
   useEffect(() => { try { const v = JSON.parse(localStorage.getItem("insp-notif-seen") || "null"); if (v?.at != null) setSeen(v); } catch {} }, []);
   const [state, setState] = useState<"boot" | "login" | "noaccess" | "app">("boot");
   const [items, setItems] = useState<InspRow[]>([]);
+  const [collab, setCollab] = useState<InspRow[]>([]); // done for others / by others for me
   const [cur, setCur] = useState<Insp | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [view, setViewState] = useState<View>({ v: "home" });
@@ -103,6 +104,7 @@ export function MobileApp() {
     setMe(j.user as Me);
     if (!j.allowed) { setState("noaccess"); return; }
     setItems(j.items as InspRow[]);
+    setCollab((j.collab as InspRow[]) ?? []);
     setInfo((j.info as Info) ?? null);
     setTpls((j.templates as Tpl[]) ?? []);
     setNotifs((j.notifs as Notif[]) ?? []);
@@ -335,7 +337,7 @@ export function MobileApp() {
   );
 
   const queueN = pending.length + finishQ;
-  const nav = view.v === "home" || view.v === "queue" || view.v === "account";
+  const nav = view.v === "home" || view.v === "queue" || view.v === "collab" || view.v === "account";
   // the bell: today's / tomorrow's inspections not started yet, and what others did on my inspections
   const tday = ymd(new Date()), tmrw = ymd(new Date(Date.now() + 864e5));
   const reminders: Reminder[] = items.filter((i) => (i.status === "plan" || i.status === "prog") && i.scheduled_at && [tday, tmrw].includes(i.scheduled_at.slice(0, 10)))
@@ -358,8 +360,8 @@ export function MobileApp() {
       )}
       <div className="mbPage" style={pull || drag ? { transform: `translateY(${pull}px)`, transition: drag ? "none" : undefined } : undefined}>
       {!online && <div className="mbOffline">Fără semnal · lucrezi pe telefon, se trimite când revine rețeaua</div>}
-      {view.v === "home" && <Home me={me} items={items} queueN={queueN} pos={pos} unread={unread} scope={scope} setScope={setScope} st={st} setSt={setSt} onBell={() => go({ v: "notifs" })} onMe={() => go({ v: "account" })} onSchedule={setSched} onNew={() => go({ v: "new" })} onOpen={(id) => open(id, { v: "detail", id })} onStart={(id) => open(id, { v: "form", id, sec: 0 })} />}
-      {view.v === "detail" && cur && <Detail x={cur} draft={draft} onSchedule={setSched} onBack={() => history.back()} onStart={() => go({ v: "form", id: cur.id, sec: 0 })} />}
+      {view.v === "home" && <Home me={me} items={items.filter((i) => !isDone(i))} queueN={queueN} onQueue={() => go({ v: "queue" })} pos={pos} unread={unread} scope={scope} setScope={setScope} st={st} setSt={setSt} onBell={() => go({ v: "notifs" })} onMe={() => go({ v: "account" })} onSchedule={setSched} onNew={() => go({ v: "new" })} onOpen={(id) => open(id, { v: "detail", id })} onStart={(id) => open(id, { v: "form", id, sec: 0 })} />}
+      {view.v === "detail" && cur && <Detail x={cur} draft={draft} mine={!me || cur.assignee_id === me.id} onSchedule={setSched} onBack={() => history.back()} onStart={() => go({ v: "form", id: cur.id, sec: 0 })} />}
       {view.v === "form" && cur && draft && (
         <Form x={cur} d={draft} sec={view.sec} photos={pending.filter((p) => p.insp === cur.id && p.kind === "photo").length + cur.files.filter((f) => f.kind === "photo").length}
           onBack={() => go({ v: "detail", id: cur.id })} onSec={(s) => setViewState({ v: "form", id: cur.id, sec: s })} change={change} onPhoto={addPhoto}
@@ -370,9 +372,10 @@ export function MobileApp() {
       {view.v === "sign" && cur && draft && <Sign x={cur} d={draft} photos={pending.filter((p) => p.insp === cur.id && p.kind === "photo").length + cur.files.filter((f) => f.kind === "photo").length} change={change} onBack={() => history.back()} onFinish={finish}
         onRooms={() => go({ v: "rooms", id: cur.id })} onPhotos={() => go({ v: "photos", id: cur.id })} />}
       {view.v === "queue" && <Queue pending={pending} finishN={finishQ} items={items} online={online} onSend={async () => { const n = await sendAll(); say(n ? "Mai sunt elemente de trimis." : "Totul a fost trimis."); }} />}
+      {view.v === "collab" && <Collab me={me} rows={collab} today={ymd(new Date())} onOpen={(id) => open(id, { v: "detail", id })} />}
       {view.v === "notifs" && <Notifs notifs={notifs} reminders={reminders} seenAt={seen.at} onBack={() => { markSeen(); history.back(); }}
         onOpen={(id) => { markSeen(); void open(id, { v: "detail", id }); }} />}
-      {view.v === "account" && <Account me={me} info={info} queueN={queueN} online={online} onSend={async () => { const n = await sendAll(); say(n ? "Mai sunt elemente de trimis." : "Totul a fost trimis."); }} say={say} />}
+      {view.v === "account" && <Account me={me} info={info} done={items.filter(isDone)} onOpen={(id) => open(id, { v: "detail", id })} queueN={queueN} online={online} onSend={async () => { const n = await sendAll(); say(n ? "Mai sunt elemente de trimis." : "Totul a fost trimis."); }} say={say} />}
       {view.v === "new" && <NewInsp tpls={tpls} online={online} pos={pos} onBack={() => history.back()} onDone={async (id, now) => {
         await load();
         if (now) await open(id, { v: "form", id, sec: 0 }); else { go({ v: "home" }); say("Inspecția a fost adăugată."); }
@@ -381,7 +384,7 @@ export function MobileApp() {
       {nav && (
         <nav className="mbNav" aria-label="Meniu">
           <button type="button" aria-current={view.v === "home" ? "page" : undefined} onClick={() => go({ v: "home" })}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M3 11l9-7 9 7v9H3z" /></svg>Acasă</button>
-          <button type="button" aria-current={view.v === "queue" ? "page" : undefined} onClick={() => go({ v: "queue" })}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 16V4M7 9l5-5 5 5M4 20h16" /></svg>De trimis{queueN > 0 && <i>{queueN}</i>}</button>
+          <button type="button" aria-current={view.v === "collab" ? "page" : undefined} onClick={() => go({ v: "collab" })}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="8" cy="8" r="3.2" /><circle cx="17" cy="9" r="2.6" /><path d="M2.5 20c.8-3.4 3-5.4 5.5-5.4s4.7 2 5.5 5.4M14 15c2.6-.6 5.6.6 7 4.6" /></svg>Colaborări</button>
           <button type="button" aria-current={view.v === "account" ? "page" : undefined} onClick={() => go({ v: "account" })}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="8" r="4" /><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6" /></svg>Contul meu</button>
         </nav>
       )}
@@ -488,8 +491,8 @@ const whenOf = (i: InspRow): string | null => (isDone(i) && i.finished_at ? loca
   : i.redo_note && i.redo_prev_at ? localStamp(i.redo_prev_at) : i.scheduled_at);
 const canSchedule = (i: { status: string }) => i.status === "prog" || i.status === "plan";
 
-function Home({ me, items, queueN, pos, unread, scope, setScope, st, setSt, onBell, onMe, onNew, onOpen, onStart, onSchedule }: {
-  me: Me | null; items: InspRow[]; queueN: number; unread: number; scope: Scope; setScope: (s: Scope) => void; st: StatF; setSt: (s: StatF) => void; onBell: () => void; onMe: () => void; pos: React.RefObject<[number, number] | null>; onNew: () => void; onOpen: (id: string) => void;
+function Home({ me, items, queueN, onQueue, pos, unread, scope, setScope, st, setSt, onBell, onMe, onNew, onOpen, onStart, onSchedule }: {
+  me: Me | null; items: InspRow[]; queueN: number; onQueue: () => void; unread: number; scope: Scope; setScope: (s: Scope) => void; st: StatF; setSt: (s: StatF) => void; onBell: () => void; onMe: () => void; pos: React.RefObject<[number, number] | null>; onNew: () => void; onOpen: (id: string) => void;
   onStart: (id: string) => void; onSchedule: (x: Sched) => void;
 }) {
   const [hv, setHv] = useState<HView>("list");
@@ -517,13 +520,20 @@ function Home({ me, items, queueN, pos, unread, scope, setScope, st, setSt, onBe
   const first = (me?.name ?? "").split(/\s+/)[0];
   const mins = next?.scheduled_at ? Math.round((new Date(next.scheduled_at).getTime() - now.getTime()) / 60000) : null;
   const showScope = (k: Scope) => { setScope(k); if (hv === "cal") pickView("list"); };
-  const FILTERS: [StatF, string, number][] = [["all", "Toate stările", scoped.length], ...MSTAT_ORDER.map((k) => [k, MSTAT[k].label, count(k)] as [StatF, string, number])];
+  const FILTERS: [StatF, string, number][] = [["all", "Toate", scoped.length], ...MSTAT_ORDER.filter((k) => k !== "gata").map((k) => [k, MSTAT[k].label, count(k)] as [StatF, string, number])];
   return (
     <>
       <header className="mbHead">
         <div className="mbHeadRow">
           <span><small>{WEEKDAYS[now.getDay()]}, {now.getDate()} {MONTHS[now.getMonth()]}</small><b>Bună{first ? `, ${first}` : ""}!</b></span>
           <span className="mbHeadBtns">
+            {/* sheets / photos still on the phone: shown only while there is something to send */}
+            {queueN > 0 && (
+              <button type="button" className="mbBell mbQueueBtn" onClick={onQueue} aria-label={`De trimis: ${queueN}`}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 16V4M7 9l5-5 5 5M4 20h16" /></svg>
+                <i>{queueN > 9 ? "9+" : queueN}</i>
+              </button>
+            )}
             <button type="button" className="mbBell" onClick={onBell} aria-label={unread ? `Notificări, ${unread} noi` : "Notificări"}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9" /><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0" /></svg>
               {unread > 0 && <i>{unread > 9 ? "9+" : unread}</i>}
@@ -581,7 +591,7 @@ function Home({ me, items, queueN, pos, unread, scope, setScope, st, setSt, onBe
   );
 }
 
-function ItemRow({ i, today, onOpen, n }: { i: InspRow; today: string; onOpen: (id: string) => void; n?: number }) {
+function ItemRow({ i, today, onOpen, n, sub }: { i: InspRow; today: string; onOpen: (id: string) => void; n?: number; sub?: string }) {
   const w = whenOf(i), d = w ? new Date(w) : null, isToday = w?.startsWith(today);
   return (
     <button type="button" className="mbItem" onClick={() => onOpen(i.id)}>
@@ -590,7 +600,7 @@ function ItemRow({ i, today, onOpen, n }: { i: InspRow; today: string; onOpen: (
       <span className="mbItemTxt">
         <span><em>{(i.prop_type ?? "IMOBIL").toUpperCase()}</em><i style={{ color: MSTAT[mstat(i)].fg }}>● {mstat(i) === "gata" ? (i.status === "pred" ? "Predată" : "Finalizată") : MSTAT[mstat(i)].label}</i></span>
         <b>{i.address}</b>
-        <small>{i.redo_note && mstat(i) === "redo" ? `De completat: ${i.redo_note}` : isDone(i) && w ? `Făcută ${fmtWhen(w)}` : n != null ? fmtWhen(i.scheduled_at) : [i.contact_name, i.cad_nr && `nr. cad. ${i.cad_nr}`].filter(Boolean).join(" · ") || fmtWhen(i.scheduled_at)}</small>
+        <small>{sub ?? (i.redo_note && mstat(i) === "redo" ? `De completat: ${i.redo_note}` : isDone(i) && w ? `Făcută ${fmtWhen(w)}` : n != null ? fmtWhen(i.scheduled_at) : [i.contact_name, i.cad_nr && `nr. cad. ${i.cad_nr}`].filter(Boolean).join(" · ") || fmtWhen(i.scheduled_at))}</small>
       </span>
     </button>
   );
@@ -796,7 +806,7 @@ function MiniMap({ lat, lng, href }: { lat: number; lng: number; href: string })
 const DOC_KIND: Record<string, [string, string]> = { cf: ["CF", "Extras de carte funciară"], releveu: ["RLV", "Releveu"], doc: ["DOC", "Document"] };
 const nfm = (n: number | null | undefined, d = 2) => (n == null ? "" : n.toLocaleString("ro-RO", { maximumFractionDigits: d }));
 
-function Detail({ x, draft, onBack, onStart, onSchedule }: { x: Insp; draft: Draft | null; onBack: () => void; onStart: () => void; onSchedule: (s: Sched) => void }) {
+function Detail({ x, draft, mine, onBack, onStart, onSchedule }: { x: Insp; draft: Draft | null; mine: boolean; onBack: () => void; onStart: () => void; onSchedule: (s: Sched) => void }) {
   const done = x.status === "gata" || x.status === "pred";
   const dest = x.lat != null ? `${x.lat},${x.lng}` : encodeURIComponent(x.address);
   const gmaps = `https://www.google.com/maps/dir/?api=1&destination=${dest}`;
@@ -901,7 +911,7 @@ function Detail({ x, draft, onBack, onStart, onSchedule }: { x: Insp; draft: Dra
 
         <section className="mbCard mbTplCard"><small className="mbCap">FIȘA</small><span><b>{x.template_name ?? "Fișa de inspecție"}</b><small>{x.template.groups.length} secțiuni · {qn} întrebări</small></span></section>
       </div>
-      {!done && (
+      {!done && mine && (
         <footer className="mbFoot">
           <button type="button" className="mbBtn gold big" onClick={onStart}>{x.redo_note ? "Modifică fișa →" : draft?.started_at ? "Continuă fișa →" : "Începe fișa →"}</button>
         </footer>
@@ -1349,6 +1359,29 @@ function Sign({ x, d, photos, change, onBack, onFinish, onRooms, onPhotos }: {
 
 /* ---------- queue and account ---------- */
 
+/** "Colaborări": inspections I do for others (prepared by a colleague) and those colleagues do for me. */
+function Collab({ me, rows, today, onOpen }: { me: Me | null; rows: InspRow[]; today: string; onOpen: (id: string) => void }) {
+  const [tab, setTab] = useState<"for" | "by">("for");
+  const forOthers = rows.filter((i) => i.assignee_id === me?.id), byOthers = rows.filter((i) => i.created_by === me?.id);
+  const list = tab === "for" ? forOthers : byOthers;
+  return (
+    <>
+      <header className="mbHead small"><b>Colaborări</b><small>Inspecții făcute pentru colegi și de colegi pentru tine</small></header>
+      <div className="mbBody">
+        <span className="mbTabs2" role="tablist">
+          <button type="button" role="tab" aria-selected={tab === "for"} onClick={() => setTab("for")}>Fac pentru alții · {forOthers.length}</button>
+          <button type="button" role="tab" aria-selected={tab === "by"} onClick={() => setTab("by")}>Alții pentru mine · {byOthers.length}</button>
+        </span>
+        {list.length ? <span className="mbList flat">{list.map((i) => (
+          <ItemRow key={i.id} i={i} today={today} onOpen={onOpen}
+            sub={tab === "for" ? `Pentru ${i.owner_name}` : `Face: ${i.assignee_name ?? "—"}${isDone(i) && i.finished_at ? ` · făcută ${fmtWhen(whenOf(i))}` : ""}`} />
+        ))}</span>
+          : <div className="mbEmpty">{tab === "for" ? "Nicio inspecție pregătită de un coleg pentru tine." : "Nicio inspecție dată unui coleg."}</div>}
+      </div>
+    </>
+  );
+}
+
 function Queue({ pending, finishN, items, online, onSend }: { pending: QPhoto[]; finishN: number; items: InspRow[]; online: boolean; onSend: () => void }) {
   const by = new Map<string, number>();
   pending.forEach((p) => by.set(p.insp, (by.get(p.insp) ?? 0) + 1));
@@ -1450,7 +1483,7 @@ function NewInsp({ tpls, online, pos, onBack, onDone }: { tpls: Tpl[]; online: b
 
 type Perm = "granted" | "denied" | "prompt" | "unknown";
 
-function Account({ me, info, queueN, online, onSend, say }: { me: Me | null; info: Info | null; queueN: number; online: boolean; onSend: () => Promise<void>; say: (m: string) => void }) {
+function Account({ me, info, done, onOpen, queueN, online, onSend, say }: { me: Me | null; info: Info | null; done: InspRow[]; onOpen: (id: string) => void; queueN: number; online: boolean; onSend: () => Promise<void>; say: (m: string) => void }) {
   const [perm, setPerm] = useState<{ cam: Perm; loc: Perm }>({ cam: "unknown", loc: "unknown" });
   const [used, setUsed] = useState<number | null>(null);
   const [synced, setSynced] = useState<string | null>(null);
@@ -1509,6 +1542,10 @@ function Account({ me, info, queueN, online, onSend, say }: { me: Me | null; inf
           <span><b>{s?.photos ?? 0}</b><small>fotografii</small></span>
         </div>
         {s?.last && <small>Ultima inspecție trimisă: {fmtD(s.last, true)}</small>}
+
+        <small className="mbCap">INSPECȚII FINALIZATE · {done.length}</small>
+        {done.length ? <span className="mbList flat">{[...done].sort((a, b) => (whenOf(b) ?? "").localeCompare(whenOf(a) ?? "")).map((i) => <ItemRow key={i.id} i={i} today={ymd(new Date())} onOpen={onOpen} />)}</span>
+          : <small>Nicio inspecție finalizată în ultimele 90 de zile.</small>}
 
         <small className="mbCap">TELEFONUL ACESTA</small>
         <section className="mbCard">

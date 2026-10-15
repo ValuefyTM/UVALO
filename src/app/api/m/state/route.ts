@@ -1,5 +1,5 @@
 import { api } from "@/lib/api";
-import { myAssigned, phoneInfo, phoneNotifs, usableTemplates } from "@/lib/insp";
+import { myAssigned, phoneCollab, phoneInfo, phoneNotifs, usableTemplates } from "@/lib/insp";
 
 /** Phone app: who is signed in (profile, activity, this phone), the inspections they have to do, the sheets for a new one. */
 export async function GET() {
@@ -8,15 +8,15 @@ export async function GET() {
   const { db, c } = a;
   const allowed = c.modules.includes("inspectii");
   const u = c.user, o = c.org;
-  const [items, info, tpls, notifs] = allowed
-    ? await Promise.all([myAssigned(db, u.id), phoneInfo(db, u.id, c.session.id), usableTemplates(db, c), phoneNotifs(db, u.id)])
-    : [[], null, [], []];
+  const [items, info, tpls, notifs, collab] = allowed
+    ? await Promise.all([myAssigned(db, u.id), phoneInfo(db, u.id, c.session.id), usableTemplates(db, c), phoneNotifs(db, u.id), phoneCollab(db, u.id)])
+    : [[], null, [], [], []];
   return Response.json({
     user: {
       id: u.id, name: u.name || u.email, email: u.email, avatar: !!u.has_avatar, anevar_no: u.anevar_no, county: u.county, phone: u.phone,
       org: o && (o.office_at || c.orgs.length > 1) ? { id: o.id, name: o.name, logo: !!o.has_logo, role: c.role } : null,
     },
-    allowed, items, info, notifs,
+    allowed, items, info, notifs, collab,
     templates: tpls.map((t) => ({ id: t.id, name: t.name, prop_type: t.prop_type })),
   }, { headers: { "Cache-Control": "no-store" } });
 }

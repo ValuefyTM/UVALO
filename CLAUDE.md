@@ -402,6 +402,13 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   **Data inspecției = momentul finalizării** (`whenOf()`): la cele finalizate `finished_at`, la cele întoarse pentru completări `redo_prev_at`,
   altfel programarea; folosită în listă („Făcută …”), în cardurile Azi / Săpt. asta și în calendar. Detaliul arată „Data inspecției” în
   Proprietatea și „Inspecție făcută pe … la …”; încăperile NU mai apar în detaliu (doar în fișă).
+  La o inspecție întoarsă și trimisă din nou, `finished_at` rămâne **data primei finalizări** (`redo_prev_at`).
+- **Navigarea pe telefon**: meniul de jos = Acasă / **Colaborări** / Contul meu. Acasă arată doar inspecțiile nefinalizate (filtrul: „Toate” +
+  Completări / În lucru / De făcut / De programat, fără Finalizate); finalizatele (ultimele 90 de zile, `myAssigned`) sunt în Contul meu,
+  „Inspecții finalizate”. „De trimis” nu mai e în meniu: iconița cu săgeată și numărul apare lângă clopoțel doar când există fișe / poze
+  netrimise (`.mbQueueBtn` → ecranul coadă). Colaborări (`Collab`): „Fac pentru alții” (eu o fac, a pregătit-o altcineva) și „Alții pentru mine”
+  (am pregătit-o eu, o face altcineva) — `phoneCollab()` în `insp.ts`, în `/api/m/state` ca `collab`; detaliul nu are „Începe fișa” când
+  inspecția nu e a mea de făcut.
   Cardurile obligatorii din fișă (`.mbTile`) sunt compacte: iconiță mică în stânga, titlul și starea pe două rânduri.
 - **Notificări push** (Web Push; pe iPhone doar cu aplicația instalată, iOS 16.4+): `src/lib/webpush.ts` = cheile VAPID făcute la prima folosire
   și ținute în `app_settings` „vapid”, criptare aes128gcm (RFC 8291) + semnătură ES256, totul cu WebCrypto (fără bibliotecă). Abonările în

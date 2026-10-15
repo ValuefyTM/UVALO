@@ -60,7 +60,15 @@ export async function registerDevice(db: D1Database, userId: string, sessionId: 
 export async function myAssigned(db: D1Database, userId: string) {
   const { results } = await db.prepare(`${ROW_SQL} AND i.assignee_id = ?1 AND (i.status IN ('prog', 'plan', 'lucru') OR i.finished_at > ?2)
     ORDER BY CASE WHEN i.status IN ('gata', 'pred') THEN 1 ELSE 0 END, COALESCE(i.scheduled_at, '9999'), i.created_at LIMIT 200`)
-    .bind(userId, new Date(Date.now() - 30 * 864e5).toISOString()).all<InspRow>();
+    .bind(userId, new Date(Date.now() - 90 * 864e5).toISOString()).all<InspRow>();
+  return results;
+}
+
+/** Phone app, "Colaborări": inspections this person does for others (prepared by someone else) and those others do for them. */
+export async function phoneCollab(db: D1Database, userId: string) {
+  const { results } = await db.prepare(`${ROW_SQL} AND ((i.assignee_id = ?1 AND i.created_by <> ?1) OR (i.created_by = ?1 AND i.assignee_id IS NOT NULL AND i.assignee_id <> ?1))
+    ORDER BY CASE WHEN i.status IN ('gata', 'pred') THEN 1 ELSE 0 END, COALESCE(i.finished_at, i.scheduled_at, i.created_at) DESC LIMIT 200`)
+    .bind(userId).all<InspRow>();
   return results;
 }
 
@@ -390,7 +398,8 @@ export async function inspAction(db: D1Database, c: Ctx, b: Record<string, unkno
     await db.prepare(`UPDATE inspections SET answers = ?, room_answers = ?, findings = ?, status = ?, started_at = COALESCE(started_at, ?), finished_at = ?,
       signed_name = COALESCE(?, signed_name), signed_at = ?, updated_at = ? WHERE id = ?`)
       .bind(JSON.stringify(answers).slice(0, 200000), JSON.stringify(rooms).slice(0, 100000), JSON.stringify(findings), fin ? "gata" : "lucru", s(b.started_at, 30) || ts,
-        fin ? ts : null, fin ? signer : null, fin ? (keepSig && !b.new_sig ? r.signed_at : ts) : (r.signed_at ?? null), ts, id).run();
+        // the inspection's date stays the first finalization (a sheet sent back and completed keeps it)
+        fin ? (r.redo_prev_at ? String(r.redo_prev_at) : ts) : null, fin ? signer : null, fin ? (keepSig && !b.new_sig ? r.signed_at : ts) : (r.signed_at ?? null), ts, id).run();
     if (r.status !== "lucru" && !fin) await logIt(db, id, c.user.id, `Începută pe teren${b.near ? ` (la ${Math.round(Number(b.near))} m de adresă)` : ""}`);
     if (fin) {
       if (r.redo_note) await db.prepare("UPDATE inspections SET redo_note = NULL, redo_keep_sig = 0 WHERE id = ?").bind(id).run();
