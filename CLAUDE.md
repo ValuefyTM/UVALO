@@ -274,9 +274,7 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   mărimea cardului). Migrația 0030 `orgs.staff_create`: bifa „Angajații pot crea inspecții pentru birou de pe telefon” (grupul Angajați din
   „Firma mea”, acțiunea `staff_create`) → `phoneFirms()` în `/api/m/state` (`firms`) → la „Inspecție nouă” pe telefon „Pentru: Contul meu /
   Firma X” (`for_org` la `/api/m/new`, verificat; `saveInspection(..., { orgId })`). Creditele pe birou vin la pricing.
-- **Tab-ul Colaborări pe telefon** = modulul Colaborări (`/api/colaborari`, aceeași sesiune): „Anunțurile mele” (cereri, noi cu roșu),
-  „În zonele tale” (anunțurile colegilor, cu „Vreau detalii” direct — acțiunea `request` — sau pe web dacă profilul e „doar mă uit”),
-  „Cererile mele” (starea); fără profil → „Activează pe web”. Linkurile spre web folosesc `app_url` din `/api/m/state` (`origin()`).
+- **Tab-ul Colaborări pe telefon** rămâne deocamdată „În curând” (acolo vor veni anunțurile și cererile de la alți evaluatori, din modulul Colaborări).
 - „În curând: Colaborări” (card pe Acasă, meniu) doar pentru evaluatori fără acces cât timp modul ≠ `on`; niciodată pentru nonevaluatori.
 
 ## Colaborări (`/colaborari`, modulul `colaborari`)
@@ -452,7 +450,7 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
 - **Navigarea pe telefon**: meniul de jos = Acasă / **Colaborări** / Contul meu. Acasă arată doar inspecțiile nefinalizate (filtrul: „Toate” +
   Completări / În lucru / De făcut / De programat, fără Finalizate); finalizatele (ultimele 90 de zile, `myAssigned`) sunt în Contul meu,
   „Inspecții finalizate”. „De trimis” nu mai e în meniu: iconița cu săgeată și numărul apare lângă clopoțel doar când există fișe / poze
-  netrimise (`.mbQueueBtn` → ecranul coadă). Tab-ul Colaborări (`Collab`) arată anunțurile din modulul Colaborări (vezi Birou → Etapa 3); `phoneCollab()`
+  netrimise (`.mbQueueBtn` → ecranul coadă). Tab-ul Colaborări (`Collab`) arată deocamdată „În curând”; `phoneCollab()`
   în `insp.ts` („Fac pentru alții” = eu o fac, a pregătit-o altcineva; „Alții pentru mine” = am pregătit-o eu, o face altcineva), în
   `/api/m/state` ca `collab`. Detaliul nu are „Începe fișa” când inspecția nu e a mea de făcut.
   Cardurile obligatorii din fișă (`.mbTile`) sunt compacte: iconiță mică în stânga, titlul și starea pe două rânduri. Și cardul de sus

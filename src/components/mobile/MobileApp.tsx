@@ -68,7 +68,6 @@ export function MobileApp() {
   const [state, setState] = useState<"boot" | "login" | "noaccess" | "app">("boot");
   const [items, setItems] = useState<InspRow[]>([]);
   const [firms, setFirms] = useState<{ id: string; name: string }[]>([]); // offices I may create inspections for (angajat, allowed)
-  const [appUrl, setAppUrl] = useState(""); // the platform (app.uvalo.ro), for what is done on the web
   const [cur, setCur] = useState<Insp | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [view, setViewState] = useState<View>({ v: "home" });
@@ -102,7 +101,6 @@ export function MobileApp() {
     setMe(j.user as Me);
     setItems((j.items as InspRow[]) ?? []);
     setFirms((j.firms as { id: string; name: string }[]) ?? []);
-    setAppUrl(String(j.app_url ?? ""));
     setInfo((j.info as Info) ?? null);
     setTpls((j.templates as Tpl[]) ?? []);
     setNotifs((j.notifs as Notif[]) ?? []);
@@ -395,7 +393,7 @@ export function MobileApp() {
       {view.v === "sign" && cur && draft && <Sign x={cur} d={draft} photos={pending.filter((p) => p.insp === cur.id && p.kind === "photo").length + cur.files.filter((f) => f.kind === "photo").length} change={change} onBack={() => history.back()} onFinish={finish}
         onRooms={() => go({ v: "rooms", id: cur.id })} onPhotos={() => go({ v: "photos", id: cur.id })} />}
       {view.v === "queue" && <Queue pending={pending} finishN={finishQ} items={items} online={online} onSend={async () => { const n = await sendAll(); say(n ? "Mai sunt elemente de trimis." : "Totul a fost trimis."); }} />}
-      {view.v === "collab" && <Collab appUrl={appUrl} online={online} />}
+      {view.v === "collab" && <Collab />}
       {view.v === "notifs" && <Notifs notifs={notifs} reminders={reminders} seenAt={seen.at} onBack={() => { markSeen(); history.back(); }}
         onOpen={(id) => { markSeen(); void open(id, { v: "detail", id }); }} />}
       {view.v === "account" && <Account me={me} info={info} done={items.filter(isDone)} onOpen={(id) => open(id, { v: "detail", id })} queueN={queueN} online={online} onSend={async () => { const n = await sendAll(); say(n ? "Mai sunt elemente de trimis." : "Totul a fost trimis."); }} say={say} />}
@@ -1395,96 +1393,17 @@ function Sign({ x, d, photos, change, onBack, onFinish, onRooms, onPhotos }: {
 
 /* ---------- queue and account ---------- */
 
-/* ---------- Colaborări: posts from other valuers (the Colaborări module), read from /api/colaborari ---------- */
-
-type CPerson = { id: string; name: string; init: string; avatar: boolean; sub?: string };
-type CPost = { id: string; kind: string; title: string; note: string | null; city: string | null; county: string | null; due: string | null; budget: number | null;
-  dist: number | null; status: string; created_at: string; author?: CPerson; own?: boolean; inZone?: boolean; myRequest?: string | null };
-type CState = { profile: { available: number } | null; feed: CPost[]; mine: (CPost & { requests: { status: string }[] })[];
-  myRequests: { id: string; status: string; post: CPost }[]; notifs: { id: number; text: string; read: boolean; created_at: string }[] };
-const REQ: Record<string, string> = { nou: "Cerere trimisă", contactat: "Te-a contactat", ales: "Ai fost ales" };
-const CAv = ({ p }: { p: CPerson }) => (p.avatar
-  // eslint-disable-next-line @next/next/no-img-element
-  ? <img className="cbAv mbCAv" src={`/api/avatar/${p.id}`} alt="" /> : <span className="cbAv mbCAv" aria-hidden="true">{p.init}</span>);
-
-/** "Colaborări": inspection / report requests from other valuers in my zones, the requests on my posts and the ones I sent. */
-function Collab({ appUrl, online }: { appUrl: string; online: boolean }) {
-  const [d, setD] = useState<CState | null>(null);
-  const [err, setErr] = useState("");
-  const [busy, setBusy] = useState("");
-  const load = useCallback(async () => {
-    const r = await fetch("/api/colaborari", { cache: "no-store" }).catch(() => null);
-    if (!r) { setErr("Fără rețea: anunțurile se văd când revine semnalul."); return; }
-    const j = await J(r);
-    if (!r.ok) { setErr(String(j.error || "Colaborările nu sunt disponibile acum.")); return; }
-    setErr(""); setD(j as unknown as CState);
-  }, []);
-  useEffect(() => { void load(); }, [load]);
-  const web = (q = "") => `${appUrl}/colaborari${q}`;
-  async function ask(id: string) {
-    setBusy(id);
-    const r = await fetch("/api/colaborari", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "request", post_id: id }) }).catch(() => null);
-    const j = r ? await J(r) : {};
-    setBusy("");
-    if (!r?.ok) { setErr(String(j.error || "Nu a mers. Încearcă din nou.")); return; }
-    await load();
-  }
-  const feed = d ? d.feed.filter((p) => !p.own && p.inZone) : [];
-  const mineAct = d ? d.mine.filter((p) => p.status === "active" || p.status === "inlucru") : [];
-  const where = (p: CPost) => [p.city, p.county && `jud. ${p.county}`].filter(Boolean).join(", ");
-  const facts = (p: CPost) => [p.due && `termen ${fmtD(p.due)}`, p.budget ? `${p.budget.toLocaleString("ro-RO")} lei` : "onorariu de stabilit", p.dist != null && `${Math.round(p.dist)} km`].filter(Boolean).join(" · ");
+/** "Colaborări": coming soon (announcements and requests from other valuers will come here). */
+function Collab() {
   return (
     <>
-      <header className="mbHead small"><b>Colaborări</b><small>Anunțuri de la colegi evaluatori: inspecții și rapoarte</small></header>
+      <header className="mbHead small"><b>Colaborări</b><small>Inspecții făcute pentru colegi și de colegi pentru tine</small></header>
       <div className="mbBody">
-        {err && <p className="mbNote">{err}</p>}
-        {!d && !err && <p className="mbEmpty">Se încarcă…</p>}
-        {d && !d.profile && (
-          <section className="mbCard mbCollabOn">
-            <b>Activează Colaborările</b>
-            <small>Primești anunțurile colegilor din zonele tale (inspecții, rapoarte) și poți cere detalii. Activarea se face o dată, pe web.</small>
-            <a className="mbBtn gold" href={web()} target="_blank" rel="noopener">Activează pe web ↗</a>
-          </section>
-        )}
-        {mineAct.length > 0 && <>
-          <small className="mbCap">ANUNȚURILE MELE</small>
-          {mineAct.map((p) => {
-            const n = p.requests.filter((r) => r.status === "nou").length;
-            return (
-              <a key={p.id} className="mbCPost" href={web("?view=mine")} target="_blank" rel="noopener">
-                <span className="mbCKind">{p.kind === "inspectie" ? "INSPECȚIE" : "RAPORT + INSPECȚIE"}</span>
-                <b>{p.title}</b><small>{where(p)}</small>
-                <small className={n ? "mbCNew" : ""}>{p.requests.length ? `${p.requests.length} ${p.requests.length === 1 ? "cerere" : "cereri"}${n ? ` · ${n} ${n === 1 ? "nouă" : "noi"}` : ""}` : "nicio cerere încă"}{p.status === "inlucru" ? " · în lucru" : ""}</small>
-              </a>
-            );
-          })}
-        </>}
-        {d && d.profile && <>
-          <small className="mbCap">ÎN ZONELE TALE · {feed.length}</small>
-          {!feed.length && <p className="mbEmpty">Niciun anunț nou în zonele tale. Când un coleg cere ajutor, apare aici.</p>}
-          {feed.map((p) => (
-            <section key={p.id} className="mbCPost">
-              <span className="mbCKind">{p.kind === "inspectie" ? "INSPECȚIE" : "RAPORT + INSPECȚIE"}</span>
-              <b>{p.title}</b>
-              <small>{where(p)}</small>
-              <small>{facts(p)}</small>
-              {p.author && <span className="mbCBy"><CAv p={p.author} /><span>{p.author.name}</span></span>}
-              {p.myRequest ? <span className="mbCState">{REQ[p.myRequest] ?? "Cerere trimisă"}</span>
-                : d.profile?.available ? <button type="button" className="mbBtn gold" disabled={!!busy || !online} onClick={() => ask(p.id)}>{busy === p.id ? "…" : "Vreau detalii"}</button>
-                : <a className="mbBtn" href={web(`?post=${p.id}`)} target="_blank" rel="noopener">Vreau detalii (pe web) ↗</a>}
-            </section>
-          ))}
-        </>}
-        {d && d.myRequests.length > 0 && <>
-          <small className="mbCap">CERERILE MELE</small>
-          {d.myRequests.map((r) => (
-            <a key={r.id} className="mbCPost slim" href={web("?view=chat")} target="_blank" rel="noopener">
-              <b>{r.post.title}</b><small>{where(r.post)}{r.post.author ? ` · ${r.post.author.name}` : ""}</small>
-              <span className="mbCState">{REQ[r.status] ?? r.status}</span>
-            </a>
-          ))}
-        </>}
-        {d && <a className="mbBtn mbCWeb" href={web()} target="_blank" rel="noopener">Toate colaborările, mesajele și anunțurile pe web ↗</a>}
+        <div className="mbSoon">
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="3.2" /><circle cx="17" cy="9" r="2.6" /><path d="M2.5 20c.8-3.4 3-5.4 5.5-5.4s4.7 2 5.5 5.4M14 15c2.6-.6 5.6.6 7 4.6" /></svg>
+          <b>În curând</b>
+          <small>Aici vei vedea inspecțiile pe care le faci pentru colegi și pe cele pe care colegii le fac pentru tine.</small>
+        </div>
       </div>
     </>
   );
