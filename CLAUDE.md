@@ -326,14 +326,15 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
 - Instalare după dispozitiv (`InstallHint.tsx`): iPhone Safari → Partajează → „Adaugă pe ecranul principal” (balon cu săgeată spre bara Safari);
   iPhone în alt browser → „Deschide în Safari” (`x-safari-https://…`, nu merge peste tot) + „Copiază linkul”; Android → `beforeinstallprompt`
   sau meniul ⋮; Android în aplicații (Instagram, WhatsApp…) → `intent://…package=com.android.chrome`; calculator → QR. Ascuns 3 zile la ×.
-- **Acasă pe telefon**: bara compactă = filtrul ca listă derulantă (Săptămâna asta / Neprogramate / Finalizate / Toate, cu număr),
+- **Acasă pe telefon**: sumarul (azi / săptămâna asta / neprogramate cu roșu / finalizate) e în hero, sub salut (`.mbHeroStats`, atingerea
+  alege filtrul listei); bara compactă = filtrul ca listă derulantă (Săptămâna asta / Neprogramate / Finalizate / Toate, cu număr),
   comutatorul Listă / Hartă / Calendar (`localStorage` `insp-view`) și „+”. Harta: Leaflet de pe cdnjs + OSM, pini numerotați pe culoarea stării,
   punctul albastru = telefonul, atingerea unui pin dă cardul inspecției (fără listă sub hartă; `.mbMapBox` cu `isolation: isolate`,
   altfel straturile Leaflet trec peste meniul de jos). Calendarul: săptămâna (‹ ›, Azi), punctele = inspecții pe zi, agenda
   zilei alese și „De programat” cu buton.
 - **Tragere în jos = reîncărcare** (Acasă, De trimis, Contul meu, detaliul inspecției): evenimente touch pe `window` când pagina e sus
   (nu pe hartă, semnătură, foaia de programare, câmpuri), prag 64 px → `refresh()` = trimite coada, `load()`, reîncarcă inspecția deschisă;
-  indicatorul `.mbPull`. `overscroll-behavior-y: none` ca să nu se suprapună cu reîncărcarea browserului.
+  tot ecranul (`.mbPage`) coboară cu degetul, iar în spațiul de sus apare indicatorul `.mbPull`. `overscroll-behavior-y: none` ca să nu se suprapună cu reîncărcarea browserului.
 - **Notificări** (clopoțelul de lângă avatar, pe Acasă; avatarul → Contul meu): „De făcut” = inspecțiile mele de azi și mâine neîncepute
   (calculate în aplicație) + „Activitate” = `phoneNotifs` (`insp_log` pe inspecțiile atribuite mie sau ale mele, făcute de alții, 30 de zile,
   în `/api/m/state` ca `notifs`). Necitite = după `localStorage` `insp-notif-seen` (`{at, keys}`), marcate la ieșirea din ecran.

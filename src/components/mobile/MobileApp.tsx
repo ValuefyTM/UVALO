@@ -143,6 +143,7 @@ export function MobileApp() {
   // pull down at the top of the page = refresh (the list, what waits to be sent, the open inspection)
   const [pull, setPull] = useState(0);
   const [pulling, setPulling] = useState(false);
+  const [drag, setDrag] = useState(false);
   const viewRef = useRef(view);
   viewRef.current = view;
   const refresh = useCallback(async () => {
@@ -168,11 +169,13 @@ export function MobileApp() {
       d = (e.touches[0].clientY - y0) * 0.5;
       if (d <= 0 || window.scrollY > 0) { y0 = null; setPull(0); return; }
       if (e.cancelable) e.preventDefault();
-      setPull(Math.min(110, d));
+      setDrag(true);
+      setPull(Math.min(130, d));
     };
     const end = async () => {
       if (y0 == null) return;
       y0 = null;
+      setDrag(false);
       if (d < PULL) { setPull(0); return; }
       busy = true; setPulling(true); setPull(PULL);
       try { await refreshRef.current(); } finally { busy = false; setPulling(false); setPull(0); }
@@ -267,13 +270,14 @@ export function MobileApp() {
   return (
     <div className={`mb${nav ? " withNav" : ""}`}>
       {(pull > 0 || pulling) && (
-        <div className="mbPull" style={{ transform: `translate(-50%, ${pull}px)`, opacity: Math.min(1, pull / 64) }} aria-live="polite">
+        <div className="mbPull" style={{ height: pull, opacity: Math.min(1, pull / 64) }} aria-live="polite">
           <span className={pulling ? "on" : ""} style={pulling ? undefined : { transform: `rotate(${pull * 4}deg)` }}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v5h-5" /></svg>
           </span>
           <span className="sr-only">{pulling ? "Se reîncarcă" : ""}</span>
         </div>
       )}
+      <div className="mbPage" style={pull || drag ? { transform: `translateY(${pull}px)`, transition: drag ? "none" : undefined } : undefined}>
       {!online && <div className="mbOffline">Fără semnal · lucrezi pe telefon, se trimite când revine rețeaua</div>}
       {view.v === "home" && <Home me={me} items={items} queueN={queueN} pos={pos} unread={unread} onBell={() => go({ v: "notifs" })} onMe={() => go({ v: "account" })} onSchedule={setSched} onNew={() => go({ v: "new" })} onOpen={(id) => open(id, { v: "detail", id })} onStart={(id) => open(id, { v: "form", id, sec: 0 })} />}
       {view.v === "detail" && cur && <Detail x={cur} draft={draft} onSchedule={setSched} onBack={() => history.back()} onStart={() => go({ v: "form", id: cur.id, sec: 0 })} />}
@@ -293,6 +297,7 @@ export function MobileApp() {
         await load();
         if (now) await open(id, { v: "form", id, sec: 0 }); else { go({ v: "home" }); say("Inspecția a fost adăugată."); }
       }} />}
+      </div>
       {nav && (
         <nav className="mbNav" aria-label="Meniu">
           <button type="button" aria-current={view.v === "home" ? "page" : undefined} onClick={() => go({ v: "home" })}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M3 11l9-7 9 7v9H3z" /></svg>Acasă</button>
@@ -397,6 +402,7 @@ function Home({ me, items, queueN, pos, unread, onBell, onMe, onNew, onOpen, onS
   const list = f === "week" ? weekList : f === "prog" ? unsched : f === "done" ? done : items;
   const first = (me?.name ?? "").split(/\s+/)[0];
   const mins = next?.scheduled_at ? Math.round((new Date(next.scheduled_at).getTime() - now.getTime()) / 60000) : null;
+  const showList = (k: typeof f) => { setF(k); pickView("list"); };
   const FILTERS = [["week", "Săptămâna asta", weekList.length], ["prog", "Neprogramate", unsched.length], ["done", "Finalizate", done.length], ["all", "Toate", items.length]] as const;
   return (
     <>
@@ -410,6 +416,12 @@ function Home({ me, items, queueN, pos, unread, onBell, onMe, onNew, onOpen, onS
             </button>
             <button type="button" className="mbAv" onClick={onMe} aria-label="Contul meu"><Avatar me={me} /></button>
           </span>
+        </div>
+        <div className="mbHeroStats">
+          <button type="button" onClick={() => showList("week")}><b>{active.filter((i) => i.scheduled_at?.startsWith(today)).length}</b><small>azi</small></button>
+          <button type="button" onClick={() => showList("week")}><b>{inWeek.length}</b><small>săptămâna asta</small></button>
+          <button type="button" onClick={() => showList("prog")} className={unsched.length ? "red" : ""}><b>{unsched.length}</b><small>neprogramate</small></button>
+          <button type="button" onClick={() => showList("done")} className="green"><b>{done.length}</b><small>finalizate</small></button>
         </div>
         {next ? (
           <div className="mbNext">
@@ -428,12 +440,6 @@ function Home({ me, items, queueN, pos, unread, onBell, onMe, onNew, onOpen, onS
           <button type="button" className="mbBtn gold" onClick={onNew}>+ Inspecție nouă</button></div>}
       </header>
       <InstallHint />
-      <div className="mbStats">
-        <span><b>{active.filter((i) => i.scheduled_at?.startsWith(today)).length}</b><small>azi</small></span>
-        <span><b>{inWeek.length}</b><small>săptămâna asta</small></span>
-        <span><b className={queueN ? "red" : ""}>{queueN}</b><small>de trimis</small></span>
-        <span><b className="green">{done.length}</b><small>finalizate</small></span>
-      </div>
       <div className="mbTools">
         {hv === "cal" ? <b className="mbToolsT">Calendar</b> : (
           <label className="mbSel">
