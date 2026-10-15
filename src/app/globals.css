@@ -1871,6 +1871,10 @@ textarea.mbIn { min-height: 0; resize: vertical; }
 .mbBar.tall { flex-direction: column; align-items: stretch; gap: 10px; }
 .mbBar .mbBarRow { display: flex; flex-direction: row; gap: 12px; align-items: center; }
 .mbBar .mbProg { display: block; }
+.mbPhBar > span { flex: 1; }
+.mbPhBar small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mbDone { flex: none; background: var(--acc); color: #141414; border: 0; border-radius: 999px; padding: 8px 13px; font: inherit; font-size: 13px; font-weight: 700; }
+.mbDone:disabled { opacity: .5; }
 .mbProg { display: block; height: 5px; background: #333; border-radius: 3px; overflow: hidden; }
 .mbProg i { display: block; height: 100%; background: var(--acc); transition: width 0.3s var(--ease); }
 .mbSecs { position: relative; display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; margin: 0 calc(-1 * var(--mb-pad)); padding: 0 var(--mb-pad); }

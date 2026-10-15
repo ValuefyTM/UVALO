@@ -1085,7 +1085,8 @@ function Photos({ x, d, pending, onBack, onPhotos, onDelete, onMove }: {
 
   return (
     <>
-      <header className="mbBar"><Back onClick={onBack} /><span><b>Fotografii · {sent.length + pending.length}</b><small>{drag ? "Lasă fotografia peste categoria dorită" : `Ține apăsat pe o poză ca s-o muți · ${sent.length} trimise, ${pending.length} pe telefon`}</small></span></header>
+      <header className="mbBar mbPhBar"><Back onClick={onBack} /><span><b>Fotografii · {sent.length + pending.length}</b><small>{drag ? "Lasă fotografia peste categoria dorită" : `${sent.length} trimise${pending.length ? ` · ${pending.length} pe telefon` : ""} · ține apăsat o poză ca s-o muți`}</small></span>
+        <button type="button" className="mbDone" disabled={busy} onClick={onBack}>Am terminat</button></header>
       <input ref={cam} type="file" accept="image/*" capture="environment" hidden onChange={(e) => take(e, false)} />
       <input ref={gal} type="file" accept="image/*" multiple hidden onChange={(e) => take(e, true)} />
       <div className={`mbBody${drag ? " mbDragging" : ""}`}>
