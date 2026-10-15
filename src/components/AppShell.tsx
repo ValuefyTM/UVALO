@@ -12,7 +12,7 @@ type Key = "home" | "instrumente" | "colaborari" | "inspectii" | "localizare" | 
 const TOOL_KEYS: Key[] = ["instrumente", "localizare", "amplasament", "comparabile", "word", "chrome"];
 
 /** Sidebar layout (UVALO design): Acasă, Instrumente (all the tools on one page), În curând. */
-export async function AppShell(props: { c: Ctx; active: Key; title: string; subtitle?: string; actions?: React.ReactNode; children: React.ReactNode }) {
+export async function AppShell(props: { c: Ctx; active: Key; title: string; subtitle?: string; actions?: React.ReactNode; dark?: boolean; children: React.ReactNode }) {
   const mnt = props.c.super ? await maintenanceOn() : false;
   const { c } = props;
   // Colaborări: the posts in this person's zones they have not answered yet, next to the menu item
@@ -89,7 +89,7 @@ export async function AppShell(props: { c: Ctx; active: Key; title: string; subt
       </aside>
       <div className="main">
         {mnt && <div className="mntStrip">Mentenanță pornită: utilizatorii văd pagina „Revenim în curând”. Doar administratorii UVALO văd platforma. <a href="/admin">Oprește din Admin → Panou</a></div>}
-        <header className="top">
+        <header className={props.dark ? "top topDark" : "top"}>
           <div>
             <h1>{props.title}</h1>
             {props.subtitle && <p>{props.subtitle}</p>}

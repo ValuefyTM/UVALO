@@ -317,8 +317,9 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
 - Pagini: `/inspectii` (`InspList`: file Ale mele / Făcute pentru colegi / Făcute pentru mine; stările ca tab-uri segmentate `.inTabs` (cu numere)
   și căutarea `.inSearchBox` (adresă, nr. cad., contact, cod; numărul de rezultate) pe același rând, în cardul `.inFilterBar`; vederi Listă / **Listă + hartă** (`.inSplit`:
   carduri în stânga, harta lipicioasă în dreapta; cardul atins aprinde pinul, pinul derulează la card) / Hartă (Leaflet) / Calendar
-  săptămânal cu „De programat” trase pe o oră → `schedule`; în colțul de sus **Setări** (`InspSettings`, meniu: Fișe de inspecție + viitoare
-  setări marcate „În curând”), lângă „Inspecție nouă”), `/inspectii/nou[?id=]` (`InspForm`: CF citit cu `/api/amplasament/plan`, încăperi,
+  săptămânal cu „De programat” trase pe o oră → `schedule`; header închis la culoare (`AppShell dark` → `.top.topDark`, titlu alb, nu gros), în colțul de sus
+  clopoțelul `InspBell` (`phoneNotifs`: ce fac alții pe inspecțiile mele, 30 de zile; necitite după `localStorage` `insp-web-notif-seen`) și **Setări**
+  (`InspSettings`, meniu: Fișe de inspecție + viitoare setări marcate „În curând”); „Inspecție nouă” stă deasupra tabelului, în `.inBar`), `/inspectii/nou[?id=]` (`InspForm`: CF citit cu `/api/amplasament/plan`, încăperi,
   fișa, contact, programare, cine o face: eu / coleg din birou / Colaborări), `/inspectii/<id>` (fișa ca document: cuprins în stânga, conținut;
   „Descarcă PDF” = print; antetul fișei = logo-ul firmei inspecției (`inspections.org_id`, doar dacă are logo) + nr. autorizație; în test „Simulează inspecția” completează fișa ca telefonul), `/inspectii/fise` (`InspTemplates`: editor de grupuri și
   întrebări, răspunsuri precompletate, publicare pe versiuni).

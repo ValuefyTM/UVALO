@@ -2361,3 +2361,33 @@ html:has(.mb) { min-height: calc(100% + env(safe-area-inset-top)); background: #
 .inSplitMap { flex: none; height: calc(100vh - 260px); min-height: 420px; position: sticky; top: 12px; }
 .inPin.on { transform: rotate(-45deg) scale(1.35); box-shadow: 0 0 0 3px #fff, 0 0 0 5px var(--acc); z-index: 1000; position: relative; }
 @media (max-width: 860px) { .inSplit { grid-template-columns: 1fr; } .inSplitMap { position: static; height: 360px; min-height: 0; order: -1; } .inSplitList { max-height: none; } }
+
+/* Inspecții: dark header (title visible, not heavy), the bell, „Inspecție nouă” above the table */
+.top.topDark { background: #141414; border-bottom-color: #141414; padding-top: 12px; padding-bottom: 12px; }
+.topDark h1 { color: #fff; font-size: clamp(20px, 2vw, 24px); font-weight: 500; letter-spacing: -0.01em; }
+.topDark p { color: #a8a8a8; }
+.topDark .btnGhost { background: transparent; color: #f2ece0; border-color: rgba(255,255,255,.22); height: 38px; }
+.topDark .btnGhost:hover { border-color: var(--acc); color: #fff; }
+.topDark .inDev { background: rgba(227,239,211,.12); color: #cfe6b4; height: 30px; }
+.topDark .inDev i { background: #7bc77b; }
+.inBellBtn { position: relative; width: 38px; padding: 0; }
+.inBellDot { position: absolute; top: -5px; right: -5px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: #d64545; color: #fff;
+  font-size: 10.5px; font-weight: 800; line-height: 18px; text-align: center; box-shadow: 0 0 0 2px #141414; }
+.inBellMenu { width: 360px; max-width: calc(100vw - 32px); }
+.inBellList { max-height: 420px; overflow-y: auto; }
+.inBellMenu a { position: relative; }
+.inBellMenu a > i { flex: none; width: 8px; height: 8px; margin-top: 6px; border-radius: 50%; background: transparent; }
+.inBellMenu a.new > i { background: var(--acc); }
+.inBellMenu span > b { font-size: 13px; font-weight: 600; }
+.inBellMenu span > small + small { color: var(--off); font-size: 11px; }
+.inBellEmpty { margin: 4px 10px 10px; font-size: 12.5px; color: var(--muted-2); }
+.inNew { height: 40px; }
+.inNew span { font-size: 18px; font-weight: 500; }
+@media (max-width: 720px) { .inNew { width: 100%; order: 3; } .inSeg { margin-left: 0; } }
+@media (max-width: 720px) {
+  .top.topDark { padding-top: 10px; padding-bottom: 10px; }
+  .topDark p, .topDark .inDev, .topDark .actions > .btnGhost:not(.inSetBtn) { display: none; }
+  .topDark .inSetBtn span { display: none; }
+  .topDark .inSetBtn { width: 38px; padding: 0; }
+  .topDark .actions { flex-wrap: nowrap; }
+}

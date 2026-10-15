@@ -70,6 +70,7 @@ export function InspList({ rows: initial, meId }: { rows: Row[]; meId: string })
             <button key={k} type="button" aria-pressed={view === k} onClick={() => pick(k)} title={l}>{ico}<span>{l}</span></button>
           ))}
         </div>
+        <a className="btn btnGold inNew" href="/inspectii/nou"><span aria-hidden="true">+</span> Inspecție nouă</a>
       </div>
       {/* the status tabs and the search, on one line */}
       <div className="inFilterBar">
