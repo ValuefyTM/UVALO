@@ -10,8 +10,8 @@ async function post(body: Record<string, unknown>) {
 }
 
 /** The inspection document's buttons: PDF (print), link, mark as delivered, and in test mode "simulate the phone". */
-export function InspDocActions({ id, done, delivered, canSimulate, canReopen = false, assignee = null }: {
-  id: string; done: boolean; delivered: boolean; canSimulate: boolean; canReopen?: boolean; assignee?: string | null;
+export function InspDocActions({ id, done, delivered, canSimulate, canReopen = false, assignee = null, children }: {
+  id: string; done: boolean; delivered: boolean; canSimulate: boolean; canReopen?: boolean; assignee?: string | null; children?: React.ReactNode;
 }) {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
@@ -29,6 +29,7 @@ export function InspDocActions({ id, done, delivered, canSimulate, canReopen = f
       {!done && <a className="btn btnGhost btnSm" href={`/inspectii/nou?id=${id}`}>Editează</a>}
       {canSimulate && !done && <button type="button" className="btn btnGold btnSm" disabled={busy} onClick={() => run({ action: "simulate" })}>Simulează inspecția (test)</button>}
       {done && canReopen && <button type="button" className="btn btnGhost btnSm" disabled={busy} onClick={() => setRedo(!redo)}>Retrimite pe telefon</button>}
+      {children}
       {msg && <span className="inDocMsg" role="status">{msg}</span>}
       {redo && (
         <div className="inRedo">

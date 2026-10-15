@@ -362,3 +362,9 @@ export function fmtWhen(s: string | null | undefined) {
   const m = s.match(/^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}))?/);
   return m ? `${m[3]}.${m[2]}.${m[1]}${m[4] ? `, ${m[4]}:${m[5]}` : ""}` : s;
 }
+
+/** The sheet's profile photo: the one chosen, else the first exterior photo, else the first photo. */
+export function coverPhoto<F extends { id: string; kind: string; room: string | null }>(files: F[], coverId: string | null | undefined): F | null {
+  const ph = files.filter((f) => f.kind === "photo");
+  return ph.find((f) => f.id === coverId) ?? ph.find((f) => /^exterior/i.test(f.room ?? "")) ?? ph[0] ?? null;
+}

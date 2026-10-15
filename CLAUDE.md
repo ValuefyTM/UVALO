@@ -312,6 +312,13 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   „Descarcă PDF” = print; antetul fișei = logo-ul firmei inspecției (`inspections.org_id`, doar dacă are logo) + nr. autorizație; în test „Simulează inspecția” completează fișa ca telefonul), `/inspectii/fise` (`InspTemplates`: editor de grupuri și
   întrebări, răspunsuri precompletate, publicare pe versiuni).
 - `merge.ts` (unire/ștergere conturi) acoperă tabelele noi. Evenimente `inspectii` (meta `{test:1}`).
+- **Poza de profil a fișei** (migrația 0027 `inspections.cover_file_id`): `coverPhoto()` în `insp-shared.ts` = cea aleasă, altfel prima de la
+  exterior, altfel prima; sus în rezumatul fișei web (`.inCover`); se alege din Fotografii cu „Alege ca profil” (`InspCoverPick`, acțiunea `cover`).
+- **Link public** (`InspShare` în bara fișei, doar cine a pregătit-o / super-admin; acțiunea `share` `{on}` → `share_token` aleator, `share_at`;
+  `on: false` îl șterge și linkul moare): pagina publică `/fisa/<token>` (`src/app/fisa/[token]/page.tsx`, fără cont, `noindex`, OG cu poza de profil):
+  poza de profil mare, firma (logo), datele bunului, răspunsurile (fără întrebările despre persoane — `PRIVATE_Q`), încăperile cu finisaje,
+  constatările, fotografiile pe categorii. Fără contact, telefon, acte, semnătură, istoric. Pozele și logo-ul prin `/api/fisa/<token>/<fileId|logo>`
+  (doar `kind = photo` ale inspecției). `sharedInspection()` în `insp.ts`. Confidențialitatea (secțiunea 6) pomenește linkul.
 - Fișiere: bucket R2 privat **`uvalo-inspectii`**, binding `FILES` în `wrangler.jsonc` (`getFiles()` în `db.ts`). Încărcare `POST /api/inspectii/files`
   (multipart: id, kind cf|releveu|doc|photo|signature, file; ≤ 15 MB; cheie `insp/<inspecție>/<id>.<ext>`), servire `GET /api/inspectii/file/<id>`
   (doar proprietarul, cel care face inspecția, super-adminii), `DELETE` la fel. Formularul urcă CF-ul citit și releveul după salvare; fișa are

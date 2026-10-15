@@ -2188,3 +2188,57 @@ html:has(.mb) { min-height: calc(100% + env(safe-area-inset-top)); background: #
 .mbRlvBtn { display: flex; align-items: center; justify-content: center; gap: 8px; }
 .mbSpin.small { width: 16px; height: 16px; border-width: 2px; }
 .mbSigOk { font-size: 12px; color: var(--ok-text); font-weight: 700; }
+
+/* inspection sheet: profile photo and public link (web) */
+.inCover { margin: 0 0 6px; display: flex; flex-direction: column; gap: 6px; }
+.inCover img { width: 100%; max-height: 340px; object-fit: cover; border-radius: 14px; display: block; }
+.inCover figcaption { font-size: 12px; color: var(--muted-2); }
+.inCoverPick { background: none; border: 0; padding: 0; font: inherit; font-size: 12px; font-weight: 600; color: var(--muted-2); cursor: pointer; white-space: nowrap; }
+.inCoverPick:hover { color: var(--acc-text); }
+.inCoverPick.on { cursor: default; color: var(--acc-text); font-weight: 800; }
+.inShareUrl .input { width: 100%; font-size: 13px; }
+
+/* the public sheet (/fisa/<token>) */
+.fs { min-height: 100vh; background: #F4EFE6; color: #141414; }
+.fsTop { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px clamp(16px, 4vw, 40px); background: #141414; color: #fff; }
+.fsTop img { height: 26px; display: block; }
+.fsTop span { font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #bdb6a8; }
+.fsHero { position: relative; min-height: clamp(240px, 46vw, 460px); display: flex; align-items: flex-end; background: #141414; overflow: hidden; }
+.fsHero > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.fsHero::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(20,20,20,0) 35%, rgba(20,20,20,.85)); }
+.fsHero.noImg { min-height: 0; }
+.fsHero.noImg::after { display: none; }
+.fsHeroText { position: relative; z-index: 1; width: 100%; max-width: 980px; margin: 0 auto; padding: 28px clamp(16px, 4vw, 40px); color: #fff; display: flex; flex-direction: column; gap: 6px; }
+.fsHeroText h1 { margin: 0; font-size: clamp(22px, 3.6vw, 36px); line-height: 1.15; }
+.fsEyebrow { font-size: 12px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: #E0AD4F; }
+.fsFirm { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.fsFirm img { height: 38px; max-width: 120px; object-fit: contain; background: #fff; border-radius: 8px; padding: 4px; }
+.fsFirm span { display: flex; flex-direction: column; font-size: 13px; }
+.fsFirm small { color: #d6d0c4; }
+.fsMain { max-width: 980px; margin: 0 auto; padding: 20px clamp(16px, 4vw, 40px) 40px; display: flex; flex-direction: column; gap: 16px; }
+.fsKpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-top: -40px; position: relative; z-index: 2; }
+.fsKpis span { background: #fff; border-radius: 14px; padding: 12px 14px; display: flex; flex-direction: column; gap: 2px; box-shadow: 0 10px 30px -18px rgba(20,20,20,.4); }
+.fsKpis small { font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: #8a8273; }
+.fsKpis b { font-size: 17px; }
+.fsCard { background: #fff; border-radius: 18px; padding: clamp(16px, 3vw, 26px); }
+.fsCard h2 { margin: 0 0 12px; font-size: 17px; }
+.fsRows { margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 0 24px; }
+.fsRows > div { display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; border-bottom: 1px solid #eee7da; font-size: 14px; }
+.fsRows dt { color: #6f685b; }
+.fsRows dd { margin: 0; font-weight: 700; text-align: right; }
+.fsRooms { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; }
+.fsRooms > div { border: 1px solid #eee7da; border-radius: 12px; padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; }
+.fsRoomHead { display: flex; justify-content: space-between; gap: 8px; }
+.fsRoomHead em { font-style: normal; color: #8a5b00; font-weight: 700; }
+.fsRooms small { color: #6f685b; font-size: 12.5px; line-height: 1.45; }
+.fsTot { margin: 12px 0 0; font-size: 14px; }
+.fsPhGroup + .fsPhGroup { margin-top: 18px; }
+.fsPhGroup h3 { margin: 0 0 8px; font-size: 14px; }
+.fsPhGroup h3 small { color: #8a8273; font-weight: 600; }
+.fsPhotos { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; }
+.fsPhotos a { position: relative; display: block; aspect-ratio: 4 / 3; border-radius: 10px; overflow: hidden; background: #eee7da; }
+.fsPhotos img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.fsPhotos span { position: absolute; left: 6px; bottom: 6px; font-size: 11px; color: #fff; background: rgba(20,20,20,.6); border-radius: 6px; padding: 2px 6px; }
+.fsFoot { text-align: center; font-size: 12.5px; color: #6f685b; padding: 10px 16px 30px; }
+.fsFoot a { color: #8a5b00; font-weight: 700; }
+@media (max-width: 560px) { .fsPhotos { grid-template-columns: repeat(2, 1fr); } .fsKpis { grid-template-columns: repeat(2, 1fr); } }

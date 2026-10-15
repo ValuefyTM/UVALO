@@ -187,14 +187,29 @@ export type Insp = InspRow & {
   answers: Record<string, string | string[]>; room_answers: { n: string; a: number | null; floor?: string; walls?: string; state?: string }[];
   findings: { diff?: string; defects?: string; notes?: string }; started_at: string | null; signed_name: string | null; signed_at: string | null; notes: string | null;
   created_at: string; org_id: string | null; files: { id: string; kind: string; name: string | null; room: string | null; taken_at: string | null }[];
-  log: { at: string; text: string; name: string | null }[];
+  log: { at: string; text: string; name: string | null }[]; cover_file_id: string | null; share_token: string | null; share_at: string | null;
 };
 
 export async function getInspection(db: D1Database, c: Ctx, id: string): Promise<Insp | null> {
-  const r = await db.prepare(`SELECT i.*, COALESCE(NULLIF(o.name, ''), o.email) AS owner_name, COALESCE(NULLIF(a.name, ''), a.email) AS assignee_name,
-    (SELECT COUNT(*) FROM insp_files f WHERE f.inspection_id = i.id AND f.kind = 'photo') AS photos
-    FROM inspections i JOIN users o ON o.id = i.created_by LEFT JOIN users a ON a.id = i.assignee_id WHERE i.id = ? AND i.deleted_at IS NULL`).bind(id).first<Record<string, unknown>>();
+  const r = await inspRow(db, "i.id = ?", id);
   if (!r || !(c.super || r.created_by === c.user.id || r.assignee_id === c.user.id)) return null;
+  return fullInsp(db, r, id);
+}
+
+/** The inspection behind a public share link (/fisa/<token>), without any account. */
+export async function sharedInspection(db: D1Database, token: string): Promise<Insp | null> {
+  if (!/^[A-Za-z0-9_-]{16,64}$/.test(token)) return null;
+  const r = await inspRow(db, "i.share_token = ?", token);
+  return r ? fullInsp(db, r, r.id as string) : null;
+}
+
+function inspRow(db: D1Database, where: string, v: string) {
+  return db.prepare(`SELECT i.*, COALESCE(NULLIF(o.name, ''), o.email) AS owner_name, COALESCE(NULLIF(a.name, ''), a.email) AS assignee_name,
+    (SELECT COUNT(*) FROM insp_files f WHERE f.inspection_id = i.id AND f.kind = 'photo') AS photos
+    FROM inspections i JOIN users o ON o.id = i.created_by LEFT JOIN users a ON a.id = i.assignee_id WHERE ${where} AND i.deleted_at IS NULL`).bind(v).first<Record<string, unknown>>();
+}
+
+async function fullInsp(db: D1Database, r: Record<string, unknown>, id: string): Promise<Insp> {
   const files = (await db.prepare("SELECT id, kind, name, room, taken_at FROM insp_files WHERE inspection_id = ? ORDER BY taken_at, created_at").bind(id).all<Insp["files"][number]>()).results;
   const log = (await db.prepare(`SELECT l.at, l.text, COALESCE(NULLIF(u.name, ''), u.email) AS name FROM insp_log l LEFT JOIN users u ON u.id = l.user_id WHERE l.inspection_id = ? ORDER BY l.at`)
     .bind(id).all<Insp["log"][number]>()).results;
@@ -207,7 +222,7 @@ export async function getInspection(db: D1Database, c: Ctx, id: string): Promise
 
 async function logIt(db: D1Database, id: string, userId: string | null, text: string) {
   await db.prepare("INSERT INTO insp_log (inspection_id, user_id, text) VALUES (?, ?, ?)").bind(id, userId, text.slice(0, 300)).run();
-  if (/^(Fotografie adăugat|Fișier șters)|simulare/i.test(text)) return; // not worth a phone notification
+  if (/^(Fotografie adăugat|Fișier șters|Link public)|simulare/i.test(text)) return; // not worth a phone notification
   // done on the web (not in the phone app): the person's own phone is told too (e.g. sent back to complete, rescheduled)
   let fromWeb = false;
   try {
@@ -299,7 +314,7 @@ export async function saveInspection(db: D1Database, c: Ctx, b: Record<string, u
   return { ok: true, id: nid };
 }
 
-export async function inspAction(db: D1Database, c: Ctx, b: Record<string, unknown>): Promise<{ ok: true; id?: string } | { error: string }> {
+export async function inspAction(db: D1Database, c: Ctx, b: Record<string, unknown>): Promise<{ ok: true; id?: string; token?: string } | { error: string }> {
   const action = s(b.action, 30), id = s(b.id, 64);
   const r = await db.prepare("SELECT * FROM inspections WHERE id = ? AND deleted_at IS NULL").bind(id).first<Record<string, unknown>>();
   if (!r || !(c.super || r.created_by === c.user.id || (action !== "delete" && r.assignee_id === c.user.id))) return { error: "Inspecția nu există." };
@@ -328,6 +343,27 @@ export async function inspAction(db: D1Database, c: Ctx, b: Record<string, unkno
       .bind(note, now(), now(), id).run();
     await logIt(db, id, c.user.id, `Retrimisă pe telefon pentru completare: ${note}`);
     return { ok: true, id };
+  }
+  if (action === "cover") {
+    // the sheet's profile photo: one of the inspection's photos (empty = the first exterior one is used)
+    const fid = s(b.file_id, 64);
+    if (fid && !(await db.prepare("SELECT 1 FROM insp_files WHERE id = ? AND inspection_id = ? AND kind = 'photo'").bind(fid, id).first())) return { error: "Fotografia nu există." };
+    await db.prepare("UPDATE inspections SET cover_file_id = ?, updated_at = ? WHERE id = ?").bind(fid || null, now(), id).run();
+    return { ok: true, id };
+  }
+  if (action === "share") {
+    // public link to the sheet as a web page (no account): on = a random token (kept when already shared), off = the link stops working
+    if (!(c.super || r.created_by === c.user.id)) return { error: "Doar cine a pregătit inspecția o poate distribui." };
+    if (b.on === false) {
+      await db.prepare("UPDATE inspections SET share_token = NULL, share_at = NULL WHERE id = ?").bind(id).run();
+      await logIt(db, id, c.user.id, "Linkul public a fost oprit");
+      return { ok: true, id };
+    }
+    if (r.share_token) return { ok: true, id, token: r.share_token as string };
+    const token = btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(18)))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+    await db.prepare("UPDATE inspections SET share_token = ?, share_at = ? WHERE id = ?").bind(token, now(), id).run();
+    await logIt(db, id, c.user.id, "Link public creat");
+    return { ok: true, id, token };
   }
   if (action === "status") {
     const st = s(b.status, 10) as Status;

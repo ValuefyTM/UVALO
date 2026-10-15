@@ -2,10 +2,11 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { page, fmtDate } from "@/lib/guard";
 import { getInspection } from "@/lib/insp";
-import { compSummary, fmtWhen, STATUS } from "@/lib/insp-shared";
+import { compSummary, coverPhoto, fmtWhen, STATUS } from "@/lib/insp-shared";
 import { AppShell } from "@/components/AppShell";
 import { InspDocActions } from "@/components/InspDocActions";
 import { InspFileDelete, InspFileUpload } from "@/components/InspFileUpload";
+import { InspCoverPick, InspShare } from "@/components/InspShare";
 
 export const metadata: Metadata = { title: "Fișa de inspecție | UVALO" };
 export const dynamic = "force-dynamic";
@@ -29,6 +30,7 @@ export default async function InspDoc({ params }: { params: Promise<{ id: string
   const firm = orgId ? await db.prepare("SELECT id, name, corp_no, logo IS NOT NULL AS has_logo FROM orgs WHERE id = ?").bind(orgId)
     .first<{ id: string; name: string; corp_no: string | null; has_logo: number }>() : null;
   const photos = x.files.filter((f) => f.kind === "photo"), docs = x.files.filter((f) => f.kind !== "photo" && f.kind !== "signature");
+  const cover = coverPhoto(x.files, x.cover_file_id);
   const rooms = x.room_answers.length ? x.room_answers : x.rooms;
   const util = rooms.reduce((s, r) => s + (r.a ?? 0), 0);
   const groups = x.template.groups;
@@ -52,7 +54,9 @@ export default async function InspDoc({ params }: { params: Promise<{ id: string
         <span className="inBadge" style={{ color: STATUS[x.status].fg, background: STATUS[x.status].bg }}>{STATUS[x.status].label}</span>
         {x.test ? <span className="inBadge inBadgeTest">DATE DE TEST</span> : null}
         <InspDocActions id={x.id} done={done} delivered={x.status === "pred"} canSimulate={c.super}
-          canReopen={c.super || x.created_by === c.user.id} assignee={x.assignee_name} />
+          canReopen={c.super || x.created_by === c.user.id} assignee={x.assignee_name}>
+          {(c.super || x.created_by === c.user.id) && <InspShare id={x.id} token={x.share_token} />}
+        </InspDocActions>
       </div>
       {redoNote && x.status === "lucru" && <div className="note inRedoNote"><b>Retrimisă pe telefon pentru completare.</b> {redoNote}</div>}
       {!done && x.status !== "lucru" && <div className="note">Inspecția nu a fost făcută încă{x.scheduled_at ? `: e programată pentru ${fmtWhen(x.scheduled_at)}` : ""}. Fișa se completează pe telefon; aici vezi ce s-a pregătit.</div>}
@@ -75,6 +79,13 @@ export default async function InspDoc({ params }: { params: Promise<{ id: string
             </header>
           ) : null}
           <section id="rezumat" className="inSec">
+            {cover && (
+              <figure className="inCover">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={`/api/inspectii/file/${cover.id}`} alt={cover.room ?? "Poza de profil"} />
+                <figcaption className="inNoPrint">Poza de profil{x.cover_file_id ? "" : " (prima de la exterior)"} · o schimbi din Fotografii</figcaption>
+              </figure>
+            )}
             <span className="eyebrow">Fișă de inspecție · {x.code}</span>
             <h1 className="inH1">{x.prop_type ?? "Imobil"}</h1>
             <p className="inLead">{[x.address, x.cad_nr && `nr. cad. ${x.cad_nr}`, x.cf_nr && `CF ${x.cf_nr}`].filter(Boolean).join(" · ")}</p>
@@ -133,7 +144,7 @@ export default async function InspDoc({ params }: { params: Promise<{ id: string
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={`/api/inspectii/file/${p.id}`} alt={p.room ?? p.name ?? "Fotografie"} loading="lazy" /><span className="inPhN">{i + 1}</span>
                 </a>
-                <figcaption><b>{p.room ?? p.name}</b><span>{p.taken_at ? fmtDate(p.taken_at, true) : ""}</span><InspFileDelete id={p.id} /></figcaption>
+                <figcaption><b>{p.room ?? p.name}</b><span>{p.taken_at ? fmtDate(p.taken_at, true) : ""}</span><InspCoverPick id={x.id} fileId={p.id} on={cover?.id === p.id} /><InspFileDelete id={p.id} /></figcaption>
               </figure>
             ))}</div>
               : <p className="hint">Fotografiile vin din aplicația de telefon, cu ora și locul fiecăreia, grupate pe încăperi.</p>}
