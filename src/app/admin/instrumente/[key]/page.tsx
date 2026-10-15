@@ -8,6 +8,7 @@ import { roDate } from "@/lib/plan-format";
 import { AdminShell } from "@/components/AdminShell";
 import { AiLimits, CollabAdmin, LaunchMail, FeatureSwitches, PromptEditor, ToolSwitch, UserLimits } from "@/components/admin";
 import { collabCounts, collabSettings, launchSubscribers, testUsers } from "@/lib/collab";
+import { modeSettings } from "@/lib/modmode";
 import { CountTable, UatCountTable } from "@/components/Charts";
 import { PlanList, PlanUploader } from "@/components/plans";
 import { ToolAnalytics } from "@/components/ToolAnalytics";
@@ -90,6 +91,33 @@ export default async function Instrument({ params }: { params: Promise<{ key: st
         </div>
         <ToolAnalytics u={u} events={events} targetLabel="Imobile analizate" />
         <CountTable title="Texte generate, pe variante (30 de zile)" rows={ai.byStyle.map(([s, n]) => [s, n])} head={["Variantă", "Texte"]} empty="Niciun text generat încă." />
+      </AdminShell>
+    );
+  }
+
+  if (key === "inspectii") {
+    const ms = await modeSettings(db, "inspectii");
+    const [users, all, n] = await Promise.all([testUsers(db, ms.users),
+      db.prepare(`SELECT u.id, COALESCE(NULLIF(u.name, ''), u.email) AS name, u.email, u.anevar_no AS anevar, u.is_superadmin AS sup,
+          (SELECT o.name FROM memberships m JOIN orgs o ON o.id = m.org_id WHERE m.user_id = u.id AND m.status = 'active' ORDER BY o.name LIMIT 1) AS org
+        FROM users u WHERE u.status = 'active' ORDER BY name COLLATE NOCASE LIMIT 3000`)
+        .all<{ id: string; name: string; email: string; anevar: string | null; sup: number; org: string | null }>(),
+      db.prepare(`SELECT COUNT(*) AS total, SUM(status IN ('gata', 'pred')) AS done, COUNT(DISTINCT created_by) AS people,
+          (SELECT COUNT(*) FROM insp_devices) AS phones, (SELECT COUNT(*) FROM insp_files WHERE kind = 'photo') AS photos
+        FROM inspections WHERE deleted_at IS NULL`).first<{ total: number; done: number | null; people: number; phones: number; photos: number }>()]);
+    return (
+      <AdminShell c={c} active="instrumente" pending={pending} title={tool.name} subtitle="Mod de lucru, grupul de test și statistici" actions={<a className="btn btnGhost btnSm" href="/admin/instrumente">← Instrumente</a>}>
+        <CollabAdmin mode={ms.mode} users={users} counts={null} accounts={all.results} endpoint="/api/admin/inspectii" name="Inspecțiile"
+          testNote={<>Cât timp modulul nu e „Activ”, în meniu apare cu eticheta TEST. Persoanele din grupul de test îl folosesc pe web și în aplicația de telefon (inspectii.uvalo.ro), indiferent de abonament.</>} />
+        <h2 className="secTitle">Statistici</h2>
+        <div className="kpis">
+          <div className="kpi"><small>Inspecții</small><b>{n?.total ?? 0}</b></div>
+          <div className="kpi"><small>Finalizate</small><b>{n?.done ?? 0}</b></div>
+          <div className="kpi"><small>Persoane care au creat</small><b>{n?.people ?? 0}</b></div>
+          <div className="kpi"><small>Telefoane conectate</small><b>{n?.phones ?? 0}</b></div>
+          <div className="kpi"><small>Fotografii</small><b>{n?.photos ?? 0}</b></div>
+        </div>
+        <ToolAnalytics u={u} events={events} />
       </AdminShell>
     );
   }

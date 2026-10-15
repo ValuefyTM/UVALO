@@ -28,8 +28,8 @@ export async function AppShell(props: { c: Ctx; active: Key; title: string; subt
     { key: "instrumente", label: "Instrumente", href: "/instrumente" },
     // Colaborări: only for those allowed in its current mode (Test: the chosen people; Activ: everyone).
     ...(c.modules.includes("colaborari") ? [{ key: "colaborari" as const, label: "Colaborări", href: "/colaborari", count: collabN, isNew: collabNew }] : []),
-    // Inspecții: in test, only the super-admins see it
-    ...(c.modules.includes("inspectii") ? [{ key: "inspectii" as const, label: "Inspecții", href: "/inspectii", test: true }] : []),
+    // Inspecții: by its mode (Admin → Instrumente → Inspecții); the TEST tag until it is Activ
+    ...(c.modules.includes("inspectii") ? [{ key: "inspectii" as const, label: "Inspecții", href: "/inspectii", test: c.insp !== "on" }] : []),
   ];
   const current = (k: Key) => (k === "instrumente" ? TOOL_KEYS.includes(props.active) : props.active === k) ? "page" as const : undefined;
   // Phone: Acasă, Instrumente, Colaborări (when open to this person) and the account in the bottom menu; the rest behind "Meniu".

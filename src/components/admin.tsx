@@ -295,7 +295,11 @@ const COUNT_LABEL: Record<string, string> = { profiles: "Profiluri", posts: "Anu
 
 /** Colaborări: mode (Dezactivat / Test / Activ), the people in the test group, deleting the test data. */
 type Account = { id: string; name: string; email: string; anevar: string | null; sup: number; org: string | null };
-export function CollabAdmin({ mode: m0, users: u0, counts: c0, accounts }: { mode: CollabMode; users: { id: string; name: string; email: string; anevar: string | null }[]; counts: Counts; accounts: Account[] }) {
+export function CollabAdmin({ mode: m0, users: u0, counts: c0, accounts, endpoint = "/api/admin/colaborari", name = "Colaborările", testNote }: {
+  mode: CollabMode; users: { id: string; name: string; email: string; anevar: string | null }[]; counts: Counts | null; accounts: Account[];
+  /** the same panel for another module in test (Inspecții): its API, its name; without counts there is no "Date de test" card */
+  endpoint?: string; name?: string; testNote?: React.ReactNode;
+}) {
   const [mode, setMode] = useState(m0);
   const [users, setUsers] = useState(u0);
   const [counts, setCounts] = useState(c0);
@@ -305,7 +309,7 @@ export function CollabAdmin({ mode: m0, users: u0, counts: c0, accounts }: { mod
   const [msg, setMsg] = useState("");
   const [ok, setOk] = useState("");
   const send = async (body: Record<string, unknown>) => {
-    const r = await fetch("/api/admin/colaborari", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }).catch(() => null);
+    const r = await fetch(endpoint, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }).catch(() => null);
     const d = ((await r?.json().catch(() => ({}))) ?? {}) as Record<string, unknown> & { error?: string };
     return r?.ok ? d : { error: d.error || "Nu am putut salva. Încearcă din nou." };
   };
@@ -321,7 +325,7 @@ export function CollabAdmin({ mode: m0, users: u0, counts: c0, accounts }: { mod
     ["test", "Test", "Administratorii UVALO și persoanele din grupul de test de mai jos."],
     ["on", "Activ", "Toți utilizatorii cu acces la platformă. Datele noi nu mai sunt marcate ca test."],
   ];
-  const testTotal = Object.values(counts).reduce((s, x) => s + x.test, 0);
+  const testTotal = counts ? Object.values(counts).reduce((s, x) => s + x.test, 0) : 0;
   return (
     <>
       <section className="card" style={{ borderColor: mode === "on" ? undefined : "#e8b25c", background: mode === "on" ? undefined : "#fdf6ea" }}>
@@ -329,7 +333,7 @@ export function CollabAdmin({ mode: m0, users: u0, counts: c0, accounts }: { mod
           <h2>Mod de lucru</h2>
           <span className={`pill ${mode === "on" ? "pillOk" : "pillWarn"}`}><i />{MODES.find((x) => x[0] === mode)![1]}</span>
         </div>
-        <p className="hint">Cât timp modulul nu e „Activ”, tot ce se introduce (profiluri, anunțuri, cereri, mesaje, notificări) e marcat ca <b>date de test</b> și se poate șterge cu butonul de mai jos.</p>
+        <p className="hint">{testNote ?? <>Cât timp modulul nu e „Activ”, tot ce se introduce (profiluri, anunțuri, cereri, mesaje, notificări) e marcat ca <b>date de test</b> și se poate șterge cu butonul de mai jos.</>}</p>
         <div className="tableWrap">
           <table className="table" style={{ minWidth: 0 }}>
             <tbody>
@@ -339,7 +343,7 @@ export function CollabAdmin({ mode: m0, users: u0, counts: c0, accounts }: { mod
                   <td className="r">
                     {mode === k ? <span className="pill pillOk"><i />Modul curent</span> : (
                       <button type="button" className={`btn btnSm ${k === "on" ? "btnNavy" : "btnGhost"}`} disabled={!!busy}
-                        onClick={() => (k !== "on" || confirm(testTotal ? `Activezi Colaborările pentru toți utilizatorii? Există ${testTotal} înregistrări de test care vor rămâne vizibile până le ștergi.` : "Activezi Colaborările pentru toți utilizatorii?"))
+                        onClick={() => (k !== "on" || confirm(testTotal ? `Activezi ${name} pentru toți utilizatorii? Există ${testTotal} înregistrări de test care vor rămâne vizibile până le ștergi.` : `Activezi ${name} pentru toți utilizatorii?`))
                           && run(`m-${k}`, { action: "mode", mode: k }, () => { setMode(k); setOk(`Modul este acum „${l}”.`); })}>
                         {busy === `m-${k}` ? "…" : `Treci pe ${l}`}
                       </button>
@@ -357,7 +361,7 @@ export function CollabAdmin({ mode: m0, users: u0, counts: c0, accounts }: { mod
       <div className="cols">
         <section className="card">
           <div className="cardHead"><h2>Grupul de test</h2><span className="pill"><i />{users.length === 1 ? "1 persoană" : `${users.length} persoane`}</span></div>
-          <p className="hint">În modul Test, Colaborările le apar doar acestor persoane (plus administratorilor UVALO), indiferent de abonament. Bifează conturile din listă și apasă „Adaugă în test”.</p>
+          <p className="hint">În modul Test, {name} le apar doar acestor persoane (plus administratorilor UVALO), indiferent de abonament. Bifează conturile din listă și apasă „Adaugă în test”.</p>
           {(() => {
             const inTest = new Set(users.map((u) => u.id));
             const norm = (x: string) => x.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
@@ -403,7 +407,7 @@ export function CollabAdmin({ mode: m0, users: u0, counts: c0, accounts }: { mod
           ) : <p className="hint">Nicio persoană în grupul de test.</p>}
         </section>
 
-        <section className="card">
+        {counts && <section className="card">
           <div className="cardHead"><h2>Date de test</h2><span className={`pill ${testTotal ? "pillWarn" : ""}`}><i />{testTotal} înregistrări</span></div>
           <div className="tableWrap">
             <table className="table" style={{ minWidth: 0 }}>
@@ -420,7 +424,7 @@ export function CollabAdmin({ mode: m0, users: u0, counts: c0, accounts }: { mod
               {busy === "purge" ? "Se șterge…" : "Șterge datele de test"}
             </button>
           </div>
-        </section>
+        </section>}
       </div>
     </>
   );

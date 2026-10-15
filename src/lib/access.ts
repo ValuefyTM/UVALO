@@ -2,6 +2,7 @@
 import { toolSettings } from "./tools";
 import { collabAllowed, collabSettings } from "./collab";
 import type { CollabMode } from "./collab-shared";
+import { modeAllowed, modeSettings } from "./modmode";
 import { now } from "./db";
 import { currentSession, type Session, type User } from "./auth";
 
@@ -45,6 +46,7 @@ export type Ctx = {
   off: string[];
   /** Colaborări: Dezactivat / Test / Activ (in "modules" only for the people allowed in the current mode). */
   collab: CollabMode;
+  insp: CollabMode;
   /** "Birou de evaluare" turned on for this person by the administration (super-admins: always). */
   office: boolean;
 };
@@ -74,9 +76,13 @@ export async function context(db: D1Database): Promise<Ctx | null> {
   const cs = await collabSettings(db);
   const valuer = !!user.anevar_no?.trim();
   if ((sup || valuer) && collabAllowed(cs, { super: sup, userId: user.id, hasAccess: !!org && !block })) modules.push("colaborari");
-  // Inspecții: in test, only the UVALO super-admins (no plan includes it yet).
-  if (sup) modules.push("inspectii");
-  return { user, session, super: sup, orgs, org, role, modules, block, off, collab: cs.mode, office: sup || !!user.office_allowed };
+  // Inspecții: by its mode (Admin → Instrumente → Inspecții): super-admins, the test group, or everyone with access when Activ.
+  const ins = await modeSettings(db, "inspectii");
+  const insOk = sup || (!off.includes("inspectii") && modeAllowed(ins, { super: sup, userId: user.id, hasAccess: !!org && !block }));
+  const ii = modules.indexOf("inspectii");
+  if (ii >= 0 && !insOk) modules.splice(ii, 1);
+  if (ii < 0 && insOk) modules.push("inspectii");
+  return { user, session, super: sup, orgs, org, role, modules, block, off, collab: cs.mode, insp: ins.mode, office: sup || !!user.office_allowed };
 }
 
 /** "Birou de evaluare" (Firma mea: colleagues, seats): only for the accounts the administration turned it on for (in test). */

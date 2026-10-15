@@ -9,7 +9,7 @@ import { InspList } from "@/components/InspList";
 export const metadata: Metadata = { title: "Inspecții | UVALO" };
 export const dynamic = "force-dynamic";
 
-/** Inspecții: prepared here, done on the phone (UVALO app), seen here. In test: super-admins only. */
+/** Inspecții: prepared here, done on the phone (UVALO app), seen here. Who has it: by its mode (Admin → Instrumente → Inspecții). */
 export default async function InspectiiPage() {
   const { db, c } = await page();
   if (!c.modules.includes("inspectii")) {
@@ -23,7 +23,7 @@ export default async function InspectiiPage() {
   await track(db, c, "inspectii", "page", null, { test: 1 });
   if (!devs.length) {
     return (
-      <AppShell c={c} active="inspectii" title="Inspecții" subtitle="Modul în test · vizibil doar pentru administratorii UVALO">
+      <AppShell c={c} active="inspectii" title="Inspecții" subtitle={c.insp === "on" ? "Conectează telefonul" : "Modul în test"}>
         <InspActivate testMode={c.super} appUrl={inspUrl()} />
       </AppShell>
     );

@@ -286,11 +286,14 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   link de autentificare 7 zile; eveniment `colaborari`/`launch_mail` pe destinatar), doar celor cu acces în modul curent și fără profil.
 - Evenimente `colaborari`: `page`, `profile`, `post`, `request`, `open_chat`, `pick`, `post_status` (meta `{test:1}` în test).
 
-## Inspecții (`/inspectii`, modulul `inspectii`) — ÎN TEST, doar super-adminii
+## Inspecții (`/inspectii`, modulul `inspectii`) — moduri ca la Colaborări
 
 - Pregătite pe web, făcute pe telefon (aplicația PWA de pe `inspectii.uvalo.ro`, vezi mai jos), văzute pe web. Mockup: canvasul „UVALO — Inspecții” (pagini Web / Mobil).
-- Acces: `context()` adaugă `inspectii` în `c.modules` doar pentru super-admini (nu e în planuri); meniul arată „Inspecții” cu eticheta TEST.
-  Pentru lansare: un mod ca la Colaborări (off/test/on) sau modulul în planuri.
+- Acces după **mod** (Admin → Instrumente → Inspecții, `app_settings` cheia `inspectii_mode` = `{mode, users}`, `src/lib/modmode.ts`:
+  `modeSettings` / `setModeSettings` / `modeAllowed`; API `/api/admin/inspectii` cu `mode`, `add_many`, `remove`; panoul = `CollabAdmin` cu
+  `endpoint` / `name` / `counts={null}`): `off` = doar super-adminii, `test` = super-adminii + grupul de test (orice cont activ, indiferent de
+  abonament și de legitimație), `on` = toți cei cu acces la platformă. `context()` pune `inspectii` în `c.modules` după mod (comutatorul
+  „dezactivat” din `off` îl scoate pentru non-super-admini), `c.insp` = modul; meniul arată eticheta TEST cât timp modul ≠ `on`.
 - Fără telefon conectat (`insp_devices`) → pagina de activare (`InspActivate`: cod QR spre `<INSP_URL>/?pair=<cod>` + codul de 6 cifre din
   `insp_pair_codes`, 10 min; pagina întreabă `device_status` la 3 s și se deschide singură după conectare). Modulul pornește doar după o
   autentificare din aplicație (telefon sau aplicația instalată; browserul unui calculator nu se numără — `registerDevice`); în test, „Continuă fără telefon (test)” creează un dispozitiv `platform = 'test'`.
