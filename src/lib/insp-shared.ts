@@ -39,6 +39,11 @@ export const STATUS: Record<Status, { label: string; fg: string; bg: string }> =
 };
 export const STATUSES = Object.keys(STATUS) as Status[];
 
+/** The property types that have sheets (the standard ones first, then the person's own types, alphabetically). */
+export function typesOf(list: (string | null | undefined)[]) {
+  const set = [...new Set(list.filter((x): x is string => !!x && !!x.trim()))];
+  return [...PROP_TYPES.filter((p) => set.includes(p)), ...set.filter((p) => !PROP_TYPES.includes(p)).sort((a, b) => a.localeCompare(b, "ro"))];
+}
 export const PROP_TYPES = ["Apartament", "Casă", "Teren", "Spațiu comercial / Hală", "Accesoriu (parcare, garaj, boxă)"];
 export const CONTACT_ROLES = ["Proprietar", "Client", "Chiriaș", "Agent imobiliar", "Altă persoană"];
 export const ASSIGN_LABEL = { me: "Eu", office: "Cineva din birou", collab: "Un coleg din Colaborări" } as const;
@@ -287,11 +292,11 @@ const ACCESORIU: Group[] = [
 
 /** The UVALO templates (read-only; a person or a firm duplicates one to change it). */
 export const UVALO_TEMPLATES: { key: string; name: string; prop: string; tpl: Template }[] = [
-  { key: "apartament", name: "UVALO · Apartament", prop: "Apartament", tpl: { groups: APARTAMENT } },
-  { key: "casa", name: "UVALO · Casă", prop: "Casă", tpl: { groups: CASA } },
-  { key: "teren", name: "UVALO · Teren", prop: "Teren", tpl: { groups: TEREN } },
-  { key: "comercial", name: "UVALO · Spațiu comercial / Hală", prop: "Spațiu comercial / Hală", tpl: { groups: COMERCIAL } },
-  { key: "accesoriu", name: "UVALO · Accesoriu (parcare, garaj, boxă)", prop: "Accesoriu (parcare, garaj, boxă)", tpl: { groups: ACCESORIU } },
+  { key: "apartament", name: "Template UVALO", prop: "Apartament", tpl: { groups: APARTAMENT } },
+  { key: "casa", name: "Template UVALO", prop: "Casă", tpl: { groups: CASA } },
+  { key: "teren", name: "Template UVALO", prop: "Teren", tpl: { groups: TEREN } },
+  { key: "comercial", name: "Template UVALO", prop: "Spațiu comercial / Hală", tpl: { groups: COMERCIAL } },
+  { key: "accesoriu", name: "Template UVALO", prop: "Accesoriu (parcare, garaj, boxă)", tpl: { groups: ACCESORIU } },
 ];
 
 /** Rooms of the floor survey (releveu), described at the visit: the same lists as the VALUEFY sheet. */

@@ -375,6 +375,11 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   fișa, contact, programare, cine o face: eu / coleg din birou / Colaborări), `/inspectii/<id>` (fișa ca document: cuprins în stânga, conținut;
   „Descarcă PDF” = print; antetul fișei = logo-ul firmei inspecției (`inspections.org_id`, doar dacă are logo) + nr. autorizație; în test „Simulează inspecția” completează fișa ca telefonul), `/inspectii/fise` (`InspTemplates`: editor de grupuri și
   întrebări, răspunsuri precompletate, publicare pe versiuni).
+- **Fișe pe tipuri de imobil**: fișele UVALO se numesc „Template UVALO” (tipul e dat de `prop`), cele personalizate cum le denumește
+  utilizatorul (copia unei fișe UVALO: „Fișa mea · <tip>”). În editor (`InspTemplates`) lista e **grupată pe tipul imobilului** (în fiecare:
+  biroul, ale mele, UVALO), câmpul „Tipul imobilului” + **„+ Tip nou”** (tip propriu, text liber, salvat în `prop_type`). La inspecție nouă (web
+  și telefon) apar doar tipurile care au fișă (`typesOf()` în `insp-shared.ts`), iar după alegere doar fișele acelui tip (+ cele pentru orice
+  imobil). Urmează o bibliotecă de fișe.
 - **Realocă inspectorul** (`InspReassign` în bara fișei web, cât timp inspecția nu e finalizată, pentru `canPrepare`): „Eu” (nu pentru operațional) sau
   cineva din birou (`TeamPick` cu disponibilitatea) → acțiunea `reassign`: răspunsurile, pozele și actele rămân; la colaborator → solicitare
   (`assign_state = pending`); jurnal „Realocată lui X” (notificare „Inspecție nouă pentru tine”), iar fostul inspector primește „Inspecție realocată”.

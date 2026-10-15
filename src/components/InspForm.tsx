@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { UserAv } from "./UserAv";
-import { ASSIGN_LABEL, CONTACT_ROLES, PROP_TYPES, qCount, type AssignKind, type Template } from "@/lib/insp-shared";
+import { ASSIGN_LABEL, CONTACT_ROLES, qCount, typesOf, type AssignKind, type Template } from "@/lib/insp-shared";
 
 export type FormTpl = { id: string; name: string; owner: string; version: number; prop: string | null; enforced: boolean; tpl: Template };
 export type FormInit = {
@@ -112,6 +112,14 @@ export function InspForm({ init, tpls, team, canRead, ops }: { init: FormInit; t
   }
 
   const tpl = tpls.find((t) => t.id === v.template_id);
+  // only the property types that have a sheet; the sheets shown are those of the chosen type (plus the ones for any property)
+  const types = typesOf([...tpls.map((t) => t.prop), v.prop_type]);
+  const forType = (ty: string) => (ty ? tpls.filter((t) => t.prop === ty || !t.prop) : tpls);
+  const shownTpls = forType(v.prop_type);
+  const pickType = (ty: string) => setV((o) => {
+    const list = forType(ty);
+    return { ...o, prop_type: ty, template_id: list.some((t) => t.id === o.template_id) ? o.template_id : list[0]?.id ?? "" };
+  });
   return (
     <div className="inForm">
       <div className="inFormMain">
@@ -129,8 +137,8 @@ export function InspForm({ init, tpls, team, canRead, ops }: { init: FormInit; t
             <label className="field span2">Adresa<input className="input" value={v.address} onChange={(e) => set("address", e.target.value)} placeholder="Str. Florilor nr. 7, Giroc, jud. Timiș" /></label>
             <label className="field">Nr. cadastral<input className="input" value={v.cad_nr} onChange={(e) => set("cad_nr", e.target.value)} /></label>
             <label className="field">Carte funciară<input className="input" value={v.cf_nr} onChange={(e) => set("cf_nr", e.target.value)} /></label>
-            <label className="field">Tipul proprietății<select className="select" value={v.prop_type} onChange={(e) => set("prop_type", e.target.value)}>
-              <option value="">—</option>{PROP_TYPES.map((p) => <option key={p}>{p}</option>)}</select></label>
+            <label className="field">Tipul imobilului<select className="select" value={v.prop_type} onChange={(e) => pickType(e.target.value)}>
+              <option value="">Alege…</option>{types.map((p) => <option key={p}>{p}</option>)}</select></label>
             <label className="field">Suprafață utilă (acte, mp)<input className="input" inputMode="decimal" value={v.area_util} onChange={(e) => set("area_util", e.target.value)} /></label>
             <label className="field">Teren (acte, mp)<input className="input" inputMode="decimal" value={v.area_land} onChange={(e) => set("area_land", e.target.value)} /></label>
           </div>
@@ -154,10 +162,11 @@ export function InspForm({ init, tpls, team, canRead, ops }: { init: FormInit; t
 
         <section className="card">
           <h2><span className="inStep">2</span>Fișa de inspecție</h2>
+          {!v.prop_type && <p className="hint" style={{ margin: "0 0 8px" }}>Alege tipul imobilului (la pasul 1) ca să vezi doar fișele lui.</p>}
           <div className="inTpls">
-            {tpls.map((t) => (
+            {shownTpls.map((t) => (
               <button key={t.id} type="button" aria-pressed={v.template_id === t.id} onClick={() => set("template_id", t.id)}>
-                <b>{t.name}</b><small>{t.owner}{t.enforced ? " · impusă de birou" : ""} · {qCount(t.tpl)} întrebări{t.version ? ` · v${t.version}` : ""}</small>
+                <b>{t.name}</b><small>{t.prop ?? "orice imobil"} · {t.owner}{t.enforced ? " · impusă de birou" : ""} · {qCount(t.tpl)} întrebări{t.version ? ` · v${t.version}` : ""}</small>
               </button>
             ))}
           </div>

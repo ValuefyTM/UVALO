@@ -174,7 +174,7 @@ export async function tplAction(db: D1Database, c: Ctx, b: Record<string, unknow
     const src = action === "tpl_duplicate" ? (await templates(db, c)).find((x) => x.id === id) : null;
     if (action === "tpl_duplicate" && !src) return { error: "Fișa nu există." };
     const forOrg = b.owner === "org" && !!c.org && (c.super || c.role === "owner" || c.role === "admin");
-    const nid = uuid(), name = s(b.name, 80) || (src ? src.name.replace(/^UVALO · /, "") + " (copie)" : "Fișă nouă");
+    const nid = uuid(), name = s(b.name, 80) || (src ? (src.owner_type === "uvalo" ? `Fișa mea · ${src.prop_type ?? "imobil"}` : `${src.name} (copie)`) : "Fișă nouă");
     const tpl = src ? src.published ?? src.draft : { groups: [{ id: "g1", name: "Grup nou", qs: [] }] };
     await db.prepare("INSERT INTO insp_templates (id, owner_type, owner_id, name, prop_type, draft, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)")
       .bind(nid, forOrg ? "org" : "user", forOrg ? c.org!.id : c.user.id, name, src?.prop_type ?? null, JSON.stringify(tpl), c.user.id).run();

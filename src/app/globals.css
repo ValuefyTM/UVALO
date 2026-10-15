@@ -2516,3 +2516,6 @@ html:has(.mb) { min-height: calc(100% + env(safe-area-inset-top)); background: #
 .raList { max-height: 50vh; overflow-y: auto; } .raList .tpBox { margin-top: 0; } .opDlg .modalBox > .tpRow { margin: 0; grid-template-columns: 18px minmax(0, 1fr); }
 .opAdm { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 700; cursor: pointer; white-space: nowrap; } .opAdm input { accent-color: #2f7d4f; }
 .becomeVal { border-top: 1px solid var(--divider); padding-top: 12px; margin-top: 4px; display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+.inTplType { display: flex; align-items: flex-end; gap: 8px; flex-wrap: wrap; }
+.inTplType .btnSm { height: 40px; }
+.inTplList button.uv:not([aria-pressed="true"]) b { color: var(--muted); }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { PROP_TYPES, QKIND_LABEL, qCount, SUBKIND_LABEL, type Group, type QKind, type Question, type SubKind, type Template } from "@/lib/insp-shared";
+import { PROP_TYPES, QKIND_LABEL, typesOf, qCount, SUBKIND_LABEL, type Group, type QKind, type Question, type SubKind, type Template } from "@/lib/insp-shared";
 
 export type TplItem = { id: string; owner: "uvalo" | "org" | "user"; name: string; prop: string | null; draft: Template; version: number; enforced: boolean; dirty: boolean; editable: boolean };
 
@@ -12,7 +12,7 @@ async function post(body: Record<string, unknown>) {
   return j as { id?: string };
 }
 const rid = () => Math.random().toString(36).slice(2, 9);
-const OWNER = { org: "Biroul meu · comune", user: "Ale mele", uvalo: "UVALO · implicite" } as const;
+const OWNER = { org: "Biroul meu", user: "A mea", uvalo: "UVALO · implicită" } as const;
 
 /** Fișe de inspecție: the firm's and the person's templates (editable, versioned) and the UVALO ones (read-only, duplicated to change). */
 export function InspTemplates({ items, canOrg, start }: { items: TplItem[]; canOrg: boolean; start?: string }) {
@@ -27,6 +27,16 @@ export function InspTemplates({ items, canOrg, start }: { items: TplItem[]; canO
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
   const [changed, setChanged] = useState(false);
+  // the property types: the standard ones, the ones of the sheets, and the ones added now with „+ Tip nou”
+  const [extra, setExtra] = useState<string[]>([]);
+  const types = typesOf([...PROP_TYPES, ...items.map((t) => t.prop), ...extra, prop]);
+  const newType = () => {
+    const v = prompt("Tipul nou de imobil (ex. Pensiune, Hotel, Teren agricol):")?.trim().replace(/\s+/g, " ").slice(0, 60);
+    if (!v) return;
+    const same = types.find((t) => t.toLowerCase() === v.toLowerCase());
+    if (!same) setExtra((x) => [...x, v]);
+    setProp(same ?? v); setChanged(true);
+  };
 
   const choose = (id: string) => {
     if (changed && !confirm("Ai modificări nesalvate. Le pierzi?")) return;
@@ -51,21 +61,23 @@ export function InspTemplates({ items, canOrg, start }: { items: TplItem[]; canO
   return (
     <div className="inTplPage">
       <aside className="inTplList">
-        {(["org", "user", "uvalo"] as const).map((o) => {
-          const list = items.filter((t) => t.owner === o);
-          if (!list.length && o === "org" && !canOrg) return null;
+        {/* grouped by property type; in each: the office's sheets, mine, then the UVALO one */}
+        {[...typesOf(items.map((t) => t.prop)), ""].map((ty) => {
+          const rank = { org: 0, user: 1, uvalo: 2 } as const;
+          const list = items.filter((t) => (t.prop ?? "") === ty).sort((a, b) => rank[a.owner] - rank[b.owner] || a.name.localeCompare(b.name, "ro"));
+          if (!list.length) return null;
           return (
-            <section key={o}>
-              <span className="eyebrow">{OWNER[o]}</span>
+            <section key={ty || "-"}>
+              <span className="eyebrow">{ty || "Orice imobil"}</span>
               {list.map((t) => (
-                <button key={t.id} type="button" aria-pressed={sel === t.id} onClick={() => choose(t.id)}>
-                  <b>{t.name}</b><small>{t.owner === "uvalo" ? "doar citire" : t.version ? `v${t.version} publicată${t.dirty ? " · ciornă nouă" : ""}` : "ciornă, nepublicată"}{t.enforced ? " · impusă" : ""}</small>
+                <button key={t.id} type="button" aria-pressed={sel === t.id} onClick={() => choose(t.id)} className={t.owner === "uvalo" ? "uv" : undefined}>
+                  <b>{t.name}</b><small>{OWNER[t.owner]} · {t.owner === "uvalo" ? "doar citire" : t.version ? `v${t.version} publicată${t.dirty ? " · ciornă nouă" : ""}` : "ciornă, nepublicată"}{t.enforced ? " · impusă" : ""}</small>
                 </button>
               ))}
-              {!list.length && <small className="hint">Nicio fișă încă.</small>}
             </section>
           );
         })}
+        {canOrg && <small className="hint">Fișele biroului (și cele impuse) le vede tot biroul.</small>}
         <button type="button" className="btn btnGhost btnSm" disabled={busy} onClick={() => run({ action: "tpl_new", owner: "user" }, (id) => { location.href = `/inspectii/fise?id=${id}`; })}>+ Fișă nouă</button>
       </aside>
 
@@ -76,8 +88,11 @@ export function InspTemplates({ items, canOrg, start }: { items: TplItem[]; canO
             <span className="inTplTag">{ro ? "UVALO · doar citire" : changed || cur.dirty ? `Ciornă${cur.version ? ` · v${cur.version} publicată` : ""}` : `v${cur.version} publicată`}</span>
           </div>
           <div className="inTplOpts">
-            <label className="field">Pentru<select className="select" value={prop} disabled={ro} onChange={(e) => { setProp(e.target.value); setChanged(true); }}>
-              <option value="">Orice proprietate</option>{PROP_TYPES.map((p) => <option key={p}>{p}</option>)}</select></label>
+            <span className="inTplType">
+              <label className="field">Tipul imobilului<select className="select" value={prop} disabled={ro} onChange={(e) => { setProp(e.target.value); setChanged(true); }}>
+                <option value="">Orice imobil</option>{types.map((p) => <option key={p}>{p}</option>)}</select></label>
+              {!ro && <button type="button" className="btn btnGhost btnSm" onClick={newType}>+ Tip nou</button>}
+            </span>
             {cur.owner === "org" && <label className="check"><input type="checkbox" checked={enforced} disabled={ro} onChange={(e) => { setEnforced(e.target.checked); setChanged(true); }} /> Impusă colegilor din birou</label>}
             <label className="check" title="Pe telefon apare pasul obligatoriu „Finisaje încăperi”; în fișă, tabelul încăperilor are și finisajele.">
               <input type="checkbox" checked={!!tpl.rooms} disabled={ro} onChange={(e) => { setTpl({ ...tpl, rooms: e.target.checked || undefined }); setChanged(true); }} />

@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { CONTACT_ROLES, fmtWhen, isOptional, photoCategories, PROP_TYPES, ROOM_FIELDS, roomDone, STANDARD_ROOMS, STATUS, type InspRow, type Question, type SubQ, subKey, type Template } from "@/lib/insp-shared";
+import { CONTACT_ROLES, fmtWhen, isOptional, photoCategories, PROP_TYPES, typesOf, ROOM_FIELDS, roomDone, STANDARD_ROOMS, STATUS, type InspRow, type Question, type SubQ, subKey, type Template } from "@/lib/insp-shared";
 import { allFiles, allFinish, delFile, flush, progress, putFile, putFinish, readExif, shrink, type QPhoto, type UploadProgress } from "./store";
 import { InstallHint } from "./InstallHint";
 
@@ -1513,9 +1513,9 @@ function NewInsp({ tpls, firms, online, pos, onBack, onDone }: { tpls: Tpl[]; fi
         <button type="button" className="mbStart" onClick={here}><b>📍 Sunt la proprietate</b><small>{ll ? `locație preluată · ${ll[0].toFixed(5)}, ${ll[1].toFixed(5)}` : "preia adresa după locația telefonului"}</small></button>
         <label className="mbField">Adresa bunului<textarea className="mbIn" rows={2} value={f.address} onChange={(e) => { set("address", e.target.value); setLl(null); }} placeholder="Str., nr., localitate, județ" /></label>
         <small className="mbCap">TIPUL BUNULUI</small>
-        <span className="mbOpts">{PROP_TYPES.map((t) => <button key={t} type="button" aria-pressed={f.prop_type === t} onClick={() => pickType(t)}>{t}</button>)}</span>
+        <span className="mbOpts">{typesOf(tpls.map((t) => t.prop_type)).map((t) => <button key={t} type="button" aria-pressed={f.prop_type === t} onClick={() => pickType(t)}>{t}</button>)}</span>
         <label className="mbField">Fișa de inspecție<select className="mbIn" value={f.template_id} onChange={(e) => set("template_id", e.target.value)}>
-          {tpls.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+          {(f.prop_type ? tpls.filter((t) => t.prop_type === f.prop_type || !t.prop_type) : tpls).map((t) => <option key={t.id} value={t.id}>{t.name}{f.prop_type ? "" : t.prop_type ? ` · ${t.prop_type}` : ""}</option>)}
         </select></label>
         <span className="mbGrid2">
           <label className="mbField">Nr. cadastral<input className="mbIn" inputMode="numeric" value={f.cad_nr} onChange={(e) => set("cad_nr", e.target.value)} /></label>
