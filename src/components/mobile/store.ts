@@ -63,3 +63,54 @@ export async function shrink(f: Blob, max = 2000): Promise<Blob> {
     return await new Promise<Blob>((res) => cv.toBlob((b) => res(b ?? f), "image/jpeg", 0.85));
   } catch { return f; } finally { URL.revokeObjectURL(url); }
 }
+
+/**
+ * When and where a photo was taken, from its EXIF (JPEG): DateTimeOriginal and the GPS position. Photos chosen from the
+ * gallery keep their own time and place this way; null when the file has none (or the phone removed it when sharing).
+ */
+export async function readExif(f: Blob): Promise<{ taken_at: string | null; lat: number | null; lng: number | null } | null> {
+  try {
+    const v = new DataView(await f.slice(0, 256 * 1024).arrayBuffer());
+    if (v.getUint16(0) !== 0xffd8) return null;
+    let o = 2;
+    while (o + 4 < v.byteLength) {
+      const marker = v.getUint16(o), len = v.getUint16(o + 2);
+      if (marker === 0xffe1 && v.getUint32(o + 4) === 0x45786966) return parseTiff(v, o + 10);
+      if ((marker & 0xff00) !== 0xff00) return null;
+      o += 2 + len;
+    }
+  } catch {}
+  return null;
+}
+
+function parseTiff(v: DataView, t: number) {
+  const le = v.getUint16(t) === 0x4949;
+  const u16 = (p: number) => v.getUint16(p, le), u32 = (p: number) => v.getUint32(p, le);
+  const ifd = (p: number) => {
+    const out = new Map<number, number>(); // tag → offset of the entry
+    const n = u16(t + p);
+    for (let i = 0; i < n; i++) { const e = t + p + 2 + i * 12; out.set(u16(e), e); }
+    return out;
+  };
+  const ascii = (e: number) => { const n = u32(e + 4), at = n > 4 ? t + u32(e + 8) : e + 8; let s = ""; for (let i = 0; i < n - 1; i++) s += String.fromCharCode(v.getUint8(at + i)); return s; };
+  const rat3 = (e: number) => { const at = t + u32(e + 8); const r = (i: number) => u32(at + i * 8) / (u32(at + i * 8 + 4) || 1); return r(0) + r(1) / 60 + r(2) / 3600; };
+  const ifd0 = ifd(u32(t + 4));
+  let taken_at: string | null = null, lat: number | null = null, lng: number | null = null;
+  const exifP = ifd0.get(0x8769);
+  if (exifP != null) {
+    const ex = ifd(u32(exifP + 8)), d = ex.get(0x9003) ?? ex.get(0x9004);
+    const m = d != null ? ascii(d).match(/^(\d{4}):(\d{2}):(\d{2}) (\d{2}):(\d{2}):(\d{2})/) : null;
+    if (m) taken_at = new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +m[6]).toISOString(); // the phone's local time
+  }
+  const gpsP = ifd0.get(0x8825);
+  if (gpsP != null) {
+    const g = ifd(u32(gpsP + 8));
+    const la = g.get(2), lo = g.get(4), laR = g.get(1), loR = g.get(3);
+    if (la != null && lo != null) {
+      lat = rat3(la) * (laR != null && String.fromCharCode(v.getUint8(laR + 8)) === "S" ? -1 : 1);
+      lng = rat3(lo) * (loR != null && String.fromCharCode(v.getUint8(loR + 8)) === "W" ? -1 : 1);
+      if (!Number.isFinite(lat) || !Number.isFinite(lng) || (lat === 0 && lng === 0)) { lat = null; lng = null; }
+    }
+  }
+  return { taken_at, lat, lng };
+}

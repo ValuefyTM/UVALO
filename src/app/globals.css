@@ -1918,6 +1918,13 @@ textarea.mbIn { min-height: 0; resize: vertical; }
 
 /* photos, signature, summary */
 .mbPhGroup { display: flex; flex-direction: column; gap: 8px; }
+.mbPhGroup { padding: 8px; margin: -8px; border-radius: 14px; }
+.mbPhGroup.on { background: #fff; box-shadow: inset 0 0 0 2px var(--acc); }
+.mbPhHead { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; background: none; border: 0; padding: 0; color: var(--ink); text-align: left; }
+.mbPhGroup.on .mbPhHead small { color: var(--acc-text); font-weight: 700; }
+.mbPhAdd { display: grid; grid-template-rows: 1fr 1fr; gap: 4px; aspect-ratio: 1; min-height: 0; overflow: hidden; }
+.mbPhAdd button { min-height: 0; height: auto; aspect-ratio: auto; border: 2px dashed var(--dashed); background: transparent; border-radius: 10px; color: var(--muted-2); display: flex; align-items: center; justify-content: center; padding: 0; }
+.mbFoot .mbGrid2 .mbBtn.big { font-size: 14px; }
 .mbPhGrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
 .mbPhGrid img, .mbPhGrid > button, .mbPhLocal { aspect-ratio: 1; width: 100%; border-radius: 10px; object-fit: cover; display: block; }
 .mbPhGrid > button { border: 2px dashed var(--dashed); background: transparent; font-size: 28px; color: var(--muted-2); }

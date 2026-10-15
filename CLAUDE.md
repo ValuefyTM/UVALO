@@ -343,6 +343,9 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
 - **Tragere în jos = reîncărcare** (Acasă, De trimis, Contul meu, detaliul inspecției): evenimente touch pe `window` când pagina e sus
   (nu pe hartă, semnătură, foaia de programare, câmpuri), prag 64 px → `refresh()` = trimite coada, `load()`, reîncarcă inspecția deschisă;
   tot ecranul (`.mbPage`) coboară cu degetul, iar în spațiul de sus apare indicatorul `.mbPull`. `overscroll-behavior-y: none` ca să nu se suprapună cu reîncărcarea browserului.
+- **Fotografii** pe telefon: „Fotografiază” (camera, o poză) și „Din galerie” (alegere multiplă din telefon); pozele merg la categoria aleasă
+  (lista „Pozele noi merg la” sau atingerea titlului unei categorii, marcată cu auriu; în fiecare categorie căsuța cameră / galerie). Din galerie, ora și
+  locul se iau din EXIF (`readExif` în `store.ts`: DateTimeOriginal + GPS), altfel data fișierului și fără loc; `addPhotos` le pune în coadă și trimite o dată.
 - **Detaliul inspecției** pe telefon (`Detail`): hartă mică (`MiniMap`, Leaflet fără interacțiune, atingerea deschide navigația), statut + tip,
   Google Maps / Waze, programarea, contactul (Sună / SMS), „Proprietatea” (doar câmpurile completate: tip, cad., CF, UAT, județ, suprafețe din
   acte, încăperi, cine a pregătit / cine face), încăperile din releveu, actele încărcate (doar dacă există), fotografiile trimise, notele, fișa.

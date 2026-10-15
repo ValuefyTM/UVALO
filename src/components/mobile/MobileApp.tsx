@@ -2,7 +2,7 @@
 
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CONTACT_ROLES, fmtWhen, isOptional, photoCategories, PROP_TYPES, ROOM_FIELDS, STATUS, type InspRow, type Question, type SubQ, subKey, type Template } from "@/lib/insp-shared";
-import { allFiles, allFinish, flush, putFile, putFinish, shrink, type QPhoto } from "./store";
+import { allFiles, allFinish, flush, putFile, putFinish, readExif, shrink, type QPhoto } from "./store";
 import { InstallHint } from "./InstallHint";
 
 type Insp = InspRow & {
@@ -222,12 +222,26 @@ export function MobileApp() {
   };
 
   async function addPhoto(file: File, room: string, kind: "photo" | "signature" = "photo") {
-    if (!cur) return;
-    const blob = kind === "photo" ? await shrink(file) : file;
-    const p = pos.current;
-    await putFile({ id: crypto.randomUUID(), insp: cur.id, kind, room, name: `${room || "foto"}-${Date.now()}.jpg`.replace(/[^\w.\-]+/g, "_"),
-      taken_at: new Date().toISOString(), lat: p?.[0] ?? null, lng: p?.[1] ?? null, blob });
+    await addPhotos([file], room, false, kind);
+  }
+  /**
+   * Photos kept on the phone and sent when there is signal, marked with the chosen category. From the camera: now and here;
+   * from the gallery: the time and place written in the photo (EXIF), else the file's date and no place.
+   */
+  async function addPhotos(files: File[], room: string, gallery: boolean, kind: "photo" | "signature" = "photo") {
+    if (!cur || !files.length) return;
+    if (files.length > 1) say(`Se adaugă ${files.length} fotografii la „${room}”…`);
+    let i = 0;
+    for (const file of files) {
+      const ex = gallery ? await readExif(file) : null;
+      const blob = kind === "photo" ? await shrink(file) : file;
+      const p = gallery ? null : pos.current;
+      await putFile({ id: crypto.randomUUID(), insp: cur.id, kind, room, name: `${room || "foto"}-${Date.now()}-${++i}.jpg`.replace(/[^\w.\-]+/g, "_"),
+        taken_at: ex?.taken_at ?? (gallery && file.lastModified ? new Date(file.lastModified).toISOString() : new Date().toISOString()),
+        lat: ex?.lat ?? p?.[0] ?? null, lng: ex?.lng ?? p?.[1] ?? null, blob });
+    }
     await refreshQueue();
+    if (files.length > 1) say(`${files.length} fotografii adăugate la „${room}”.`);
     void sendAll();
   }
 
@@ -288,7 +302,7 @@ export function MobileApp() {
           onRooms={() => go({ v: "rooms", id: cur.id })} onPhotos={() => go({ v: "photos", id: cur.id })} onSign={() => go({ v: "sign", id: cur.id })} />
       )}
       {view.v === "rooms" && cur && draft && <Rooms d={draft} change={change} onBack={() => history.back()} onPhoto={addPhoto} />}
-      {view.v === "photos" && cur && draft && <Photos x={cur} d={draft} pending={pending.filter((p) => p.insp === cur.id && p.kind === "photo")} onBack={() => history.back()} onPhoto={addPhoto} />}
+      {view.v === "photos" && cur && draft && <Photos x={cur} d={draft} pending={pending.filter((p) => p.insp === cur.id && p.kind === "photo")} onBack={() => history.back()} onPhotos={addPhotos} />}
       {view.v === "sign" && cur && draft && <Sign x={cur} d={draft} photos={pending.filter((p) => p.insp === cur.id).length + cur.files.filter((f) => f.kind === "photo").length} change={change} onBack={() => history.back()} onFinish={finish} />}
       {view.v === "queue" && <Queue pending={pending} finishN={finishQ} items={items} online={online} onSend={async () => { const n = await sendAll(); say(n ? "Mai sunt elemente de trimis." : "Totul a fost trimis."); }} />}
       {view.v === "notifs" && <Notifs notifs={notifs} reminders={reminders} seenAt={seen.at} onBack={() => { markSeen(); history.back(); }}
@@ -914,36 +928,63 @@ function Rooms({ d, change, onBack, onPhoto }: { d: Draft; change: (f: (d: Draft
 
 /* ---------- photos ---------- */
 
-function Photos({ x, d, pending, onBack, onPhoto }: { x: Insp; d: Draft; pending: QPhoto[]; onBack: () => void; onPhoto: (f: File, room: string) => void }) {
+function Photos({ x, d, pending, onBack, onPhotos }: { x: Insp; d: Draft; pending: QPhoto[]; onBack: () => void; onPhotos: (f: File[], room: string, gallery: boolean) => Promise<void> }) {
   const cats = useMemo(() => { const c = photoCategories(x.prop_type); return [...c.before, ...d.rooms.map((r, i) => `${r.n} · rlv ${i + 1}`), ...c.after]; }, [d.rooms, x.prop_type]);
   const [room, setRoom] = useState(cats[0]);
-  const cam = useRef<HTMLInputElement>(null);
+  const [busy, setBusy] = useState(false);
+  const cam = useRef<HTMLInputElement>(null), gal = useRef<HTMLInputElement>(null);
+  const target = useRef(room); // the category the open picker adds to
+  useEffect(() => { target.current = room; }, [room]);
   const sent = x.files.filter((f) => f.kind === "photo");
   const urls = useMemo(() => new Map(pending.map((p) => [p.id, URL.createObjectURL(p.blob)])), [pending]);
   useEffect(() => () => urls.forEach((u) => URL.revokeObjectURL(u)), [urls]);
   const groups = cats.map((c) => ({ c, sent: sent.filter((f) => f.room === c), local: pending.filter((p) => p.room === c) })).filter((g) => g.sent.length || g.local.length || g.c === room);
+  const pick = (input: HTMLInputElement | null, c: string) => { target.current = c; setRoom(c); input?.click(); };
+  const take = async (e: React.ChangeEvent<HTMLInputElement>, gallery: boolean) => {
+    const files = Array.from(e.target.files ?? []);
+    e.target.value = "";
+    if (!files.length) return;
+    setBusy(true);
+    try { await onPhotos(files, target.current, gallery); } finally { setBusy(false); }
+  };
   return (
     <>
       <header className="mbBar"><Back onClick={onBack} /><span><b>Fotografii · {sent.length + pending.length}</b><small>Cu dată și locație · {sent.length} trimise, {pending.length} pe telefon</small></span></header>
+      <input ref={cam} type="file" accept="image/*" capture="environment" hidden onChange={(e) => take(e, false)} />
+      <input ref={gal} type="file" accept="image/*" multiple hidden onChange={(e) => take(e, true)} />
       <div className="mbBody">
         {groups.map((g) => (
-          <section key={g.c} className="mbPhGroup">
-            <span className="mbRowBetween"><b>{g.c}</b><small>{g.sent.length + g.local.length} foto</small></span>
+          <section key={g.c} className={`mbPhGroup${g.c === room ? " on" : ""}`}>
+            <button type="button" className="mbPhHead" onClick={() => setRoom(g.c)} aria-pressed={g.c === room}>
+              <b>{g.c}</b><small>{g.c === room ? "aici merg pozele noi · " : ""}{g.sent.length + g.local.length} foto</small>
+            </button>
             <span className="mbPhGrid">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               {g.sent.map((f) => <img key={f.id} src={`/api/inspectii/file/${f.id}`} alt={g.c} loading="lazy" />)}
               {g.local.map((p) => <span key={p.id} className="mbPhLocal">{/* eslint-disable-next-line @next/next/no-img-element */}<img src={urls.get(p.id)} alt={g.c} /><em>PE TELEFON</em></span>)}
-              <button type="button" aria-label={`Fotografiază ${g.c}`} onClick={() => { setRoom(g.c); cam.current?.click(); }}>+</button>
+              <span className="mbPhAdd">
+                <button type="button" aria-label={`Fotografiază pentru ${g.c}`} onClick={() => pick(cam.current, g.c)}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z" /><circle cx="12" cy="13" r="3.5" /></svg>
+                </button>
+                <button type="button" aria-label={`Alege din galerie pentru ${g.c}`} onClick={() => pick(gal.current, g.c)}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="16" rx="2.5" /><circle cx="9" cy="10" r="2" /><path d="M21 16l-5-5-9 9" /></svg>
+                </button>
+              </span>
             </span>
           </section>
         ))}
       </div>
       <footer className="mbFoot">
-        <label className="mbField">Următoarea poză merge la<select className="mbIn" value={room} onChange={(e) => setRoom(e.target.value)}>{cats.map((c) => <option key={c}>{c}</option>)}</select></label>
-        <input ref={cam} type="file" accept="image/*" capture="environment" hidden multiple onChange={async (e) => { for (const f of Array.from(e.target.files ?? [])) await onPhoto(f, room); e.target.value = ""; }} />
-        <button type="button" className="mbBtn gold big" onClick={() => cam.current?.click()}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z" /><circle cx="12" cy="13" r="3.5" /></svg>Fotografiază
-        </button>
+        <label className="mbField">Pozele noi merg la<select className="mbIn" value={room} onChange={(e) => setRoom(e.target.value)}>{cats.map((c) => <option key={c}>{c}</option>)}</select></label>
+        <span className="mbGrid2">
+          <button type="button" className="mbBtn gold big" disabled={busy} onClick={() => pick(cam.current, room)}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z" /><circle cx="12" cy="13" r="3.5" /></svg>Fotografiază
+          </button>
+          <button type="button" className="mbBtn dark big" disabled={busy} onClick={() => pick(gal.current, room)}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2.5" /><circle cx="9" cy="10" r="2" /><path d="M21 16l-5-5-9 9" /></svg>Din galerie
+          </button>
+        </span>
+        {busy && <small className="mbCenterSmall">Se pregătesc fotografiile…</small>}
       </footer>
     </>
   );
