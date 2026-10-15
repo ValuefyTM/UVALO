@@ -420,6 +420,16 @@ export async function fileFor(db: D1Database, c: Ctx, id: string) {
   return f && (await canTouch(db, c, f.inspection_id)) ? f : null;
 }
 
+/** Moves a photo to another category (room) of the inspection. */
+export async function moveFile(db: D1Database, c: Ctx, id: string, room: string): Promise<{ error: string } | { ok: true; id: string }> {
+  const f = await fileFor(db, c, id);
+  if (!f) return { error: "Fișierul nu există." };
+  const r = s(room, 120);
+  if (!r) return { error: "Alege categoria." };
+  await db.prepare("UPDATE insp_files SET room = ? WHERE id = ? AND kind = 'photo'").bind(r, id).run();
+  return { ok: true, id: f.inspection_id };
+}
+
 export async function removeFile(db: D1Database, bucket: R2Bucket | null, c: Ctx, id: string): Promise<{ error: string } | { ok: true; id: string }> {
   const f = await fileFor(db, c, id);
   if (!f) return { error: "Fișierul nu există." };

@@ -1920,10 +1920,20 @@ textarea.mbIn { min-height: 0; resize: vertical; }
 .mbPhGroup { display: flex; flex-direction: column; gap: 8px; }
 .mbPhGroup { padding: 8px; margin: -8px; border-radius: 14px; }
 .mbPhGroup.on { background: #fff; box-shadow: inset 0 0 0 2px var(--acc); }
-.mbPhHead { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; background: none; border: 0; padding: 0; color: var(--ink); text-align: left; }
-.mbPhGroup.on .mbPhHead small { color: var(--acc-text); font-weight: 700; }
-.mbPhAdd { display: grid; grid-template-rows: 1fr 1fr; gap: 4px; aspect-ratio: 1; min-height: 0; overflow: hidden; }
-.mbPhAdd button { min-height: 0; height: auto; aspect-ratio: auto; border: 2px dashed var(--dashed); background: transparent; border-radius: 10px; color: var(--muted-2); display: flex; align-items: center; justify-content: center; padding: 0; }
+.mbPhHead { display: flex; align-items: center; gap: 8px; }
+.mbPhTitle { flex: 1; min-width: 0; display: flex; justify-content: space-between; align-items: baseline; gap: 10px; background: none; border: 0; padding: 0; color: var(--ink); text-align: left; }
+.mbPhGroup.on .mbPhTitle small { color: var(--acc-text); font-weight: 700; }
+.mbPhAdd { display: flex; gap: 4px; flex: none; }
+.mbPhAdd button { width: 34px; height: 30px; border: 1px solid var(--line); background: #fff; border-radius: 9px; color: var(--muted); display: flex; align-items: center; justify-content: center; padding: 0; }
+.mbPhGroup.on .mbPhAdd button { border-color: var(--acc-line); color: var(--acc-text); }
+.mbPhEmpty { font-size: 12px; color: var(--off); padding: 6px 0 2px; }
+.mbPhItem { -webkit-touch-callout: none; user-select: none; -webkit-user-select: none; }
+.mbPhItem img { -webkit-user-drag: none; pointer-events: none; }
+.mbPhItem.lifted { opacity: .35; }
+.mbDragging .mbPhGroup { transition: background .15s, box-shadow .15s; }
+.mbDragging .mbPhGroup:not(.on) { background: rgba(255,255,255,.45); box-shadow: inset 0 0 0 1.5px var(--dashed); }
+.mbPhGroup.drop { background: var(--acc-soft) !important; box-shadow: inset 0 0 0 2px var(--acc) !important; }
+.mbPhGhost { position: fixed; z-index: 70; width: 84px; height: 84px; object-fit: cover; border-radius: 12px; transform: translate(-50%, -60%) rotate(-4deg); box-shadow: 0 14px 30px rgba(0,0,0,.35); pointer-events: none; border: 3px solid #fff; }
 .mbFoot .mbGrid2 .mbBtn.big { font-size: 14px; }
 .mbPhGrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
 .mbPhGrid img, .mbPhGrid > button, .mbPhLocal { aspect-ratio: 1; width: 100%; border-radius: 10px; object-fit: cover; display: block; }

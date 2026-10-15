@@ -1,6 +1,6 @@
-import { api, err } from "@/lib/api";
+import { api, err, json, str } from "@/lib/api";
 import { getFiles } from "@/lib/db";
-import { fileFor, removeFile } from "@/lib/insp";
+import { fileFor, moveFile, removeFile } from "@/lib/insp";
 
 /** A file of an inspection, only for those who have the inspection (owner, the one doing it, super-admins). */
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -24,5 +24,13 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
   if ("res" in a) return a.res;
   const { id } = await params;
   const r = await removeFile(a.db, await getFiles(), a.c, id);
+  return "error" in r ? err(r.error, 404) : Response.json(r);
+}
+
+/** PATCH {room}: the photo goes to another category (dragged in the phone app). */
+export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const a = await api();
+  if ("res" in a) return a.res;
+  const r = await moveFile(a.db, a.c, (await params).id, str((await json(req)).room, 120));
   return "error" in r ? err(r.error, 404) : Response.json(r);
 }

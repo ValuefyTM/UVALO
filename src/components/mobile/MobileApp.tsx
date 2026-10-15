@@ -240,6 +240,21 @@ export function MobileApp() {
     say("Fotografia a fost ștearsă.");
   }
 
+  /** Moves a photo to another category: on the phone in the queue, an already sent one on the server. */
+  async function movePhoto(id: string, local: boolean, room: string) {
+    if (!cur) return;
+    if (local) {
+      const f = (await allFiles()).find((x) => x.id === id);
+      if (f) { await putFile({ ...f, room }); await refreshQueue(); }
+      return;
+    }
+    setCur({ ...cur, files: cur.files.map((f) => (f.id === id ? { ...f, room } : f)) }); // shown at once
+    const r = await fetch(`/api/inspectii/file/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ room }) }).catch(() => null);
+    if (!r?.ok) say(r ? "Fotografia nu a putut fi mutată." : "Fără semnal: mutarea nu s-a salvat.");
+    const x = await fetchInsp(cur.id);
+    if (x) setCur(x);
+  }
+
   async function addPhoto(file: File, room: string, kind: "photo" | "signature" = "photo") {
     await addPhotos([file], room, false, kind);
   }
@@ -323,7 +338,7 @@ export function MobileApp() {
           onRooms={() => go({ v: "rooms", id: cur.id })} onPhotos={() => go({ v: "photos", id: cur.id })} onSign={() => go({ v: "sign", id: cur.id })} />
       )}
       {view.v === "rooms" && cur && draft && <Rooms d={draft} change={change} onBack={() => history.back()} onPhoto={addPhoto} />}
-      {view.v === "photos" && cur && draft && <Photos x={cur} d={draft} pending={pending.filter((p) => p.insp === cur.id && p.kind === "photo")} onBack={() => history.back()} onPhotos={addPhotos} onDelete={deletePhoto} />}
+      {view.v === "photos" && cur && draft && <Photos x={cur} d={draft} pending={pending.filter((p) => p.insp === cur.id && p.kind === "photo")} onBack={() => history.back()} onPhotos={addPhotos} onDelete={deletePhoto} onMove={movePhoto} />}
       {view.v === "sign" && cur && draft && <Sign x={cur} d={draft} photos={pending.filter((p) => p.insp === cur.id).length + cur.files.filter((f) => f.kind === "photo").length} change={change} onBack={() => history.back()} onFinish={finish} />}
       {view.v === "queue" && <Queue pending={pending} finishN={finishQ} items={items} online={online} onSend={async () => { const n = await sendAll(); say(n ? "Mai sunt elemente de trimis." : "Totul a fost trimis."); }} />}
       {view.v === "notifs" && <Notifs notifs={notifs} reminders={reminders} seenAt={seen.at} onBack={() => { markSeen(); history.back(); }}
@@ -989,22 +1004,28 @@ function Rooms({ d, change, onBack, onPhoto }: { d: Draft; change: (f: (d: Draft
 
 /* ---------- photos ---------- */
 
-function Photos({ x, d, pending, onBack, onPhotos, onDelete }: {
-  x: Insp; d: Draft; pending: QPhoto[]; onBack: () => void; onPhotos: (f: File[], room: string, gallery: boolean) => Promise<void>; onDelete: (id: string, local: boolean) => void;
+type DragPh = { id: string; local: boolean; src: string; from: string; x: number; y: number; over: string | null };
+
+function Photos({ x, d, pending, onBack, onPhotos, onDelete, onMove }: {
+  x: Insp; d: Draft; pending: QPhoto[]; onBack: () => void; onPhotos: (f: File[], room: string, gallery: boolean) => Promise<void>;
+  onDelete: (id: string, local: boolean) => void; onMove: (id: string, local: boolean, room: string) => Promise<void>;
 }) {
   const cats = useMemo(() => { const c = photoCategories(x.prop_type); return [...c.before, ...d.rooms.map((r, i) => `${r.n} · rlv ${i + 1}`), ...c.after]; }, [d.rooms, x.prop_type]);
   const [room, setRoom] = useState(cats[0]);
   const [busy, setBusy] = useState(false);
+  const [drag, setDrag] = useState<DragPh | null>(null);
   const cam = useRef<HTMLInputElement>(null), gal = useRef<HTMLInputElement>(null);
   const target = useRef(room); // the category the open picker adds to
   useEffect(() => { target.current = room; }, [room]);
   const sent = x.files.filter((f) => f.kind === "photo");
   const urls = useMemo(() => new Map(pending.map((p) => [p.id, URL.createObjectURL(p.blob)])), [pending]);
   useEffect(() => () => urls.forEach((u) => URL.revokeObjectURL(u)), [urls]);
-  const groups = cats.map((c) => ({ c, sent: sent.filter((f) => f.room === c), local: pending.filter((p) => p.room === c) })).filter((g) => g.sent.length || g.local.length || g.c === room);
+  // while dragging every category is shown, so a photo can go to an empty one too
+  const groups = cats.map((c) => ({ c, sent: sent.filter((f) => f.room === c), local: pending.filter((p) => p.room === c) }))
+    .filter((g) => drag || g.sent.length || g.local.length || g.c === room);
   const pick = (input: HTMLInputElement | null, c: string) => { target.current = c; setRoom(c); input?.click(); };
   const take = async (e: React.ChangeEvent<HTMLInputElement>, gallery: boolean) => {
-    const input = e.target, room = target.current;
+    const input = e.target, r = target.current;
     const picked = Array.from(input.files ?? []);
     if (!picked.length) return;
     setBusy(true);
@@ -1016,47 +1037,101 @@ function Photos({ x, d, pending, onBack, onPhotos, onDelete }: {
       }
       input.value = "";
       if (files.length < picked.length) alert(`${picked.length - files.length} din fotografiile alese nu au putut fi citite.`);
-      await onPhotos(files, room, gallery);
+      await onPhotos(files, r, gallery);
     } finally { input.value = ""; setBusy(false); }
   };
+
+  // drag a photo to another category: hold it (0,35 s), then move the finger over the category and let go
+  const press = useRef<{ t: ReturnType<typeof setTimeout>; x: number; y: number } | null>(null);
+  const dragRef = useRef<DragPh | null>(null);
+  const startPress = (e: React.TouchEvent, id: string, local: boolean, src: string, from: string) => {
+    const t0 = e.touches[0];
+    const sx = t0.clientX, sy = t0.clientY;
+    if (press.current) clearTimeout(press.current.t);
+    press.current = { x: sx, y: sy, t: setTimeout(() => {
+      press.current = null;
+      const dr: DragPh = { id, local, src, from, x: sx, y: sy, over: from };
+      dragRef.current = dr; setDrag(dr);
+      try { navigator.vibrate?.(15); } catch {}
+      const move = (ev: TouchEvent) => {
+        ev.preventDefault();
+        const p = ev.touches[0];
+        const el = document.elementFromPoint(p.clientX, p.clientY)?.closest("[data-cat]");
+        const over = el?.getAttribute("data-cat") ?? null;
+        dragRef.current = { ...dragRef.current!, x: p.clientX, y: p.clientY, over };
+        setDrag(dragRef.current);
+        if (p.clientY < 110) window.scrollBy(0, -14);
+        else if (p.clientY > window.innerHeight - 190) window.scrollBy(0, 14);
+      };
+      const end = () => {
+        window.removeEventListener("touchmove", move); window.removeEventListener("touchend", end); window.removeEventListener("touchcancel", end);
+        const dd = dragRef.current;
+        dragRef.current = null; setDrag(null);
+        if (dd?.over && dd.over !== dd.from) { setRoom(dd.over); void onMove(dd.id, dd.local, dd.over); }
+      };
+      window.addEventListener("touchmove", move, { passive: false });
+      window.addEventListener("touchend", end); window.addEventListener("touchcancel", end);
+    }, 350) };
+  };
+  const movePress = (e: React.TouchEvent) => {
+    const p = press.current, t0 = e.touches[0];
+    if (p && Math.hypot(t0.clientX - p.x, t0.clientY - p.y) > 10) { clearTimeout(p.t); press.current = null; } // a scroll, not a hold
+  };
+  const endPress = () => { if (press.current) { clearTimeout(press.current.t); press.current = null; } };
+  const holdProps = (id: string, local: boolean, src: string, from: string) => ({
+    onTouchStart: (e: React.TouchEvent) => startPress(e, id, local, src, from), onTouchMove: movePress, onTouchEnd: endPress, onTouchCancel: endPress,
+    onContextMenu: (e: React.MouseEvent) => e.preventDefault(),
+  });
+
   return (
     <>
-      <header className="mbBar"><Back onClick={onBack} /><span><b>Fotografii · {sent.length + pending.length}</b><small>Cu dată și locație · {sent.length} trimise, {pending.length} pe telefon</small></span></header>
+      <header className="mbBar"><Back onClick={onBack} /><span><b>Fotografii · {sent.length + pending.length}</b><small>{drag ? "Lasă fotografia peste categoria dorită" : `Ține apăsat pe o poză ca s-o muți · ${sent.length} trimise, ${pending.length} pe telefon`}</small></span></header>
       <input ref={cam} type="file" accept="image/*" capture="environment" hidden onChange={(e) => take(e, false)} />
       <input ref={gal} type="file" accept="image/*" multiple hidden onChange={(e) => take(e, true)} />
-      <div className="mbBody">
+      <div className={`mbBody${drag ? " mbDragging" : ""}`}>
         {groups.map((g) => (
-          <section key={g.c} className={`mbPhGroup${g.c === room ? " on" : ""}`}>
-            <button type="button" className="mbPhHead" onClick={() => setRoom(g.c)} aria-pressed={g.c === room}>
-              <b>{g.c}</b><small>{g.c === room ? "aici merg pozele noi · " : ""}{g.sent.length + g.local.length} foto</small>
-            </button>
-            <span className="mbPhGrid">
-              {g.sent.map((f) => (
-                <span key={f.id} className="mbPhItem">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={`/api/inspectii/file/${f.id}`} alt={g.c} loading="lazy" />
-                  <button type="button" className="mbPhDel" aria-label="Șterge fotografia" onClick={() => onDelete(f.id, false)}>×</button>
-                </span>
-              ))}
-              {g.local.map((p) => (
-                <span key={p.id} className="mbPhItem mbPhLocal">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={urls.get(p.id)} alt={g.c} /><em>PE TELEFON</em>
-                  <button type="button" className="mbPhDel" aria-label="Șterge fotografia" onClick={() => onDelete(p.id, true)}>×</button>
-                </span>
-              ))}
+          <section key={g.c} data-cat={g.c} className={`mbPhGroup${g.c === room ? " on" : ""}${drag?.over === g.c && drag.over !== drag.from ? " drop" : ""}`}>
+            <span className="mbPhHead">
+              <button type="button" className="mbPhTitle" onClick={() => setRoom(g.c)} aria-pressed={g.c === room}>
+                <b>{g.c}</b><small>{g.c === room ? "aici merg pozele noi · " : ""}{g.sent.length + g.local.length} foto</small>
+              </button>
               <span className="mbPhAdd">
                 <button type="button" aria-label={`Fotografiază pentru ${g.c}`} onClick={() => pick(cam.current, g.c)}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z" /><circle cx="12" cy="13" r="3.5" /></svg>
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z" /><circle cx="12" cy="13" r="3.5" /></svg>
                 </button>
                 <button type="button" aria-label={`Alege din galerie pentru ${g.c}`} onClick={() => pick(gal.current, g.c)}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="16" rx="2.5" /><circle cx="9" cy="10" r="2" /><path d="M21 16l-5-5-9 9" /></svg>
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="16" rx="2.5" /><circle cx="9" cy="10" r="2" /><path d="M21 16l-5-5-9 9" /></svg>
                 </button>
               </span>
             </span>
+            {(g.sent.length > 0 || g.local.length > 0) ? (
+              <span className="mbPhGrid">
+                {g.sent.map((f) => {
+                  const src = `/api/inspectii/file/${f.id}`;
+                  return (
+                    <span key={f.id} className={`mbPhItem${drag?.id === f.id ? " lifted" : ""}`} {...holdProps(f.id, false, src, g.c)}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={src} alt={g.c} loading="lazy" draggable={false} />
+                      <button type="button" className="mbPhDel" aria-label="Șterge fotografia" onClick={() => onDelete(f.id, false)}>×</button>
+                    </span>
+                  );
+                })}
+                {g.local.map((p) => (
+                  <span key={p.id} className={`mbPhItem mbPhLocal${drag?.id === p.id ? " lifted" : ""}`} {...holdProps(p.id, true, urls.get(p.id) ?? "", g.c)}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={urls.get(p.id)} alt={g.c} draggable={false} /><em>PE TELEFON</em>
+                    <button type="button" className="mbPhDel" aria-label="Șterge fotografia" onClick={() => onDelete(p.id, true)}>×</button>
+                  </span>
+                ))}
+              </span>
+            ) : <span className="mbPhEmpty">{drag ? "Lasă aici" : "Nicio fotografie încă"}</span>}
           </section>
         ))}
       </div>
+      {drag && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img className="mbPhGhost" src={drag.src} alt="" style={{ left: drag.x, top: drag.y }} />
+      )}
       <footer className="mbFoot">
         <label className="mbField">Pozele noi merg la<select className="mbIn" value={room} onChange={(e) => setRoom(e.target.value)}>{cats.map((c) => <option key={c}>{c}</option>)}</select></label>
         <span className="mbGrid2">
