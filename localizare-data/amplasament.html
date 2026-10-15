@@ -1178,13 +1178,25 @@ $('bWord').addEventListener('click',async()=>{
   kids.push(P([R(brand.company,{bold:true,size:28})]));if(brand.subtitle)kids.push(P([R(brand.subtitle,{size:18,color:'54514A'})]));
   kids.push(P([R('Data: '+new Date().toLocaleDateString('ro-RO')+(brand.evaluator?' · Evaluator: '+brand.evaluator:''),{size:16,color:'6B6559'})],{border:{bottom:{style:D.BorderStyle.SINGLE,size:12,color:'F2A93B'}},spacing:{after:200}}));
   kids.push(P([R('Analiza amplasamentului',{bold:true,size:32})]));kids.push(P([R(docTitle(),{size:18,color:'54514A'})],{spacing:{after:160}}));
-  const z=bytes(await zoneCanvas(1200,S.p?760:700));if(z){kids.push(P([new D.ImageRun({data:z,transformation:{width:600,height:S.p?380:350}})],{alignment:D.AlignmentType.CENTER}));kids.push(P([R('Fig. 1 — Încadrarea în zonă (rază '+fmtD(S.radius)+')',{size:16,color:'8A857C'})],{alignment:D.AlignmentType.CENTER,spacing:{after:160}}))}
-  if(S.p){const pl=bytes(await planCanvas(1200,760));if(pl){kids.push(P([new D.ImageRun({data:pl,transformation:{width:600,height:380}})],{alignment:D.AlignmentType.CENTER}));kids.push(P([R('Fig. 2 — Plan de situație (plan cadastral ANCPI)',{size:16,color:'8A857C'})],{alignment:D.AlignmentType.CENTER,spacing:{after:160}}))}}
-  const bd={style:D.BorderStyle.SINGLE,size:4,color:'D8CFBD'};
-  tables().forEach(([t,rows])=>{kids.push(P([R(t,{bold:true,size:22})],{spacing:{before:160,after:80}}));
-    kids.push(new D.Table({width:{size:100,type:D.WidthType.PERCENTAGE},columnWidths:[5200,5200],borders:{top:bd,bottom:bd,left:bd,right:bd,insideHorizontal:bd,insideVertical:bd},
-      rows:rows.map(r=>new D.TableRow({children:[new D.TableCell({width:{size:5200,type:D.WidthType.DXA},shading:{type:D.ShadingType.CLEAR,fill:'FBF8F2',color:'auto'},margins:{top:40,bottom:40,left:90,right:90},children:[P([R(r[0],{size:18,color:r[0].startsWith('⚠')?'B3261E':'4A4A4A'})])]}),
-        new D.TableCell({width:{size:5200,type:D.WidthType.DXA},margins:{top:40,bottom:40,left:90,right:90},children:[P([R(r[1],{size:18,bold:true})])]})]}))}))});
+  /* ca în PDF: hărțile una lângă alta, sub fiecare tabelul ei (tabel de așezare fără chenar, lățimea utilă 10106 twips) */
+  const bd={style:D.BorderStyle.SINGLE,size:4,color:'D8CFBD'},nb={style:D.BorderStyle.NONE,size:0,color:'FFFFFF'},NB={top:nb,bottom:nb,left:nb,right:nb,insideHorizontal:nb,insideVertical:nb};
+  const FW=10106,GAP=240,HW=(FW-GAP)/2,cap=t=>P([R(t,{size:15,color:'8A857C'})],{spacing:{before:40,after:120}});
+  const grid=cells=>{const two=cells.length===2,w=two?HW:FW;
+    return new D.Table({width:{size:FW,type:D.WidthType.DXA},columnWidths:two?[HW,GAP,HW]:[FW],borders:NB,
+      rows:[new D.TableRow({cantSplit:false,children:(two?[cells[0],null,cells[1]]:cells).map(c=>new D.TableCell({width:{size:c?w:GAP,type:D.WidthType.DXA},borders:{top:nb,bottom:nb,left:nb,right:nb},margins:{top:0,bottom:0,left:0,right:0},children:c||[P([])]}))})]})};
+  const dataTable=(rows,w)=>{const c1=Math.round(w*.48),c2=w-c1,sz=w<FW?16:18;
+    return new D.Table({width:{size:w,type:D.WidthType.DXA},columnWidths:[c1,c2],borders:{top:bd,bottom:bd,left:bd,right:bd,insideHorizontal:bd,insideVertical:bd},
+      rows:rows.map(r=>new D.TableRow({children:[new D.TableCell({width:{size:c1,type:D.WidthType.DXA},shading:{type:D.ShadingType.CLEAR,fill:'FBF8F2',color:'auto'},margins:{top:30,bottom:30,left:80,right:80},children:[P([R(r[0],{size:sz,color:r[0].startsWith('⚠')?'B3261E':'4A4A4A'})])]}),
+        new D.TableCell({width:{size:c2,type:D.WidthType.DXA},margins:{top:30,bottom:30,left:80,right:80},children:[P([R(r[1],{size:sz,bold:true})])]})]}))})};
+  const px=S.p?325:672,ph=S.p?Math.round(325*470/568):Math.round(672*560/1080),maps=[];
+  const z=bytes(await zoneCanvas(px*3,ph*3));
+  if(z)maps.push([P([new D.ImageRun({data:z,transformation:{width:px,height:ph}})]),cap('Fig. 1 — Încadrarea în zonă (rază '+fmtD(S.radius)+'; numerele = dotările din tabel)')]);
+  if(S.p){const pl=bytes(await planCanvas(px*3,ph*3));if(pl)maps.push([P([new D.ImageRun({data:pl,transformation:{width:px,height:ph}})]),cap('Fig. 2 — Plan de situație')])}
+  if(maps.length)kids.push(grid(maps));
+  const T=tables();
+  if(T.length){const two=T.length===2;kids.push(P([],{spacing:{after:60}}));
+    if(two)kids.push(grid(T.map(([t,rows])=>[P([R(t,{bold:true,size:20})],{spacing:{after:80}}),dataTable(rows,HW),P([])])));
+    else T.forEach(([t,rows])=>{kids.push(P([R(t,{bold:true,size:22})],{spacing:{before:160,after:80}}));kids.push(dataTable(rows,FW))})}
   const text=outText();
   if(text){kids.push(P([R('Descrierea amplasamentului',{bold:true,size:24})],{spacing:{before:280,after:120}}));
     text.split(/\n\n/).forEach(par=>kids.push(P(runsOf(par).map(r=>R(r.t,{bold:r.b,...(r.m?{highlight:'yellow'}:{})})),{spacing:{after:140},alignment:D.AlignmentType.JUSTIFIED})))}
