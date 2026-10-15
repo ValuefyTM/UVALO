@@ -134,6 +134,53 @@ export function MobileApp() {
     return n;
   }, [refreshQueue]);
 
+  // pull down at the top of the page = refresh (the list, what waits to be sent, the open inspection)
+  const [pull, setPull] = useState(0);
+  const [pulling, setPulling] = useState(false);
+  const viewRef = useRef(view);
+  viewRef.current = view;
+  const refresh = useCallback(async () => {
+    await sendAll();
+    await load();
+    const v = viewRef.current;
+    if (v.v === "detail") { const x = await fetchInsp(v.id); if (x) setCur(x); }
+  }, [sendAll, load]); // eslint-disable-line react-hooks/exhaustive-deps
+  const refreshRef = useRef(refresh);
+  refreshRef.current = refresh;
+  useEffect(() => {
+    const PULL = 64;
+    let y0: number | null = null, d = 0, busy = false;
+    const ok = () => ["home", "queue", "account", "detail"].includes(viewRef.current.v);
+    const start = (e: TouchEvent) => {
+      y0 = null;
+      if (busy || !ok() || window.scrollY > 0 || e.touches.length > 1) return;
+      if ((e.target as Element).closest?.(".mbMap, .mbSig, .mbSheetBg, input, textarea, select")) return;
+      y0 = e.touches[0].clientY; d = 0;
+    };
+    const move = (e: TouchEvent) => {
+      if (y0 == null) return;
+      d = (e.touches[0].clientY - y0) * 0.5;
+      if (d <= 0 || window.scrollY > 0) { y0 = null; setPull(0); return; }
+      if (e.cancelable) e.preventDefault();
+      setPull(Math.min(110, d));
+    };
+    const end = async () => {
+      if (y0 == null) return;
+      y0 = null;
+      if (d < PULL) { setPull(0); return; }
+      busy = true; setPulling(true); setPull(PULL);
+      try { await refreshRef.current(); } finally { busy = false; setPulling(false); setPull(0); }
+    };
+    window.addEventListener("touchstart", start, { passive: true });
+    window.addEventListener("touchmove", move, { passive: false });
+    window.addEventListener("touchend", end);
+    window.addEventListener("touchcancel", end);
+    return () => {
+      window.removeEventListener("touchstart", start); window.removeEventListener("touchmove", move);
+      window.removeEventListener("touchend", end); window.removeEventListener("touchcancel", end);
+    };
+  }, []);
+
   async function open(id: string, then: View) {
     let x = await fetchInsp(id);
     if (!x) { try { x = JSON.parse(localStorage.getItem(`insp-${id}`) || "null"); } catch {} }
@@ -203,6 +250,14 @@ export function MobileApp() {
   const nav = view.v === "home" || view.v === "queue" || view.v === "account";
   return (
     <div className={`mb${nav ? " withNav" : ""}`}>
+      {(pull > 0 || pulling) && (
+        <div className="mbPull" style={{ transform: `translate(-50%, ${pull}px)`, opacity: Math.min(1, pull / 64) }} aria-live="polite">
+          <span className={pulling ? "on" : ""} style={pulling ? undefined : { transform: `rotate(${pull * 4}deg)` }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v5h-5" /></svg>
+          </span>
+          <span className="sr-only">{pulling ? "Se reîncarcă" : ""}</span>
+        </div>
+      )}
       {!online && <div className="mbOffline">Fără semnal · lucrezi pe telefon, se trimite când revine rețeaua</div>}
       {view.v === "home" && <Home me={me} items={items} queueN={queueN} pos={pos} onSchedule={setSched} onNew={() => go({ v: "new" })} onOpen={(id) => open(id, { v: "detail", id })} onStart={(id) => open(id, { v: "form", id, sec: 0 })} onRefresh={load} />}
       {view.v === "detail" && cur && <Detail x={cur} draft={draft} onSchedule={setSched} onBack={() => history.back()} onStart={() => go({ v: "form", id: cur.id, sec: 0 })} />}

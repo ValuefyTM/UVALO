@@ -331,6 +331,9 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   punctul albastru = telefonul, atingerea unui pin dă cardul inspecției (fără listă sub hartă; `.mbMapBox` cu `isolation: isolate`,
   altfel straturile Leaflet trec peste meniul de jos). Calendarul: săptămâna (‹ ›, Azi), punctele = inspecții pe zi, agenda
   zilei alese și „De programat” cu buton.
+- **Tragere în jos = reîncărcare** (Acasă, De trimis, Contul meu, detaliul inspecției): evenimente touch pe `window` când pagina e sus
+  (nu pe hartă, semnătură, foaia de programare, câmpuri), prag 64 px → `refresh()` = trimite coada, `load()`, reîncarcă inspecția deschisă;
+  indicatorul `.mbPull`. `overscroll-behavior-y: none` ca să nu se suprapună cu reîncărcarea browserului.
 - **Programare de pe telefon**: foaia `ScheduleSheet` (Azi / Mâine / Poimâine, zi, oră, durată 30 min–2 h) din calendar și din detaliul
   inspecției (cardul „Programare”, doar la stările prog / plan) → `POST /api/inspectii {action: schedule, scheduled_at, duration_min}`.
 - **Inspecție nouă de pe telefon** (`+ Inspecție nouă` pe Acasă → ecranul `NewInsp`): „Sunt la proprietate” = GPS + adresa din

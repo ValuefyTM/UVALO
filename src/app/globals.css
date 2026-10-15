@@ -2005,6 +2005,11 @@ textarea.mbIn { min-height: 0; resize: vertical; }
 .mbCenterSmall a { text-decoration: underline; }
 .mbNextNone .mbBtn { margin-top: 8px; align-self: flex-start; }
 
+/* pull to refresh */
+.mbPull { position: fixed; left: 50%; top: calc(env(safe-area-inset-top) - 36px); z-index: 60; transition: opacity 0.15s; pointer-events: none; }
+.mbPull > span:first-child { width: 40px; height: 40px; border-radius: 50%; background: #fff; color: #141414; box-shadow: 0 4px 14px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; }
+.mbPull > span.on { animation: vfSpin 0.8s linear infinite; color: var(--acc-text); }
+
 /* toast, offline, bottom menu */
 .mbToast { position: fixed; left: 50%; bottom: calc(90px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 30; background: #141414; color: #fff; padding: 12px 16px; border-radius: 12px; font-size: 14px; max-width: calc(100% - 32px); box-shadow: 0 8px 24px rgba(0,0,0,0.3); animation: vfIn 0.3s var(--ease); }
 .mbOffline { position: sticky; top: 0; z-index: 10; background: var(--acc); color: #141414; font-size: 12px; font-weight: 700; text-align: center; padding: calc(6px + env(safe-area-inset-top)) 12px 6px; }
@@ -2013,7 +2018,7 @@ textarea.mbIn { min-height: 0; resize: vertical; }
 .mbNav button[aria-current="page"] { color: var(--acc); }
 .mbNav button i { position: absolute; top: 2px; left: calc(50% + 6px); background: var(--err); color: #fff; font-style: normal; font-size: 10px; min-width: 18px; height: 18px; border-radius: 9px; display: flex; align-items: center; justify-content: center; padding: 0 4px; }
 /* iOS, installed app: the page must reach the bottom edge, or the fixed menu floats above it by the status bar's height */
-html:has(.mb) { min-height: calc(100% + env(safe-area-inset-top)); background: #F4EFE6; }
+html:has(.mb) { min-height: calc(100% + env(safe-area-inset-top)); background: #F4EFE6; overscroll-behavior-y: none; }
 /* iPhone: the status bar (time, battery) sits over the page; a dark strip under it so scrolled content does not show through */
 .mb::before { content: ""; position: fixed; top: 0; left: 0; right: 0; height: env(safe-area-inset-top); background: #141414; z-index: 50; pointer-events: none; }
 @media (min-width: 561px) { body:has(.mb) { background: #141414; } }
