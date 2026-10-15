@@ -317,12 +317,14 @@ export async function inspAction(db: D1Database, c: Ctx, b: Record<string, unkno
     const tpl = cleanTemplate(J(r.template as string, {}));
     const answers: Record<string, string | string[]> = {};
     for (const g of tpl.groups) for (const q of g.qs) {
+      if (/^(water|sewer|gas|power)_distance_m$/.test(q.id) || q.id === "completion_pct") continue;
       answers[q.id] = q.kind === "many" ? (q.options ?? []).slice(0, Math.min(3, (q.options ?? []).length)) : q.kind === "number" ? (q.unit === "m" ? "16,2" : /an/i.test(q.t) ? "2004" : "1")
         : q.kind === "date" ? now().slice(0, 10) : q.kind === "text" ? (/prezent/i.test(q.t) ? String(r.contact_name ?? "Persoana de contact") : "[completat pe teren]") : q.def ?? q.options?.[0] ?? "";
     }
     const rooms = J<{ n: string; a: number | null }[]>(r.rooms as string, []);
     const ra = (rooms.length ? rooms : [{ n: "Hol", a: 8.2 }, { n: "Living", a: 26.4 }, { n: "Bucătărie", a: 11.4 }, { n: "Dormitor", a: 15.8 }, { n: "Baie", a: 6.9 }])
-      .map((x, i) => ({ ...x, floor: ["Gresie", "Parchet", "Gresie", "Parchet", "Gresie"][i % 5], walls: ["Vopsea lavabilă", "Vopsea lavabilă", "Faianță, vopsea", "Vopsea lavabilă", "Faianță"][i % 5], state: "Bună" }));
+      .map((x, i) => ({ ...x, floor: ["Gresie", "Parchet", "Gresie", "Parchet", "Gresie"][i % 5], walls: ["Vopsea lavabilă", "Vopsea lavabilă", "Faianță", "Vopsea lavabilă", "Faianță"][i % 5],
+        ceiling: "Vopsea lavabilă", state: "Bună" }));
     const start = new Date(Date.now() - 58 * 60e3).toISOString(), end = now();
     await db.prepare(`UPDATE inspections SET answers = ?, room_answers = ?, findings = ?, status = 'gata', started_at = ?, finished_at = ?, signed_name = ?, signed_at = ?, updated_at = ? WHERE id = ?`)
       .bind(JSON.stringify(answers), JSON.stringify(ra), JSON.stringify({ diff: "[diferențe față de acte]", defects: "[defecte vizibile]", notes: "[observații]" }), start, end,

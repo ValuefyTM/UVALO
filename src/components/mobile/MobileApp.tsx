@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { CONTACT_ROLES, fmtWhen, PROP_TYPES, STATUS, type InspRow, type Question, type Template } from "@/lib/insp-shared";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { CONTACT_ROLES, fmtWhen, isOptional, photoCategories, PROP_TYPES, ROOM_FIELDS, STATUS, type InspRow, type Question, type Template } from "@/lib/insp-shared";
 import { allFiles, allFinish, flush, putFile, putFinish, shrink, type QPhoto } from "./store";
 import { InstallHint } from "./InstallHint";
 
@@ -11,7 +11,7 @@ type Insp = InspRow & {
   findings: { diff?: string; defects?: string; notes?: string }; started_at: string | null; notes: string | null;
   files: { id: string; kind: string; name: string | null; room: string | null; taken_at: string | null }[];
 };
-type Room = { n: string; a: number | null; floor?: string; walls?: string; state?: string };
+type Room = { n: string; a: number | null; floor?: string; walls?: string; ceiling?: string; state?: string };
 type Me = { id: string; name: string; email: string; avatar?: boolean; anevar_no?: string | null; county?: string | null; phone?: string | null;
   org?: { id: string; name: string; logo: boolean; role: string | null } | null };
 type Info = { stats: { total: number; month: number; last: string | null; avg_min: number | null; photos: number }; device: { name: string; platform: string; created_at: string; last_seen_at: string } | null };
@@ -21,9 +21,6 @@ type Reminder = { key: string; insp: string; when: string; address: string; toda
 type Draft = { answers: Record<string, string | string[]>; rooms: Room[]; findings: { diff: string; defects: string; notes: string }; started_at: string };
 type View = { v: "home" } | { v: "detail"; id: string } | { v: "form"; id: string; sec: number } | { v: "rooms"; id: string } | { v: "photos"; id: string } | { v: "sign"; id: string } | { v: "queue" } | { v: "account" } | { v: "new" } | { v: "notifs" };
 
-const FLOORS = ["Parchet", "Gresie", "Laminat", "Mochetă", "Beton"];
-const WALLS = ["Vopsea lavabilă", "Faianță", "Tapet", "Tencuieli simple"];
-const STATES = ["Foarte bună", "Bună", "Satisfăcătoare", "Necesită reparații"];
 const DAYS = ["DUM", "LUN", "MAR", "MIE", "JOI", "VIN", "SÂM"];
 const MONTHS = ["ianuarie", "februarie", "martie", "aprilie", "mai", "iunie", "iulie", "august", "septembrie", "octombrie", "noiembrie", "decembrie"];
 const WEEKDAYS = ["Duminică", "Luni", "Marți", "Miercuri", "Joi", "Vineri", "Sâmbătă"];
@@ -717,9 +714,12 @@ function Form({ x, d, sec, photos, onBack, onSec, change, onPhoto, onRooms, onPh
   onPhoto: (f: File, room: string) => void; onRooms: () => void; onPhotos: () => void; onSign: () => void;
 }) {
   const groups = x.template.groups;
-  const all = groups.flatMap((g) => g.qs);
+  // the template's own "Constatări" group (UVALO sheets) replaces the free-text findings step
+  const ownFind = groups.some((gr) => gr.id === "constatari");
+  const last = ownFind ? groups.length - 1 : groups.length;
+  const all = groups.flatMap((g) => g.qs).filter((q) => !isOptional(q));
   const done = all.filter((q) => answered(d.answers[q.id])).length;
-  const isFind = sec >= groups.length;
+  const isFind = !ownFind && sec >= groups.length;
   const g = groups[sec];
   const roomsDone = d.rooms.filter((r) => r.floor && r.state).length;
   // the current section's chip is scrolled into view (the chips row is wider than the screen)
@@ -736,10 +736,10 @@ function Form({ x, d, sec, photos, onBack, onSec, change, onPhoto, onRooms, onPh
         <span className="mbProg"><i style={{ width: `${all.length ? Math.round((done / all.length) * 100) : 0}%` }} /></span>
         <nav ref={secsRef} className="mbSecs" aria-label="Secțiuni">
           {groups.map((gr, i) => {
-            const n = gr.qs.filter((q) => answered(d.answers[q.id])).length;
-            return <button key={gr.id} type="button" aria-current={i === sec ? "step" : undefined} className={n === gr.qs.length && gr.qs.length ? "ok" : ""} onClick={() => onSec(i)}>{n === gr.qs.length && gr.qs.length ? "✓ " : ""}{gr.name}{i === sec ? ` ${n}/${gr.qs.length}` : ""}</button>;
+            const qs = gr.qs.filter((q) => !isOptional(q)), n = qs.filter((q) => answered(d.answers[q.id])).length, ok = n === qs.length && qs.length > 0;
+            return <button key={gr.id} type="button" aria-current={i === sec ? "step" : undefined} className={ok ? "ok" : ""} onClick={() => onSec(i)}>{ok ? "✓ " : ""}{gr.name}{i === sec ? ` ${n}/${qs.length}` : ""}</button>;
           })}
-          <button type="button" aria-current={isFind ? "step" : undefined} onClick={() => onSec(groups.length)}>Constatări</button>
+          {!ownFind && <button type="button" aria-current={isFind ? "step" : undefined} onClick={() => onSec(groups.length)}>Constatări</button>}
         </nav>
       </header>
       <div className="mbBody">
@@ -760,7 +760,7 @@ function Form({ x, d, sec, photos, onBack, onSec, change, onPhoto, onRooms, onPh
           <button type="button" className="mbBtn" onClick={onPhotos}>Foto · {photos}</button>
           <button type="button" className="mbBtn" onClick={onSign}>Semnătură</button>
         </span>
-        {sec < groups.length ? <button type="button" className="mbBtn gold big" onClick={() => { onSec(sec + 1); window.scrollTo(0, 0); }}>Secțiunea următoare: {sec + 1 < groups.length ? groups[sec + 1].name : "Constatări"} →</button>
+        {sec < last ? <button type="button" className="mbBtn gold big" onClick={() => { onSec(sec + 1); window.scrollTo(0, 0); }}>Secțiunea următoare: {sec + 1 < groups.length ? groups[sec + 1].name : "Constatări"} →</button>
           : <button type="button" className="mbBtn gold big" onClick={onSign}>Încheie inspecția →</button>}
       </footer>
     </>
@@ -772,7 +772,7 @@ function Form({ x, d, sec, photos, onBack, onSec, change, onPhoto, onRooms, onPh
 function Rooms({ d, change, onBack, onPhoto }: { d: Draft; change: (f: (d: Draft) => Draft) => void; onBack: () => void; onPhoto: (f: File, room: string) => void }) {
   const cam = useRef<HTMLInputElement>(null);
   const [for_, setFor] = useState("");
-  const pick = (i: number, k: "floor" | "walls" | "state", v: string) => change((o) => { o.rooms[i][k] = o.rooms[i][k] === v ? undefined : v; return o; });
+  const pick = (i: number, k: "floor" | "walls" | "ceiling" | "state", v: string) => change((o) => { o.rooms[i][k] = o.rooms[i][k] === v ? undefined : v; return o; });
   return (
     <>
       <header className="mbBar"><Back onClick={onBack} /><span><b>Încăperi · {d.rooms.length}</b><small>Din releveu; adaugi ce lipsește</small></span></header>
@@ -781,12 +781,12 @@ function Rooms({ d, change, onBack, onPhoto }: { d: Draft; change: (f: (d: Draft
         {d.rooms.map((r, i) => (
           <section key={i} className="mbCard">
             <span className="mbRowBetween"><b>{i + 1}. {r.n}</b><span className="mbNum small"><input className="mbIn" inputMode="decimal" aria-label="Suprafața" value={r.a ?? ""} onChange={(e) => change((o) => { const v = parseFloat(e.target.value.replace(",", ".")); o.rooms[i].a = Number.isFinite(v) ? v : null; return o; })} /><em>mp</em></span></span>
-            <small className="mbCap">PARDOSEALĂ</small>
-            <span className="mbOpts">{FLOORS.map((o) => <button key={o} type="button" aria-pressed={r.floor === o} onClick={() => pick(i, "floor", o)}>{o}</button>)}</span>
-            <small className="mbCap">PEREȚI</small>
-            <span className="mbOpts">{WALLS.map((o) => <button key={o} type="button" aria-pressed={r.walls === o} onClick={() => pick(i, "walls", o)}>{o}</button>)}</span>
-            <small className="mbCap">STARE</small>
-            <span className="mbOpts">{STATES.map((o) => <button key={o} type="button" aria-pressed={r.state === o} onClick={() => pick(i, "state", o)}>{o}</button>)}</span>
+            {(["floor", "walls", "ceiling", "state"] as const).map((k) => (
+              <Fragment key={k}>
+                <small className="mbCap">{ROOM_FIELDS[k].label.toUpperCase()}</small>
+                <span className="mbOpts">{ROOM_FIELDS[k].opts.map((o) => <button key={o} type="button" aria-pressed={r[k] === o} onClick={() => pick(i, k, o)}>{o}</button>)}</span>
+              </Fragment>
+            ))}
             <button type="button" className="mbLink" onClick={() => { setFor(r.n); cam.current?.click(); }}>+ Fotografie {r.n}</button>
           </section>
         ))}
@@ -799,7 +799,7 @@ function Rooms({ d, change, onBack, onPhoto }: { d: Draft; change: (f: (d: Draft
 /* ---------- photos ---------- */
 
 function Photos({ x, d, pending, onBack, onPhoto }: { x: Insp; d: Draft; pending: QPhoto[]; onBack: () => void; onPhoto: (f: File, room: string) => void }) {
-  const cats = useMemo(() => ["Exterior", ...d.rooms.map((r, i) => `${r.n} · rlv ${i + 1}`), "Contoare", "Defecte"], [d.rooms]);
+  const cats = useMemo(() => { const c = photoCategories(x.prop_type); return [...c.before, ...d.rooms.map((r, i) => `${r.n} · rlv ${i + 1}`), ...c.after]; }, [d.rooms, x.prop_type]);
   const [room, setRoom] = useState(cats[0]);
   const cam = useRef<HTMLInputElement>(null);
   const sent = x.files.filter((f) => f.kind === "photo");
@@ -842,7 +842,7 @@ function Sign({ x, d, photos, change, onBack, onFinish }: { x: Insp; d: Draft; p
   const [who, setWho] = useState<"contact" | "other">(x.contact_name ? "contact" : "other");
   const [other, setOther] = useState("");
   const [busy, setBusy] = useState(false);
-  const all = x.template.groups.flatMap((g) => g.qs);
+  const all = x.template.groups.flatMap((g) => g.qs).filter((q) => !isOptional(q));
   const req = all.filter((q) => q.req), missing = req.filter((q) => !answered(d.answers[q.id]));
   useEffect(() => {
     const c = cv.current!; const r = c.getBoundingClientRect(), k = window.devicePixelRatio || 1;

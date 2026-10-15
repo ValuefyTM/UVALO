@@ -25,14 +25,16 @@ export default async function InspDoc({ params }: { params: Promise<{ id: string
   const rooms = x.room_answers.length ? x.room_answers : x.rooms;
   const util = rooms.reduce((s, r) => s + (r.a ?? 0), 0);
   const groups = x.template.groups;
+  // UVALO sheets have their own "Constatări" group; older ones use the free-text findings
+  const ownFind = groups.some((g) => g.id === "constatari");
   const toc: [string, string, string][] = [
     ["rezumat", "·", "Rezumat"],
     ...groups.map((g, i) => [`g-${g.id}`, String(i + 1).padStart(2, "0"), g.name] as [string, string, string]),
     ["incaperi", String(groups.length + 1).padStart(2, "0"), `Încăperi${rooms.length ? ` (${rooms.length})` : ""}`],
-    ["constatari", String(groups.length + 2).padStart(2, "0"), "Constatări"],
-    ["fotografii", String(groups.length + 3).padStart(2, "0"), `Fotografii (${photos.length})`],
-    ["acte", String(groups.length + 4).padStart(2, "0"), `Acte (${docs.length})`],
-    ["semnaturi", String(groups.length + 5).padStart(2, "0"), "Semnături"],
+    ...(ownFind ? [] : [["constatari", String(groups.length + 2).padStart(2, "0"), "Constatări"] as [string, string, string]]),
+    ["fotografii", String(groups.length + 3 - (ownFind ? 1 : 0)).padStart(2, "0"), `Fotografii (${photos.length})`],
+    ["acte", String(groups.length + 4 - (ownFind ? 1 : 0)).padStart(2, "0"), `Acte (${docs.length})`],
+    ["semnaturi", String(groups.length + 5 - (ownFind ? 1 : 0)).padStart(2, "0"), "Semnături"],
     ["istoric", "·", "Istoric"],
   ];
   const sec = (no: string, title: string) => <h2 className="inH2"><span>{no}</span>{title}</h2>;
@@ -87,27 +89,27 @@ export default async function InspDoc({ params }: { params: Promise<{ id: string
             {sec(String(groups.length + 1).padStart(2, "0"), "Încăperi")}
             {rooms.length ? (
               <table className="inRoomsTbl">
-                <thead><tr><th>Poz.</th><th>Încăpere</th><th className="right">mp</th><th>Pardoseală</th><th>Pereți</th><th>Stare</th></tr></thead>
+                <thead><tr><th>Poz.</th><th>Încăpere</th><th className="right">mp</th><th>Pardoseală</th><th>Pereți</th><th>Plafon</th><th>Stare</th></tr></thead>
                 <tbody>
                   {rooms.map((r, i) => {
-                    const ra = r as { floor?: string; walls?: string; state?: string };
-                    return <tr key={i}><td className="acc">{i + 1}</td><td><b>{r.n}</b></td><td className="right">{nf(r.a)}</td><td>{ra.floor ?? "—"}</td><td>{ra.walls ?? "—"}</td><td>{ra.state ?? "—"}</td></tr>;
+                    const ra = r as { floor?: string; walls?: string; ceiling?: string; state?: string };
+                    return <tr key={i}><td className="acc">{i + 1}</td><td><b>{r.n}</b></td><td className="right">{nf(r.a)}</td><td>{ra.floor ?? "—"}</td><td>{ra.walls ?? "—"}</td><td>{ra.ceiling ?? "—"}</td><td>{ra.state ?? "—"}</td></tr>;
                   })}
-                  <tr className="tot"><td /><td><b>Suprafață utilă</b></td><td className="right"><b>{nf(util)}</b></td><td colSpan={3}>{x.area_util ? `acte: ${nf(x.area_util)} mp · diferență ${util - x.area_util >= 0 ? "+" : ""}${nf(util - x.area_util)} mp` : ""}</td></tr>
+                  <tr className="tot"><td /><td><b>Suprafață utilă</b></td><td className="right"><b>{nf(util)}</b></td><td colSpan={4}>{x.area_util ? `acte: ${nf(x.area_util)} mp · diferență ${util - x.area_util >= 0 ? "+" : ""}${nf(util - x.area_util)} mp` : ""}</td></tr>
                 </tbody>
               </table>
             ) : <p className="hint">Încăperile din releveu nu au fost adăugate.</p>}
           </section>
 
-          <section id="constatari" className="inSec inFind">
+          {!ownFind && <section id="constatari" className="inSec inFind">
             <h2 className="inH2 light"><span>{String(groups.length + 2).padStart(2, "0")}</span>Constatări</h2>
             <span>Diferențe față de acte</span><b>{x.findings.diff || "—"}</b>
             <span>Defecte vizibile</span><b>{x.findings.defects || "—"}</b>
             <span>Observații</span><b>{x.findings.notes || x.notes || "—"}</b>
-          </section>
+          </section>}
 
           <section id="fotografii" className="inSec">
-            {sec(String(groups.length + 3).padStart(2, "0"), "Fotografii")}
+            {sec(String(groups.length + 3 - (ownFind ? 1 : 0)).padStart(2, "0"), "Fotografii")}
             {photos.length ? <div className="inPhotos">{photos.map((p, i) => (
               <figure key={p.id}>
                 <a className="inPhBox" href={`/api/inspectii/file/${p.id}`} target="_blank" rel="noopener">
@@ -122,7 +124,7 @@ export default async function InspDoc({ params }: { params: Promise<{ id: string
           </section>
 
           <section id="acte" className="inSec">
-            {sec(String(groups.length + 4).padStart(2, "0"), "Acte")}
+            {sec(String(groups.length + 4 - (ownFind ? 1 : 0)).padStart(2, "0"), "Acte")}
             {docs.length ? <ul className="inDocs">{docs.map((d) => (
               <li key={d.id}><a href={`/api/inspectii/file/${d.id}`} target="_blank" rel="noopener"><span className="inDocIco">{d.kind === "cf" ? "CF" : d.kind === "releveu" ? "RLV" : "DOC"}</span>
                 <b>{d.name ?? d.kind}</b><small>{d.kind === "cf" ? "Extras de carte funciară" : d.kind === "releveu" ? "Releveu" : "Document"}</small></a><InspFileDelete id={d.id} /></li>
@@ -132,7 +134,7 @@ export default async function InspDoc({ params }: { params: Promise<{ id: string
           </section>
 
           <section id="semnaturi" className="inSec inSigns">
-            <div><small>{String(groups.length + 5).padStart(2, "0")} · Persoana prezentă</small><b>{x.signed_name ?? "—"}</b><span className="inSignLine" /><em>{x.signed_at ? `Semnat pe telefon · ${fmtDate(x.signed_at, true)}` : "Semnătura se ia pe telefon"}</em></div>
+            <div><small>{String(groups.length + 5 - (ownFind ? 1 : 0)).padStart(2, "0")} · Persoana prezentă</small><b>{x.signed_name ?? "—"}</b><span className="inSignLine" /><em>{x.signed_at ? `Semnat pe telefon · ${fmtDate(x.signed_at, true)}` : "Semnătura se ia pe telefon"}</em></div>
             <div><small>Evaluator</small><b>{x.assignee_name ?? "—"}</b><span className="inSignLine" /><em>Semnătura evaluatorului</em></div>
           </section>
 
