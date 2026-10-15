@@ -334,8 +334,9 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
 - Instalare după dispozitiv (`InstallHint.tsx`): iPhone Safari → Partajează → „Adaugă pe ecranul principal” (balon cu săgeată spre bara Safari);
   iPhone în alt browser → „Deschide în Safari” (`x-safari-https://…`, nu merge peste tot) + „Copiază linkul”; Android → `beforeinstallprompt`
   sau meniul ⋮; Android în aplicații (Instagram, WhatsApp…) → `intent://…package=com.android.chrome`; calculator → QR. Ascuns 3 zile la ×.
-- **Acasă pe telefon**: sumarul (azi / săptămâna asta / neprogramate cu roșu; finalizatele doar în filtru) e în hero, sub salut (`.mbHeroStats`, atingerea
-  alege filtrul listei); bara compactă = filtrul ca listă derulantă (Săptămâna asta / Neprogramate / Finalizate / Toate, cu număr),
+- **Acasă pe telefon**: în hero, cardurile de perioadă Toate / Azi / Săpt. asta / De programat (`scope`; „Toate” selectat la fiecare deschidere
+  a aplicației, starea ține cât e deschisă); lista derulantă filtrează doar starea telefonului (`mstat`: Completări = retrimisă cu `redo_note`,
+  În lucru = începută, De făcut = programată, De programat, Finalizate), iar cu „Toate stările” lista e grupată pe stări (`MSTAT_ORDER`),
   comutatorul Listă / Hartă / Calendar (`localStorage` `insp-view`) și „+”. Harta: Leaflet de pe cdnjs + OSM, pini numerotați pe culoarea stării,
   punctul albastru = telefonul, atingerea unui pin dă cardul inspecției (fără listă sub hartă; `.mbMapBox` cu `isolation: isolate`,
   altfel straturile Leaflet trec peste meniul de jos). Calendarul: săptămâna (‹ ›, Azi), punctele = inspecții pe zi, agenda

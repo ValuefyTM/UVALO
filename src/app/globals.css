@@ -2069,7 +2069,13 @@ textarea.mbIn { min-height: 0; resize: vertical; }
 .mbTplCard > span { display: flex; flex-direction: column; gap: 1px; }
 
 /* the summary in the hero */
-.mbHeroStats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.mbHeroStats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.mbHeroStats button[aria-pressed="true"] { background: var(--acc); border-color: var(--acc); }
+.mbHeroStats button[aria-pressed="true"] b, .mbHeroStats button[aria-pressed="true"] small { color: #141414 !important; }
+.mbGroupHead { display: flex; align-items: center; gap: 8px; margin: 8px 2px 0; font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.mbGroupHead i { width: 8px; height: 8px; border-radius: 50%; }
+.mbGroupHead em { font-style: normal; margin-left: auto; color: var(--muted-2); }
+.mbList > .mbGroupHead:first-child { margin-top: 0; }
 .mbHeroStats button { border: 1px solid #2e2e2e; background: #1f1f1f; color: #fff; border-radius: 11px; padding: 6px 2px 5px; display: flex; flex-direction: column; align-items: center; gap: 1px; }
 .mbHeroStats b { font-size: 16px; line-height: 1.15; }
 .mbHeroStats small { font-size: 10px !important; color: var(--on-navy-2) !important; white-space: nowrap; }

@@ -77,6 +77,8 @@ export function MobileApp() {
   }, []);
   const pos = useRef<[number, number] | null>(null);
   const [sched, setSched] = useState<Sched | null>(null);
+  const [scope, setScope] = useState<Scope>("all");
+  const [st, setSt] = useState<StatF>("all");
 
   const say = (m: string) => { setToast(m); setTimeout(() => setToast(""), 3500); };
   const go = useCallback((v: View) => { setViewState(v); history.pushState({ mbv: v }, ""); window.scrollTo(0, 0); }, []);
@@ -313,7 +315,7 @@ export function MobileApp() {
       )}
       <div className="mbPage" style={pull || drag ? { transform: `translateY(${pull}px)`, transition: drag ? "none" : undefined } : undefined}>
       {!online && <div className="mbOffline">Fără semnal · lucrezi pe telefon, se trimite când revine rețeaua</div>}
-      {view.v === "home" && <Home me={me} items={items} queueN={queueN} pos={pos} unread={unread} onBell={() => go({ v: "notifs" })} onMe={() => go({ v: "account" })} onSchedule={setSched} onNew={() => go({ v: "new" })} onOpen={(id) => open(id, { v: "detail", id })} onStart={(id) => open(id, { v: "form", id, sec: 0 })} />}
+      {view.v === "home" && <Home me={me} items={items} queueN={queueN} pos={pos} unread={unread} scope={scope} setScope={setScope} st={st} setSt={setSt} onBell={() => go({ v: "notifs" })} onMe={() => go({ v: "account" })} onSchedule={setSched} onNew={() => go({ v: "new" })} onOpen={(id) => open(id, { v: "detail", id })} onStart={(id) => open(id, { v: "form", id, sec: 0 })} />}
       {view.v === "detail" && cur && <Detail x={cur} draft={draft} onSchedule={setSched} onBack={() => history.back()} onStart={() => go({ v: "form", id: cur.id, sec: 0 })} />}
       {view.v === "form" && cur && draft && (
         <Form x={cur} d={draft} sec={view.sec} photos={pending.filter((p) => p.insp === cur.id).length + cur.files.filter((f) => f.kind === "photo").length}
@@ -418,16 +420,29 @@ function Login({ onDone }: { onDone: () => void }) {
 
 /* ---------- home ---------- */
 
+/** The phone's statuses: what the person has to do with each inspection (sent back to complete = "Completări"). */
+type MStat = "redo" | "lucru" | "plan" | "prog" | "gata";
+const MSTAT: Record<MStat, { label: string; fg: string; bg: string }> = {
+  redo: { label: "Completări", fg: "#B3261E", bg: "#FBE9E7" },
+  lucru: { label: "În lucru", fg: STATUS.lucru.fg, bg: STATUS.lucru.bg },
+  plan: { label: "De făcut", fg: STATUS.plan.fg, bg: STATUS.plan.bg },
+  prog: { label: "De programat", fg: STATUS.prog.fg, bg: STATUS.prog.bg },
+  gata: { label: "Finalizate", fg: STATUS.gata.fg, bg: STATUS.gata.bg },
+};
+const MSTAT_ORDER: MStat[] = ["redo", "lucru", "plan", "prog", "gata"];
+const mstat = (i: InspRow): MStat => (i.status === "gata" || i.status === "pred" ? "gata" : i.status === "lucru" ? (i.redo_note ? "redo" : "lucru") : i.status);
+type Scope = "all" | "today" | "week" | "unsched";
+type StatF = "all" | MStat;
+
 type Sched = { id: string; address: string; scheduled_at: string | null; duration_min: number; day?: string };
 type HView = "list" | "map" | "cal";
 const isDone = (i: InspRow) => i.status === "gata" || i.status === "pred";
 const canSchedule = (i: { status: string }) => i.status === "prog" || i.status === "plan";
 
-function Home({ me, items, queueN, pos, unread, onBell, onMe, onNew, onOpen, onStart, onSchedule }: {
-  me: Me | null; items: InspRow[]; queueN: number; unread: number; onBell: () => void; onMe: () => void; pos: React.RefObject<[number, number] | null>; onNew: () => void; onOpen: (id: string) => void;
+function Home({ me, items, queueN, pos, unread, scope, setScope, st, setSt, onBell, onMe, onNew, onOpen, onStart, onSchedule }: {
+  me: Me | null; items: InspRow[]; queueN: number; unread: number; scope: Scope; setScope: (s: Scope) => void; st: StatF; setSt: (s: StatF) => void; onBell: () => void; onMe: () => void; pos: React.RefObject<[number, number] | null>; onNew: () => void; onOpen: (id: string) => void;
   onStart: (id: string) => void; onSchedule: (x: Sched) => void;
 }) {
-  const [f, setF] = useState<"week" | "prog" | "done" | "all">("week");
   const [hv, setHv] = useState<HView>("list");
   useEffect(() => { try { const v = localStorage.getItem("insp-view"); if (v === "map" || v === "cal" || v === "list") setHv(v); } catch {} }, []);
   const pickView = (v: HView) => { setHv(v); try { localStorage.setItem("insp-view", v); } catch {} };
@@ -436,14 +451,17 @@ function Home({ me, items, queueN, pos, unread, onBell, onMe, onNew, onOpen, onS
   const active = items.filter((i) => !isDone(i));
   const next = active.filter((i) => i.scheduled_at && i.scheduled_at >= today).sort((a, b) => a.scheduled_at!.localeCompare(b.scheduled_at!))[0] ?? active.find((i) => i.status === "lucru");
   const inWeek = active.filter((i) => i.scheduled_at && i.scheduled_at.slice(0, 10) >= today && i.scheduled_at.slice(0, 10) <= wkEnd);
-  const weekList = [...active.filter((i) => i.status === "lucru"), ...inWeek.filter((i) => i.status !== "lucru")];
   const unsched = active.filter((i) => !i.scheduled_at);
-  const done = items.filter(isDone);
-  const list = f === "week" ? weekList : f === "prog" ? unsched : f === "done" ? done : items;
+  const todayL = items.filter((i) => i.scheduled_at?.startsWith(today));
+  const weekL = items.filter((i) => i.scheduled_at && i.scheduled_at.slice(0, 10) >= today && i.scheduled_at.slice(0, 10) <= wkEnd);
+  // the cards choose the time (Toate / Azi / Săptămâna asta / De programat), the list below the status
+  const scoped = scope === "today" ? todayL : scope === "week" ? weekL : scope === "unsched" ? unsched : items;
+  const list = st === "all" ? scoped : scoped.filter((i) => mstat(i) === st);
+  const count = (k: MStat) => scoped.filter((i) => mstat(i) === k).length;
   const first = (me?.name ?? "").split(/\s+/)[0];
   const mins = next?.scheduled_at ? Math.round((new Date(next.scheduled_at).getTime() - now.getTime()) / 60000) : null;
-  const showList = (k: typeof f) => { setF(k); pickView("list"); };
-  const FILTERS = [["week", "Săptămâna asta", weekList.length], ["prog", "Neprogramate", unsched.length], ["done", "Finalizate", done.length], ["all", "Toate", items.length]] as const;
+  const showScope = (k: Scope) => { setScope(k); if (hv === "cal") pickView("list"); };
+  const FILTERS: [StatF, string, number][] = [["all", "Toate stările", scoped.length], ...MSTAT_ORDER.map((k) => [k, MSTAT[k].label, count(k)] as [StatF, string, number])];
   return (
     <>
       <header className="mbHead">
@@ -457,10 +475,11 @@ function Home({ me, items, queueN, pos, unread, onBell, onMe, onNew, onOpen, onS
             <button type="button" className="mbAv" onClick={onMe} aria-label="Contul meu"><Avatar me={me} /></button>
           </span>
         </div>
-        <div className="mbHeroStats">
-          <button type="button" onClick={() => showList("week")}><b>{active.filter((i) => i.scheduled_at?.startsWith(today)).length}</b><small>azi</small></button>
-          <button type="button" onClick={() => showList("week")}><b>{inWeek.length}</b><small>săptămâna asta</small></button>
-          <button type="button" onClick={() => showList("prog")} className={unsched.length ? "red" : ""}><b>{unsched.length}</b><small>neprogramate</small></button>
+        <div className="mbHeroStats" role="group" aria-label="Perioada">
+          <button type="button" aria-pressed={scope === "all"} onClick={() => showScope("all")}><b>{items.length}</b><small>toate</small></button>
+          <button type="button" aria-pressed={scope === "today"} onClick={() => showScope("today")}><b>{todayL.length}</b><small>azi</small></button>
+          <button type="button" aria-pressed={scope === "week"} onClick={() => showScope("week")}><b>{weekL.length}</b><small>săpt. asta</small></button>
+          <button type="button" aria-pressed={scope === "unsched"} onClick={() => showScope("unsched")} className={unsched.length ? "red" : ""}><b>{unsched.length}</b><small>de programat</small></button>
         </div>
         {next ? (
           <div className="mbNext">
@@ -482,8 +501,8 @@ function Home({ me, items, queueN, pos, unread, onBell, onMe, onNew, onOpen, onS
       <div className="mbTools">
         {hv === "cal" ? <b className="mbToolsT">Calendar</b> : (
           <label className="mbSel">
-            <span className="mbSelV" aria-hidden="true"><span>{FILTERS.find((x) => x[0] === f)![1]}</span><em>{FILTERS.find((x) => x[0] === f)![2]}</em></span>
-            <select value={f} onChange={(e) => setF(e.target.value as typeof f)} aria-label="Arată">
+            <span className="mbSelV" aria-hidden="true"><span>{FILTERS.find((x) => x[0] === st)![1]}</span><em>{FILTERS.find((x) => x[0] === st)![2]}</em></span>
+            <select value={st} onChange={(e) => setSt(e.target.value as StatF)} aria-label="Starea">
               {FILTERS.map(([k, l, n]) => <option key={k} value={k}>{l} · {n}</option>)}
             </select>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
@@ -496,7 +515,7 @@ function Home({ me, items, queueN, pos, unread, onBell, onMe, onNew, onOpen, onS
         </span>
         <button type="button" className="mbAdd" aria-label="Inspecție nouă" onClick={onNew}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg></button>
       </div>
-      {hv === "list" && <ItemList list={list} today={today} onOpen={onOpen} />}
+      {hv === "list" && <ItemList list={list} today={today} onOpen={onOpen} grouped={st === "all"} />}
       {hv === "map" && <MapList list={list} today={today} pos={pos} onOpen={onOpen} />}
       {hv === "cal" && <Calendar items={items} today={today} onOpen={onOpen} onSchedule={onSchedule} />}
     </>
@@ -510,18 +529,35 @@ function ItemRow({ i, today, onOpen, n }: { i: InspRow; today: string; onOpen: (
       {n != null ? <span className="mbPinN" style={{ background: STATUS[i.status].fg }}>{n}</span>
         : <span className={`mbDay${isToday ? " today" : ""}`}>{d ? <><small>{isToday ? "AZI" : `${DAYS[d.getDay()]} ${d.getDate()}`}</small><b>{i.scheduled_at!.slice(11, 16)}</b></> : <><small>FĂRĂ</small><small>DATĂ</small></>}</span>}
       <span className="mbItemTxt">
-        <span><em>{(i.prop_type ?? "IMOBIL").toUpperCase()}</em><i style={{ color: STATUS[i.status].fg }}>● {STATUS[i.status].label}</i></span>
+        <span><em>{(i.prop_type ?? "IMOBIL").toUpperCase()}</em><i style={{ color: MSTAT[mstat(i)].fg }}>● {mstat(i) === "gata" ? (i.status === "pred" ? "Predată" : "Finalizată") : MSTAT[mstat(i)].label}</i></span>
         <b>{i.address}</b>
-        <small>{n != null ? fmtWhen(i.scheduled_at) : [i.contact_name, i.cad_nr && `nr. cad. ${i.cad_nr}`].filter(Boolean).join(" · ") || fmtWhen(i.scheduled_at)}</small>
+        <small>{i.redo_note && mstat(i) === "redo" ? `De completat: ${i.redo_note}` : n != null ? fmtWhen(i.scheduled_at) : [i.contact_name, i.cad_nr && `nr. cad. ${i.cad_nr}`].filter(Boolean).join(" · ") || fmtWhen(i.scheduled_at)}</small>
       </span>
     </button>
   );
 }
 
-function ItemList({ list, today, onOpen }: { list: InspRow[]; today: string; onOpen: (id: string) => void }) {
+function ItemList({ list, today, onOpen, grouped = false }: { list: InspRow[]; today: string; onOpen: (id: string) => void; grouped?: boolean }) {
+  const byDate = (a: InspRow, b: InspRow) => (a.scheduled_at ?? "9999").localeCompare(b.scheduled_at ?? "9999");
+  if (grouped && list.length) {
+    return (
+      <div className="mbList">
+        {MSTAT_ORDER.map((k) => {
+          const g = list.filter((i) => mstat(i) === k).sort(k === "gata" ? (a, b) => (b.finished_at ?? "").localeCompare(a.finished_at ?? "") : byDate);
+          if (!g.length) return null;
+          return (
+            <Fragment key={k}>
+              <span className="mbGroupHead" style={{ color: MSTAT[k].fg }}><i style={{ background: MSTAT[k].fg }} />{MSTAT[k].label}<em>{g.length}</em></span>
+              {g.map((i) => <ItemRow key={i.id} i={i} today={today} onOpen={onOpen} />)}
+            </Fragment>
+          );
+        })}
+      </div>
+    );
+  }
   return (
     <div className="mbList">
-      {list.map((i) => <ItemRow key={i.id} i={i} today={today} onOpen={onOpen} />)}
+      {[...list].sort(byDate).map((i) => <ItemRow key={i.id} i={i} today={today} onOpen={onOpen} />)}
       {!list.length && <p className="mbEmpty">Nimic aici. Inspecțiile se pregătesc pe web sau cu „+”.</p>}
     </div>
   );
