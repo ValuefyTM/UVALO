@@ -16,8 +16,9 @@ export default async function InspNou({ searchParams }: { searchParams: Promise<
   const { db, c } = await page();
   const ops = isOps(c);
   if (!c.modules.includes("inspectii") || (!ops && !(await devices(db, c.user.id)).length)) redirect("/inspectii");
-  const [tpls, cols] = await Promise.all([usableTemplates(db, c), team(db, c)]);
   const old = id ? await getInspection(db, c, id) : null;
+  // editing a firm's inspection (e.g. as its associated administrator): that firm's people
+  const [tpls, cols] = await Promise.all([usableTemplates(db, c), team(db, c, (old as unknown as { org_id?: string | null } | null)?.org_id)]);
   if (old && (old.status === "gata" || old.status === "pred")) redirect(`/inspectii/${old.id}`);
   const init: FormInit = old ? {
     id: old.id, address: old.address, cad_nr: old.cad_nr ?? "", cf_nr: old.cf_nr ?? "", uat: old.uat ?? "", county: old.county ?? "", lat: old.lat, lng: old.lng,

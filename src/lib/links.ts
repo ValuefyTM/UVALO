@@ -16,10 +16,10 @@ type LinkRow = { id: string; org_id: string; user_id: string; kind: LinkKind; st
 
 /** An office's links ("Firma mea"): active, invitations sent, requests received. */
 export async function officeLinks(db: D1Database, orgId: string) {
-  const { results } = await db.prepare(`SELECT l.id, l.kind, l.status, l.created_at, l.decided_at, u.id AS user_id, u.name, u.email, u.anevar_no, u.county, u.status AS user_status, u.avatar IS NOT NULL AS has_avatar
+  const { results } = await db.prepare(`SELECT l.id, l.kind, l.status, l.admin, l.created_at, l.decided_at, u.id AS user_id, u.name, u.email, u.anevar_no, u.county, u.status AS user_status, u.avatar IS NOT NULL AS has_avatar
     FROM office_links l JOIN users u ON u.id = l.user_id WHERE l.org_id = ? AND l.status IN ('invited', 'requested', 'active')
     ORDER BY CASE l.status WHEN 'requested' THEN 0 WHEN 'active' THEN 1 ELSE 2 END, u.name, u.email`).bind(orgId)
-    .all<{ id: string; kind: LinkKind; status: string; created_at: string; decided_at: string | null; user_id: string; name: string | null; email: string; anevar_no: string | null; county: string | null; user_status: string; has_avatar: number }>();
+    .all<{ id: string; kind: LinkKind; status: string; admin: number; created_at: string; decided_at: string | null; user_id: string; name: string | null; email: string; anevar_no: string | null; county: string | null; user_status: string; has_avatar: number }>();
   return results;
 }
 
@@ -162,10 +162,17 @@ export async function linkAction(db: D1Database, c: Ctx, b: Record<string, unkno
       P(`Biroul <b>${esc(org.name)}</b> a încheiat asocierea. Contul tău UVALO rămâne neschimbat.`), "/login?next=%2Fcont%23asocieri", "Vezi asocierile →");
     return { ok: true };
   }
+  if (action === "admin") {
+    if (!adm || l.status !== "active" || l.kind !== "angajat") return { error: "Doar angajații asociați pot fi administratori ai inspecțiilor biroului." };
+    await db.prepare("UPDATE office_links SET admin = ? WHERE id = ?").bind(b.on ? 1 : 0, id).run();
+    await audit(db, c.user.id, "office.link_admin", "org", l.org_id, `${u.email} → ${b.on ? "admin" : "fără admin"}`);
+    return { ok: true };
+  }
   if (action === "kind") {
     if (!adm || !["active", "invited"].includes(l.status)) return { error: "Doar administratorii biroului pot schimba tipul." };
     const kind = kindOf(b.kind);
-    await db.prepare("UPDATE office_links SET kind = ? WHERE id = ?").bind(kind, id).run();
+    // a colaborator is never an administrator of the office's inspections
+    await db.prepare("UPDATE office_links SET kind = ?, admin = CASE WHEN ? = 'angajat' THEN admin ELSE 0 END WHERE id = ?").bind(kind, kind, id).run();
     await audit(db, c.user.id, "office.link_kind", "org", l.org_id, `${u.email} → ${kind}`);
     return { ok: true };
   }

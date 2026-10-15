@@ -222,16 +222,19 @@ const ROW_SQL = `SELECT i.id, i.code, i.org_id, og.name AS org_name, i.status, i
 export const isOps = (c: Ctx) => !c.super && !c.user.anevar_no?.trim() && !!c.org?.office_at;
 /** Sees all the firm's inspections: its operationals and administrators (offices only). */
 export const firmView = (c: Ctx) => !!c.org?.office_at && (isOps(c) || canManageOrg(c));
+/** The firms whose inspections this person sees all of: their own office (administrator / operational) and the offices that made them
+ *  an associated administrator. An associate without it sees only the inspections given to them. */
+export const firmOrgs = (c: Ctx) => [...(firmView(c) ? [c.org!.id] : []), ...(c.linkAdmin ?? [])];
 /** May prepare / change / share an inspection: who prepared it, the firm's viewers for the firm's inspections, super-admins. */
 export const canPrepare = (c: Ctx, r: { created_by?: unknown; org_id?: unknown }) =>
-  c.super || r.created_by === c.user.id || (firmView(c) && !!r.org_id && r.org_id === c.org?.id);
+  c.super || r.created_by === c.user.id || (!!r.org_id && firmOrgs(c).includes(String(r.org_id)));
 
 export type Who = "mine" | "forme" | "forothers" | "firm";
 /** mine = my work, done by me; forme = my work, done by a colleague; forothers = I do it for a colleague's work; firm = the firm's (firm viewers). */
 export async function listInspections(db: D1Database, c: Ctx) {
-  const userId = c.user.id, firm = firmView(c) ? c.org!.id : "-";
-  const { results } = await db.prepare(`${ROW_SQL} AND (i.created_by = ?1 OR i.assignee_id = ?1 OR i.org_id = ?2) ORDER BY COALESCE(i.scheduled_at, i.created_at) DESC LIMIT 800`)
-    .bind(userId, firm).all<InspRow>();
+  const userId = c.user.id, firms = firmOrgs(c);
+  const { results } = await db.prepare(`${ROW_SQL} AND (i.created_by = ? OR i.assignee_id = ?${firms.length ? ` OR i.org_id IN (${firms.map(() => "?").join(", ")})` : ""})
+    ORDER BY COALESCE(i.scheduled_at, i.created_at) DESC LIMIT 800`).bind(userId, userId, ...firms).all<InspRow>();
   const who = (r: InspRow): Who => (r.created_by === userId ? (r.assignee_id && r.assignee_id !== userId) || r.assignee_kind === "collab" ? "forme" : "mine"
     : r.assignee_id === userId ? "forothers" : "firm");
   return results.map((r) => ({ ...r, who: who(r) }));
@@ -326,14 +329,16 @@ export type TeamMember = { id: string; name: string; group: TeamGroup; legit: st
  * elsewhere every colleague, as before) and the valuers linked to the office (angajați, colaboratori). Operationals do none.
  * `busy` = their scheduled, unfinished inspections from yesterday on (any firm; only the time, no details) for the availability.
  */
-export async function team(db: D1Database, c: Ctx): Promise<TeamMember[]> {
-  if (!c.org) return [];
-  const office = !!c.org.office_at;
+export async function team(db: D1Database, c: Ctx, orgId?: string | null): Promise<TeamMember[]> {
+  // the firm whose people are listed: the current one, or (an associated administrator) the office the inspection belongs to
+  const org = orgId && orgId !== c.org?.id ? await db.prepare("SELECT id, office_at FROM orgs WHERE id = ?").bind(orgId).first<{ id: string; office_at: string | null }>() : c.org;
+  if (!org) return [];
+  const office = !!org.office_at;
   const { results } = await db.prepare(`SELECT u.id, COALESCE(NULLIF(u.name, ''), u.email) AS name, u.anevar_no AS legit, u.avatar IS NOT NULL AS av, 'membru' AS grp FROM memberships m JOIN users u ON u.id = m.user_id
       WHERE m.org_id = ?1 AND m.status = 'active' AND u.status NOT IN ('disabled', 'closed') AND u.id <> ?2 ${office ? "AND COALESCE(u.anevar_no, '') <> ''" : ""}
     UNION ALL SELECT u.id, COALESCE(NULLIF(u.name, ''), u.email), u.anevar_no, u.avatar IS NOT NULL, l.kind FROM office_links l JOIN users u ON u.id = l.user_id
       WHERE l.org_id = ?1 AND l.status = 'active' AND u.status NOT IN ('disabled', 'closed') AND u.id <> ?2 AND ?3 = 1`)
-    .bind(c.org.id, c.user.id, office ? 1 : 0).all<{ id: string; name: string; legit: string | null; av: number; grp: TeamGroup }>();
+    .bind(org.id, c.user.id, office ? 1 : 0).all<{ id: string; name: string; legit: string | null; av: number; grp: TeamGroup }>();
   const seen = new Set<string>();
   const people = results.filter((r) => !seen.has(r.id) && seen.add(r.id)).sort((a, b) => a.name.localeCompare(b.name, "ro"));
   if (!people.length) return [];
@@ -373,7 +378,7 @@ export async function saveInspection(db: D1Database, c: Ctx, b: Record<string, u
   // a colaborator asociat gets a request first (accepts or declines); the office's evaluators and angajații get it directly
   let ask: { name: string } | null = null;
   if (v.assignee_kind === "office") {
-    const who = v.assignee_id ? (await team(db, c)).find((x) => x.id === v.assignee_id) : undefined;
+    const who = v.assignee_id ? (await team(db, c, old?.org_id)).find((x) => x.id === v.assignee_id) : undefined;
     if (!who) return { error: "Alege cine din birou face inspecția." };
     assignee = v.assignee_id;
     if (who.group === "colaborator") ask = { name: who.name };
@@ -426,7 +431,7 @@ export async function inspAction(db: D1Database, c: Ctx, b: Record<string, unkno
     const kind = b.assignee_kind === "me" ? "me" : "office";
     if (kind === "me") { if (isOps(c)) return { error: "Rolul operațional nu face inspecții." }; }
     else {
-      const who = (await team(db, c)).find((x) => x.id === s(b.assignee_id, 64));
+      const who = (await team(db, c, r.org_id ? String(r.org_id) : null)).find((x) => x.id === s(b.assignee_id, 64));
       if (!who) return { error: "Alege cine din birou face inspecția." };
       to = who.id; name = who.name; ask = who.group === "colaborator";
     }

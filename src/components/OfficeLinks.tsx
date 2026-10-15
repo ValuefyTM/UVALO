@@ -26,7 +26,7 @@ function KindPick({ value, onChange, name }: { value: Kind; onChange: (k: Kind) 
   );
 }
 
-export type OfficeLinkRow = { id: string; kind: Kind; status: string; since: string; user_id: string; name: string | null; email: string; anevar_no: string | null; county: string | null; has_av?: boolean };
+export type OfficeLinkRow = { id: string; kind: Kind; status: string; since: string; user_id: string; name: string | null; email: string; anevar_no: string | null; county: string | null; has_av?: boolean; admin?: boolean };
 export type PersonRow = { user_id: string; email: string; name: string; status: string; role: string; anevar: boolean; last_seen: string; me: boolean; has_av?: boolean };
 export type MemberInvite = { id: string; email: string; role: string; created: string; expires: string; by: string | null };
 
@@ -157,11 +157,16 @@ export function OfficePeople({ people, invites, links, seats, used, canOwner, st
     { k: "eval", t: "Evaluatori", note: "membri · ocupă locuri · lucrează doar prin birou", rows: ppl.filter((m) => m.role === "member" && m.anevar).map(member) },
     { k: "ops", t: "Operaționali", note: "fără legitimație · ocupă locuri · văd și introduc inspecțiile firmei", rows: ppl.filter((m) => m.role === "member" && !m.anevar).map(member) },
     ...(["angajat", "colaborator"] as Kind[]).map((k) => ({
-      k, t: k === "angajat" ? "Angajați asociați" : "Colaboratori asociați", note: k === "angajat" ? "cont propriu · fără loc · primesc inspecțiile direct" : "cont propriu · fără loc · acceptă fiecare solicitare",
+      k, t: k === "angajat" ? "Angajați asociați" : "Colaboratori asociați", note: k === "angajat" ? "cont propriu · fără loc · primesc inspecțiile direct · văd doar inspecțiile lor; bifa „Administrator” = le văd pe toate ale biroului" : "cont propriu · fără loc · acceptă fiecare solicitare",
       rows: assoc(k).map((r) => (
         <div key={r.id} className="opRow">
-          <UserAv id={r.user_id} name={nm(r)} has={r.has_av} size={34} /><span className="opWho"><b>{nm(r)}</b><small>{lsub(r)} · asociat din {r.since}</small></span>
+          <UserAv id={r.user_id} name={nm(r)} has={r.has_av} size={34} /><span className="opWho"><b>{nm(r)}{r.admin && <em className="lkTag">Administrator</em>}</b><small>{lsub(r)} · asociat din {r.since}</small></span>
           <span className="opAct">
+            {k === "angajat" && (
+              <label className="opAdm" title="Vede și gestionează toate inspecțiile biroului. Fără bifă vede doar inspecțiile primite.">
+                <input type="checkbox" checked={!!r.admin} disabled={!!busy} onChange={(e) => run(r.id, () => act({ action: "admin", id: r.id, on: e.target.checked }))} /> Administrator
+              </label>
+            )}
             <button type="button" className="linkBtn" disabled={!!busy} onClick={() => run(r.id, () => act({ action: "kind", id: r.id, kind: k === "angajat" ? "colaborator" : "angajat" }))}>
               Treci la {k === "angajat" ? "colaborator" : "angajat"}</button>
             <button type="button" className="linkBtn danger" disabled={!!busy}

@@ -252,7 +252,12 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   înainte să i se aloce (migrația 0031 `inspections.assign_state`: `pending` la atribuire → acțiunile `accept` (NULL) / `decline` (`declined`,
   `assignee_id` golit, inspecția revine biroului: „Refuzată · alege altcineva” în listă); cât e `pending`, programarea / fișa sunt blocate;
   jurnal + notificare „Solicitare de inspecție”; pe telefon starea „Solicitări” (mov, prima în listă) și în detaliu Refuz / Accept).
-  Textele nu mai spun unde apar inspecțiile pe telefon: totul e în Acasă. Doar evaluatorii
+  Textele nu mai spun unde apar inspecțiile pe telefon: totul e în Acasă.
+  **Vizibilitatea inspecțiilor**: un asociat vede doar inspecțiile primite (și cele create de el); bifa **„Administrator”** la un angajat asociat
+  (migrația 0032 `office_links.admin`, acțiunea `admin`; doar `kind = angajat`, se pierde la trecerea în colaborator) îi dă toate inspecțiile
+  biroului: `c.linkAdmin` (în `context()`) → `firmOrgs(c)` în `insp.ts` (biroul propriu pentru administrator / operațional + birourile care l-au
+  făcut administrator) → lista (fila „Ale firmei”), fișa, editarea, realocarea (`canPrepare`); `team(db, c, orgId)` listează oamenii biroului
+  inspecției, nu ai firmei proprii. Doar evaluatorii
   (`anevar_no`); cei fără legitimație rămân membri cu rol **Operațional** (eticheta din „Firma mea”: Evaluator / Operațional, după `anevar_no`;
   văd și introduc inspecțiile firmei, nu fac inspecții). Stări: `invited` (biroul invită după email sau legitimație) / `requested` (evaluatorul cere
   din „Contul meu” → „Asociază-te cu o firmă”, căutare după nume `searchOffices`, deocamdată doar cu `c.office`) → `active` → `ended` (oricare parte;

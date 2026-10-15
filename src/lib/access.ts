@@ -49,6 +49,8 @@ export type Ctx = {
   insp: CollabMode;
   /** "Birou de evaluare" turned on for this person by the administration (super-admins: always). */
   office: boolean;
+  /** Offices this person is an associated administrator of (office_links.admin): they see and manage those firms' inspections. */
+  linkAdmin: string[];
 };
 
 export async function context(db: D1Database): Promise<Ctx | null> {
@@ -82,7 +84,9 @@ export async function context(db: D1Database): Promise<Ctx | null> {
   const ii = modules.indexOf("inspectii");
   if (ii >= 0 && !insOk) modules.splice(ii, 1);
   if (ii < 0 && insOk) modules.push("inspectii");
-  return { user, session, super: sup, orgs, org, role, modules, block, off, collab: cs.mode, insp: ins.mode, office: sup || !!user.office_allowed };
+  const linkAdmin = (await db.prepare("SELECT org_id FROM office_links WHERE user_id = ? AND status = 'active' AND admin = 1").bind(user.id).all<{ org_id: string }>()
+    .catch(() => ({ results: [] as { org_id: string }[] }))).results.map((r) => r.org_id);
+  return { user, session, super: sup, orgs, org, role, modules, block, off, collab: cs.mode, insp: ins.mode, office: sup || !!user.office_allowed, linkAdmin };
 }
 
 /** "Birou de evaluare" (Firma mea: colleagues, seats): only for the accounts the administration turned it on for (in test). */

@@ -44,7 +44,9 @@ export default async function InspectiiPage() {
         <InspSettings />
       </>}>
       {c.insp !== "on" && <div className="note inTestNote">Modul în test: îl văd administratorii UVALO și grupul de test. Datele introduse acum sunt marcate ca date de test.</div>}
-      <InspList rows={rows} meId={c.user.id} firm={firmView(c) ? c.org!.id : null} ops={ops} />
+      <InspList rows={rows} meId={c.user.id} ops={ops}
+        // the administrator's own office is "Ale mele"; an operational's office and the offices that made them an associated administrator: "Ale firmei"
+        mergeOrg={firmView(c) && !ops ? c.org!.id : null} firmOrgs={[...(ops ? [c.org!.id] : []), ...c.linkAdmin]} />
     </AppShell>
   );
 }

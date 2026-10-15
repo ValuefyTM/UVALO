@@ -34,12 +34,13 @@ function Badge({ s }: { s: Status }) {
 }
 
 /** Inspecții: the list with the three tabs (mine / done for colleagues / done for me), status filters and the list / map / calendar views. */
-export function InspList({ rows: initial, meId, firm, ops }: { rows: Row[]; meId: string; firm?: string | null; ops?: boolean }) {
+export function InspList({ rows: initial, meId, ops, mergeOrg = null, firmOrgs = [] }: { rows: Row[]; meId: string; ops?: boolean; mergeOrg?: string | null; firmOrgs?: string[] }) {
   const [rows, setRows] = useState(initial);
   // the office's administrator IS the firm: "Ale mele" also holds the firm's inspections prepared by colleagues. The operationals get
   // "Ale firmei" (every inspection of the firm) instead of "Ale mele" / "Făcute pentru colegi".
-  const inTab = (r: Row, k: Row["who"]) => (k === "firm" ? !!firm && r.org_id === firm : k === "mine" && firm && !ops ? r.who === "mine" || r.who === "firm" : r.who === k);
-  const tabs = WHO.filter(([k]) => (k === "firm" ? !!firm && !!ops : !(ops && (k === "forothers" || k === "mine"))));
+  const inTab = (r: Row, k: Row["who"]) => (k === "firm" ? !!r.org_id && firmOrgs.includes(r.org_id)
+    : k === "mine" ? r.who === "mine" || (r.who === "firm" && !!mergeOrg && r.org_id === mergeOrg) : r.who === k);
+  const tabs = WHO.filter(([k]) => (k === "firm" ? firmOrgs.length > 0 : !(ops && (k === "forothers" || k === "mine"))));
   const [who, setWho] = useState<Row["who"]>(ops ? "firm" : "mine");
   const [st, setSt] = useState<Status | "all">("all");
   const [q, setQ] = useState("");

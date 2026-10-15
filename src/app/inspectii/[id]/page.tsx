@@ -24,7 +24,7 @@ export default async function InspDoc({ params }: { params: Promise<{ id: string
   if (!x) notFound();
   const done = x.status === "gata" || x.status === "pred";
   // who can take it over (only while it is not done, for who prepared it / the firm's viewers)
-  const reassign = !done && !x.ro && canPrepare(c, x) ? await team(db, c) : null;
+  const reassign = !done && !x.ro && canPrepare(c, x) ? await team(db, c, (x as unknown as { org_id?: string | null }).org_id) : null;
   const redoNote = (x as unknown as { redo_note?: string | null }).redo_note;
   // answers are shown once the phone has started (in progress, or sent back to complete)
   const shown = done || x.status === "lucru";
