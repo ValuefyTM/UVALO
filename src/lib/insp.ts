@@ -212,7 +212,7 @@ export async function usableTemplates(db: D1Database, c: Ctx) {
 /* ---------- inspections ---------- */
 
 const ROW_SQL = `SELECT i.id, i.code, i.org_id, og.name AS org_name, i.status, i.address, i.prop_type, i.cad_nr, i.lat, i.lng, i.contact_name, i.scheduled_at, i.duration_min, i.created_by,
-  COALESCE(NULLIF(o.name, ''), o.email) AS owner_name, o.avatar IS NOT NULL AS owner_av, i.assignee_id, COALESCE(NULLIF(a.name, ''), a.email) AS assignee_name, a.avatar IS NOT NULL AS assignee_av, i.assignee_kind, i.finished_at, i.test, i.redo_note, i.redo_prev_at, i.redo_keep_sig, i.signed_name, i.signed_at,
+  COALESCE(NULLIF(o.name, ''), o.email) AS owner_name, o.avatar IS NOT NULL AS owner_av, i.assignee_id, COALESCE(NULLIF(a.name, ''), a.email) AS assignee_name, a.avatar IS NOT NULL AS assignee_av, i.assignee_kind, i.finished_at, i.test, i.redo_note, i.redo_prev_at, i.redo_keep_sig, i.signed_name, i.signed_at, i.assign_state,
   (SELECT COUNT(*) FROM insp_files f WHERE f.inspection_id = i.id AND f.kind = 'photo') AS photos
   FROM inspections i JOIN users o ON o.id = i.created_by LEFT JOIN users a ON a.id = i.assignee_id LEFT JOIN orgs og ON og.id = i.org_id WHERE i.deleted_at IS NULL`;
 
@@ -301,10 +301,11 @@ async function notifyLog(db: D1Database, id: string, userId: string | null, text
   const nice = text.replace(/(\d{4})-(\d{2})-(\d{2})[ T](\d{2}:\d{2})/, "$3.$2.$1, $4");
   for (const to of new Set([r.assignee_id, r.created_by].filter((x): x is string => !!x && (x !== userId || (fromWeb && x === r.assignee_id))))) {
     const fresh = /^Creată/.test(text) && to === r.assignee_id;
+    const ask = /^Solicitare de inspecție/.test(text) && to === r.assignee_id;
     const redo = text.match(/^Retrimisă pe telefon pentru completare: ([\s\S]*)/);
     await notifyUser(db, to, {
-      title: fresh ? "Inspecție nouă pentru tine" : redo ? `De completat · ${r.address}` : r.address,
-      body: fresh ? `${r.address}${r.who ? ` · de la ${r.who}` : ""}` : redo ? redo[1] : `${r.who ?? "Cineva"}: ${nice}`,
+      title: ask ? "Solicitare de inspecție" : fresh ? "Inspecție nouă pentru tine" : redo ? `De completat · ${r.address}` : r.address,
+      body: ask || fresh ? `${r.address}${r.who ? ` · de la ${r.who}` : ""}` : redo ? redo[1] : `${r.who ?? "Cineva"}: ${nice}`,
       url: `/?open=${id}`, tag: `insp-${id}`,
     });
   }
@@ -360,16 +361,21 @@ export async function saveInspection(db: D1Database, c: Ctx, b: Record<string, u
   const v = readInput(b);
   if (v.address.length < 5) return { error: "Scrie adresa bunului." };
   const id = s(b.id, 64);
-  const old = id ? await db.prepare("SELECT id, created_by, org_id, status FROM inspections WHERE id = ? AND deleted_at IS NULL").bind(id).first<{ id: string; created_by: string; org_id: string | null; status: Status }>() : null;
+  const old = id ? await db.prepare("SELECT id, created_by, org_id, status, assignee_id, assign_state FROM inspections WHERE id = ? AND deleted_at IS NULL").bind(id)
+    .first<{ id: string; created_by: string; org_id: string | null; status: Status; assignee_id: string | null; assign_state: string | null }>() : null;
   if (id && (!old || !canPrepare(c, old))) return { error: "Inspecția nu există." };
   if (old && !c.super && lockedFor(await relations(db, c.user.id), c.user.id, old)) return { error: "Asocierea cu firma s-a încheiat: inspecția se poate doar citi." };
   if (old && (old.status === "gata" || old.status === "pred")) return { error: "Inspecția e finalizată și nu se mai modifică." };
   // who does it: me, a colleague of the firm, or (Colaborări) nobody yet
   let assignee: string | null = c.user.id;
   if (v.assignee_kind === "me" && isOps(c)) return { error: "Rolul operațional nu face inspecții: alege cine din birou o face." };
+  // a colaborator asociat gets a request first (accepts or declines); the office's evaluators and angajații get it directly
+  let ask: { name: string } | null = null;
   if (v.assignee_kind === "office") {
-    if (!v.assignee_id || !(await team(db, c)).some((x) => x.id === v.assignee_id)) return { error: "Alege cine din birou face inspecția." };
+    const who = v.assignee_id ? (await team(db, c)).find((x) => x.id === v.assignee_id) : undefined;
+    if (!who) return { error: "Alege cine din birou face inspecția." };
     assignee = v.assignee_id;
+    if (who.group === "colaborator") ask = { name: who.name };
   } else if (v.assignee_kind === "collab") assignee = null;
   // the template, as a snapshot of the version used
   const tpl = (await usableTemplates(db, c)).find((x) => x.id === v.template_id);
@@ -384,13 +390,20 @@ export async function saveInspection(db: D1Database, c: Ctx, b: Record<string, u
       template_id = ?, template_name = ?, template_version = ?, template = ?, contact_name = ?, contact_phone = ?, contact_role = ?, scheduled_at = ?, duration_min = ?,
       assignee_id = ?, assignee_kind = ?, notes = ?, status = ?, updated_at = ? WHERE id = ?`).bind(...cols, now(), id).run();
     await logIt(db, id, c.user.id, "Modificată pe web");
+    // same person as before: the request (or its answer) stays; someone else: a new request, or none
+    const same = old.assignee_id === assignee && old.assign_state !== "declined";
+    const st = same ? old.assign_state : ask ? "pending" : null;
+    await db.prepare("UPDATE inspections SET assign_state = ? WHERE id = ?").bind(st, id).run();
+    if (!same && ask) await logIt(db, id, c.user.id, `Solicitare de inspecție trimisă lui ${ask.name} (colaborator)`);
     return { ok: true, id };
   }
   const nid = uuid();
   await db.prepare(`INSERT INTO inspections (address, cad_nr, cf_nr, uat, county, lat, lng, prop_type, area_util, area_land, rooms, template_id, template_name, template_version,
     template, contact_name, contact_phone, contact_role, scheduled_at, duration_min, assignee_id, assignee_kind, notes, status, id, code, created_by, org_id, test)
     VALUES (${Array(29).fill("?").join(", ")})`).bind(...cols, nid, await nextCode(db), c.user.id, opts.orgId ?? c.org?.id ?? null, 1).run();
+  if (ask) await db.prepare("UPDATE inspections SET assign_state = 'pending' WHERE id = ?").bind(nid).run();
   await logIt(db, nid, c.user.id, `Creată ${b.from_phone ? "pe telefon" : "pe web"}${b.from_doc ? " din documentele încărcate" : ""}`);
+  if (ask) await logIt(db, nid, c.user.id, `Solicitare de inspecție trimisă lui ${ask.name} (colaborator)`);
   if (v.scheduled_at) await logIt(db, nid, c.user.id, `Programată pentru ${v.scheduled_at.replace("T", " ")}`);
   return { ok: true, id: nid };
 }
@@ -404,6 +417,20 @@ export async function inspAction(db: D1Database, c: Ctx, b: Record<string, unkno
     await db.prepare("UPDATE inspections SET deleted_at = ? WHERE id = ?").bind(now(), id).run();
     return { ok: true };
   }
+  // a request to a colaborator: they accept it (then it is theirs to do) or decline it (back to the office, without anyone)
+  if (action === "accept" || action === "decline") {
+    if (r.assignee_id !== c.user.id || r.assign_state !== "pending") return { error: "Solicitarea nu mai este în așteptare." };
+    if (action === "accept") {
+      await db.prepare("UPDATE inspections SET assign_state = NULL, updated_at = ? WHERE id = ?").bind(now(), id).run();
+      await logIt(db, id, c.user.id, "A acceptat solicitarea de inspecție");
+    } else {
+      await db.prepare("UPDATE inspections SET assign_state = 'declined', assignee_id = NULL, updated_at = ? WHERE id = ?").bind(now(), id).run();
+      await logIt(db, id, c.user.id, `A refuzat solicitarea de inspecție${s(b.note, 200) ? `: ${s(b.note, 200)}` : ""}`);
+    }
+    return { ok: true, id };
+  }
+  if (r.assign_state === "pending" && r.assignee_id === c.user.id && !canPrepare(c, r) && ["schedule", "progress", "finish"].includes(action))
+    return { error: "Acceptă întâi solicitarea de inspecție." };
   if (action === "schedule") {
     const when = s(b.scheduled_at, 16);
     if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(when)) return { error: "Alege data și ora." };

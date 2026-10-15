@@ -382,7 +382,14 @@ export function MobileApp() {
       <div className="mbPage" style={pull || drag ? { transform: `translateY(${pull}px)`, transition: drag ? "none" : undefined } : undefined}>
       {!online && <div className="mbOffline">Fără semnal · lucrezi pe telefon, se trimite când revine rețeaua</div>}
       {view.v === "home" && <Home me={me} items={items.filter((i) => !isDone(i))} queueN={queueN} onQueue={() => go({ v: "queue" })} pos={pos} unread={unread} scope={scope} setScope={setScope} st={st} setSt={setSt} onBell={() => go({ v: "notifs" })} onMe={() => go({ v: "account" })} onSchedule={setSched} onNew={() => go({ v: "new" })} onOpen={(id) => open(id, { v: "detail", id })} onStart={(id) => open(id, { v: "form", id, sec: 0 })} />}
-      {view.v === "detail" && cur && <Detail x={cur} draft={draft} mine={!cur.ro && (!me || cur.assignee_id === me.id)} onSchedule={setSched} onBack={() => history.back()} onStart={() => go({ v: "form", id: cur.id, sec: 0 })} />}
+      {view.v === "detail" && cur && <Detail x={cur} draft={draft} mine={!cur.ro && (!me || cur.assignee_id === me.id)} onSchedule={setSched}
+        onAnswer={async (ok) => {
+          const r = await fetch("/api/inspectii", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: ok ? "accept" : "decline", id: cur.id }) }).catch(() => null);
+          if (!r?.ok) { say(r ? String((await J(r)).error || "Nu a mers.") : "Fără semnal: încearcă din nou când ai rețea."); return; }
+          await load();
+          try { localStorage.removeItem(`insp-${cur.id}`); } catch {}
+          if (ok) { setCur({ ...cur, assign_state: null }); say("Ai acceptat inspecția."); } else { go({ v: "home" }); say("Solicitarea a fost refuzată."); }
+        }} onBack={() => history.back()} onStart={() => go({ v: "form", id: cur.id, sec: 0 })} />}
       {view.v === "form" && cur && draft && (
         <Form x={cur} d={draft} sec={view.sec} photos={pending.filter((p) => p.insp === cur.id && p.kind === "photo").length + cur.files.filter((f) => f.kind === "photo").length}
           onBack={() => go({ v: "detail", id: cur.id })} onSec={(s) => setViewState({ v: "form", id: cur.id, sec: s })} change={change} onPhoto={addPhoto}
@@ -489,16 +496,17 @@ function Login({ onDone }: { onDone: () => void }) {
 /* ---------- home ---------- */
 
 /** The phone's statuses: what the person has to do with each inspection (sent back to complete = "Completări"). */
-type MStat = "redo" | "lucru" | "plan" | "prog" | "gata";
+type MStat = "req" | "redo" | "lucru" | "plan" | "prog" | "gata";
 const MSTAT: Record<MStat, { label: string; fg: string; bg: string }> = {
+  req: { label: "Solicitări", fg: "#7A5AA6", bg: "#F4F0FA" },
   redo: { label: "Completări", fg: "#B3261E", bg: "#FBE9E7" },
   lucru: { label: "În lucru", fg: STATUS.lucru.fg, bg: STATUS.lucru.bg },
   plan: { label: "De făcut", fg: STATUS.plan.fg, bg: STATUS.plan.bg },
   prog: { label: "De programat", fg: STATUS.prog.fg, bg: STATUS.prog.bg },
   gata: { label: "Finalizate", fg: STATUS.gata.fg, bg: STATUS.gata.bg },
 };
-const MSTAT_ORDER: MStat[] = ["redo", "lucru", "plan", "prog", "gata"];
-const mstat = (i: InspRow): MStat => (i.status === "gata" || i.status === "pred" ? "gata" : i.status === "lucru" ? (i.redo_note ? "redo" : "lucru") : i.status);
+const MSTAT_ORDER: MStat[] = ["req", "redo", "lucru", "plan", "prog", "gata"];
+const mstat = (i: InspRow): MStat => (i.assign_state === "pending" ? "req" : i.status === "gata" || i.status === "pred" ? "gata" : i.status === "lucru" ? (i.redo_note ? "redo" : "lucru") : i.status);
 type Scope = "all" | "today" | "week" | "unsched";
 type StatF = "all" | MStat;
 
@@ -528,7 +536,8 @@ function Home({ me, items, queueN, onQueue, pos, unread, scope, setScope, st, se
   // sent back to complete (earliest first), then one in progress
   const endOf = (i: InspRow) => new Date(i.scheduled_at!).getTime() + (i.duration_min || 60) * 60000;
   const byWhen = (a: InspRow, b: InspRow) => (a.scheduled_at ?? "9999").localeCompare(b.scheduled_at ?? "9999");
-  const next = active.filter((i) => i.status === "plan" && i.scheduled_at && endOf(i) > now.getTime()).sort(byWhen)[0]
+  // a request not accepted yet (colaborator) is not the next one to do
+  const next = active.filter((i) => i.status === "plan" && i.assign_state !== "pending" && i.scheduled_at && endOf(i) > now.getTime()).sort(byWhen)[0]
     ?? active.filter((i) => mstat(i) === "redo").sort(byWhen)[0]
     ?? active.filter((i) => mstat(i) === "lucru").sort(byWhen)[0];
   const nextKind = next ? mstat(next) : null;
@@ -838,7 +847,9 @@ function MiniMap({ lat, lng, href }: { lat: number; lng: number; href: string })
 const DOC_KIND: Record<string, [string, string]> = { cf: ["CF", "Extras de carte funciară"], releveu: ["RLV", "Releveu"], doc: ["DOC", "Document"] };
 const nfm = (n: number | null | undefined, d = 2) => (n == null ? "" : n.toLocaleString("ro-RO", { maximumFractionDigits: d }));
 
-function Detail({ x, draft, mine, onBack, onStart, onSchedule }: { x: Insp; draft: Draft | null; mine: boolean; onBack: () => void; onStart: () => void; onSchedule: (s: Sched) => void }) {
+function Detail({ x, draft, mine, onBack, onStart, onSchedule, onAnswer }: { x: Insp; draft: Draft | null; mine: boolean; onBack: () => void; onStart: () => void; onSchedule: (s: Sched) => void; onAnswer: (ok: boolean) => Promise<void> }) {
+  const [answering, setAnswering] = useState(false);
+  const ask = mine && x.assign_state === "pending";
   const done = x.status === "gata" || x.status === "pred";
   const dest = x.lat != null ? `${x.lat},${x.lng}` : encodeURIComponent(x.address);
   const gmaps = `https://www.google.com/maps/dir/?api=1&destination=${dest}`;
@@ -945,7 +956,16 @@ function Detail({ x, draft, mine, onBack, onStart, onSchedule }: { x: Insp; draf
         <section className="mbCard mbTplCard"><small className="mbCap">FIȘA</small><span><b>{x.template_name ?? "Fișa de inspecție"}</b><small>{x.template.groups.length} secțiuni · {qn} întrebări</small></span></section>
       </div>
       {!!x.ro && <p className="mbNote">Asocierea cu {x.firm ?? "firma"} s-a încheiat: inspecția se poate doar citi.</p>}
-      {!done && mine && (
+      {ask && (
+        <footer className="mbFoot">
+          <p className="mbAskNote"><b>Solicitare de inspecție{x.firm ? ` de la ${x.firm}` : ""}</b><small>Acceptă ca să o primești în lucru. Dacă o refuzi, se întoarce la firmă.</small></p>
+          <span className="mbGrid2">
+            <button type="button" className="mbBtn big" disabled={answering} onClick={async () => { if (!confirm("Refuzi solicitarea? Inspecția se întoarce la firmă.")) return; setAnswering(true); await onAnswer(false); setAnswering(false); }}>Refuz</button>
+            <button type="button" className="mbBtn gold big" disabled={answering} onClick={async () => { setAnswering(true); await onAnswer(true); setAnswering(false); }}>Accept</button>
+          </span>
+        </footer>
+      )}
+      {!done && mine && !ask && (
         <footer className="mbFoot">
           <button type="button" className="mbBtn gold big" onClick={onStart}>{x.redo_note ? "Modifică fișa →" : draft?.started_at ? "Continuă fișa →" : "Începe fișa →"}</button>
         </footer>

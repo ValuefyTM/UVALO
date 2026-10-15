@@ -19,7 +19,7 @@ function KindPick({ value, onChange, name }: { value: Kind; onChange: (k: Kind) 
         <label key={k} className={value === k ? "on" : undefined}>
           <input type="radio" name={name} checked={value === k} onChange={() => onChange(k)} />
           <b>{KIND[k]}</b>
-          <small>{k === "angajat" ? "lucrează în firmă; inspecțiile primite apar pe telefon în Acasă" : "extern; inspecțiile primite apar pe telefon în Colaborări"}</small>
+          <small>{k === "angajat" ? "lucrez pentru firmă și pe cont propriu sau cu alte firme; primesc inspecțiile firmei direct, fără acceptare" : "colaborez ocazional; primesc solicitări de inspecție pe care le accept sau le refuz"}</small>
         </label>
       ))}
     </div>
@@ -32,10 +32,10 @@ export type MemberInvite = { id: string; email: string; role: string; created: s
 
 type InvType = "member" | "ops" | "angajat" | "colaborator";
 const INV: { k: InvType; t: string; d: string; seat: boolean }[] = [
-  { k: "member", t: "Evaluator în birou", d: "Lucrează doar prin birou, cu abonamentul lui. Primește cont nou pe email.", seat: true },
+  { k: "member", t: "Evaluator în birou", d: "Evaluator care lucrează doar prin birou și nu face alte inspecții. Folosește abonamentul biroului și primește cont nou pe email.", seat: true },
   { k: "ops", t: "Operațional", d: "Fără legitimație ANEVAR (asistent, secretariat): vede și introduce inspecțiile firmei, nu face inspecții.", seat: true },
-  { k: "angajat", t: "Angajat asociat", d: "Evaluator cu cont UVALO propriu, angajat al biroului. Inspecțiile primite îi apar pe telefon în Acasă.", seat: false },
-  { k: "colaborator", t: "Colaborator asociat", d: "Evaluator extern, cu cont UVALO propriu. Inspecțiile primite îi apar pe telefon în Colaborări.", seat: false },
+  { k: "angajat", t: "Angajat asociat", d: "Evaluator cu cont UVALO propriu, care face evaluări și pe cont propriu sau cu alte firme. Primește inspecțiile biroului automat, fără să le accepte.", seat: false },
+  { k: "colaborator", t: "Colaborator asociat", d: "Evaluator extern, cu cont UVALO propriu. Primește o solicitare pentru fiecare inspecție și trebuie să o accepte înainte să i se aloce.", seat: false },
 ];
 const ROLE: Record<string, string> = { owner: "Titular cont", admin: "Administrator", member: "Membru" };
 
@@ -154,10 +154,10 @@ export function OfficePeople({ people, invites, links, seats, used, canOwner, st
   const ppl = people.filter((m) => !(m.status === "invited" && invited.has(m.email.toLowerCase())));
   const groups: { k: string; t: string; note: string; rows: React.ReactNode[] }[] = [
     { k: "admin", t: "Administratori", note: "ocupă locuri · gestionează biroul", rows: ppl.filter((m) => m.role !== "member").map(member) },
-    { k: "eval", t: "Evaluatori", note: "membri · ocupă locuri · fac inspecții", rows: ppl.filter((m) => m.role === "member" && m.anevar).map(member) },
+    { k: "eval", t: "Evaluatori", note: "membri · ocupă locuri · lucrează doar prin birou", rows: ppl.filter((m) => m.role === "member" && m.anevar).map(member) },
     { k: "ops", t: "Operaționali", note: "fără legitimație · ocupă locuri · văd și introduc inspecțiile firmei", rows: ppl.filter((m) => m.role === "member" && !m.anevar).map(member) },
     ...(["angajat", "colaborator"] as Kind[]).map((k) => ({
-      k, t: k === "angajat" ? "Angajați asociați" : "Colaboratori asociați", note: k === "angajat" ? "cont propriu · fără loc · inspecțiile în Acasă" : "cont propriu · fără loc · inspecțiile în Colaborări",
+      k, t: k === "angajat" ? "Angajați asociați" : "Colaboratori asociați", note: k === "angajat" ? "cont propriu · fără loc · primesc inspecțiile direct" : "cont propriu · fără loc · acceptă fiecare solicitare",
       rows: assoc(k).map((r) => (
         <div key={r.id} className="opRow">
           <UserAv id={r.user_id} name={nm(r)} has={r.has_av} size={34} /><span className="opWho"><b>{nm(r)}</b><small>{lsub(r)} · asociat din {r.since}</small></span>

@@ -13,7 +13,8 @@ export type FormInit = {
 
 /** Inspecție nouă / editare: the property (with a CF read automatically), the template, contact and schedule, who does it. */
 export type TeamPerson = { id: string; name: string; group: "membru" | "angajat" | "colaborator"; legit: string | null; av?: boolean; busy: { id: string; at: string; min: number }[] };
-const GROUPS: [TeamPerson["group"], string][] = [["membru", "Evaluatori din birou"], ["angajat", "Angajați asociați"], ["colaborator", "Colaboratori asociați"]];
+const GROUPS: [TeamPerson["group"], string, string][] = [["membru", "Evaluatori din birou", ""], ["angajat", "Angajați asociați", "o primesc direct"],
+  ["colaborator", "Colaboratori asociați", "primesc o solicitare pe care o acceptă"]];
 const hm = (at: string) => at.slice(11, 16);
 const addMin = (at: string, m: number) => { const [h, mi] = hm(at).split(":").map(Number); const t = h * 60 + mi + m; return `${String(Math.floor(t / 60) % 24).padStart(2, "0")}:${String(t % 60).padStart(2, "0")}`; };
 const toMin = (x: string) => { const [h, m] = x.split(":").map(Number); return h * 60 + m; };
@@ -28,12 +29,12 @@ function TeamPick({ team, value, onPick, date, time, dur, selfId }: { team: Team
   return (
     <div className="tpBox">
       {team.length > 6 && <input className="input tpSearch" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Caută după nume…" aria-label="Caută în birou" />}
-      {GROUPS.map(([g, label]) => {
+      {GROUPS.map(([g, label, hint]) => {
         const list = shown.filter((p) => p.group === g);
         if (!list.length) return null;
         return (
           <div key={g} className={`tpGroup tp-${g}`} role="radiogroup" aria-label={label}>
-            <h4><i aria-hidden="true" />{label} <span>{list.length}</span></h4>
+            <h4><i aria-hidden="true" />{label} <span>{list.length}</span>{hint && <small>{hint}</small>}</h4>
             {list.map((p) => {
               const d = day(p), bad = clash(p), nx = next(p);
               return (

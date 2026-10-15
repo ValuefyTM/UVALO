@@ -244,8 +244,15 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   email către administratorii biroului; în „Firma mea” `LeaveRequests`: „Scoate din birou și creează cont individual” (`decideLeave`: membership
   `removed`, firmă individuală nouă cu persoana titular, `anevar_no`/județ/specializări din Tablou, email) sau „Respinge”.
 - **Asocieri** (etapa 1 din planul birou ↔ evaluatori; migrația 0029 `office_links`, logica în `src/lib/links.ts`, API `/api/office/links`):
-  evaluatori cu **cont propriu** legați de un birou **fără să ocupe locuri**: `kind` = `angajat` (inspecțiile atribuite vor apărea pe telefon în
-  Acasă) sau `colaborator` (vor apărea în tab-ul Colaborări al telefonului); mai târziu, la pricing, consumă creditele biroului. Doar evaluatorii
+  evaluatori cu **cont propriu** legați de un birou **fără să ocupe locuri**; mai târziu, la pricing, consumă creditele biroului.
+  **Tipurile de oameni din birou** (așa apar și în fereastra „Pe cine inviți?”): **Evaluator în birou** = membru, lucrează doar prin birou și nu
+  face alte inspecții (ocupă un loc); **Operațional** = fără legitimație, vede și introduce inspecțiile firmei, nu face inspecții (ocupă un loc);
+  **Angajat asociat** (`kind = angajat`) = evaluator care face evaluări și pe cont propriu sau cu alte firme, primește inspecțiile biroului
+  **automat, fără acceptare**; **Colaborator asociat** (`kind = colaborator`) = primește o **solicitare** pentru fiecare inspecție și o acceptă
+  înainte să i se aloce (migrația 0031 `inspections.assign_state`: `pending` la atribuire → acțiunile `accept` (NULL) / `decline` (`declined`,
+  `assignee_id` golit, inspecția revine biroului: „Refuzată · alege altcineva” în listă); cât e `pending`, programarea / fișa sunt blocate;
+  jurnal + notificare „Solicitare de inspecție”; pe telefon starea „Solicitări” (mov, prima în listă) și în detaliu Refuz / Accept).
+  Textele nu mai spun unde apar inspecțiile pe telefon: totul e în Acasă. Doar evaluatorii
   (`anevar_no`); cei fără legitimație rămân membri cu rol **Operațional** (eticheta din „Firma mea”: Evaluator / Operațional, după `anevar_no`;
   văd și introduc inspecțiile firmei, nu fac inspecții). Stări: `invited` (biroul invită după email sau legitimație) / `requested` (evaluatorul cere
   din „Contul meu” → „Asociază-te cu o firmă”, căutare după nume `searchOffices`, deocamdată doar cu `c.office`) → `active` → `ended` (oricare parte;

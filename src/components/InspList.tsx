@@ -107,7 +107,9 @@ export function InspList({ rows: initial, meId, firm, ops }: { rows: Row[]; meId
                   <td className="nowrap">{fmtWhen(r.scheduled_at)}</td>
                   <td>{who === "forothers" ? <span className="inPerson"><UserAv id={r.created_by} name={r.owner_name} has={r.owner_av} size={26} />{r.owner_name}</span>
                     : r.assignee_kind === "collab" && !r.assignee_id ? "Coleg din Colaborări (de ales)"
-                    : r.assignee_id ? <span className="inPerson"><UserAv id={r.assignee_id} name={r.assignee_name ?? "?"} has={r.assignee_av} size={26} />{r.assignee_id === meId ? "Eu" : r.assignee_name}</span> : "—"}</td>
+                    : r.assignee_id ? <span className="inPerson"><UserAv id={r.assignee_id} name={r.assignee_name ?? "?"} has={r.assignee_av} size={26} />{r.assignee_id === meId ? "Eu" : r.assignee_name}
+                        {r.assign_state === "pending" && <em className="inAsk">așteaptă acceptarea</em>}</span>
+                    : r.assign_state === "declined" ? <em className="inAsk no">Refuzată · alege altcineva</em> : "—"}</td>
                   <td><Badge s={r.status} /></td>
                   <td className="right"><a className="rowLink" href={r.status === "gata" || r.status === "pred" ? `/inspectii/${r.id}` : `/inspectii/nou?id=${r.id}`}>
                     {r.status === "gata" || r.status === "pred" ? "Vezi fișa →" : r.status === "prog" ? "Programează" : "Detalii →"}</a></td>
