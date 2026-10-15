@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { page, fmtDate } from "@/lib/guard";
 import { canPrepare, getInspection, isOps, team } from "@/lib/insp";
 import { InspReassign } from "@/components/InspReassign";
+import { InspSheetDelete } from "@/components/InspSheetDelete";
 import { compSummary, coverPhoto, fmtWhen, STATUS } from "@/lib/insp-shared";
 import { AppShell } from "@/components/AppShell";
 import { InspDocActions } from "@/components/InspDocActions";
@@ -25,6 +26,10 @@ export default async function InspDoc({ params }: { params: Promise<{ id: string
   const done = x.status === "gata" || x.status === "pred";
   // who can take it over (only while it is not done, for who prepared it / the firm's viewers)
   const reassign = !done && !x.ro && canPrepare(c, x) ? await team(db, c, (x as unknown as { org_id?: string | null }).org_id) : null;
+  // the sheet (a record of the property) can be deleted once it was started, and the inspection given again
+  const sheetNo = x.sheet_no ?? null, sheetAt = x.sheet_at ?? null;
+  const sheetStarted = !!(sheetNo || x.started_at || done || Object.keys(x.answers).length);
+  const sheetTeam = sheetStarted && !x.ro && canPrepare(c, x) ? (reassign ?? await team(db, c, (x as unknown as { org_id?: string | null }).org_id)) : null;
   const redoNote = (x as unknown as { redo_note?: string | null }).redo_note;
   // answers are shown once the phone has started (in progress, or sent back to complete)
   const shown = done || x.status === "lucru";
@@ -63,6 +68,8 @@ export default async function InspDoc({ params }: { params: Promise<{ id: string
           canReopen={canPrepare(c, x)} assignee={x.assignee_name} signer={x.signed_at ? x.signed_name : null}>
           {reassign && <InspReassign id={x.id} team={reassign} current={x.assignee_id} canMe={!isOps(c)} when={x.scheduled_at} dur={x.duration_min} started={x.status === "lucru"} />}
           {canPrepare(c, x) && <InspShare id={x.id} token={x.share_token} />}
+          {sheetTeam && <InspSheetDelete id={x.id} no={sheetNo} photos={x.files.filter((f) => f.kind === "photo").length} team={sheetTeam} current={x.assignee_id}
+            currentName={x.assignee_name} canMe={!isOps(c)} when={x.scheduled_at} dur={x.duration_min} />}
         </InspDocActions>}
       </div>
       {redoNote && x.status === "lucru" && <div className="note inRedoNote"><b>Retrimisă pe telefon pentru completare.</b> {redoNote}
@@ -88,7 +95,7 @@ export default async function InspDoc({ params }: { params: Promise<{ id: string
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={`/api/org/logo/${firm.id}`} alt={firm.name} />
               <span><b>{firm.name}</b>{firm.corp_no && <small>Autorizație ANEVAR nr. {firm.corp_no}</small>}</span>
-              <em>Fișă de inspecție<br />{x.code}</em>
+              <em>Fișă de inspecție<br />{sheetNo ?? x.code}{sheetAt ? <><br />{fmtDate(sheetAt)}</> : null}</em>
             </header>
           ) : null}
           <section id="rezumat" className="inSec">
@@ -99,7 +106,7 @@ export default async function InspDoc({ params }: { params: Promise<{ id: string
                 <figcaption className="inNoPrint">Poza de profil{x.cover_file_id ? "" : " (prima de la exterior)"} · o schimbi din Fotografii</figcaption>
               </figure>
             )}
-            <span className="eyebrow">Fișă de inspecție · {x.code}</span>
+            <span className="eyebrow">Fișă de inspecție{sheetNo ? ` nr. ${sheetNo} din ${fmtDate(sheetAt ?? "")}` : ""} · {x.code}</span>
             <h1 className="inH1">{x.prop_type ?? "Imobil"}</h1>
             <p className="inLead">{[x.address, x.cad_nr && `nr. cad. ${x.cad_nr}`, x.cf_nr && `CF ${x.cf_nr}`].filter(Boolean).join(" · ")}</p>
             <div className="inKpis">
@@ -112,6 +119,7 @@ export default async function InspDoc({ params }: { params: Promise<{ id: string
               <div><dt>Persoana de contact</dt><dd>{[x.contact_name, x.contact_role].filter(Boolean).join(", ") || "—"}</dd></div>
               <div><dt>Telefon</dt><dd>{x.contact_phone || "—"}</dd></div>
               <div><dt>Fișa</dt><dd>{x.template_name ?? "—"}{x.template_version ? ` · v${x.template_version}` : ""}</dd></div>
+              <div><dt>Nr. și data fișei</dt><dd>{sheetNo ? `${sheetNo} · ${fmtDate(sheetAt ?? "", true)}` : "se dau când începe completarea"}</dd></div>
             </dl>
           </section>
 

@@ -55,6 +55,8 @@ export type InspRow = {
   contact_name: string | null; scheduled_at: string | null; duration_min: number; created_by: string; owner_name: string; assignee_id: string | null;
   org_id?: string | null; assign_state?: string | null; org_name?: string | null; place?: "home" | "collab"; firm?: string | null; ro?: number; owner_av?: number; assignee_av?: number; assignee_name: string | null; assignee_kind: AssignKind; finished_at: string | null; photos: number; test: number; redo_note?: string | null;
   redo_prev_at?: string | null; redo_keep_sig?: number; signed_name?: string | null; signed_at?: string | null;
+  /** the sheet as a record of the property: number and date given when it starts being filled in; rev = +1 at each deletion */
+  sheet_no?: string | null; sheet_at?: string | null; sheet_rev?: number;
 };
 
 /* ---------- the UVALO sheets: the same structure as the VALUEFY inspection form (v2, October 2026) ---------- */

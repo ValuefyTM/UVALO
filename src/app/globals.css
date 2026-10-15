@@ -2540,6 +2540,8 @@ html:has(.mb) { min-height: calc(100% + env(safe-area-inset-top)); background: #
 .mbAskNote small { font-size: 12px; color: var(--muted-2); }
 .tpGroup h4 small { font-size: 11px; font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--off); }
 .mntInv { margin: 14px 0 0; padding: 12px 14px; border-radius: 12px; background: #fdf3e4; font-size: 14px; line-height: 1.5; color: #1A1714; } .mntInv a { font-weight: 800; color: #1A1714; }
+.btnDangerText { color: var(--err); }
+.sdCap { font-size: 12px; letter-spacing: .4px; color: var(--muted); margin-top: 4px; }
 .raList { max-height: 50vh; overflow-y: auto; } .raList .tpBox { margin-top: 0; } .opDlg .modalBox > .tpRow { margin: 0; grid-template-columns: 18px minmax(0, 1fr); }
 .opAdm { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 700; cursor: pointer; white-space: nowrap; } .opAdm input { accent-color: #2f7d4f; }
 .becomeVal { border-top: 1px solid var(--divider); padding-top: 12px; margin-top: 4px; display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
@@ -2552,3 +2554,10 @@ html:has(.mb) { min-height: calc(100% + env(safe-area-inset-top)); background: #
 .mbFootNav { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 8px; }
 .mbFootNav .mbBtn.big { padding-left: 8px; padding-right: 8px; }
 .mbFootNav .mbBtn:disabled { opacity: 1; background: #e9e2d4; color: var(--muted-2); border-color: transparent; }
+
+/* phone: the sheet's number and date (given when it starts being filled in) */
+.mbTplCard > .mbSheetNo { flex-direction: row; display: flex; gap: 10px; margin-top: 10px; padding-top: 10px; border-top: 1px dashed #E6DFCF; }
+.mbSheetNo > small { color: #7A7A7A; font-size: 12.5px; line-height: 1.45; }
+.mbSheetNo > span { flex: 1; display: flex; flex-direction: column; gap: 2px; background: #FBF4E6; border-radius: 10px; padding: 8px 10px; }
+.mbSheetNo > span small { font-size: 10.5px; letter-spacing: .5px; text-transform: uppercase; color: #9A5F00; font-weight: 700; }
+.mbSheetNo > span b { font-size: 14px; }

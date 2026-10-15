@@ -396,6 +396,15 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   mentenanță, iar pagina „Revenim în curând” arată invitația de asociere în așteptare („Vezi invitația →”); linkurile din emailurile de asociere =
   `/login?next=%2Fcont%23asocieri`. Restul platformei (inspecții, telefon) rămâne blocat pentru non-super-admini cât e mentenanța pornită.
 - `merge.ts` (unire/ștergere conturi) acoperă tabelele noi. Evenimente `inspectii` (meta `{test:1}`).
+- **Fișa = o înregistrare a bunului** (migrația 0033): la primul răspuns trimis de pe telefon (sau la simulare) primește **număr și dată**
+  (`numberSheet` în `insp.ts`: `inspections.sheet_no` „FI-2026-0001”, `sheet_at`; numerotare pe an în `insp_sheets`, nereutilizată). Pe telefon,
+  în detaliu, cardul „Fișa” are zona Nr. fișă / Data fișei (`.mbSheetNo`; înainte: „se dau când începi completarea”); pe web în antet, eyebrow,
+  „Nr. și data fișei”; în fișa publică în antet. **„Șterge fișa”** (`InspSheetDelete` în bara fișei web, `canPrepare`, după ce a fost începută,
+  inclusiv finalizată): acțiunea `sheet_delete` golește răspunsurile, încăperile, constatările, semnătura, redo-ul și numărul (opțional și
+  fotografiile, `photos: true`), starea revine la Programată / De programat, `sheet_rev + 1`; bunul, contactul, actele, istoricul rămân;
+  copia fișei șterse (JSON) + motivul în `insp_sheets.snapshot`. În aceeași fereastră: rămâne la inspectorul de acum / Eu / cineva din birou
+  (→ `reassign` cu `again`). Ciorna de pe telefon are `rev`: `progress` / `finish` cu alt `rev` sunt refuzate, iar aplicația aruncă ciorna veche
+  la deschidere („Fișa a fost ștearsă de pe web: începi o fișă nouă.”). Fișa nouă primește alt număr.
 - **Poza de profil a fișei** (migrația 0027 `inspections.cover_file_id`): `coverPhoto()` în `insp-shared.ts` = cea aleasă, altfel prima de la
   exterior, altfel prima; sus în rezumatul fișei web (`.inCover`); se alege din Fotografii cu „Alege ca profil” (`InspCoverPick`, acțiunea `cover`).
 - **Link public** (`InspShare` în bara fișei, doar cine a pregătit-o / super-admin; acțiunea `share` `{on}` → `share_token` aleator, `share_at`;

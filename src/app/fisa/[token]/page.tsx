@@ -88,7 +88,7 @@ export default async function SharedSheet({ params }: { params: Promise<{ token:
             <span>{!firm.has_logo && <b>{firm.name}</b>}{firm.corp_no && <small>Autorizație ANEVAR nr. {firm.corp_no}</small>}</span>
           </span>
         ) : <span className="fsFirm"><span><b>{x.assignee_name ?? x.owner_name}</b><small>Evaluator</small></span></span>}
-        <span className="fsCode">Fișă de inspecție<br />{x.code}</span>
+        <span className="fsCode">Fișă de inspecție<br />{x.sheet_no ? `nr. ${x.sheet_no}` : x.code}{x.sheet_at ? ` · ${new Date(x.sheet_at).toLocaleDateString("ro-RO", { timeZone: "Europe/Bucharest" })}` : ""}</span>
       </header>
 
       <section className={`fsHero${cover ? "" : " noImg"}`}>
@@ -173,7 +173,7 @@ export default async function SharedSheet({ params }: { params: Promise<{ token:
       </main>
 
       <footer className="fsFoot">
-        Fișă de inspecție {x.code}{firm ? ` · ${firm.name}` : ""}{firm?.corp_no ? ` · Autorizație ANEVAR nr. ${firm.corp_no}` : ""}
+        Fișă de inspecție {x.sheet_no ?? x.code}{firm ? ` · ${firm.name}` : ""}{firm?.corp_no ? ` · Autorizație ANEVAR nr. ${firm.corp_no}` : ""}
         {x.finished_at ? ` · ${fmtDate(x.finished_at)}` : ""}
       </footer>
     </div>

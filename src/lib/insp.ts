@@ -1,7 +1,7 @@
 // Server-only: Inspecții (module `inspectii`). Prepared on the web, done on the phone (UVALO app), seen on the web.
 // In test: only super-admins have the module (context() in access.ts); everything written now has test = 1.
 import { canManageOrg, type Ctx } from "./access";
-import { now, uuid } from "./db";
+import { getFiles, now, uuid } from "./db";
 import { randomCode, sha256 } from "./crypto";
 import { geocode } from "./gmaps";
 import { notifyUser } from "./webpush";
@@ -212,7 +212,7 @@ export async function usableTemplates(db: D1Database, c: Ctx) {
 /* ---------- inspections ---------- */
 
 const ROW_SQL = `SELECT i.id, i.code, i.org_id, og.name AS org_name, i.status, i.address, i.prop_type, i.cad_nr, i.lat, i.lng, i.contact_name, i.scheduled_at, i.duration_min, i.created_by,
-  COALESCE(NULLIF(o.name, ''), o.email) AS owner_name, o.avatar IS NOT NULL AS owner_av, i.assignee_id, COALESCE(NULLIF(a.name, ''), a.email) AS assignee_name, a.avatar IS NOT NULL AS assignee_av, i.assignee_kind, i.finished_at, i.test, i.redo_note, i.redo_prev_at, i.redo_keep_sig, i.signed_name, i.signed_at, i.assign_state,
+  COALESCE(NULLIF(o.name, ''), o.email) AS owner_name, o.avatar IS NOT NULL AS owner_av, i.assignee_id, COALESCE(NULLIF(a.name, ''), a.email) AS assignee_name, a.avatar IS NOT NULL AS assignee_av, i.assignee_kind, i.finished_at, i.test, i.redo_note, i.redo_prev_at, i.redo_keep_sig, i.signed_name, i.signed_at, i.assign_state, i.sheet_no, i.sheet_at, i.sheet_rev,
   (SELECT COUNT(*) FROM insp_files f WHERE f.inspection_id = i.id AND f.kind = 'photo') AS photos
   FROM inspections i JOIN users o ON o.id = i.created_by LEFT JOIN users a ON a.id = i.assignee_id LEFT JOIN orgs og ON og.id = i.org_id WHERE i.deleted_at IS NULL`;
 
@@ -284,7 +284,7 @@ async function fullInsp(db: D1Database, r: Record<string, unknown>, id: string):
 
 async function logIt(db: D1Database, id: string, userId: string | null, text: string) {
   await db.prepare("INSERT INTO insp_log (inspection_id, user_id, text) VALUES (?, ?, ?)").bind(id, userId, text.slice(0, 300)).run();
-  if (/^(Fotografie adăugat|Fișier șters|Link public)|simulare/i.test(text)) return; // not worth a phone notification
+  if (/^(Fotografie adăugat|Fișier șters|Link public)|simulare|a început să fie completată/i.test(text)) return; // not worth a phone notification
   // done on the web (not in the phone app): the person's own phone is told too (e.g. sent back to complete, rescheduled)
   let fromWeb = false;
   try {
@@ -319,6 +319,29 @@ async function nextCode(db: D1Database) {
   const y = new Date().getFullYear();
   const r = await db.prepare("SELECT COUNT(*) AS n FROM inspections WHERE code LIKE ?").bind(`INS-${y}-%`).first<{ n: number }>();
   return `INS-${y}-${String((r?.n ?? 0) + 1).padStart(4, "0")}`;
+}
+
+/** The next sheet number of the year (FI-2026-0001): counted over every sheet ever numbered, deleted ones included (never reused). */
+async function nextSheetNo(db: D1Database) {
+  const y = new Date().getFullYear();
+  const r = await db.prepare("SELECT COUNT(*) AS n FROM insp_sheets WHERE no LIKE ?").bind(`FI-${y}-%`).first<{ n: number }>();
+  return `FI-${y}-${String((r?.n ?? 0) + 1).padStart(4, "0")}`;
+}
+
+/** The sheet gets its number and date when it starts being filled in (the first answer sent from the phone, or the simulation). */
+async function numberSheet(db: D1Database, r: Record<string, unknown>, at: string) {
+  if (r.sheet_no) return;
+  for (let k = 0; k < 3; k++) {
+    const no = await nextSheetNo(db);
+    try {
+      await db.batch([
+        db.prepare("INSERT INTO insp_sheets (inspection_id, no, started_at, assignee_id) VALUES (?, ?, ?, ?)").bind(r.id, no, at, r.assignee_id ?? null),
+        db.prepare("UPDATE inspections SET sheet_no = ?, sheet_at = ? WHERE id = ? AND sheet_no IS NULL").bind(no, at, r.id),
+      ]);
+      await logIt(db, String(r.id), null, `Fișa ${no} a început să fie completată`);
+      return;
+    } catch { /* the same number taken at the same moment: try the next one */ }
+  }
 }
 
 export type TeamGroup = "membru" | "angajat" | "colaborator";
@@ -423,6 +446,34 @@ export async function inspAction(db: D1Database, c: Ctx, b: Record<string, unkno
     await db.prepare("UPDATE inspections SET deleted_at = ? WHERE id = ?").bind(now(), id).run();
     return { ok: true };
   }
+  // the sheet is a record of the property and can be deleted: answers, rooms, findings, signature (and, if asked, the photos) go;
+  // the property, contact, documents and history stay. A copy of the deleted sheet is kept in insp_sheets. Optionally given to someone else.
+  if (action === "sheet_delete") {
+    if (!canPrepare(c, r)) return { error: "Doar cine a pregătit inspecția poate șterge fișa." };
+    const ans = J<Record<string, unknown>>(r.answers as string, {}), photos = b.photos === true;
+    if (!r.sheet_no && !Object.keys(ans).length && !r.started_at && !r.finished_at) return { error: "Fișa nu a fost începută: nu ai ce șterge." };
+    const ts = now(), reason = t(b.reason, 500) || null;
+    const snap = JSON.stringify({ status: r.status, answers: ans, room_answers: J(r.room_answers as string, []), findings: J(r.findings as string, {}),
+      started_at: r.started_at, finished_at: r.finished_at, signed_name: r.signed_name, signed_at: r.signed_at, redo_note: r.redo_note }).slice(0, 400000);
+    const files = photos ? (await db.prepare("SELECT id, r2_key FROM insp_files WHERE inspection_id = ? AND kind IN ('photo', 'signature')").bind(id).all<{ id: string; r2_key: string }>()).results
+      : (await db.prepare("SELECT id, r2_key FROM insp_files WHERE inspection_id = ? AND kind = 'signature'").bind(id).all<{ id: string; r2_key: string }>()).results;
+    await db.batch([
+      r.sheet_no ? db.prepare("UPDATE insp_sheets SET deleted_at = ?, deleted_by = ?, reason = ?, snapshot = ? WHERE no = ?").bind(ts, c.user.id, reason, snap, r.sheet_no)
+        : db.prepare("INSERT INTO insp_sheets (inspection_id, no, started_at, assignee_id, deleted_at, deleted_by, reason, snapshot) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
+          .bind(id, `FARA-NR-${uuid().slice(0, 8)}`, String(r.started_at ?? ts), r.assignee_id ?? null, ts, c.user.id, reason, snap),
+      db.prepare(`UPDATE inspections SET answers = NULL, room_answers = NULL, findings = NULL, started_at = NULL, finished_at = NULL, signed_name = NULL, signed_at = NULL,
+        redo_note = NULL, redo_at = NULL, redo_prev_at = NULL, redo_keep_sig = 0, sheet_no = NULL, sheet_at = NULL, sheet_rev = sheet_rev + 1,
+        cover_file_id = CASE WHEN ? THEN NULL ELSE cover_file_id END, status = CASE WHEN scheduled_at IS NOT NULL THEN 'plan' ELSE 'prog' END, updated_at = ? WHERE id = ?`)
+        .bind(photos ? 1 : 0, ts, id),
+      ...(files.length ? [db.prepare(`DELETE FROM insp_files WHERE id IN (${files.map(() => "?").join(", ")})`).bind(...files.map((f) => f.id))] : []),
+    ]);
+    const bucket = await getFiles();
+    if (bucket) for (const f of files) await bucket.delete(f.r2_key).catch(() => {});
+    await logIt(db, id, c.user.id, `Fișa${r.sheet_no ? ` ${r.sheet_no}` : ""} a fost ștearsă${photos ? " (cu fotografiile)" : ""}${reason ? `: ${reason}` : ""}`);
+    // given again: to the same person (nothing else to do), to me, or to someone from the office
+    if (b.assignee_kind === "me" || b.assignee_kind === "office") return inspAction(db, c, { ...b, action: "reassign", id, again: true });
+    return { ok: true, id };
+  }
   // another inspector, while the inspection is not done: the answers, photos and documents stay with it
   if (action === "reassign") {
     if (!canPrepare(c, r)) return { error: "Doar cine a pregătit inspecția o poate realoca." };
@@ -435,7 +486,7 @@ export async function inspAction(db: D1Database, c: Ctx, b: Record<string, unkno
       if (!who) return { error: "Alege cine din birou face inspecția." };
       to = who.id; name = who.name; ask = who.group === "colaborator";
     }
-    if (to === r.assignee_id && r.assign_state !== "declined") return { error: `Inspecția e deja la ${name}.` };
+    if (to === r.assignee_id && r.assign_state !== "declined") return b.again ? { ok: true, id } : { error: `Inspecția e deja la ${name}.` };
     const prev = r.assignee_id ? String(r.assignee_id) : null;
     await db.prepare("UPDATE inspections SET assignee_id = ?, assignee_kind = ?, assign_state = ?, updated_at = ? WHERE id = ?")
       .bind(to, kind, ask ? "pending" : null, now(), id).run();
@@ -517,6 +568,8 @@ export async function inspAction(db: D1Database, c: Ctx, b: Record<string, unkno
   if (action === "progress" || action === "finish") {
     // from the phone: the answers so far (in progress) or the finished sheet, signed by the person present
     if (r.status === "gata" || r.status === "pred") return { error: "Inspecția a fost deja trimisă." };
+    // a phone still holding the sheet that was deleted on the web: refused (the phone then drops its draft)
+    if (b.rev != null && Number(b.rev) !== Number(r.sheet_rev ?? 0)) return { error: "Fișa a fost ștearsă de pe web; inspecția începe cu o fișă nouă." };
     const answers = typeof b.answers === "object" && b.answers ? b.answers : {};
     const rooms = Array.isArray(b.room_answers) ? b.room_answers.slice(0, 80) : [];
     const f = (b.findings ?? {}) as Record<string, unknown>;
@@ -531,6 +584,7 @@ export async function inspAction(db: D1Database, c: Ctx, b: Record<string, unkno
       .bind(JSON.stringify(answers).slice(0, 200000), JSON.stringify(rooms).slice(0, 100000), JSON.stringify(findings), fin ? "gata" : "lucru", s(b.started_at, 30) || ts,
         // the inspection's date stays the first finalization (a sheet sent back and completed keeps it)
         fin ? (r.redo_prev_at ? String(r.redo_prev_at) : ts) : null, fin ? signer : null, fin ? (keepSig && !b.new_sig ? r.signed_at : ts) : (r.signed_at ?? null), ts, id).run();
+    await numberSheet(db, r, s(b.started_at, 30) || ts);
     if (r.status !== "lucru" && !fin) await logIt(db, id, c.user.id, `Începută pe teren${b.near ? ` (la ${Math.round(Number(b.near))} m de adresă)` : ""}`);
     if (fin) {
       if (r.redo_note) await db.prepare("UPDATE inspections SET redo_note = NULL, redo_keep_sig = 0 WHERE id = ?").bind(id).run();
@@ -563,6 +617,7 @@ export async function inspAction(db: D1Database, c: Ctx, b: Record<string, unkno
     await db.prepare(`UPDATE inspections SET answers = ?, room_answers = ?, findings = ?, status = 'gata', started_at = ?, finished_at = ?, signed_name = ?, signed_at = ?, updated_at = ? WHERE id = ?`)
       .bind(JSON.stringify(answers), JSON.stringify(ra), JSON.stringify({ diff: "[diferențe față de acte]", defects: "[defecte vizibile]", notes: "[observații]" }), start, end,
         r.contact_name ?? null, end, end, id).run();
+    await numberSheet(db, r, start);
     await logIt(db, id, c.user.id, "Începută pe teren (simulare în modul de test)");
     await logIt(db, id, c.user.id, "Finalizată și semnată (simulare în modul de test)");
     return { ok: true, id };

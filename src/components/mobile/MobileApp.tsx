@@ -20,7 +20,8 @@ type Tpl = { id: string; name: string; prop_type: string | null };
 type Notif = { id: number; insp: string; at: string; text: string; address: string; who: string | null };
 type Reminder = { key: string; insp: string; when: string; address: string; today: boolean };
 type Draft = { answers: Record<string, string | string[]>; rooms: Room[]; findings: { diff: string; defects: string; notes: string }; started_at: string;
-  sig?: string | null; signer?: { who: "contact" | "other"; other: string } }; // the signature stays on the phone until the inspection is sent
+  sig?: string | null; signer?: { who: "contact" | "other"; other: string }; // the signature stays on the phone until the inspection is sent
+  rev?: number }; // the sheet it belongs to (inspections.sheet_rev): a sheet deleted on the web makes the phone's draft obsolete
 type View = { v: "home" } | { v: "detail"; id: string } | { v: "form"; id: string; sec: number } | { v: "rooms"; id: string } | { v: "photos"; id: string } | { v: "sign"; id: string } | { v: "queue" } | { v: "collab" } | { v: "account" } | { v: "new" } | { v: "notifs" };
 
 const DAYS = ["DUM", "LUN", "MAR", "MIE", "JOI", "VIN", "SÂM"];
@@ -247,20 +248,36 @@ export function MobileApp() {
     let cached: Insp | null = null;
     try { cached = JSON.parse(localStorage.getItem(`insp-${id}`) || "null"); } catch {}
     if (cached) {
-      void fetchInsp(id).then((fresh) => { if (fresh && curId.current === id) setCur(fresh); });
+      void fetchInsp(id).then((fresh) => {
+        if (!fresh || curId.current !== id) return;
+        setCur(fresh);
+        // the sheet was deleted on the web meanwhile: the draft on the phone belonged to it
+        const old = loadDraft(id);
+        if (old && (old.rev ?? 0) !== (fresh.sheet_rev ?? 0)) {
+          try { localStorage.removeItem(`insp-draft-${id}`); } catch {}
+          setDraft(newDraft(fresh));
+          say("Fișa a fost ștearsă de pe web: începi o fișă nouă.");
+        }
+      });
     }
     const x = cached ?? (await fetchInsp(id));
     if (!x) { say("Inspecția nu se poate deschide fără semnal. Deschide-o o dată cu internet."); return; }
     setCur(x); curId.current = id;
-    const d = loadDraft(id) ?? {
+    const saved = loadDraft(id);
+    const d = saved && (saved.rev ?? 0) === (x.sheet_rev ?? 0) ? saved : newDraft(x);
+    setDraft(d);
+    go(then);
+  }
+
+  function newDraft(x: Insp): Draft {
+    const d: Draft = {
       answers: Object.keys(x.answers).length ? x.answers : Object.fromEntries(x.template.groups.flatMap((g) => g.qs.filter((q) => q.def).map((q) => [q.id, q.kind === "many" ? [q.def!] : q.def!]))),
       rooms: x.room_answers.length ? x.room_answers : x.rooms.map((r) => ({ ...r })), findings: { diff: x.findings.diff ?? "", defects: x.findings.defects ?? "", notes: x.findings.notes ?? "" },
-      started_at: x.started_at ?? "",
+      started_at: x.started_at ?? "", rev: x.sheet_rev ?? 0,
     };
     // a building with no rooms from the floor survey gets the standard ones (replaced by "Preia din RLV")
     if (!d.rooms.length && !/^teren/i.test(x.prop_type ?? "")) d.rooms = STANDARD_ROOMS.map((n) => ({ n, a: null, std: true }));
-    setDraft(d);
-    go(then);
+    return d;
   }
 
   // every change: kept on the phone at once; sent to the server (in progress) a few seconds later
@@ -275,7 +292,7 @@ export function MobileApp() {
     syncT.current = setTimeout(() => {
       const near = pos.current && lat != null && lng != null ? distM(pos.current, [lat, lng]) : undefined;
       void fetch("/api/inspectii", { method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "progress", id, answers: d.answers, room_answers: d.rooms, findings: d.findings, started_at: d.started_at, near }) }).catch(() => {});
+        body: JSON.stringify({ action: "progress", id, answers: d.answers, room_answers: d.rooms, findings: d.findings, started_at: d.started_at, rev: d.rev ?? 0, near }) }).catch(() => {});
     }, 4000);
   };
 
@@ -354,7 +371,7 @@ export function MobileApp() {
     if (sig) await putFile({ id: crypto.randomUUID(), insp: cur.id, kind: "signature", room: "", name: "semnatura.png", taken_at: new Date().toISOString(),
       lat: pos.current?.[0] ?? null, lng: pos.current?.[1] ?? null, blob: sig });
     await putFinish({ id: cur.id, insp: cur.id, body: { action: "finish", id: cur.id, answers: draft.answers, room_answers: draft.rooms, findings: draft.findings,
-      started_at: draft.started_at, signed_name: signed, new_sig: !!sig } });
+      started_at: draft.started_at, signed_name: signed, new_sig: !!sig, rev: draft.rev ?? 0 } });
     try { localStorage.removeItem(`insp-draft-${cur.id}`); } catch {}
     const left = await flush();
     await refreshQueue();
@@ -973,7 +990,16 @@ function Detail({ x, draft, mine, onBack, onStart, onSchedule, onAnswer }: { x: 
 
         {x.notes && <section className="mbCard mbNoteCard"><small className="mbCap">NOTE PENTRU INSPECȚIE</small><span>{x.notes}</span></section>}
 
-        <section className="mbCard mbTplCard"><small className="mbCap">FIȘA</small><span><b>{x.template_name ?? "Fișa de inspecție"}</b><small>{x.template.groups.length} secțiuni · {qn} întrebări</small></span></section>
+        <section className="mbCard mbTplCard">
+          <small className="mbCap">FIȘA</small>
+          <span><b>{x.template_name ?? "Fișa de inspecție"}</b><small>{x.template.groups.length} secțiuni · {qn} întrebări</small></span>
+          {/* the sheet is a record of the property: number and date given when it starts being filled in */}
+          <span className={`mbSheetNo${x.sheet_no ? " on" : ""}`}>
+            {x.sheet_no ? <><span><small>Nr. fișă</small><b>{x.sheet_no}</b></span><span><small>Data fișei</small><b>{fmtDay(x.sheet_at ?? x.started_at ?? "")}</b></span></>
+              : draft?.started_at ? <small>Fișa a început pe telefon: numărul și data apar după prima sincronizare.</small>
+              : <small>Numărul și data fișei se dau când începi completarea.</small>}
+          </span>
+        </section>
       </div>
       {!!x.ro && <p className="mbNote">Asocierea cu {x.firm ?? "firma"} s-a încheiat: inspecția se poate doar citi.</p>}
       {ask && (
