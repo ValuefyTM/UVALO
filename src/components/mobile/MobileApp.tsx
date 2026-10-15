@@ -564,11 +564,7 @@ function Detail({ x, draft, onBack, onStart, onSchedule }: { x: Insp; draft: Dra
     <>
       <header className="mbBar"><Back onClick={onBack} /><span><b>{x.address}</b><small>{[x.prop_type, x.cad_nr && `nr. cad. ${x.cad_nr}`].filter(Boolean).join(" · ")}</small></span></header>
       <div className="mbBody">
-        {done ? <div className="mbOk">✓ Inspecția a fost trimisă. Fișa se vede în UVALO, pe web.</div> : (
-          <button type="button" className="mbStart" onClick={onStart}>
-            <b>{draft?.started_at ? "Continuă fișa" : "Începe fișa acum"}</b><small>{x.scheduled_at ? `programată ${fmtWhen(x.scheduled_at)}` : "sunt la proprietate"}</small>
-          </button>
-        )}
+        {done && <div className="mbOk">✓ Inspecția a fost trimisă. Fișa se vede în UVALO, pe web.</div>}
         {canSchedule(x) && (
           <section className="mbCard">
             <span className="mbRowBetween"><span><small className="mbCap">PROGRAMARE</small><b>{x.scheduled_at ? fmtWhen(x.scheduled_at) : "Neprogramată"}</b></span>
@@ -597,6 +593,11 @@ function Detail({ x, draft, onBack, onStart, onSchedule }: { x: Insp; draft: Dra
         {x.notes && <section className="mbCard"><small className="mbCap">NOTE</small><span>{x.notes}</span></section>}
         <section className="mbCard"><small className="mbCap">FIȘA</small><span>{x.template_name ?? "Fișa de inspecție"} · {x.template.groups.reduce((s, g) => s + g.qs.length, 0)} întrebări · {x.rooms.length} încăperi</span></section>
       </div>
+      {!done && (
+        <footer className="mbFoot">
+          <button type="button" className="mbBtn gold big" onClick={onStart}>{draft?.started_at ? "Continuă fișa →" : "Începe fișa →"}</button>
+        </footer>
+      )}
     </>
   );
 }
