@@ -1,11 +1,32 @@
 // Inspecții: types, statuses and the UVALO default templates, shared by the pages (browser) and the server.
 
-export type QKind = "one" | "many" | "text" | "number" | "date";
-export type Question = { id: string; t: string; kind: QKind; options?: string[]; def?: string; unit?: string; req?: boolean; pdf?: boolean; photo?: boolean };
+export type QKind = "one" | "many" | "text" | "number" | "date" | "comp";
+/** A follow-up of a composite question, asked only after a given answer (e.g. „Branșat” → „Apometru montat”). */
+export type SubKind = "one" | "many" | "text" | "number";
+export type SubQ = { id: string; t: string; kind: SubKind; options?: string[]; unit?: string };
+/**
+ * A question. "comp" (composite) = one choice whose answers can ask follow-ups (`sub`, by answer); the choice is kept at
+ * answers[id], each follow-up at answers["id.subId"].
+ */
+export type Question = { id: string; t: string; kind: QKind; options?: string[]; def?: string; unit?: string; req?: boolean; pdf?: boolean; photo?: boolean; sub?: Record<string, SubQ[]> };
 export type Group = { id: string; name: string; qs: Question[] };
 export type Template = { groups: Group[] };
 
-export const QKIND_LABEL: Record<QKind, string> = { one: "Alegere unică", many: "Alegere multiplă", text: "Text", number: "Număr", date: "Dată" };
+export const QKIND_LABEL: Record<QKind, string> = { one: "Alegere unică", many: "Alegere multiplă", text: "Text", number: "Număr", date: "Dată", comp: "Compusă (întrebări după răspuns)" };
+export const SUBKIND_LABEL: Record<SubKind, string> = { one: "Alegere unică", many: "Alegere multiplă", text: "Text", number: "Număr" };
+export const subKey = (q: Pick<Question, "id">, s: Pick<SubQ, "id">) => `${q.id}.${s.id}`;
+
+/** A composite answer on one line: „Branșat · Apometru montat: Da”. */
+export function compSummary(q: Question, answers: Record<string, string | string[] | undefined>) {
+  const v = answers[q.id];
+  if (typeof v !== "string" || !v) return "";
+  const parts = (q.sub?.[v] ?? []).map((s) => {
+    const a = answers[subKey(q, s)];
+    const t = Array.isArray(a) ? a.join(", ") : a;
+    return t ? `${s.t}: ${t}${s.unit ? ` ${s.unit}` : ""}` : "";
+  }).filter(Boolean);
+  return [v, ...parts].join(" · ");
+}
 
 export type Status = "prog" | "plan" | "lucru" | "gata" | "pred";
 export const STATUS: Record<Status, { label: string; fg: string; bg: string }> = {
@@ -48,12 +69,12 @@ const USI_INT = ["MDF / celular", "Lemn masiv", "PVC", "Sticlă"];
 const TAMPLARIE = ["PVC cu termopan", "Aluminiu cu termopan", "Lemn stratificat", "Lemn simplu"];
 const DRUM = ["Asfalt", "Pavat", "Pietruit", "De pământ"];
 
-/** Utility connections: connected (with the meter) or not, and the distance to the network when not connected. */
-const util = (id: string, t: string, meter?: string): Question[] => [
-  one(id, t, meter ? [`Branșat · ${meter}`, "Branșat · fără contor", "Nebranșat"] : ["Branșat", "Nebranșat"]),
-  num(`${id}_distance_m`, `${t} · distanța până la rețea (dacă nu e branșat)`, "ml"),
-];
-const UTILS = (power = "Curent electric") => [...util("water", "Apă", "apometru montat"), ...util("sewer", "Canalizare"), ...util("gas", "Gaz", "contor montat"), ...util("power", power, "contor montat")];
+/** Utility connections (composite, as in the VALUEFY sheet): connected → meter fitted; not connected → distance to the network. */
+const util = (id: string, t: string, meter?: string): Question => q(id, t, "comp", ["Branșat", "Nebranșat"], { sub: {
+  ...(meter ? { Branșat: [{ id: "meter", t: meter, kind: "one", options: ["Da", "Nu"] }] } : {}),
+  Nebranșat: [{ id: "dist", t: "Distanța până la rețea", kind: "number", unit: "ml" }],
+} });
+const UTILS = (power = "Curent electric", powerMeter = "Contor electric montat") => [util("water", "Apă", "Apometru montat"), util("sewer", "Canalizare"), util("gas", "Gaz", "Contor gaz montat"), util("power", power, powerMeter)];
 
 /** First group of every sheet: where the property is (banks ask for position, zone type, transport and flood risk). */
 const amplasament = (extra: Question[] = [], neighbours: Question = one("neighbourhood", "Vecinătăți", VECINATATI)): Group => ({ id: "amplasament", name: "Amplasament și zonă", qs: [
@@ -201,7 +222,7 @@ const TEREN: Group[] = [
     many("land_improvements", "Îmbunătățiri", ["Pavaje / alei", "Platforme betonate", "Drenaje", "Nu există"]),
     many("easements", "Rețele care traversează terenul", ["Linie electrică aeriană", "Conducte / rețele subterane", "Drum de servitute", "Nu există vizibile"]),
   ] },
-  { id: "bransamente", name: "Branșamente", qs: UTILS() },
+  { id: "bransamente", name: "Branșamente", qs: UTILS("Curent electric", "Contor electric montat (firidă)") },
   { id: "constructii", name: "Construcții pe teren", qs: [one("land_constructions", "Construcții pe teren", ["Nu există", "Provizorii", "De demolat", "În construcție"])] },
   { id: "constatari", name: "Constatări", qs: [
     one("inspection_scope", "Tipul inspecției", ["La fața locului", "Doar de la limita terenului"]),
@@ -290,7 +311,7 @@ export function photoCategories(propType: string | null | undefined) {
 }
 
 /** Answers needed only in some cases (details, notes, completion %, distance to a network not connected) do not count towards completion. */
-export const isOptional = (q: Question) => !q.req && (q.id === "notes" || q.id.endsWith("_notes") || q.id === "completion_pct" || /^(water|sewer|gas|power)_distance_m$/.test(q.id));
+export const isOptional = (q: Question) => !q.req && (q.id === "notes" || q.id.endsWith("_notes") || q.id === "completion_pct");
 
 export const qCount = (t: Template | null | undefined) => (t?.groups ?? []).reduce((s, g) => s + g.qs.length, 0);
 
@@ -303,11 +324,25 @@ export function cleanTemplate(v: unknown): Template {
       id: s(g?.id, 40) || `g${gi + 1}`,
       name: s(g?.name, 80) || "Grup",
       qs: (Array.isArray(g?.qs) ? g.qs : []).slice(0, 60).map((x, qi) => {
-        const kind: QKind = (["one", "many", "text", "number", "date"] as const).includes(x?.kind) ? x.kind : "text";
+        const kind: QKind = (["one", "many", "text", "number", "date", "comp"] as const).includes(x?.kind) ? x.kind : "text";
         const options = Array.isArray(x?.options) ? x.options.map((o: unknown) => s(o, 80)).filter(Boolean).slice(0, 30) : [];
+        const sub: Record<string, SubQ[]> = {};
+        if (kind === "comp" && x?.sub && typeof x.sub === "object") {
+          for (const o of options) {
+            const list = Array.isArray(x.sub[o]) ? x.sub[o] : [];
+            const clean = list.slice(0, 8).map((y: Partial<SubQ>, yi: number) => {
+              const k: SubKind = (["one", "many", "text", "number"] as const).includes(y?.kind as SubKind) ? (y!.kind as SubKind) : "text";
+              const opts = Array.isArray(y?.options) ? y!.options.map((z) => s(z, 80)).filter(Boolean).slice(0, 20) : [];
+              return { id: s(y?.id, 40).replace(/[^\w-]/g, "") || `s${yi + 1}`, t: s(y?.t) || "Întrebare", kind: k,
+                ...(k === "one" || k === "many" ? { options: opts.length ? opts : ["Da", "Nu"] } : {}), ...(s(y?.unit, 12) ? { unit: s(y?.unit, 12) } : {}) };
+            });
+            if (clean.length) sub[o] = clean;
+          }
+        }
         return {
           id: s(x?.id, 40) || `${g?.id ?? "g"}q${qi + 1}`, t: s(x?.t) || "Întrebare", kind,
-          ...(kind === "one" || kind === "many" ? { options } : {}),
+          ...(kind === "one" || kind === "many" || kind === "comp" ? { options } : {}),
+          ...(kind === "comp" ? { sub } : {}),
           ...(s(x?.def, 80) ? { def: s(x?.def, 80) } : {}), ...(s(x?.unit, 12) ? { unit: s(x?.unit, 12) } : {}),
           req: !!x?.req, pdf: x?.pdf !== false, photo: !!x?.photo,
         };

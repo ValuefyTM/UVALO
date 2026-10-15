@@ -299,10 +299,13 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   (poze/acte, fișierele vor sta în R2 — bucket de legat), `insp_log` (istoric), `insp_devices`, `insp_pair_codes`. Fișele UVALO stau în cod
   (`UVALO_TEMPLATES` în `src/lib/insp-shared.ts`, doar citire, se duplică) au **structura fișei VALUEFY** (formularul v2 din CRM,
   `src/lib/insp-forms.ts` în `ValuefyTM/CRM`): Apartament, Casă, Teren, Spațiu comercial / Hală, Accesoriu; aceleași grupuri, întrebări, opțiuni
-  și chei (`year_built`, `heating`…), branșamentele ca „Branșat · contor / fără / Nebranșat” + distanța până la rețea; ultimul grup = „Constatări”
+  și chei (`year_built`, `heating`…), branșamentele = **întrebări compuse** ca în VALUEFY (Branșat → contor montat Da/Nu; Nebranșat → distanța până la rețea); ultimul grup = „Constatări”
   (atunci aplicația și pagina web nu mai arată pasul separat de constatări libere). Încăperile: pardoseală, pereți, plafon, stare (`ROOM_FIELDS`),
   categoriile de poze `photoCategories()`; `isOptional()` = note, detalii, grad de finalizare, distanțele branșamentelor (nu intră în progres).
-  `PROP_TYPES` / `CONTACT_ROLES` = listele VALUEFY. Logica: `src/lib/insp.ts`; API unic `POST /api/inspectii {action}`.
+  `PROP_TYPES` / `CONTACT_ROLES` = listele VALUEFY.
+- **Întrebare compusă** (`kind: "comp"`): o alegere cu întrebări de urmat pe răspuns (`sub: {răspuns: SubQ[]}`, tipuri unică / multiplă / text / număr);
+  răspunsul la `answers[id]`, urmările la `answers["id.subId"]`; `compSummary()` pe o linie în fișa web. În editor: „+ Întrebare compusă” și, pe fiecare
+  răspuns, „+ Întrebare după „X”” (redenumirea răspunsului mută și urmările). Migrația 0024 a șters (logic) copiile personale ale primelor fișe UVALO. Logica: `src/lib/insp.ts`; API unic `POST /api/inspectii {action}`.
 - Pagini: `/inspectii` (`InspList`: file Ale mele / Făcute pentru colegi / Făcute pentru mine, filtre pe stare, Listă / Hartă (Leaflet) / Calendar
   săptămânal cu „De programat” trase pe o oră → `schedule`), `/inspectii/nou[?id=]` (`InspForm`: CF citit cu `/api/amplasament/plan`, încăperi,
   fișa, contact, programare, cine o face: eu / coleg din birou / Colaborări), `/inspectii/<id>` (fișa ca document: cuprins în stânga, conținut;

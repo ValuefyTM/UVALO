@@ -1904,6 +1904,9 @@ textarea.mbIn { min-height: 0; resize: vertical; }
 .mbNum.small .mbIn { width: 84px; min-height: 38px; padding: 6px 10px; text-align: right; }
 
 /* the sheet: smaller labels */
+.mbSub { display: flex; flex-direction: column; gap: 8px; margin-top: 2px; padding: 10px 0 2px 12px; border-left: 3px solid var(--acc-line); }
+.mbSubQ { display: flex; flex-direction: column; gap: 6px; }
+.mbSubQ .mbQT { font-size: 12.5px; color: var(--muted); }
 .mbQ .mbIn, .mbBody textarea.mbIn { padding: 8px 10px; min-height: 38px; }
 .mbField { font-size: 12px; }
 
@@ -2051,3 +2054,10 @@ html:has(.mb) { min-height: calc(100% + env(safe-area-inset-top)); background: #
 /* iPhone: the status bar (time, battery) sits over the page; a dark strip under it so scrolled content does not show through */
 .mb::before { content: ""; position: fixed; top: 0; left: 0; right: 0; height: env(safe-area-inset-top); background: #141414; z-index: 50; pointer-events: none; }
 @media (min-width: 561px) { body:has(.mb) { background: #141414; } }
+
+/* Fișe de inspecție: composite questions (follow-ups by answer) */
+.inQAdd { display: flex; gap: 8px; flex-wrap: wrap; }
+.inSubEd { display: flex; flex-direction: column; gap: 8px; border-left: 3px solid var(--acc-line); padding: 4px 0 4px 12px; }
+.inSubQ { display: flex; flex-direction: column; gap: 6px; background: var(--cream); border: 1px solid var(--divider); border-radius: 10px; padding: 8px; }
+.inSubRow { display: flex; gap: 6px; align-items: center; }
+.inSubRow > .input, .inSubRow > .select { flex: 1; min-width: 0; }

@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { CONTACT_ROLES, fmtWhen, isOptional, photoCategories, PROP_TYPES, ROOM_FIELDS, STATUS, type InspRow, type Question, type Template } from "@/lib/insp-shared";
+import { CONTACT_ROLES, fmtWhen, isOptional, photoCategories, PROP_TYPES, ROOM_FIELDS, STATUS, type InspRow, type Question, type SubQ, subKey, type Template } from "@/lib/insp-shared";
 import { allFiles, allFinish, flush, putFile, putFinish, shrink, type QPhoto } from "./store";
 import { InstallHint } from "./InstallHint";
 
@@ -685,18 +685,39 @@ function Detail({ x, draft, onBack, onStart, onSchedule }: { x: Insp; draft: Dra
 
 /* ---------- the sheet ---------- */
 
-function QInput({ q, v, set, onPhoto }: { q: Question; v: string | string[] | undefined; set: (v: string | string[]) => void; onPhoto: (f: File, room: string) => void }) {
+/** A follow-up of a composite question (shown after the answer that asks it). */
+function SubInput({ sq, v, set }: { sq: SubQ; v: string | string[] | undefined; set: (v: string | string[]) => void }) {
+  return (
+    <span className="mbSubQ">
+      <span className="mbQT">{sq.t}</span>
+      {(sq.kind === "one" || sq.kind === "many") && (
+        <span className="mbOpts">{(sq.options ?? []).map((o) => {
+          const on = sq.kind === "one" ? v === o : Array.isArray(v) && v.includes(o);
+          return <button key={o} type="button" aria-pressed={on} onClick={() => set(sq.kind === "one" ? (on ? "" : o) : on ? (v as string[]).filter((y) => y !== o) : [...(Array.isArray(v) ? v : []), o])}>{o}</button>;
+        })}</span>
+      )}
+      {sq.kind === "text" && <input className="mbIn" value={(v as string) ?? ""} onChange={(e) => set(e.target.value)} />}
+      {sq.kind === "number" && <span className="mbNum"><input className="mbIn" inputMode="decimal" value={(v as string) ?? ""} onChange={(e) => set(e.target.value.replace(/[^\d.,-]/g, ""))} />{sq.unit && <em>{sq.unit}</em>}</span>}
+    </span>
+  );
+}
+
+function QInput({ q, v, set, onPhoto, answers, setKey }: { q: Question; v: string | string[] | undefined; set: (v: string | string[]) => void; onPhoto: (f: File, room: string) => void;
+  answers?: Record<string, string | string[]>; setKey?: (k: string, v: string | string[]) => void }) {
   const cam = useRef<HTMLInputElement>(null);
   return (
     <div className="mbQ">
       <span className="mbQT">{q.t}{q.req && <i aria-label="obligatorie"> *</i>}</span>
-      {(q.kind === "one" || q.kind === "many") && (
+      {(q.kind === "one" || q.kind === "many" || q.kind === "comp") && (
         <span className="mbOpts">
           {(q.options ?? []).map((o) => {
-            const on = q.kind === "one" ? v === o : Array.isArray(v) && v.includes(o);
-            return <button key={o} type="button" aria-pressed={on} onClick={() => set(q.kind === "one" ? (on ? "" : o) : on ? (v as string[]).filter((y) => y !== o) : [...(Array.isArray(v) ? v : []), o])}>{o}</button>;
+            const single = q.kind !== "many", on = single ? v === o : Array.isArray(v) && v.includes(o);
+            return <button key={o} type="button" aria-pressed={on} onClick={() => set(single ? (on ? "" : o) : on ? (v as string[]).filter((y) => y !== o) : [...(Array.isArray(v) ? v : []), o])}>{o}</button>;
           })}
         </span>
+      )}
+      {q.kind === "comp" && typeof v === "string" && (q.sub?.[v] ?? []).length > 0 && (
+        <span className="mbSub">{q.sub![v].map((sq) => <SubInput key={sq.id} sq={sq} v={answers?.[subKey(q, sq)]} set={(x) => setKey?.(subKey(q, sq), x)} />)}</span>
       )}
       {q.kind === "text" && <textarea className="mbIn" rows={2} value={(v as string) ?? ""} onChange={(e) => set(e.target.value)} />}
       {q.kind === "number" && <span className="mbNum"><input className="mbIn" inputMode="decimal" value={(v as string) ?? ""} onChange={(e) => set(e.target.value.replace(/[^\d.,-]/g, ""))} />{q.unit && <em>{q.unit}</em>}</span>}
@@ -745,7 +766,8 @@ function Form({ x, d, sec, photos, onBack, onSec, change, onPhoto, onRooms, onPh
       <div className="mbBody">
         {!isFind && g && <>
           <h2 className="mbH2">{g.name}</h2>
-          {g.qs.map((q) => <QInput key={q.id} q={q} v={d.answers[q.id]} onPhoto={onPhoto} set={(v) => change((o) => { o.answers[q.id] = v; return o; })} />)}
+          {g.qs.map((q) => <QInput key={q.id} q={q} v={d.answers[q.id]} onPhoto={onPhoto} answers={d.answers}
+            set={(v) => change((o) => { o.answers[q.id] = v; return o; })} setKey={(k, v) => change((o) => { o.answers[k] = v; return o; })} />)}
         </>}
         {isFind && <>
           <h2 className="mbH2">Constatări</h2>

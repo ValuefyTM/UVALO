@@ -317,7 +317,13 @@ export async function inspAction(db: D1Database, c: Ctx, b: Record<string, unkno
     const tpl = cleanTemplate(J(r.template as string, {}));
     const answers: Record<string, string | string[]> = {};
     for (const g of tpl.groups) for (const q of g.qs) {
-      if (/^(water|sewer|gas|power)_distance_m$/.test(q.id) || q.id === "completion_pct") continue;
+      if (q.id === "completion_pct") continue;
+      if (q.kind === "comp") {
+        const o = q.def ?? q.options?.[0] ?? "";
+        answers[q.id] = o;
+        for (const sq of q.sub?.[o] ?? []) answers[`${q.id}.${sq.id}`] = sq.kind === "number" ? "12" : sq.kind === "many" ? (sq.options ?? []).slice(0, 1) : sq.kind === "one" ? sq.options?.[0] ?? "" : "[completat pe teren]";
+        continue;
+      }
       answers[q.id] = q.kind === "many" ? (q.options ?? []).slice(0, Math.min(3, (q.options ?? []).length)) : q.kind === "number" ? (q.unit === "m" ? "16,2" : /an/i.test(q.t) ? "2004" : "1")
         : q.kind === "date" ? now().slice(0, 10) : q.kind === "text" ? (/prezent/i.test(q.t) ? String(r.contact_name ?? "Persoana de contact") : "[completat pe teren]") : q.def ?? q.options?.[0] ?? "";
     }

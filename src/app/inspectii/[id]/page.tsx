@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { page, fmtDate } from "@/lib/guard";
 import { getInspection } from "@/lib/insp";
-import { fmtWhen, STATUS } from "@/lib/insp-shared";
+import { compSummary, fmtWhen, STATUS } from "@/lib/insp-shared";
 import { AppShell } from "@/components/AppShell";
 import { InspDocActions } from "@/components/InspDocActions";
 import { InspFileDelete, InspFileUpload } from "@/components/InspFileUpload";
@@ -79,7 +79,7 @@ export default async function InspDoc({ params }: { params: Promise<{ id: string
               {sec(String(i + 1).padStart(2, "0"), g.name)}
               <div className="inRows">
                 {g.qs.filter((q) => q.pdf !== false).map((q) => (
-                  <div key={q.id}><span>{q.t}</span><b>{done ? ans(x.answers[q.id], q.unit) : "—"}</b></div>
+                  <div key={q.id}><span>{q.t}</span><b>{done ? (q.kind === "comp" ? compSummary(q, x.answers) || "—" : ans(x.answers[q.id], q.unit)) : "—"}</b></div>
                 ))}
               </div>
             </section>

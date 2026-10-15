@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { PROP_TYPES, QKIND_LABEL, qCount, type Group, type QKind, type Question, type Template } from "@/lib/insp-shared";
+import { PROP_TYPES, QKIND_LABEL, qCount, SUBKIND_LABEL, type Group, type QKind, type Question, type SubKind, type Template } from "@/lib/insp-shared";
 
 export type TplItem = { id: string; owner: "uvalo" | "org" | "user"; name: string; prop: string | null; draft: Template; version: number; enforced: boolean; dirty: boolean; editable: boolean };
 
@@ -105,7 +105,10 @@ export function InspTemplates({ items, canOrg, start }: { items: TplItem[]; canO
                       </span>}
                     </div>
                   ))}
-                  {!ro && <button type="button" className="btn btnGhost btnSm" onClick={() => { edit((t) => { t.groups[gi].qs.push({ id: `q${rid()}`, t: "Întrebare nouă", kind: "one", options: ["Da", "Nu"], req: true, pdf: true }); return t; }); setQ([gi, g.qs.length]); }}>+ Întrebare</button>}
+                  {!ro && <span className="inQAdd">
+                    <button type="button" className="btn btnGhost btnSm" onClick={() => { edit((t) => { t.groups[gi].qs.push({ id: `q${rid()}`, t: "Întrebare nouă", kind: "one", options: ["Da", "Nu"], req: true, pdf: true }); return t; }); setQ([gi, g.qs.length]); }}>+ Întrebare</button>
+                    <button type="button" className="btn btnGhost btnSm" title="O alegere care, după răspuns, mai pune câteva întrebări (ca la branșamente)" onClick={() => { edit((t) => { t.groups[gi].qs.push({ id: `q${rid()}`, t: "Întrebare compusă", kind: "comp", options: ["Da", "Nu"], sub: {}, req: false, pdf: true }); return t; }); setQ([gi, g.qs.length]); }}>+ Întrebare compusă</button>
+                  </span>}
                 </div>
               )}
             </div>
@@ -133,21 +136,47 @@ export function InspTemplates({ items, canOrg, start }: { items: TplItem[]; canO
         {!qq ? <p className="hint">Alege o întrebare din fișă.</p> : (
           <>
             <label className="field">Întrebarea<input className="input" value={qq.t} disabled={ro} onChange={(e) => setQq((x) => { x.t = e.target.value; })} /></label>
-            <label className="field">Tipul răspunsului<select className="select" value={qq.kind} disabled={ro} onChange={(e) => setQq((x) => { x.kind = e.target.value as QKind; if ((x.kind === "one" || x.kind === "many") && !x.options?.length) x.options = ["Da", "Nu"]; })}>
+            <label className="field">Tipul răspunsului<select className="select" value={qq.kind} disabled={ro} onChange={(e) => setQq((x) => { x.kind = e.target.value as QKind; if ((x.kind === "one" || x.kind === "many" || x.kind === "comp") && !x.options?.length) x.options = ["Da", "Nu"]; if (x.kind === "comp") x.sub ??= {}; })}>
               {(Object.keys(QKIND_LABEL) as QKind[]).map((k) => <option key={k} value={k}>{QKIND_LABEL[k]}</option>)}</select></label>
-            {(qq.kind === "one" || qq.kind === "many") && (
+            {(qq.kind === "one" || qq.kind === "many" || qq.kind === "comp") && (
               <div className="inOpts">
                 <span className="field">Răspunsuri precompletate <small>bifa = răspunsul implicit</small></span>
                 {(qq.options ?? []).map((o, i) => (
                   <div key={i} className="inOpt">
                     <input type="radio" name="def" aria-label="Implicit" checked={qq.def === o} disabled={ro} onChange={() => setQq((x) => { x.def = o; })} />
-                    <input className="input" value={o} disabled={ro} aria-label="Răspuns" onChange={(e) => setQq((x) => { if (x.def === o) x.def = e.target.value; x.options![i] = e.target.value; })} />
-                    {!ro && <button type="button" className="btn btnGhost btnSm" aria-label="Scoate" onClick={() => setQq((x) => { x.options!.splice(i, 1); if (x.def === o) delete x.def; })}>×</button>}
+                    <input className="input" value={o} disabled={ro} aria-label="Răspuns" onChange={(e) => setQq((x) => {
+                      const nv = e.target.value;
+                      if (x.def === o) x.def = nv;
+                      if (x.sub?.[o] && !x.sub[nv]) { x.sub[nv] = x.sub[o]; delete x.sub[o]; } // follow-ups move with the renamed answer
+                      x.options![i] = nv;
+                    })} />
+                    {!ro && <button type="button" className="btn btnGhost btnSm" aria-label="Scoate" onClick={() => setQq((x) => { x.options!.splice(i, 1); if (x.def === o) delete x.def; if (x.sub) delete x.sub[o]; })}>×</button>}
                   </div>
                 ))}
                 {!ro && <button type="button" className="btn btnGhost btnSm" onClick={() => setQq((x) => { x.options = [...(x.options ?? []), ""]; })}>+ Răspuns</button>}
               </div>
             )}
+            {qq.kind === "comp" && (qq.options ?? []).filter(Boolean).map((o) => (
+              <div key={o} className="inSubEd">
+                <span className="field">Dacă răspunsul e „{o}”, întreabă și:</span>
+                {(qq.sub?.[o] ?? []).map((sq, si) => (
+                  <div key={si} className="inSubQ">
+                    <span className="inSubRow">
+                      <input className="input" value={sq.t} disabled={ro} placeholder="ex. Apometru montat" aria-label="Întrebarea" onChange={(e) => setQq((x) => { x.sub![o][si].t = e.target.value; })} />
+                      {!ro && <button type="button" className="btn btnGhost btnSm" aria-label="Scoate întrebarea" onClick={() => setQq((x) => { x.sub![o].splice(si, 1); })}>×</button>}
+                    </span>
+                    <span className="inSubRow">
+                      <select className="select" value={sq.kind} disabled={ro} aria-label="Tipul răspunsului" onChange={(e) => setQq((x) => { const y = x.sub![o][si]; y.kind = e.target.value as SubKind; if ((y.kind === "one" || y.kind === "many") && !y.options?.length) y.options = ["Da", "Nu"]; })}>
+                        {(Object.keys(SUBKIND_LABEL) as SubKind[]).map((k) => <option key={k} value={k}>{SUBKIND_LABEL[k]}</option>)}</select>
+                      {(sq.kind === "one" || sq.kind === "many") && <input className="input" value={(sq.options ?? []).join(", ")} disabled={ro} placeholder="Răspunsuri, despărțite prin virgulă" aria-label="Răspunsurile"
+                        onChange={(e) => setQq((x) => { x.sub![o][si].options = e.target.value.split(",").map((t) => t.replace(/^\s+/, "")); })} />}
+                      {sq.kind === "number" && <input className="input" value={sq.unit ?? ""} disabled={ro} placeholder="Unitatea (ex. ml)" aria-label="Unitatea" onChange={(e) => setQq((x) => { x.sub![o][si].unit = e.target.value; })} />}
+                    </span>
+                  </div>
+                ))}
+                {!ro && <button type="button" className="btn btnGhost btnSm" onClick={() => setQq((x) => { x.sub = { ...(x.sub ?? {}) }; (x.sub[o] ??= []).push({ id: `s${rid()}`, t: "", kind: "one", options: ["Da", "Nu"] }); })}>+ Întrebare după „{o}”</button>}
+              </div>
+            ))}
             {qq.kind === "number" && <label className="field">Unitatea<input className="input" value={qq.unit ?? ""} disabled={ro} placeholder="ex. m, mp, buc." onChange={(e) => setQq((x) => { x.unit = e.target.value; })} /></label>}
             <label className="check"><input type="checkbox" checked={!!qq.req} disabled={ro} onChange={(e) => setQq((x) => { x.req = e.target.checked; })} /> Obligatorie</label>
             <label className="check"><input type="checkbox" checked={qq.pdf !== false} disabled={ro} onChange={(e) => setQq((x) => { x.pdf = e.target.checked; })} /> Apare în PDF</label>
