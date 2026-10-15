@@ -82,8 +82,9 @@ export default async function SharedSheet({ params }: { params: Promise<{ token:
       <header className="fsTop">
         {firm ? (
           <span className="fsFirm">
+            {/* with a logo, the logo stands for the name; without one, the firm's name */}
             {firm.has_logo ? <>{/* eslint-disable-next-line @next/next/no-img-element */}<img src={src("logo")} alt={firm.name} /></> : null}
-            <span><b>{firm.name}</b>{firm.corp_no && <small>Autorizație ANEVAR nr. {firm.corp_no}</small>}</span>
+            <span>{!firm.has_logo && <b>{firm.name}</b>}{firm.corp_no && <small>Autorizație ANEVAR nr. {firm.corp_no}</small>}</span>
           </span>
         ) : <span className="fsFirm"><span><b>{x.assignee_name ?? x.owner_name}</b><small>Evaluator</small></span></span>}
         <span className="fsCode">Fișă de inspecție<br />{x.code}</span>
