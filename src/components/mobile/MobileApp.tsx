@@ -563,8 +563,7 @@ function Home({ me, items, queueN, onQueue, pos, unread, scope, setScope, st, se
               <button type="button" className="mbBtn gold" onClick={() => onStart(next.id)}>{nextKind === "redo" ? "Modifică fișa" : next.status === "lucru" ? "Continuă" : "Începe fișa"}</button>
             </span>
           </div>
-        ) : <div className="mbNext mbNextNone"><b>Nicio inspecție programată</b><small>Inspecțiile pregătite pentru tine pe web apar aici. Sau adaugă una chiar de aici.</small>
-          <button type="button" className="mbBtn gold" onClick={onNew}>+ Inspecție nouă</button></div>}
+        ) : <div className="mbNext mbNextNone"><span>Nicio inspecție programată</span></div>}
       </header>
       <InstallHint />
       <div className="mbTools">

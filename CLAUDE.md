@@ -411,6 +411,7 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   inspecția nu e a mea de făcut.
   Cardurile obligatorii din fișă (`.mbTile`) sunt compacte: iconiță mică în stânga, titlul și starea pe două rânduri. Și cardul de sus
   (`.mbNext`) e compact: căsuța 44 px (ora; în altă zi „16 oct” deasupra orei), adresa pe max. 2 rânduri, nota pe un rând, butoane de 34 px.
+  Fără nimic de arătat: doar „Nicio inspecție programată”, centrat, estompat, fără buton (inspecția nouă se adaugă din „+”).
 - **Notificări push** (Web Push; pe iPhone doar cu aplicația instalată, iOS 16.4+): `src/lib/webpush.ts` = cheile VAPID făcute la prima folosire
   și ținute în `app_settings` „vapid”, criptare aes128gcm (RFC 8291) + semnătură ES256, totul cu WebCrypto (fără bibliotecă). Abonările în
   `insp_push` (migrația 0025; 404/410 de la serviciul de push → abonare ștearsă), `/api/m/push` (GET cheia, POST `{sub}` / `{action: test}`, DELETE).
