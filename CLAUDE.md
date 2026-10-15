@@ -348,7 +348,13 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   încăperi, Semnătură → finalizare; meniu jos Acasă / De trimis / Contul meu. Butonul Înapoi al telefonului e prins înaintea routerului Next
   (`popstate` în captură, starea `mbv`), altfel pagina se reîncarcă. În fișă, chip-ul secțiunii curente se derulează singur în vedere (`secsRef`).
 - Offline: ciorna în `localStorage` `insp-draft-<id>` (trimisă ca `progress` la 4 s), pozele (micșorate 2000 px) și finalizările în IndexedDB
-  `uvalo-insp` (`store.ts`, `flush()` la revenirea rețelei și la 30 s); service worker: cache pentru `/_next/static/`, paginile rețea-apoi-cache.
+  `uvalo-insp` (`store.ts`, `flush()` la revenirea rețelei și la 30 s).
+- **Pornire rapidă** (măsurat cu latență 300 ms: prima deschidere ~2,2 s, următoarele ~0,1 s): service worker-ul (`uvalo-insp-v3`) servește
+  pagina din memorie (stale-while-revalidate) și o reîmprospătează în fundal împreună cu scripturile ei (le adaugă în cache înainte de a
+  înlocui pagina, ca după un deploy să nu lipsească nimic); `/_next/static/` = cache-first. Răspunsul `/api/m/state` se păstrează în
+  `localStorage` `insp-state` → aplicația apare imediat, apoi se actualizează (golit la 401, fără acces, „Ieși din cont”). Detaliul unei
+  inspecții se arată din `insp-<id>` și se reîmprospătează după; la 2,5 s după pornire se descarcă în fundal detaliile primelor 15 inspecții
+  active. `/api/m/device` se cheamă după listă, nu în paralel.
 - Instalare după dispozitiv (`InstallHint.tsx`): iPhone Safari → Partajează → „Adaugă pe ecranul principal” (balon cu săgeată spre bara Safari);
   iPhone în alt browser → „Deschide în Safari” (`x-safari-https://…`, nu merge peste tot) + „Copiază linkul”; Android → `beforeinstallprompt`
   sau meniul ⋮; Android în aplicații (Instagram, WhatsApp…) → `intent://…package=com.android.chrome`; calculator → QR. Ascuns 3 zile la ×.

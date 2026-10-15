@@ -96,25 +96,31 @@ export function MobileApp() {
   }, []);
 
   const refreshQueue = useCallback(async () => { setPending(await allFiles()); setFinishQ((await allFinish()).length); }, []);
-  const load = useCallback(async () => {
-    const r = await fetch("/api/m/state", { cache: "no-store" }).catch(() => null);
-    if (!r) { setState((s) => (s === "boot" ? "app" : s)); return; } // offline: keep what we have
-    if (r.status === 401) { setState("login"); return; }
-    const j = await J(r);
+  // what /api/m/state returned, shown at once on the next start (the app opens from the phone's memory, then refreshes)
+  const apply = useCallback((j: Record<string, unknown>) => {
     setMe(j.user as Me);
-    if (!j.allowed) { setState("noaccess"); return; }
-    setItems(j.items as InspRow[]);
+    setItems((j.items as InspRow[]) ?? []);
     setCollab((j.collab as InspRow[]) ?? []);
     setInfo((j.info as Info) ?? null);
     setTpls((j.templates as Tpl[]) ?? []);
     setNotifs((j.notifs as Notif[]) ?? []);
-    try { localStorage.setItem("insp-items", JSON.stringify(j.items)); } catch {}
-    setState("app");
   }, []);
+  const load = useCallback(async () => {
+    const r = await fetch("/api/m/state", { cache: "no-store" }).catch(() => null);
+    if (!r) { setState((s) => (s === "boot" ? "app" : s)); return; } // offline: keep what we have
+    if (r.status === 401) { try { localStorage.removeItem("insp-state"); } catch {} setState("login"); return; }
+    const j = await J(r);
+    setMe(j.user as Me);
+    if (!j.allowed) { try { localStorage.removeItem("insp-state"); } catch {} setState("noaccess"); return; }
+    apply(j);
+    try { localStorage.setItem("insp-state", JSON.stringify(j)); } catch {}
+    setState("app");
+  }, [apply]);
 
   // start: pairing code from the QR (?pair=), the service worker (only on the app's own domain), the queue
   useEffect(() => {
-    try { const c = JSON.parse(localStorage.getItem("insp-items") || "[]"); if (Array.isArray(c)) setItems(c); } catch {}
+    // the last state known on this phone: the app shows at once, without waiting for the network
+    try { const c = JSON.parse(localStorage.getItem("insp-state") || "null"); if (c?.user && c.allowed) { apply(c); setState("app"); } } catch {}
     const sp = new URLSearchParams(location.search), code = sp.get("pair"), openId = sp.get("open");
     const standalone = matchMedia("(display-mode: standalone)").matches || (navigator as unknown as { standalone?: boolean }).standalone === true;
     (async () => {
@@ -125,8 +131,16 @@ export function MobileApp() {
         history.replaceState(null, "", location.pathname);
         const r = await fetch("/api/m/pair", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code, standalone }) });
         if (!r.ok) say(String((await J(r)).error || "Codul nu a mers."));
-      } else void fetch("/api/m/device", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ standalone }) }).catch(() => {});
+      }
       await load();
+      // the details of the active inspections are kept on the phone in the background: they open at once, also without signal
+      setTimeout(() => { void (async () => {
+        let list: InspRow[] = [];
+        try { list = ((JSON.parse(localStorage.getItem("insp-state") || "null")?.items ?? []) as InspRow[]).filter((i) => !isDone(i)).slice(0, 15); } catch {}
+        for (const i of list) { if (!navigator.onLine) break; await fetchRef.current(i.id); }
+      })(); }, 2500);
+      // the phone's "last seen" is recorded after the list, so it does not slow the start
+      if (!code) void fetch("/api/m/device", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ standalone }) }).catch(() => {});
       if (openId) { history.replaceState(null, "", location.pathname); void openRef.current(openId); }
     })();
     if ("serviceWorker" in navigator && !location.pathname.startsWith("/m")) navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch(() => {});
@@ -138,9 +152,11 @@ export function MobileApp() {
     const t = setInterval(() => { void flush().then(refreshQueue); }, 30000);
     if ("geolocation" in navigator) navigator.geolocation.watchPosition((p) => { pos.current = [p.coords.latitude, p.coords.longitude]; }, () => {}, { enableHighAccuracy: true, maximumAge: 30000 });
     return () => { window.removeEventListener("online", up); window.removeEventListener("offline", down); clearInterval(t); };
-  }, [load, refreshQueue]);
+  }, [load, refreshQueue, apply]);
 
   const curId = useRef<string | null>(null);
+  const fetchRef = useRef<(id: string) => Promise<Insp | null>>(async () => null);
+  fetchRef.current = (id: string) => fetchInsp(id);
   async function fetchInsp(id: string) {
     const r = await fetch(`/api/m/insp/${id}`, { cache: "no-store" }).catch(() => null);
     if (!r?.ok) return null;
@@ -210,8 +226,13 @@ export function MobileApp() {
   const openRef = useRef<(id: string) => Promise<void>>(async () => {});
   openRef.current = (id: string) => open(id, { v: "detail", id });
   async function open(id: string, then: View) {
-    let x = await fetchInsp(id);
-    if (!x) { try { x = JSON.parse(localStorage.getItem(`insp-${id}`) || "null"); } catch {} }
+    // opened before on this phone: shown at once from memory, then refreshed from the network
+    let cached: Insp | null = null;
+    try { cached = JSON.parse(localStorage.getItem(`insp-${id}`) || "null"); } catch {}
+    if (cached) {
+      void fetchInsp(id).then((fresh) => { if (fresh && curId.current === id) setCur(fresh); });
+    }
+    const x = cached ?? (await fetchInsp(id));
     if (!x) { say("Inspecția nu se poate deschide fără semnal. Deschide-o o dată cu internet."); return; }
     setCur(x); curId.current = id;
     const d = loadDraft(id) ?? {
@@ -332,7 +353,7 @@ export function MobileApp() {
       <img src="/uvalo-logo.svg" alt="UVALO" className="mbLogo" />
       <h1>Inspecțiile nu sunt încă disponibile pentru contul tău</h1>
       <p>Modulul este în test. Te anunțăm când îl poți folosi.</p>
-      <button type="button" className="mbBtn" onClick={async () => { await fetch("/api/auth/logout", { method: "POST" }); location.reload(); }}>Ieși din cont</button>
+      <button type="button" className="mbBtn" onClick={async () => { await fetch("/api/auth/logout", { method: "POST" }); try { localStorage.removeItem("insp-state"); } catch {} location.reload(); }}>Ieși din cont</button>
     </div>
   );
 
@@ -1561,7 +1582,7 @@ function Account({ me, info, done, onOpen, queueN, online, onSend, say }: { me: 
 
         <small className="mbCap">SECURITATE</small>
         <a className="mbBtn" href="https://app.uvalo.ro/inspectii" target="_blank" rel="noopener">Deschide UVALO pe web</a>
-        <button type="button" className="mbBtn" disabled={busy} onClick={async () => { if (!confirm("Ieși din cont pe acest telefon? Telefonul rămâne conectat la cont.")) return; await fetch("/api/auth/logout", { method: "POST" }); location.reload(); }}>Ieși din cont</button>
+        <button type="button" className="mbBtn" disabled={busy} onClick={async () => { if (!confirm("Ieși din cont pe acest telefon? Telefonul rămâne conectat la cont.")) return; await fetch("/api/auth/logout", { method: "POST" }); try { localStorage.removeItem("insp-state"); } catch {} location.reload(); }}>Ieși din cont</button>
         <button type="button" className="mbBtn danger" disabled={busy} onClick={disconnect}>Deconectează telefonul</button>
         <small className="mbCenterSmall">UVALO Inspecții · versiune de test · <a href="https://app.uvalo.ro/termeni" target="_blank" rel="noopener">Termeni</a> · <a href="https://app.uvalo.ro/confidentialitate" target="_blank" rel="noopener">Confidențialitate</a></small>
       </div>

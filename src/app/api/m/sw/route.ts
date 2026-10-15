@@ -1,7 +1,7 @@
-// Service worker of the phone app (served at /sw.js on inspectii.uvalo.ro, scope "/"): the app opens without signal
-// (the page and its scripts are kept), the data always goes to the network (answers and photos are queued by the page);
+// Service worker of the phone app (served at /sw.js on inspectii.uvalo.ro, scope "/"): the app opens at once and without signal
+// (the page from memory, refreshed in the background; the scripts are kept), the data always goes to the network (answers and photos are queued by the page);
 // it shows the push notifications (/api/m/push, webpush.ts) and opens the inspection when one is tapped.
-const SW = `const C = "uvalo-insp-v2";
+const SW = `const C = "uvalo-insp-v3";
 self.addEventListener("install", (e) => { self.skipWaiting(); e.waitUntil(caches.open(C).then((c) => c.addAll(["/"]).catch(() => {}))); });
 self.addEventListener("activate", (e) => { e.waitUntil(caches.keys().then((k) => Promise.all(k.filter((x) => x !== C).map((x) => caches.delete(x)))).then(() => self.clients.claim())); });
 self.addEventListener("fetch", (e) => {
@@ -12,7 +12,16 @@ self.addEventListener("fetch", (e) => {
     return;
   }
   if (e.request.mode === "navigate") {
-    e.respondWith(fetch(e.request).then((res) => { const cp = res.clone(); caches.open(C).then((c) => c.put("/", cp)); return res; }).catch(() => caches.match("/")));
+    // the app opens at once from memory (stale-while-revalidate): the page is refreshed in the background for the next start
+    // a new page is kept only with its scripts and styles, so the next start (after a deploy) has everything it needs
+    const net = fetch(e.request).then((res) => {
+      if (res.ok) { const cp = res.clone(); e.waitUntil(cp.text().then((html) => caches.open(C).then((c) => {
+        const files = [...new Set((html.match(/\\/_next\\/static\\/[^"'\\s)]+/g) || []))];
+        return Promise.all(files.map((f) => c.match(f).then((hit) => hit || c.add(f).catch(() => {})))).then(() => c.put("/", new Response(html, { headers: { "Content-Type": "text/html; charset=utf-8" } })));
+      })).catch(() => {})); }
+      return res;
+    });
+    e.respondWith(caches.match("/").then((r) => { if (r) { e.waitUntil(net.catch(() => {})); return r; } return net; }).catch(() => net));
   }
 });
 self.addEventListener("push", (e) => {
