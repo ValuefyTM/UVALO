@@ -444,6 +444,10 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   Butoanele cameră / galerie = două iconițe mici lângă titlul categoriei (`.mbPhHead`). Fiecare grup e selectabil (atingere oriunde pe el,
   bulina `.mbPhRadio`) → acolo merg pozele noi; o categorie fără poze se alege din lista de jos, apare ca grup gol selectat și se derulează în vedere.
   „Am terminat” (`.mbDone`, în bara de sus) închide ecranul pozelor.
+- **Bara de jos** (`.mbFoot`) e `position: fixed` (pe iPhone `sticky` rămânea în mijlocul ecranului): înălțimea ei e măsurată (ResizeObserver în
+  `MobileApp`) în `--foot-h`, iar `.mbBody:has(~ .mbFoot)` lasă loc dedesubt. În fișă, bara are **„←”** (secțiunea anterioară; din prima → detaliu)
+  și **„Secțiunea următoare”**, dezactivată cât timp în secțiunea curentă sunt întrebări obligatorii necompletate („Mai ai N întrebări
+  obligatorii”; obligatorii = cele care nu sunt `isOptional`).
 - **Finisajele pe încăperi sunt o opțiune a fișei** (`Template.rooms`, implicit oprită, și la fișele UVALO; bifa „Finisaje pe încăperi” în editorul
   de fișe `InspTemplates`): oprită → pe telefon dispar cardul „Finisaje încăperi” (și ecranul încăperilor cu „Preia din RLV”) și condiția la
   finalizare; în fișa web și în cea publică tabelul încăperilor are doar numele și suprafața (finisajele apar dacă opțiunea e pornită sau au fost

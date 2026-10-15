@@ -87,6 +87,15 @@ export function MobileApp() {
   const [st, setSt] = useState<StatF>("all");
 
   const say = (m: string) => { setToast(m); setTimeout(() => setToast(""), 3500); };
+  // the bottom bar (.mbFoot) is fixed to the screen: its height is kept in --foot-h so the content scrolls clear of it
+  useEffect(() => {
+    const root = document.querySelector<HTMLElement>(".mb"), f = document.querySelector<HTMLElement>(".mbFoot");
+    if (!root || !f) return;
+    const set = () => root.style.setProperty("--foot-h", `${f.offsetHeight}px`);
+    set();
+    const ro = new ResizeObserver(set); ro.observe(f);
+    return () => ro.disconnect();
+  });
   const go = useCallback((v: View) => { setViewState(v); history.pushState({ mbv: v }, ""); window.scrollTo(0, 0); }, []);
   // the phone's Back button moves between the app's screens; caught before the Next.js router, which would reload the page
   useEffect(() => {
@@ -1042,6 +1051,9 @@ function Form({ x, d, sec, photos, onBack, onSec, change, onPhoto, onRooms, onPh
   const isFind = !ownFind && sec >= groups.length;
   const g = groups[sec];
   const roomsDone = d.rooms.filter(roomDone).length;
+  // the next section opens only when this one's required questions are answered
+  const secReq = g ? g.qs.filter((q) => !isOptional(q)) : [];
+  const secLeft = secReq.filter((q) => !answered(d.answers[q.id])).length;
   // the current section's chip is scrolled into view (the chips row is wider than the screen)
   const secsRef = useRef<HTMLElement>(null);
   useEffect(() => {
@@ -1078,8 +1090,14 @@ function Form({ x, d, sec, photos, onBack, onSec, change, onPhoto, onRooms, onPh
       </div>
       <footer className="mbFoot">
         <Tiles d={d} photos={photos} kept={keptSig(x) ? x.signed_name! : null} rooms={!!x.template.rooms} onRooms={onRooms} onPhotos={onPhotos} onSign={onSign} />
-        {sec < last ? <button type="button" className="mbBtn gold big" onClick={() => { onSec(sec + 1); window.scrollTo(0, 0); }}>Secțiunea următoare: {sec + 1 < groups.length ? groups[sec + 1].name : "Constatări"} →</button>
-          : <button type="button" className="mbBtn gold big" onClick={onSign}>Încheie inspecția →</button>}
+        <span className="mbFootNav">
+          <button type="button" className="mbBtn big" onClick={() => { if (sec > 0) { onSec(sec - 1); window.scrollTo(0, 0); } else onBack(); }} aria-label="Înapoi">←</button>
+          {sec < last
+            ? <button type="button" className="mbBtn gold big" disabled={secLeft > 0} onClick={() => { onSec(sec + 1); window.scrollTo(0, 0); }}>
+                {secLeft ? `Mai ai ${secLeft} ${secLeft === 1 ? "întrebare obligatorie" : "întrebări obligatorii"}` : `Secțiunea următoare: ${sec + 1 < groups.length ? groups[sec + 1].name : "Constatări"} →`}
+              </button>
+            : <button type="button" className="mbBtn gold big" onClick={onSign}>Încheie inspecția →</button>}
+        </span>
       </footer>
     </>
   );

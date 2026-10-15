@@ -1885,7 +1885,7 @@ textarea.mbIn { min-height: 0; resize: vertical; }
 .mbSecs button.ok { color: #7fd6ac; }
 .mbSecs button[aria-current="step"] { background: var(--acc); border-color: var(--acc); color: #141414; }
 .mbBody { padding: 12px var(--mb-pad); display: flex; flex-direction: column; gap: 10px; flex: 1 0 auto; }
-.mbFoot { position: sticky; bottom: 0; margin-top: auto; z-index: 5; background: #F4EFE6; border-top: 1px solid var(--line); padding: 10px var(--mb-pad) calc(12px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 8px; }
+.mbFoot { position: fixed; bottom: 0; left: 0; right: 0; margin: 0 auto; max-width: 560px; z-index: 30; background: #F4EFE6; border-top: 1px solid var(--line); padding: 10px var(--mb-pad) calc(12px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 8px; }
 .mbH2 { margin: 2px 0 0; font-size: 16px; letter-spacing: -0.01em; }
 .mbCard { background: #fff; border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 7px; }
 .mbCard > b { font-size: 15px; line-height: 1.3; }
@@ -2519,3 +2519,9 @@ html:has(.mb) { min-height: calc(100% + env(safe-area-inset-top)); background: #
 .inTplType { display: flex; align-items: flex-end; gap: 8px; flex-wrap: wrap; }
 .inTplType .btnSm { height: 40px; }
 .inTplList button.uv:not([aria-pressed="true"]) b { color: var(--muted); }
+
+/* the bottom bar is fixed to the screen (iPhone too); the page content ends above it */
+.mbBody:has(~ .mbFoot) { padding-bottom: calc(var(--foot-h, 140px) + 14px); }
+.mbFootNav { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 8px; }
+.mbFootNav .mbBtn.big { padding-left: 8px; padding-right: 8px; }
+.mbFootNav .mbBtn:disabled { opacity: 1; background: #e9e2d4; color: var(--muted-2); border-color: transparent; }
