@@ -13,6 +13,7 @@ import { InspPreview } from "./InspPreview";
 import { InspBell } from "./InspBell";
 import { HdInsp, type HdRow } from "./HdInsp";
 import { HdTools, type HdTool } from "./HdTools";
+import { HdPhone } from "./HdPhone";
 
 const TZ = "Europe/Bucharest";
 const dayOf = (d: Date) => d.toLocaleDateString("en-CA", { timeZone: TZ });
@@ -154,7 +155,8 @@ export async function HomeDash({ db, c }: { db: Db; c: Ctx }) {
   if (amp) tools.push({ key: "cf", href: "/amplasament", name: "CF / plan citit cu AI", desc: "Nr. cadastral, suprafețe, Stereo 70", dark: true });
   tools.push({ key: "analize", href: null, name: "Analize de piață", desc: "În curând" });
 
-  const dev = devs[0];
+  // the phone app: a real phone (the test "device" without a phone does not count as installed)
+  const realDev = devs.find((d) => d.platform !== "test") ?? null;
   const kpis = [
     insp && { ico: "AZI", tone: "gold", n: todayRows.length, label: `${todayRows.length === 1 ? "inspecție" : "inspecții"} azi${onSite ? ` · ${onSite} pe teren acum` : ""}`, href: "/inspectii" },
     insp && { ico: `S${isoWeek(now)}`, tone: "ink", n: weekRows.length, label: "inspecții săptămâna aceasta", href: "/inspectii" },
@@ -216,20 +218,9 @@ export async function HomeDash({ db, c }: { db: Db; c: Ctx }) {
 
           <div className="hdSide">
             {insp && !ops && (
-              <section className="hdPhone" aria-label="Telefonul">
-                <span className="hdPhoneArt" aria-hidden="true"><i /><b /><b /><b /><b /></span>
-                <span className="hdPhoneText">
-                  {dev ? <>
-                    <span className="hdPhoneOn"><i />{dev.platform === "test" ? "Mod test (fără telefon)" : `${dev.name || "Telefon"} conectat`}</span>
-                    <small>{dev.last_seen_at ? `Ultimul semnal ${ago(dev.last_seen_at)}` : `Conectat ${ago(dev.created_at)}`}</small>
-                    <small>{push?.n ? "Notificări push active" : "Notificările push sunt oprite"}</small>
-                  </> : <>
-                    <span className="hdPhoneOn off"><i />Niciun telefon conectat</span>
-                    <small>Inspecțiile se fac din aplicația de telefon.</small>
-                  </>}
-                  <a href="/inspectii">{dev ? "Inspecțiile tale →" : "Conectează telefonul →"}</a>
-                </span>
-              </section>
+              <HdPhone appUrl={inspUrl()} installed={!!realDev}
+                title={realDev ? `${realDev.name || "Telefon"} · aplicație conectată` : ""}
+                lines={realDev ? [realDev.last_seen_at ? `Ultimul semnal ${ago(realDev.last_seen_at)}` : `Conectat ${ago(realDev.created_at)}`, push?.n ? "Notificări push active" : "Notificările push sunt oprite"] : []} />
             )}
 
             <section className="hdCard hdPad" aria-labelledby="hdTodoT">
