@@ -2834,3 +2834,34 @@ button.hdPhoneCta:hover { box-shadow: inset 0 0 0 1.5px #E0AD4F; transform: tran
 .hdPhoneSm .hdPhoneText small { font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .hdPhoneSm .hdPhoneText { min-width: 0; }
 .hdPhoneSm .hdPhoneRe { height: 30px; padding: 0 10px; font-size: 12px; }
+
+/* Acasă nouă: the map with the inspections list on its right (compact cards, scroll) + the counters by the title */
+.hdMapRow { display: grid; grid-template-columns: minmax(0, 1fr) minmax(260px, 340px); height: 360px; border-top: 1px solid #F1EBDF; }
+.hdMapRow .hdMap { height: 100%; }
+.hdMapRow .hdList { height: 100%; box-sizing: border-box; overflow-y: auto; padding: 8px; gap: 6px; border-left: 1px solid #F1EBDF; background: #FBF8F2; }
+.hdItem { display: flex; flex-direction: column; gap: 4px; padding: 9px 10px; border-radius: 12px; background: #fff; border: 1px solid #EDE5D4; color: #141414; text-decoration: none; transition: border-color .15s, box-shadow .15s; }
+.hdItem:hover, .hdItem.on { border-color: #E0AD4F; box-shadow: 0 2px 10px rgba(20, 20, 20, .07); }
+.hdItemTop { display: flex; align-items: center; gap: 6px; }
+.hdItemTop .hdNum { width: 20px; height: 20px; font-size: 10.5px; flex: none; }
+.hdItemTop .hdChip { font-size: 10.5px; padding: 2px 7px; }
+.hdItemTop .hdTime { margin-left: auto; font-size: 12px; }
+.hdItemAddr { font-size: 13px; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.hdItemFoot { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; }
+.hdItemFoot > small { color: #7A7A7A; font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.hdItemWho { display: flex; align-items: center; gap: 5px; flex: none; max-width: 60%; font-size: 11.5px; font-weight: 700; color: #3A3A3A; }
+.hdItemWho > span:last-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hdItemAsk { font-style: normal; font-size: 11px; font-weight: 800; color: #7A5AA6; }
+.hdTitle { gap: 6px; }
+.hdTags { display: flex; flex-wrap: wrap; gap: 6px; }
+.hdTag { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px 0 4px; border-radius: 999px; font-size: 12px; font-weight: 700; }
+.hdTag b { min-width: 20px; height: 20px; padding: 0 5px; box-sizing: border-box; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; font-size: 12.5px; font-weight: 800; }
+.hdTag.t-gold { background: #FBEBD3; color: #8A5300; } .hdTag.t-gold b { background: #E0AD4F; color: #141414; }
+.hdTag.t-ink { background: #EEE8DC; color: #3A3A3A; } .hdTag.t-ink b { background: #141414; color: #E0AD4F; }
+.hdTag.t-lucru { background: #F6E3D5; color: #7A3A12; } .hdTag.t-lucru b { background: #7A3A12; color: #fff; }
+.hdTag.t-prog { background: #FBEBD0; color: #8A5A00; } .hdTag.t-prog b { background: #8A5A00; color: #fff; }
+.hdTag.zero { opacity: .55; }
+@media (max-width: 760px) {
+  .hdMapRow { grid-template-columns: 1fr; height: auto; }
+  .hdMapRow .hdMap { height: 260px; }
+  .hdMapRow .hdList { max-height: 340px; border-left: 0; border-top: 1px solid #F1EBDF; }
+}

@@ -26,6 +26,7 @@ function when(r: HdRow) {
 export function HdInsp({ rows: initial, list, meId, title }: { rows: HdRow[]; list: HdRow[]; meId: string; title: React.ReactNode }) {
   const [view, setView] = useState<"map" | "cal">("map");
   const [rows, setRows] = useState(initial);
+  const [focus, setFocus] = useState<string | null>(null); // the card pointed at lights up its pin
   useEffect(() => { try { if (localStorage.getItem(KEY) === "cal") setView("cal"); } catch {} }, []);
   const pick = (v: "map" | "cal") => { setView(v); try { localStorage.setItem(KEY, v); } catch {} };
   const placed = rows.filter((r) => r.lat != null && r.lng != null);
@@ -45,35 +46,39 @@ export function HdInsp({ rows: initial, list, meId, title }: { rows: HdRow[]; li
         </div>
       </div>
       {view === "map" ? (
-        <>
+        <div className="hdMapRow">
           <div className="hdMap">
-            {placed.length ? <MapView rows={placed} bare /> : <p className="hdEmpty hdMapEmpty">Inspecțiile cu adresă găsită apar aici, pe hartă.</p>}
+            {placed.length ? <MapView rows={placed} focus={focus} bare /> : <p className="hdEmpty hdMapEmpty">Inspecțiile cu adresă găsită apar aici, pe hartă.</p>}
             <span className="hdLegend" aria-hidden="true">
               {(["lucru", "plan", "prog"] as const).map((s) => <span key={s}><i style={{ background: STATUS[s].fg }} />{STATUS[s].label}</span>)}
             </span>
           </div>
-          <div className="hdList">
+          <div className="hdList" aria-label="Inspecțiile de pe hartă">
             {list.length ? list.map((r) => {
               const n = placed.findIndex((p) => p.id === r.id);
               const w = when(r);
               const prog = r.status === "prog" || (r.status === "plan" && r.created_by === meId && !r.scheduled_at);
               return (
-                <a key={r.id} className="hdLine" href={prog ? `/inspectii/nou?id=${r.id}` : `/inspectii/${r.id}`}>
-                  <span className="hdNum" style={{ background: n >= 0 ? STATUS[r.status].fg : "#BDB3A0" }}>{n >= 0 ? n + 1 : "·"}</span>
-                  <span className="hdChip" style={{ color: STATUS[r.status].fg, background: STATUS[r.status].bg }}>{r.assign_state === "pending" ? "Solicitare" : STATUS[r.status].label}</span>
-                  <span className={`hdTime${w ? "" : " none"}`}>{w ?? "Fără dată"}</span>
-                  <span className="hdAddr"><span title={r.address}>{r.address}</span><small>{[r.prop_type, r.contact_name, r.sheet_no].filter(Boolean).join(" · ")}</small></span>
-                  <span className="hdWho" title={r.assignee_name ?? undefined}>
-                    {r.assignee_id ? <>
-                      <UserAv id={r.assignee_id} name={r.assignee_name ?? "?"} has={r.assignee_av} size={26} />
-                      <span className="hdWhoTxt"><small>Inspector</small><b>{r.assignee_name}</b>{r.assign_state === "pending" && <em>așteaptă acceptarea</em>}</span>
-                    </> : <span className="hdWhoTxt"><small>Inspector</small><b className="hdMuted">nealocat</b></span>}
+                <a key={r.id} className={`hdItem${focus === r.id ? " on" : ""}`} href={prog ? `/inspectii/nou?id=${r.id}` : `/inspectii/${r.id}`}
+                  onMouseEnter={() => setFocus(r.id)} onMouseLeave={() => setFocus(null)}>
+                  <span className="hdItemTop">
+                    <span className="hdNum" style={{ background: n >= 0 ? STATUS[r.status].fg : "#BDB3A0" }}>{n >= 0 ? n + 1 : "·"}</span>
+                    <span className="hdChip" style={{ color: STATUS[r.status].fg, background: STATUS[r.status].bg }}>{r.assign_state === "pending" ? "Solicitare" : STATUS[r.status].label}</span>
+                    <span className={`hdTime${w ? "" : " none"}`}>{w ?? "Fără dată"}</span>
                   </span>
+                  <b className="hdItemAddr" title={r.address}>{r.address}</b>
+                  <span className="hdItemFoot">
+                    <small>{[r.prop_type, r.contact_name].filter(Boolean).join(" · ")}</small>
+                    {r.assignee_id
+                      ? <span className="hdItemWho" title={`Inspector: ${r.assignee_name ?? ""}`}><UserAv id={r.assignee_id} name={r.assignee_name ?? "?"} has={r.assignee_av} size={20} /><span>{r.assignee_name}</span></span>
+                      : <span className="hdItemWho hdMuted">nealocat</span>}
+                  </span>
+                  {r.assign_state === "pending" && <em className="hdItemAsk">așteaptă acceptarea</em>}
                 </a>
               );
             }) : <p className="hdEmpty">Nicio inspecție programată. <a href="/inspectii/nou">Creează una →</a></p>}
           </div>
-        </>
+        </div>
       ) : (
         <div className="hdCal"><CalView rows={rows.filter((r) => r.scheduled_at)} unplanned={rows.filter((r) => r.status === "prog" && !r.scheduled_at)} onSchedule={schedule} /></div>
       )}

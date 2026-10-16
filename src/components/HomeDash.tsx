@@ -101,7 +101,7 @@ export async function HomeDash({ db, c }: { db: Db; c: Ctx }) {
   // the map / calendar / list: only what is not finished (În lucru, Programată, De programat)
   const mapRows: HdRow[] = rows.filter((r) => mineToDo(r) && open.includes(r)).slice(0, 120);
   const rank = (r: (typeof rows)[number]) => (r.status === "lucru" ? 0 : r.status === "plan" ? 1 : 2);
-  const listRows: HdRow[] = [...mapRows].sort((a, b) => rank(a) - rank(b) || (a.scheduled_at ?? "9999").localeCompare(b.scheduled_at ?? "9999")).slice(0, 4);
+  const listRows: HdRow[] = [...mapRows].sort((a, b) => rank(a) - rank(b) || (a.scheduled_at ?? "9999").localeCompare(b.scheduled_at ?? "9999")).slice(0, 40);
 
   // the month: inspections finished by me, average time, photos, AI readings; inspections per week (last 8 weeks)
   const [st, ph, weeks] = insp ? await Promise.all([
@@ -202,7 +202,13 @@ export async function HomeDash({ db, c }: { db: Db; c: Ctx }) {
           {insp ? (
             <section className="hdCard hdInsp" aria-labelledby="hdInspT">
               <HdInsp rows={mapRows} list={listRows} meId={uid}
-                title={<span className="hdTitle"><h2 id="hdInspT">Inspecții</h2><small>Azi {todayRows.length} · săptămâna aceasta {weekRows.length} · de programat {unplanned.length}</small></span>} />
+                title={<span className="hdTitle"><h2 id="hdInspT">Inspecții</h2>
+                  <span className="hdTags">
+                    <span className={`hdTag t-gold${todayRows.length ? "" : " zero"}`}><b>{todayRows.length}</b>azi</span>
+                    {onSite > 0 && <span className="hdTag t-lucru"><b>{onSite}</b>pe teren acum</span>}
+                    <span className={`hdTag t-ink${weekRows.length ? "" : " zero"}`}><b>{weekRows.length}</b>săptămâna asta</span>
+                    <span className={`hdTag t-prog${unplanned.length ? "" : " zero"}`}><b>{unplanned.length}</b>de programat</span>
+                  </span></span>} />
             </section>
           ) : (
             <section className="hdCard hdPad" aria-labelledby="hdRecT">
