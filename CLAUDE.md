@@ -34,6 +34,10 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
     fișierele ei trec (`SITE_FILES`: `/_next/`, `/site/`, `/word/prezentare/`, logo, iconițe), orice altă cale → **302** la aceeași cale în aplicație;
   - șterge `x-forwarded-*` (linkurile din emailuri se construiesc doar din `APP_URL`/Host — `src/lib/site.ts`).
 - Fără framework CSS: totul în `src/app/globals.css`. Brand: fundal închis `#141414`, auriu `#E0AD4F`.
+  **Fontul platformei = Plus Jakarta Sans** (variabil, servit din `public/fonts/` — latin + latin-ext pentru ș/ț, licență OFL; `--font` în
+  `globals.css`, `@font-face` și în `localizare-data/*.html`, `public/word/src/taskpane.css`, panoul din `word.ts`, paginile din `route.ts`;
+  `/fonts/` trece și pe `INSP_HOSTS` / `SITE_HOSTS`). Excepții păstrate pe Verdana: exporturile PDF / PNG / Word (canvas, docx) și emailurile.
+  Site-ul de prezentare (`.ld*`) rămâne pe Manrope + Sora. În atributele `style="…"` fontul se scrie cu ghilimele simple.
   Logo-uri în `public/uvalo-*.svg` (lockup alb, simbol, vertical ink, logo text); favicon `src/app/icon.svg`;
   iconițe PWA `public/loc-icon-*.png`.
 

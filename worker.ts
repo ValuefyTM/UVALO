@@ -18,11 +18,11 @@ export { DOQueueHandler, DOShardedTagCache, BucketCachePurge } from "./.open-nex
 type Env = { OLD_HOSTS?: string; SITE_HOSTS?: string; INSP_HOSTS?: string; APP_URL?: string } & Record<string, unknown>;
 
 /** What the presentation site loads from the app: its pictures, the Next.js scripts and styles, logo, icons. */
-const SITE_FILES = /^\/(_next\/|site\/|word\/prezentare\/|uvalo-[a-z-]+\.svg$|icon\.svg$|favicon\.ico$|og-uvalo\.jpg$)/;
+const SITE_FILES = /^\/(_next\/|fonts\/|site\/|word\/prezentare\/|uvalo-[a-z-]+\.svg$|icon\.svg$|favicon\.ico$|og-uvalo\.jpg$)/;
 
 /** The phone app's domain (inspectii.uvalo.ro): "/" is the app (/m), plus its service worker and manifest at the root. */
 const INSP_PATHS: Record<string, string> = { "/": "/m", "/sw.js": "/api/m/sw", "/manifest.webmanifest": "/api/m/manifest" };
-const INSP_FILES = /^\/(api\/|_next\/|loc-icon-[a-z0-9-]+\.png$|uvalo-[a-z-]+\.svg$|icon\.svg$|favicon\.ico$)/;
+const INSP_FILES = /^\/(api\/|_next\/|fonts\/|loc-icon-[a-z0-9-]+\.png$|uvalo-[a-z-]+\.svg$|icon\.svg$|favicon\.ico$)/;
 
 function clean(req: Request) {
   const headers = new Headers(req.headers);

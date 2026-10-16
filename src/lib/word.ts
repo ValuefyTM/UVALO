@@ -233,14 +233,15 @@ export function panePage(title: string, body: string, script = "") {
 <link rel="icon" href="/icon.svg" type="image/svg+xml">
 <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
 <style>
-*{box-sizing:border-box}[hidden]{display:none!important}body{margin:0;min-height:100vh;background:#f6f3ed;color:#141414;font:12px/1.55 Verdana,Geneva,sans-serif;display:flex;flex-direction:column}
+@font-face{font-family:"Plus Jakarta Sans";font-display:swap;font-weight:200 800;src:url(/fonts/plus-jakarta-sans-latin-ext.woff2) format("woff2");unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+1E00-1E9F,U+20A0-20C0,U+2C60-2C7F,U+A720-A7FF}@font-face{font-family:"Plus Jakarta Sans";font-display:swap;font-weight:200 800;src:url(/fonts/plus-jakarta-sans-latin.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+20AC,U+2122,U+2212}
+*{box-sizing:border-box}[hidden]{display:none!important}body{margin:0;min-height:100vh;background:#f6f3ed;color:#141414;font:12px/1.55 "Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",sans-serif;display:flex;flex-direction:column}
 .top{display:flex;align-items:center;gap:10px;padding:10px 12px;background:#141414;color:#d6d6d6}.top img{height:20px;display:block}.top span{padding-left:10px;border-left:1px solid rgba(255,255,255,.22)}
 main{padding:16px 14px;display:flex;flex-direction:column;gap:12px}
 h1{margin:0;font-size:16px}p{margin:0;color:#4a4a4a}
 .card{display:flex;gap:12px;align-items:flex-start;background:#fff;border:1px solid #e6dfcf;border-radius:12px;padding:12px;color:inherit;text-decoration:none}
 a.card:hover{border-color:#E0AD4F}.card>span>b,.card>b{display:block;font-size:12.5px;margin-bottom:2px}.card small{display:block;color:#6b6b6b;font-size:11px;line-height:1.45}
 .ico{flex:none;width:36px;height:36px;border-radius:10px;background:#141414;display:grid;place-items:center}.ico svg{width:20px;height:20px;fill:none;stroke:#E0AD4F;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
-.btn{display:flex;width:100%;align-items:center;justify-content:center;height:42px;border-radius:10px;border:0;background:#E0AD4F;color:#141414;font:700 12.5px Verdana,sans-serif;text-decoration:none;cursor:pointer}
+.btn{display:flex;width:100%;align-items:center;justify-content:center;height:42px;border-radius:10px;border:0;background:#E0AD4F;color:#141414;font:700 12.5px "Plus Jakarta Sans",system-ui,sans-serif;text-decoration:none;cursor:pointer}
 .btn.ghost{background:#fff;border:1px solid #cfc6b3;font-weight:400}
 .sec{font-size:10.5px;font-weight:700;color:#6b6b6b;letter-spacing:.5px;text-transform:uppercase;margin-top:4px}
 .ver{text-align:center;font-size:10px;color:#8a8478;margin-top:4px}.me{font-size:11px;color:#6b6b6b;border-top:1px solid #e6dfcf;padding-top:10px}.me a{color:#9A5F00}

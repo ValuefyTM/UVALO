@@ -24,7 +24,7 @@ export function SiteThumb() {
       <g stroke="#fff" strokeOpacity="0.1"><path d="M0 40 H120 M0 14 H120 M0 66 H120 M30 0 V80 M60 0 V80 M90 0 V80" /></g>
       <circle cx="60" cy="40" r="28" fill="none" stroke="#f2a93b" strokeOpacity="0.55" strokeDasharray="3 4" />
       <path d="M52 33 L68 31 L69 47 L53 49 Z" fill="#c23a2e" stroke="#fff" strokeWidth="1.2" />
-      <g fontFamily="Verdana, sans-serif" fontSize="7" fontWeight="700" fill="#fff" textAnchor="middle">
+      <g fontFamily="Plus Jakarta Sans, Verdana, sans-serif" fontSize="7" fontWeight="700" fill="#fff" textAnchor="middle">
         {pois.map(([x, y], i) => <g key={x}><circle cx={x} cy={y} r="6" fill="#1f6f63" /><text x={x} y={y + 2.5}>{i + 1}</text></g>)}
       </g>
     </svg>
@@ -39,7 +39,7 @@ export function CompsThumb() {
       <rect width="120" height="80" rx="12" fill="#161616" />
       <g stroke="#fff" strokeOpacity="0.1"><path d="M0 30 L120 18 M0 60 L120 48 M40 0 L46 80 M80 0 L86 80" /></g>
       <g stroke="#f2a93b" strokeDasharray="3 3" strokeWidth="1.2">{comps.map(([x, y]) => <path key={x} d={`M60 40 L${x} ${y}`} />)}</g>
-      <g fontFamily="Verdana, sans-serif" fontSize="7" fontWeight="700" fill="#141414" textAnchor="middle">
+      <g fontFamily="Plus Jakarta Sans, Verdana, sans-serif" fontSize="7" fontWeight="700" fill="#141414" textAnchor="middle">
         {comps.map(([x, y], i) => <g key={x}><circle cx={x} cy={y} r="6" fill="#fff" /><text x={x} y={y + 2.5}>{i + 1}</text></g>)}
       </g>
       <circle cx="60" cy="40" r="10" fill="#f2a93b" />
@@ -71,7 +71,7 @@ export function WordThumb() {
       <g fill="#cfc6b3"><rect x="36" y="27" width="22" height="16" rx="1.5" /><rect x="62" y="27" width="22" height="16" rx="1.5" /><rect x="36" y="47" width="22" height="16" rx="1.5" /><rect x="62" y="47" width="22" height="16" rx="1.5" /></g>
       <g fill="#8aa1b5"><rect x="36" y="35" width="22" height="8" rx="1.5" /><rect x="62" y="35" width="22" height="8" rx="1.5" /></g>
       <rect x="94" y="56" width="18" height="16" rx="3" fill="#f2a93b" />
-      <text x="103" y="67.5" fontFamily="Verdana, sans-serif" fontSize="9" fontWeight="700" fill="#141414" textAnchor="middle">W</text>
+      <text x="103" y="67.5" fontFamily="Plus Jakarta Sans, Verdana, sans-serif" fontSize="9" fontWeight="700" fill="#141414" textAnchor="middle">W</text>
     </svg>
   );
 }
@@ -102,7 +102,7 @@ export function MarketArt() {
       <rect width="480" height="190" fill="#f3eee3" />
       <g stroke="#fff" strokeWidth="9" strokeLinecap="round"><path d="M0 92 L250 70 M120 0 L140 190 M0 170 L250 150" /></g>
       <g fill="#e6dccb"><rect x="22" y="18" width="80" height="44" rx="6" /><rect x="152" y="14" width="80" height="46" rx="6" /><rect x="20" y="104" width="94" height="52" rx="6" /><rect x="154" y="82" width="78" height="56" rx="6" /></g>
-      <g fontFamily="Verdana, sans-serif" fontSize="11" fontWeight="700" textAnchor="middle">
+      <g fontFamily="Plus Jakarta Sans, Verdana, sans-serif" fontSize="11" fontWeight="700" textAnchor="middle">
         {tags.map(([x, y, t]) => (
           <g key={t}>
             <rect x={x - 34} y={y - 15} width="68" height="22" rx="11" fill="#141414" />
@@ -116,7 +116,7 @@ export function MarketArt() {
       <rect x="402" y="62" width="18" height="90" rx="3" fill="#f2a93b" />
       <path d="M290 92 L326 80 L356 86 L384 62 L430 40" fill="none" stroke="#c23a2e" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
       <circle cx="430" cy="40" r="5" fill="#c23a2e" />
-      <text x="288" y="40" fontFamily="Verdana, sans-serif" fontSize="11" fontWeight="700" fill="#141414">€/mp</text>
+      <text x="288" y="40" fontFamily="Plus Jakarta Sans, Verdana, sans-serif" fontSize="11" fontWeight="700" fill="#141414">€/mp</text>
     </svg>
   );
 }
@@ -148,11 +148,11 @@ export function CollabArt() {
       <path d="M386 98 C372 120 372 130 368 136" fill="none" stroke="#c23a2e" strokeWidth="2.5" strokeDasharray="5 5" />
       <g transform="translate(104 24)">
         <rect width="78" height="26" rx="13" fill="#fff" stroke="#e2d8c4" />
-        <text x="39" y="17" fontFamily="Verdana, sans-serif" fontSize="10.5" fontWeight="700" fill="#141414" textAnchor="middle">Inspecție</text>
+        <text x="39" y="17" fontFamily="Plus Jakarta Sans, Verdana, sans-serif" fontSize="10.5" fontWeight="700" fill="#141414" textAnchor="middle">Inspecție</text>
       </g>
       <g transform="translate(376 24)">
         <rect width="70" height="26" rx="13" fill="#fff" stroke="#e2d8c4" />
-        <text x="35" y="17" fontFamily="Verdana, sans-serif" fontSize="10.5" fontWeight="700" fill="#141414" textAnchor="middle">Angajare</text>
+        <text x="35" y="17" fontFamily="Plus Jakarta Sans, Verdana, sans-serif" fontSize="10.5" fontWeight="700" fill="#141414" textAnchor="middle">Angajare</text>
       </g>
     </svg>
   );
