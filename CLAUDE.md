@@ -33,7 +33,7 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   - `SITE_HOSTS` (implicit `uvalo.ro,www.uvalo.ro`) = **site-ul de prezentare**: `/` servește pagina `/site` a aplicației,
     fișierele ei trec (`SITE_FILES`: `/_next/`, `/site/`, `/word/prezentare/`, logo, iconițe), orice altă cale → **302** la aceeași cale în aplicație;
   - șterge `x-forwarded-*` (linkurile din emailuri se construiesc doar din `APP_URL`/Host — `src/lib/site.ts`).
-- Fără framework CSS: totul în `src/app/globals.css`. Brand: fundal închis `#141414`, auriu `#E0AD4F`.
+- Fără framework CSS: totul în `src/app/globals.css`. Paginile din `AppShell` folosesc toată lățimea (`.content` max. 1800 px; Colaborări fără limită proprie). Brand: fundal închis `#141414`, auriu `#E0AD4F`.
   **Fontul platformei = Plus Jakarta Sans** (variabil, servit din `public/fonts/` — latin + latin-ext pentru ș/ț, licență OFL; `--font` în
   `globals.css`, `@font-face` și în `localizare-data/*.html`, `public/word/src/taskpane.css`, panoul din `word.ts`, paginile din `route.ts`;
   `/fonts/` trece și pe `INSP_HOSTS` / `SITE_HOSTS`). Excepții păstrate pe Verdana: exporturile PDF / PNG / Word (canvas, docx) și emailurile.
@@ -195,7 +195,8 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
 - Conținut (doar ce are persoana în module): „Ce evaluăm azi?” + bara de căutare închisă, pe toată lățimea (`QuickSearch` cu `extra` = „+ Inspecție” și `recent` = ultimele parcele ca
   „Recente”), cifrele zilei, compacte pe un rând (inspecții azi / săptămâna asta / fișe de verificat = finalizate de verificat / lucrări noi în zonă), **Inspecții** pe
   hartă sau calendar (`HdInsp`, refolosește `MapView` / `CalView` din `InspList`, alegerea în `localStorage` `home-insp-view`; doar nefinalizatele — În lucru, Programată,
-  De programat; sub hartă primele 4, în lucru întâi), telefonul (`HdPhone`: cu un telefon real conectat — card compact pe un rând („iPhone conectat”, „Semnal … · push activ”) + butonul „Reinstalează”; fără niciunul (dispozitivul `test` nu se numără) tot cardul
+  De programat; sub hartă primele 4, în lucru întâi: număr, stare, data + ora („Lun 19 oct · 12:00”, „Fără dată”), adresa, inspectorul cu numele întreg;
+  pe lățime mică adresa trece pe rândul al doilea — container queries pe `.hdList`), telefonul (`HdPhone`: cu un telefon real conectat — card compact pe un rând („iPhone conectat”, „Semnal … · push activ”) + butonul „Reinstalează”; fără niciunul (dispozitivul `test` nu se numără) tot cardul
   îndeamnă „Instalează aplicația UVALO”; ambele deschid fereastra cu QR — `pair_code`, se conectează singur — și pașii iPhone / Android), „Necesită atenția ta” (fișe întoarse, de verificat, solicitări fără răspuns / refuzate,
   fără dată, cereri noi la anunțul meu, mesaje necitite), Colaborări (anunțurile din zonă cu distanța), caruselul de instrumente (`HdTools`, iconițe
   Word / Chrome), „Luna ta” (finalizate, timp mediu, fotografii, analize AI, grafic pe 8 săptămâni), activitatea recentă (`phoneNotifs` + notificările

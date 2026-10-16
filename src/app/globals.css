@@ -74,7 +74,7 @@ button, input, select, textarea { font-family: inherit; }
 }
 .top h1 { margin: 0; font-size: clamp(17px, 1.6vw, 20px); letter-spacing: -0.02em; }
 .top p { margin: 2px 0 0; font-size: 12px; color: var(--muted-2); }
-.content { width: 100%; max-width: 1400px; padding: clamp(16px, 3vw, 32px); display: flex; flex-direction: column; gap: 18px; }
+.content { width: 100%; max-width: 1800px; padding: clamp(16px, 3vw, 32px); display: flex; flex-direction: column; gap: 18px; }
 .bottomNav { display: none; }
 @media (max-width: 979px) {
   .side { display: none; }
@@ -1101,7 +1101,7 @@ a.instMain:hover { border-color: #E0AD4F; }
 .cbNotifsFoot { padding: 10px 16px; font-size: 11.5px; color: var(--muted-2); border-top: 1px solid var(--divider); }
 .cbNotifsFoot .linkBtn { font-size: 11.5px; }
 /* my posts */
-.cbPage { display: flex; flex-direction: column; gap: 14px; max-width: 1040px; }
+.cbPage { display: flex; flex-direction: column; gap: 14px; }
 .cbMine { background: #fff; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
 .cbMineHead { padding: 16px 18px; display: flex; flex-direction: column; gap: 8px; border-bottom: 1px solid var(--divider); }
 .cbMineTop { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
@@ -2638,8 +2638,6 @@ html:has(.mb) { min-height: calc(100% + env(safe-area-inset-top)); background: #
 
 /* ---------- Acasă nouă (dashboard, HomeDash) ---------- */
 .hd { display: flex; flex-direction: column; gap: 14px; }
-/* the dashboard uses the whole width of the page (up to very wide screens) */
-.content:has(> .hd) { max-width: 1800px; }
 .hdHero { position: relative; overflow: hidden; background: #141414; color: #fff; border-radius: 22px; padding: 20px 22px 16px; display: flex; flex-direction: column; gap: 12px; }
 .hdHeroArt { position: absolute; right: -20px; top: -10px; width: 460px; height: 230px; pointer-events: none; }
 .hdHeroHead { position: relative; display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
@@ -2686,17 +2684,31 @@ a.quickBtn { display: inline-flex; align-items: center; justify-content: center;
 .hdMapEmpty { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; margin: 0; }
 .hdLegend { position: absolute; left: 10px; bottom: 10px; z-index: 500; display: flex; gap: 10px; flex-wrap: wrap; background: rgba(255,255,255,.92); border-radius: 10px; padding: 5px 10px; font-size: 11.5px; font-weight: 700; color: #3A3A3A; }
 .hdLegend i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; }
-.hdList { display: flex; flex-direction: column; padding: 4px 8px 8px; }
-.hdLine { display: grid; grid-template-columns: 22px 64px minmax(0, 1fr) auto auto; gap: 10px; align-items: center; padding: 9px 8px; border-radius: 12px; color: #141414; text-decoration: none; }
+.hdList { display: flex; flex-direction: column; padding: 4px 8px 8px; container-type: inline-size; }
+/* narrower list: number, status, date and the inspector on the first row, the address under them */
+@container (max-width: 780px) {
+  .hdList .hdLine { grid-template-columns: 22px 104px minmax(0, 1fr) minmax(130px, 200px); grid-template-areas: "n s t w" ". a a w"; row-gap: 3px; }
+  .hdList .hdNum { grid-area: n; } .hdList .hdChip { grid-area: s; } .hdList .hdTime { grid-area: t; } .hdList .hdAddr { grid-area: a; } .hdList .hdWho { grid-area: w; }
+}
+@container (max-width: 460px) {
+  .hdList .hdLine { grid-template-columns: 22px auto minmax(0, 1fr); grid-template-areas: "n s t" ". a a" ". w w"; }
+}
+.hdLine { display: grid; grid-template-columns: 22px 104px 118px minmax(0, 1fr) minmax(150px, 230px); gap: 12px; align-items: center; padding: 9px 8px; border-radius: 12px; color: #141414; text-decoration: none; }
 .hdLine + .hdLine { border-top: 1px solid #F1EBDF; }
 .hdLine:hover { background: #FBF8F2; }
 .hdNum { width: 22px; height: 22px; border-radius: 50%; color: #fff; font-size: 11px; font-weight: 800; display: flex; align-items: center; justify-content: center; }
-.hdTime { font-size: 13px; }
+.hdTime { font-size: 13px; font-weight: 800; white-space: nowrap; }
+.hdTime.none { color: #9A9384; font-weight: 600; }
 .hdAddr { display: flex; flex-direction: column; min-width: 0; }
 .hdAddr > span { font-weight: 700; font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .hdAddr small { color: #7A7A7A; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.hdWho { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: #4A4A4A; max-width: 150px; white-space: nowrap; overflow: hidden; }
-.hdChip { font-size: 11.5px; font-weight: 800; padding: 3px 9px; border-radius: 999px; white-space: nowrap; }
+.hdWho { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.hdWhoTxt { flex: 1 1 auto; display: flex; flex-direction: column; min-width: 0; line-height: 1.25; }
+.hdWhoTxt small { color: #9A9384; font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+.hdWhoTxt b { font-size: 13px; font-weight: 700; color: #141414; overflow-wrap: anywhere; }
+.hdWhoTxt b.hdMuted { color: #9A9384; font-weight: 600; }
+.hdWhoTxt em { font-style: normal; font-size: 11px; font-weight: 800; color: #7A5AA6; }
+.hdChip { justify-self: start; font-size: 11.5px; font-weight: 800; padding: 3px 9px; border-radius: 999px; white-space: nowrap; }
 .hdCal { padding: 0 12px 12px; }
 .hdCal .inCal { box-shadow: none; }
 .hdPhone { background: #141414; color: #fff; border-radius: 20px; padding: 14px 16px; display: flex; gap: 14px; align-items: center; }
@@ -2792,8 +2804,6 @@ a.hdTool:hover { border-color: #E0AD4F; transform: translateY(-2px); }
   .hdKpiTxt { align-items: center; }
   .hdHero .quickField { flex-basis: 100%; }
   .hdAsk { font-size: 20px; }
-  .hdLine { grid-template-columns: 22px 54px minmax(0, 1fr) auto; }
-  .hdWho { display: none; }
   .hdMap { height: 230px; }
   .hdStats b { font-size: 18px; }
 }

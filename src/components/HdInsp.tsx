@@ -10,19 +10,17 @@ export type HdRow = InspRow & { who: "mine" | "forme" | "forothers" | "firm" };
 const KEY = "home-insp-view";
 const TZ = "Europe/Bucharest";
 
+const WD = ["Dum", "Lun", "Mar", "Mie", "Joi", "Vin", "Sâm"];
+const MO = ["ian", "feb", "mar", "apr", "mai", "iun", "iul", "aug", "sep", "oct", "nov", "dec"];
+/** The date and time of an open inspection: "Azi · 10:00", "Mâine · 14:00", "Vin 17 oct · 10:00", "Fără dată". */
 function when(r: HdRow) {
-  const at = r.status === "gata" || r.status === "pred" ? r.finished_at : r.scheduled_at;
-  if (!at) return "Fără dată";
-  const day = at.slice(0, 10), today = new Date().toLocaleDateString("en-CA", { timeZone: TZ });
-  const yest = new Date(Date.now() - 864e5).toLocaleDateString("en-CA", { timeZone: TZ });
-  const tom = new Date(Date.now() + 864e5).toLocaleDateString("en-CA", { timeZone: TZ });
-  // finished_at is UTC; scheduled_at is the local time as typed
-  const local = r.status === "gata" || r.status === "pred" ? new Date(at).toLocaleDateString("en-CA", { timeZone: TZ }) : day;
-  const time = r.status === "gata" || r.status === "pred" ? new Date(at).toLocaleTimeString("ro-RO", { hour: "2-digit", minute: "2-digit", timeZone: TZ }) : at.slice(11, 16);
-  if (local === today) return time || "Azi";
-  if (local === yest) return "Ieri";
-  if (local === tom) return `Mâine ${time}`;
-  return new Date(`${local}T12:00:00Z`).toLocaleDateString("ro-RO", { day: "numeric", month: "short" });
+  const at = r.scheduled_at;
+  if (!at) return null;
+  const day = at.slice(0, 10), time = at.slice(11, 16);
+  const off = (n: number) => new Date(Date.now() + n * 864e5).toLocaleDateString("en-CA", { timeZone: TZ });
+  const d = new Date(`${day}T12:00:00Z`);
+  const date = day === off(0) ? "Azi" : day === off(1) ? "Mâine" : day === off(-1) ? "Ieri" : `${WD[d.getUTCDay()]} ${d.getUTCDate()} ${MO[d.getUTCMonth()]}`;
+  return time ? `${date} · ${time}` : date;
 }
 
 export function HdInsp({ rows: initial, list, meId, title }: { rows: HdRow[]; list: HdRow[]; meId: string; title: React.ReactNode }) {
@@ -57,14 +55,20 @@ export function HdInsp({ rows: initial, list, meId, title }: { rows: HdRow[]; li
           <div className="hdList">
             {list.length ? list.map((r) => {
               const n = placed.findIndex((p) => p.id === r.id);
+              const w = when(r);
               const prog = r.status === "prog" || (r.status === "plan" && r.created_by === meId && !r.scheduled_at);
               return (
                 <a key={r.id} className="hdLine" href={prog ? `/inspectii/nou?id=${r.id}` : `/inspectii/${r.id}`}>
                   <span className="hdNum" style={{ background: n >= 0 ? STATUS[r.status].fg : "#BDB3A0" }}>{n >= 0 ? n + 1 : "·"}</span>
-                  <b className="hdTime">{when(r)}</b>
-                  <span className="hdAddr"><span>{r.address}</span><small>{[r.prop_type, r.sheet_no, r.photos ? `${r.photos} poze` : null, r.contact_name].filter(Boolean).join(" · ")}</small></span>
-                  <span className="hdWho">{r.assignee_id ? <><UserAv id={r.assignee_id} name={r.assignee_name ?? "?"} has={r.assignee_av} size={24} /><span>{r.assignee_id === meId ? "Eu" : r.assignee_name}</span></> : <span className="hdMuted">nealocată</span>}</span>
                   <span className="hdChip" style={{ color: STATUS[r.status].fg, background: STATUS[r.status].bg }}>{r.assign_state === "pending" ? "Solicitare" : STATUS[r.status].label}</span>
+                  <span className={`hdTime${w ? "" : " none"}`}>{w ?? "Fără dată"}</span>
+                  <span className="hdAddr"><span title={r.address}>{r.address}</span><small>{[r.prop_type, r.contact_name, r.sheet_no].filter(Boolean).join(" · ")}</small></span>
+                  <span className="hdWho" title={r.assignee_name ?? undefined}>
+                    {r.assignee_id ? <>
+                      <UserAv id={r.assignee_id} name={r.assignee_name ?? "?"} has={r.assignee_av} size={26} />
+                      <span className="hdWhoTxt"><small>Inspector</small><b>{r.assignee_name}</b>{r.assign_state === "pending" && <em>așteaptă acceptarea</em>}</span>
+                    </> : <span className="hdWhoTxt"><small>Inspector</small><b className="hdMuted">nealocat</b></span>}
+                  </span>
                 </a>
               );
             }) : <p className="hdEmpty">Nicio inspecție programată. <a href="/inspectii/nou">Creează una →</a></p>}
