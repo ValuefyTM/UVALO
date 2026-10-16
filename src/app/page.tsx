@@ -8,6 +8,7 @@ import { QuickSearch } from "@/components/QuickSearch";
 import { Referral } from "@/components/Referral";
 import { CollabHome, CollabLaunch } from "@/components/HomeCollab";
 import { collabLaunch, collabState } from "@/lib/collab";
+import { HomeDash } from "@/components/HomeDash";
 
 export const metadata: Metadata = { title: "UVALO" };
 export const dynamic = "force-dynamic";
@@ -34,6 +35,8 @@ function when(at: string) {
 
 export default async function Home() {
   const { db, c } = await page();
+  // the new home (dashboard), by its mode: Admin → Instrumente → Acasă nouă
+  if (c.homeNew) return <HomeDash db={db} c={c} />;
   const first = await firstName(db, c.user.name, c.user.anevar_no);
   const loc = c.modules.includes("localizare");
   const amp = c.modules.includes("amplasament");

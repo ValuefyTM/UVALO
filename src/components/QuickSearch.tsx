@@ -50,7 +50,8 @@ const EXAMPLES = ["413830 Giroc", "Str. Lavandei 11, Dumbrăvița", "X 476000 Y 
  * on it) reads a CF extract / site plan with AI (/api/amplasament/plan); the result is one line: what was read, how it was
  * placed (Stereo 70, the locator's plan) and the way on — the site analysis (read data passed on, no re-read) or the map.
  */
-export function QuickSearch({ uats, amp = false, dark = false }: { uats: Uat[]; amp?: boolean; dark?: boolean }) {
+/** extra = more buttons on the search row (the new home: "+ Inspecție"); recent = the person's last parcels, shown instead of the examples */
+export function QuickSearch({ uats, amp = false, dark = false, extra, recent }: { uats: Uat[]; amp?: boolean; dark?: boolean; extra?: React.ReactNode; recent?: { label: string; href: string }[] }) {
   const [text, setText] = useState("");
   const [tried, setTried] = useState(false);
   const [doc, setDoc] = useState<Doc | null>(null);
@@ -127,6 +128,7 @@ export function QuickSearch({ uats, amp = false, dark = false }: { uats: Uat[]; 
         </div>
         <button type="submit" className="quickBtn" value="loc">Localizează</button>
         {amp && <button type="submit" className="quickBtn alt" value="amp">Analiză amplasament</button>}
+        {extra}
       </div>
 
       {busy ? <p className="quickHint">Citesc documentul cu AI: coordonatele Stereo 70, suprafața, numărul cadastral · durează de obicei 20–60 de secunde</p>
@@ -149,6 +151,12 @@ export function QuickSearch({ uats, amp = false, dark = false }: { uats: Uat[]; 
         : r.kind === "stereo" ? <p className="quickHint">Coordonate <b>Stereo 70</b>: le convertesc și le arăt pe hartă</p>
         : msg && (tried || r.ask === "county") ? <p className="quickMsg" role="alert">{msg}</p>
         : r.kind === "empty" && tried ? <p className="quickMsg" role="alert">Scrie un număr cadastral cu localitatea, o adresă sau coordonate.</p>
+        : r.kind === "empty" && recent?.length ? (
+          <p className="quickEx quickRecent">
+            <span>Recente:</span>
+            {recent.map((x) => <a key={x.href} href={x.href}>{x.label}</a>)}
+          </p>
+        )
         : r.kind === "empty" ? (
           <p className="quickEx">
             <span>Exemple:</span>

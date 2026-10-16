@@ -184,6 +184,18 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
 - Bannere de promovare Inspecții: `public/site/inspectii-banner.png` (1600×900) și `inspectii-social.png` (1200×628, OG/LinkedIn): capturi reale
   cu date demonstrative fictive.
 
+## Acasă nouă (dashboard, `src/components/HomeDash.tsx`)
+
+- După canvasul „UVALO — Dashboard Acasă”. Acces după **mod** (Admin → Instrumente → Acasă nouă, `app_settings` `acasa_mode`, API `/api/admin/acasa`,
+  `c.homeNew` în `context()`); `src/app/page.tsx` o arată în loc de pagina veche. Ceilalți văd pagina veche.
+- Conținut (doar ce are persoana în module): bara de căutare închisă (`QuickSearch` cu `extra` = „+ Inspecție” și `recent` = ultimele parcele ca
+  „Recente”), cifrele zilei (inspecții azi / săptămâna asta / fișe de verificat = finalizate de verificat / lucrări noi în zonă), **Inspecții** pe
+  hartă sau calendar (`HdInsp`, refolosește `MapView` / `CalView` din `InspList`, alegerea în `localStorage` `home-insp-view`; sub hartă următoarele
+  și ultimele finalizate), telefonul (`devices`, push), „Necesită atenția ta” (fișe întoarse, de verificat, solicitări fără răspuns / refuzate,
+  fără dată, cereri noi la anunțul meu, mesaje necitite), Colaborări (anunțurile din zonă cu distanța), caruselul de instrumente (`HdTools`, iconițe
+  Word / Chrome), „Luna ta” (finalizate, timp mediu, fotografii, analize AI, grafic pe 8 săptămâni), documente recente (CF / releveu / acte din
+  inspecții, altfel ultimele imobile), activitatea recentă (`phoneNotifs` + notificările Colaborări), „Analize de piață” în curând. Stiluri `.hd*`.
+
 ## Feedback (buton în dreapta jos)
 
 - `public/feedback.js` (vanilla, stiluri proprii `uvfb-*`): în `AppShell` și injectat de rutele `localizare`, `amplasament`,

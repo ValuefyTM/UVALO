@@ -170,7 +170,7 @@ function loadLeaflet() {
   return leaflet;
 }
 
-function MapView({ rows, focus = null, onPin, bare = false }: { rows: Row[]; focus?: string | null; onPin?: (id: string) => void; bare?: boolean }) {
+export function MapView({ rows, focus = null, onPin, bare = false }: { rows: Row[]; focus?: string | null; onPin?: (id: string) => void; bare?: boolean }) {
   const el = useRef<HTMLDivElement>(null);
   const placed = useMemo(() => rows.filter((r) => r.lat != null && r.lng != null), [rows]);
   // split view: the pin of the card pointed at is highlighted
@@ -212,7 +212,7 @@ function MapView({ rows, focus = null, onPin, bare = false }: { rows: Row[]; foc
 
 /* ---------- calendar (week), with "De programat" dragged onto an hour ---------- */
 
-function CalView({ rows, unplanned, onSchedule }: { rows: Row[]; unplanned: Row[]; onSchedule: (id: string, when: string) => void }) {
+export function CalView({ rows, unplanned, onSchedule }: { rows: Row[]; unplanned: Row[]; onSchedule: (id: string, when: string) => void }) {
   const [start, setStart] = useState(() => monday(new Date()));
   const days = Array.from({ length: 7 }, (_, i) => { const d = new Date(start); d.setDate(d.getDate() + i); return d; });
   const today = ymd(new Date());
