@@ -39,8 +39,11 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
 
 ## Structură
 
-- Meniul (`AppShell`): doar **Acasă**, **Instrumente** (+ **Colaborări** pentru cine are acces în modul curent) (`/instrumente`, toate instrumentele pe o pagină, grupate „Pe platformă”
-  și „În Word și în browser”; paginile instrumentelor aprind „Instrumente”) și **În curând**. Pe telefon: Acasă, Instrumente, Contul meu.
+- Meniul (`AppShell`), cu iconițe (`NavIcon`, conturul auriu la pagina curentă): **Acasă**, (**Inspecții** pe locul 2 doar după lansare, modul `on`,
+  cu contorul auriu = inspecțiile mele de azi neterminate), **Colaborări** (pentru cine are acces în modul curent), **Instrumente**
+  (`/instrumente`, toate instrumentele pe o pagină, grupate „Pe platformă” și „În Word și în browser”; paginile instrumentelor aprind „Instrumente”),
+  apoi **În curând**: Inspecții (cât modul ≠ `on`; link cu TEST pentru cei din grupul de test, altfel estompat) și Analize de piață.
+  Pe telefon: Acasă, Colaborări, Instrumente, Contul meu.
 - `src/app/` — pagini: `login`, `solicita-cont`, `invitatie`, `cont`, `firma` (panoul firmei), `admin/*`
   (firme, utilizatori, solicitări, recomandări, activitate, tablou ANEVAR, planuri), `mentenanta`, `localizare`.
 - `src/app/api/` — `auth`, `account`, `org`, `admin/*`, `localizare/*` (data, geocode, centroid, manifest, sw, track-js…),
