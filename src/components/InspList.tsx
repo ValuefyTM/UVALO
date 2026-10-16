@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { UserAv } from "./UserAv";
+import { InspDelete } from "./InspDelete";
 import { fmtWhen, STATUS, STATUSES, type InspRow, type Status } from "@/lib/insp-shared";
 
 type Row = InspRow & { who: "mine" | "forme" | "forothers" | "firm" };
@@ -44,6 +45,8 @@ export function InspList({ rows: initial, meId, ops, mergeOrg = null, firmOrgs =
     : k === "mine" ? r.who === "mine" || r.who === "forme" || (r.who === "firm" && !!mergeOrg && r.org_id === mergeOrg) : r.who === k);
   const tabs = WHO.filter(([k]) => (k === "firm" ? firmOrgs.length > 0 : !ops));
   const [who, setWho] = useState<Tab>(ops ? "firm" : "all");
+  // who prepared it (or its firm's viewers) may delete it; the person who only does it may not
+  const canDel = (r: Row) => r.created_by === meId || (!!r.org_id && (firmOrgs.includes(r.org_id) || r.org_id === mergeOrg));
   const [st, setSt] = useState<Status | "all">("all");
   const [q, setQ] = useState("");
   const [view, setView] = useState<View>("list");
@@ -114,8 +117,9 @@ export function InspList({ rows: initial, meId, ops, mergeOrg = null, firmOrgs =
                         {r.assign_state === "pending" && <em className="inAsk">așteaptă acceptarea</em>}</span>
                     : r.assign_state === "declined" ? <em className="inAsk no">Refuzată · alege altcineva</em> : "—"}</td>
                   <td><Badge s={r.status} /></td>
-                  <td className="right"><a className="rowLink" href={r.status === "prog" ? `/inspectii/nou?id=${r.id}` : `/inspectii/${r.id}`}>
-                    {r.status === "gata" || r.status === "pred" ? "Vezi fișa →" : r.status === "lucru" ? "Fișa în lucru →" : r.status === "prog" ? "Programează" : "Detalii →"}</a></td>
+                  <td className="right nowrap"><a className="rowLink" href={r.status === "prog" ? `/inspectii/nou?id=${r.id}` : `/inspectii/${r.id}`}>
+                    {r.status === "gata" || r.status === "pred" ? "Vezi fișa →" : r.status === "lucru" ? "Fișa în lucru →" : r.status === "prog" ? "Programează" : "Detalii →"}</a>
+                    {canDel(r) && <InspDelete id={r.id} address={r.address} done={r.status === "gata" || r.status === "pred"} icon onDeleted={() => setRows((rs) => rs.filter((x) => x.id !== r.id))} />}</td>
                 </tr>
               ))}
             </tbody>

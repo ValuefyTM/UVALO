@@ -443,6 +443,8 @@ export async function inspAction(db: D1Database, c: Ctx, b: Record<string, unkno
   if (!r || !(canPrepare(c, r) || (action !== "delete" && r.assignee_id === c.user.id))) return { error: "Inspecția nu există." };
   if (!c.super && lockedFor(await relations(db, c.user.id), c.user.id, r)) return { error: "Asocierea cu firma s-a încheiat: inspecția se poate doar citi." };
   if (action === "delete") {
+    // logged first: whoever does it (and who prepared it) is told before it leaves their lists
+    await logIt(db, id, c.user.id, "Inspecția a fost ștearsă");
     await db.prepare("UPDATE inspections SET deleted_at = ? WHERE id = ?").bind(now(), id).run();
     return { ok: true };
   }

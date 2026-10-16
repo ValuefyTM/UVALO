@@ -424,6 +424,9 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   biroul, ale mele, UVALO), câmpul „Tipul imobilului” + **„+ Tip nou”** (tip propriu, text liber, salvat în `prop_type`). La inspecție nouă (web
   și telefon) apar doar tipurile care au fișă (`typesOf()` în `insp-shared.ts`), iar după alegere doar fișele acelui tip (+ cele pentru orice
   imobil). Urmează o bibliotecă de fișe.
+- **Ștergerea inspecției** (`InspDelete`): coșul din ultima coloană a listei (`.inDelIco`, doar la cele pregătite de mine sau ale firmei —
+  `canDel` în `InspList`) și „Șterge inspecția” în bara fișei web (`canPrepare`); confirmare, avertisment mai tare la cele finalizate. Acțiunea
+  `delete` = logică (`deleted_at`), cu jurnal „Inspecția a fost ștearsă” (notificare celui care o face); dispare din liste, Acasă, telefon.
 - **Realocă inspectorul** (`InspReassign` în bara fișei web, cât timp inspecția nu e finalizată, pentru `canPrepare`): „Eu” (nu pentru operațional) sau
   cineva din birou (`TeamPick` cu disponibilitatea) → acțiunea `reassign`: răspunsurile, pozele și actele rămân; la colaborator → solicitare
   (`assign_state = pending`); jurnal „Realocată lui X” (notificare „Inspecție nouă pentru tine”), iar fostul inspector primește „Inspecție realocată”.

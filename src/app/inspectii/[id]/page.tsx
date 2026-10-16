@@ -4,6 +4,7 @@ import { page, fmtDate } from "@/lib/guard";
 import { canPrepare, getInspection, isOps, team } from "@/lib/insp";
 import { InspReassign } from "@/components/InspReassign";
 import { InspSheetDelete } from "@/components/InspSheetDelete";
+import { InspDelete } from "@/components/InspDelete";
 import { compSummary, coverPhoto, fmtWhen, STATUS } from "@/lib/insp-shared";
 import { AppShell } from "@/components/AppShell";
 import { InspDocActions } from "@/components/InspDocActions";
@@ -70,6 +71,7 @@ export default async function InspDoc({ params }: { params: Promise<{ id: string
           {canPrepare(c, x) && <InspShare id={x.id} token={x.share_token} />}
           {sheetTeam && <InspSheetDelete id={x.id} no={sheetNo} photos={x.files.filter((f) => f.kind === "photo").length} team={sheetTeam} current={x.assignee_id}
             currentName={x.assignee_name} canMe={!isOps(c)} when={x.scheduled_at} dur={x.duration_min} />}
+          {canPrepare(c, x) && <InspDelete id={x.id} address={x.address} done={done} />}
         </InspDocActions>}
       </div>
       {redoNote && x.status === "lucru" && <div className="note inRedoNote"><b>Retrimisă pe telefon pentru completare.</b> {redoNote}
