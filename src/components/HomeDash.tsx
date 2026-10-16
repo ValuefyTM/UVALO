@@ -219,8 +219,8 @@ export async function HomeDash({ db, c }: { db: Db; c: Ctx }) {
           <div className="hdSide">
             {insp && !ops && (
               <HdPhone appUrl={inspUrl()} installed={!!realDev}
-                title={realDev ? `${realDev.name || "Telefon"} · aplicație conectată` : ""}
-                lines={realDev ? [realDev.last_seen_at ? `Ultimul semnal ${ago(realDev.last_seen_at)}` : `Conectat ${ago(realDev.created_at)}`, push?.n ? "Notificări push active" : "Notificările push sunt oprite"] : []} />
+                title={realDev ? `${(realDev.name || "Telefon").replace(/\s*·\s*aplicație$/, "")} conectat` : ""}
+                lines={realDev ? [[realDev.last_seen_at ? `Semnal ${ago(realDev.last_seen_at)}` : `Conectat ${ago(realDev.created_at)}`, push?.n ? "push activ" : "push oprit"].join(" · ")] : []} />
             )}
 
             <section className="hdCard hdPad" aria-labelledby="hdTodoT">

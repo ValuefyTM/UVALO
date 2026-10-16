@@ -16,12 +16,11 @@ export function HdPhone({ installed, title, lines, appUrl }: { installed: boolea
   return (
     <>
       {installed ? (
-        <section className="hdPhone" aria-label="Telefonul">
-          <span className="hdPhoneArt" aria-hidden="true"><i /><b /><b /><b /><b /></span>
+        <section className="hdPhone hdPhoneSm" aria-label="Telefonul">
+          <span className="hdPhoneArt" aria-hidden="true"><i /><b /><b /></span>
           <span className="hdPhoneText">
             <span className="hdPhoneOn"><i />{title}</span>
             {lines.map((l) => <small key={l}>{l}</small>)}
-            <a href="/inspectii">Inspecțiile tale →</a>
           </span>
           <button type="button" className="hdPhoneRe" onClick={() => setOpen(true)} title="Instalează din nou aplicația pe telefon (alt telefon, aplicația ștearsă)">
             <PhoneIco size={16} />Reinstalează

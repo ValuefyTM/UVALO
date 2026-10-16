@@ -2814,3 +2814,11 @@ button.hdPhoneCta:hover { box-shadow: inset 0 0 0 1.5px #E0AD4F; transform: tran
 .hdInstSteps { flex: 1 1 260px; display: flex; flex-direction: column; gap: 4px; font-size: 13.5px; }
 .hdInstSteps ol { margin: 0 0 10px; padding-left: 20px; display: flex; flex-direction: column; gap: 3px; }
 .hdInstSteps .hdMuted { margin: 0; }
+.hdPhoneSm { padding: 10px 12px; gap: 12px; }
+.hdPhoneSm .hdPhoneArt { width: 30px; height: 46px; border-radius: 7px; padding: 5px 4px; gap: 3px; }
+.hdPhoneSm .hdPhoneArt i { height: 9px; border-radius: 3px; }
+.hdPhoneSm .hdPhoneArt b { height: 3px; }
+.hdPhoneSm .hdPhoneOn { font-size: 14px; }
+.hdPhoneSm .hdPhoneText small { font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hdPhoneSm .hdPhoneText { min-width: 0; }
+.hdPhoneSm .hdPhoneRe { height: 30px; padding: 0 10px; font-size: 12px; }
