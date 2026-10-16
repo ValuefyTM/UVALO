@@ -1,4 +1,5 @@
 import { api } from "@/lib/api";
+import { origin } from "@/lib/site";
 import { myAssigned, phoneCollab, phoneFirms, phoneInfo, phoneNotifs, usableTemplates } from "@/lib/insp";
 
 /** Phone app: who is signed in (profile, activity, this phone), the inspections they have to do, the sheets for a new one. */
@@ -17,6 +18,8 @@ export async function GET() {
       org: o && (o.office_at || c.orgs.length > 1) ? { id: o.id, name: o.name, logo: !!o.has_logo, role: c.role } : null,
     },
     allowed, items, info, notifs, collab, firms,
+    // Colaborări in the phone tab (same module and mode as on the web) and the web address for what stays on the web (profile, zones)
+    collabOn: c.modules.includes("colaborari"), app: await origin(),
     templates: tpls.map((t) => ({ id: t.id, name: t.name, prop_type: t.prop_type })),
   }, { headers: { "Cache-Control": "no-store" } });
 }

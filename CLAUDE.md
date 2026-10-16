@@ -304,7 +304,14 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   mărimea cardului). Migrația 0030 `orgs.staff_create`: bifa „Angajații pot crea inspecții pentru birou de pe telefon” (grupul Angajați din
   „Firma mea”, acțiunea `staff_create`) → `phoneFirms()` în `/api/m/state` (`firms`) → la „Inspecție nouă” pe telefon „Pentru: Contul meu /
   Firma X” (`for_org` la `/api/m/new`, verificat; `saveInspection(..., { orgId })`). Creditele pe birou vin la pricing.
-- **Tab-ul Colaborări pe telefon** rămâne deocamdată „În curând” (acolo vor veni anunțurile și cererile de la alți evaluatori, din modulul Colaborări).
+- **Tab-ul Colaborări pe telefon** (`src/components/mobile/MobileCollab.tsx`, același API `/api/colaborari` ca pe web, deci același mod / acces):
+  `/api/m/state` dă `collabOn` (modulul în `c.modules`) și `app` (`origin()`, pentru linkurile spre web); fără acces → „În curând”. File:
+  **Anunțuri** (feed fără ale mele; „În zonele mele” / „Toate”; cardul se deschide cu descrierea, autorul și „Vreau detalii” + mesaj opțional,
+  confirmare în afara zonei; cererea făcută → „Ai cerut detalii” + „Retrage cererea”), **Ale mele** (starea, cei care au cerut detalii: „Deschide
+  conversația” / „Mesaje”, „Alege”; Arhivează / Restaurează, Șterge, „Modifică pe web”), **Mesaje** (conversațiile cu necitite; chatul `Chat`:
+  `GET ?conv=` la 8 s, `message`, Sună / Email după deschiderea conversației) și **+ Postează** (tip, proprietate, localitate, județ, specializare,
+  termen, buget gol = de stabilit, descriere, titlu → `post`, apoi „Ale mele”). Fără profil: cardul „Activează-ți profilul” cu link spre web
+  (profilul și zonele rămân pe web). Stiluri `.mc*`.
 - „În curând: Colaborări” (card pe Acasă, meniu) doar pentru evaluatori fără acces cât timp modul ≠ `on`; niciodată pentru nonevaluatori.
 
 ## Colaborări (`/colaborari`, modulul `colaborari`)

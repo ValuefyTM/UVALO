@@ -4,6 +4,7 @@ import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "rea
 import { CONTACT_ROLES, fmtWhen, isOptional, photoCategories, PROP_TYPES, typesOf, ROOM_FIELDS, roomDone, STANDARD_ROOMS, STATUS, type InspRow, type Question, type SubQ, subKey, type Template } from "@/lib/insp-shared";
 import { allFiles, allFinish, delFile, flush, progress, putFile, putFinish, readExif, shrink, type QPhoto, type UploadProgress } from "./store";
 import { InstallHint } from "./InstallHint";
+import { MobileCollab } from "./MobileCollab";
 
 type Insp = InspRow & {
   cf_nr: string | null; area_util: number | null; area_land: number | null; rooms: { n: string; a: number | null }[]; template: Template; template_name: string | null;
@@ -68,6 +69,8 @@ export function MobileApp() {
   useEffect(() => { try { const v = JSON.parse(localStorage.getItem("insp-notif-seen") || "null"); if (v?.at != null) setSeen(v); } catch {} }, []);
   const [state, setState] = useState<"boot" | "login" | "noaccess" | "app">("boot");
   const [items, setItems] = useState<InspRow[]>([]);
+  const [collabOn, setCollabOn] = useState(false); // Colaborări open for this account (same mode as on the web)
+  const [appUrl, setAppUrl] = useState("");
   const [firms, setFirms] = useState<{ id: string; name: string }[]>([]); // offices I may create inspections for (angajat, allowed)
   const [cur, setCur] = useState<Insp | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
@@ -111,6 +114,7 @@ export function MobileApp() {
     setMe(j.user as Me);
     setItems((j.items as InspRow[]) ?? []);
     setFirms((j.firms as { id: string; name: string }[]) ?? []);
+    setCollabOn(!!j.collabOn); setAppUrl(String(j.app ?? ""));
     setInfo((j.info as Info) ?? null);
     setTpls((j.templates as Tpl[]) ?? []);
     setNotifs((j.notifs as Notif[]) ?? []);
@@ -435,7 +439,7 @@ export function MobileApp() {
       {view.v === "sign" && cur && draft && <Sign x={cur} d={draft} photos={pending.filter((p) => p.insp === cur.id && p.kind === "photo").length + cur.files.filter((f) => f.kind === "photo").length} change={change} onBack={() => history.back()} onFinish={finish}
         onRooms={() => go({ v: "rooms", id: cur.id })} onPhotos={() => go({ v: "photos", id: cur.id })} />}
       {view.v === "queue" && <Queue pending={pending} finishN={finishQ} items={items} online={online} onSend={async () => { const n = await sendAll(); say(n ? "Mai sunt elemente de trimis." : "Totul a fost trimis."); }} />}
-      {view.v === "collab" && <Collab />}
+      {view.v === "collab" && <MobileCollab on={collabOn} app={appUrl} online={online} say={say} />}
       {view.v === "notifs" && <Notifs notifs={notifs} reminders={reminders} seenAt={seen.at} onBack={() => { markSeen(); history.back(); }}
         onOpen={(id) => { markSeen(); void open(id, { v: "detail", id }); }} />}
       {view.v === "account" && <Account me={me} info={info} done={items.filter(isDone)} onOpen={(id) => open(id, { v: "detail", id })} queueN={queueN} online={online} onSend={async () => { const n = await sendAll(); say(n ? "Mai sunt elemente de trimis." : "Totul a fost trimis."); }} say={say} />}
@@ -1470,21 +1474,6 @@ function Sign({ x, d, photos, change, onBack, onFinish, onRooms, onPhotos }: {
 /* ---------- queue and account ---------- */
 
 /** "Colaborări": coming soon (announcements and requests from other valuers will come here). */
-function Collab() {
-  return (
-    <>
-      <header className="mbHead small"><b>Colaborări</b><small>Inspecții făcute pentru colegi și de colegi pentru tine</small></header>
-      <div className="mbBody">
-        <div className="mbSoon">
-          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="3.2" /><circle cx="17" cy="9" r="2.6" /><path d="M2.5 20c.8-3.4 3-5.4 5.5-5.4s4.7 2 5.5 5.4M14 15c2.6-.6 5.6.6 7 4.6" /></svg>
-          <b>În curând</b>
-          <small>Aici vei vedea inspecțiile pe care le faci pentru colegi și pe cele pe care colegii le fac pentru tine.</small>
-        </div>
-      </div>
-    </>
-  );
-}
-
 function Queue({ pending, finishN, items, online, onSend }: { pending: QPhoto[]; finishN: number; items: InspRow[]; online: boolean; onSend: () => void }) {
   const by = new Map<string, number>();
   pending.forEach((p) => by.set(p.insp, (by.get(p.insp) ?? 0) + 1));

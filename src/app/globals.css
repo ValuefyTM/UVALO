@@ -2573,3 +2573,50 @@ html:has(.mb) { min-height: calc(100% + env(safe-area-inset-top)); background: #
 .mbTplPick button[aria-checked="true"] > i { border-color: #141414; background: radial-gradient(circle, #141414 45%, transparent 50%); }
 .mbTplPick button > span { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .mbTplPick b { font-size: 14.5px; } .mbTplPick small { font-size: 12px; color: #7A7A7A; }
+
+/* phone → Colaborări tab (MobileCollab): feed, my posts, messages, new post */
+.mcTabs { display: flex; gap: 4px; background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 4px; overflow-x: auto; }
+.mcTabs button { flex: 1 0 auto; height: 36px; padding: 0 10px; border: 0; border-radius: 10px; background: none; font: inherit; font-size: 13px; font-weight: 700; color: var(--muted); display: inline-flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; }
+.mcTabs button[aria-selected="true"] { background: #141414; color: #fff; }
+.mcTabs button.mcNewTab { color: #9A5F00; }
+.mcTabs button.mcNewTab[aria-selected="true"] { background: var(--acc); color: #141414; }
+.mcTabs i, .mcConvEnd i { font-style: normal; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 99px; background: #D64545; color: #fff; font-size: 11px; display: inline-flex; align-items: center; justify-content: center; }
+.mcInfo { background: #F4F0FA; } .mcInfo small { color: var(--muted); line-height: 1.5; } .mcInfo .mbBtn { align-self: flex-start; }
+.mcCard { gap: 6px; }
+.mcHit { all: unset; display: flex; flex-direction: column; gap: 5px; cursor: pointer; }
+.mcCard b { font-size: 15px; line-height: 1.3; }
+.mcTop { display: flex; gap: 6px; align-items: center; }
+.mcKind { font-size: 10.5px !important; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; padding: 2px 8px; border-radius: 99px; background: #F4F0FA; color: #6A4C96; }
+.mcKind.k-raport { background: #FBF4E6; color: #8A5300; }
+.mcOut { font-size: 10.5px !important; font-weight: 800; color: #B33A3A; }
+.mcAgo, .mcStatus { margin-left: auto; font-size: 11.5px !important; color: var(--muted-2); }
+.mcStatus { font-weight: 800; color: var(--ink); }
+.mcCard.mine.s-inlucru .mcStatus { color: #2F5DA8; } .mcCard.mine.s-archived { opacity: .7; }
+.mcMeta { color: var(--muted); font-size: 12.5px !important; }
+.mcMoney { font-weight: 800; font-size: 13.5px; color: #9A5F00; } .mcMoney small { color: var(--muted-2); font-weight: 600; }
+.mcNote { margin: 0; font-size: 13.5px; line-height: 1.5; color: var(--ink); white-space: pre-line; }
+.mcNote.clamp { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; color: var(--muted); }
+.mcAuthor, .mcReq, .mcConv { display: flex; gap: 10px; align-items: center; }
+.mcAuthor > span:not(.mcAv), .mcReqTxt, .mcConvTxt { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.mcAuthor small, .mcReqTxt small, .mcConvTxt small { color: var(--muted); font-size: 12px; }
+.mcAv { flex: none; border-radius: 50%; object-fit: cover; background: #E0AD4F; color: #141414; font-weight: 800; font-size: 12px; display: inline-flex; align-items: center; justify-content: center; }
+.mcAsked { display: flex; flex-direction: column; gap: 2px; background: #EEF7F1; border-radius: 12px; padding: 10px 12px; }
+.mcAsked b { color: #1F7A45; font-size: 14px; } .mcAsked small { color: var(--muted); }
+.mcReqs { display: flex; flex-direction: column; gap: 8px; border-top: 1px solid var(--line); padding-top: 8px; margin-top: 2px; }
+.mcReq { flex-wrap: wrap; } .mcReq.chosen { background: #EEF7F1; border-radius: 12px; padding: 8px; }
+.mcReqTxt b { font-size: 14px; } .mcMsg { font-style: italic; } .mcTel { font-size: 13px; font-weight: 700; }
+.mcReqBtns { display: flex; gap: 6px; width: 100%; } .mcReqBtns .mbBtn { flex: 1; min-height: 36px; font-size: 13px; }
+.mcActs { display: flex; gap: 16px; flex-wrap: wrap; border-top: 1px solid var(--line); padding-top: 4px; }
+.mbLink.danger { color: var(--err); }
+.mcConv { width: 100%; text-align: left; border: 0; font: inherit; color: inherit; flex-direction: row; }
+.mcConvTxt b { font-size: 14px; } .mcLast { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--ink) !important; }
+.mcConvEnd { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; } .mcConvEnd small { color: var(--muted-2); font-size: 11px; }
+.mcForm { display: flex; flex-direction: column; gap: 10px; }
+.mcChat { gap: 8px; }
+.mcMsgs { display: flex; flex-direction: column; justify-content: flex-start; gap: 8px; }
+.mcContact { display: flex; gap: 8px; } .mcContact .mbBtn { flex: 1; }
+.mcBubble { max-width: 82%; align-self: flex-start; background: #fff; border-radius: 14px 14px 14px 4px; padding: 8px 12px; font-size: 14px; line-height: 1.45; white-space: pre-line; display: flex; flex-direction: column; gap: 2px; }
+.mcBubble small { font-size: 10.5px; color: var(--muted-2); }
+.mcBubble.me { align-self: flex-end; background: #141414; color: #fff; border-radius: 14px 14px 4px 14px; } .mcBubble.me small { color: #9A9A9A; }
+.mcBubble.sys { align-self: center; background: #F4F0FA; color: #6A4C96; font-size: 12.5px; text-align: center; border-radius: 10px; }
+.mcSend { flex-direction: row !important; gap: 8px; align-items: flex-end; } .mcSend .mbIn { flex: 1; min-height: 42px; resize: none; } .mcSend .mbBtn { min-height: 42px; }
