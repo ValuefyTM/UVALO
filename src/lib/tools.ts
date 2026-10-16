@@ -10,6 +10,7 @@ export const TOOLS = [
   { key: "chrome", name: "UVALO pentru Chrome", href: "/chrome", desc: "Extensia Chrome: capturi de anunțuri pe pagini A4 și dosarul comparabilelor în Word/PDF." },
   { key: "word", name: "UVALO pentru Word", href: "/word", desc: "Add-in-ul din Word: Anexă foto și Anexă documente, instalat fără Microsoft Store." },
   { key: "inspectii", name: "Inspecții", href: "/inspectii", desc: "Inspecții pregătite pe web și făcute pe telefon (aplicația UVALO): fișe editabile, fotografii, PDF, link public. Moduri: Dezactivat, Test, Activ." },
+  { key: "acasa", name: "Acasă nouă", href: "/", desc: "Pagina de start nouă (dashboard): căutare, inspecțiile pe hartă / calendar, telefonul, Colaborări, instrumente, activitatea. Moduri: Dezactivat, Test, Activ." },
   { key: "colaborari", name: "Colaborări", href: "/colaborari", desc: "Lucrări ocazionale între evaluatori: anunțuri, zone de acoperire, cereri de detalii și mesaje. Moduri: Dezactivat, Test, Activ." },
 ] as const;
 export type ToolKey = (typeof TOOLS)[number]["key"];

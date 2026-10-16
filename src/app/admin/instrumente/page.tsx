@@ -12,13 +12,13 @@ export const dynamic = "force-dynamic";
 /** The tools of the platform: state, use in the last 30 days, link to the settings of each. */
 export default async function Instrumente() {
   const { db, c, pending } = await superPage();
-  const [{ off }, cs, ins, ...uses] = await Promise.all([toolSettings(db), collabSettings(db), modeSettings(db, "inspectii"), ...TOOLS.map((t) => toolUsage(db, t.key))]);
+  const [{ off }, cs, ins, home, ...uses] = await Promise.all([toolSettings(db), collabSettings(db), modeSettings(db, "inspectii"), modeSettings(db, "acasa"), ...TOOLS.map((t) => toolUsage(db, t.key))]);
   return (
     <AdminShell c={c} active="instrumente" pending={pending} title="Instrumente" subtitle="Setări și statistici pentru fiecare instrument">
       <div className="cols">
         {TOOLS.map((t, i) => {
           // Colaborări and Inspecții have three modes (Dezactivat / Test / Activ) instead of on/off
-          const ms = t.key === "colaborari" ? cs : t.key === "inspectii" ? ins : null;
+          const ms = t.key === "colaborari" ? cs : t.key === "inspectii" ? ins : t.key === "acasa" ? home : null;
           const on = ms ? ms.mode === "on" : !off.includes(t.key), u = uses[i];
           const label = ms ? MODE_LABEL[ms.mode] + (ms.mode === "test" ? ` · ${ms.users.length} ${ms.users.length === 1 ? "persoană" : "persoane"}` : "") : on ? "Activ" : "Dezactivat";
           return (

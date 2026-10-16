@@ -51,6 +51,8 @@ export type Ctx = {
   office: boolean;
   /** Offices this person is an associated administrator of (office_links.admin): they see and manage those firms' inspections. */
   linkAdmin: string[];
+  /** The new home page (dashboard): by its mode (Admin → Instrumente → Acasă nouă); off = the current home page for everyone. */
+  homeNew: boolean;
 };
 
 export async function context(db: D1Database): Promise<Ctx | null> {
@@ -86,7 +88,10 @@ export async function context(db: D1Database): Promise<Ctx | null> {
   if (ii < 0 && insOk) modules.push("inspectii");
   const linkAdmin = (await db.prepare("SELECT org_id FROM office_links WHERE user_id = ? AND status = 'active' AND admin = 1").bind(user.id).all<{ org_id: string }>()
     .catch(() => ({ results: [] as { org_id: string }[] }))).results.map((r) => r.org_id);
-  return { user, session, super: sup, orgs, org, role, modules, block, off, collab: cs.mode, insp: ins.mode, office: sup || !!user.office_allowed, linkAdmin };
+  const hn = await modeSettings(db, "acasa");
+  // super-admins see it only from Test on (with Dezactivat nobody does, so the current home page stays checkable)
+  const homeNew = hn.mode !== "off" && modeAllowed(hn, { super: sup, userId: user.id, hasAccess: !!org && !block });
+  return { user, session, super: sup, orgs, org, role, modules, block, off, collab: cs.mode, insp: ins.mode, office: sup || !!user.office_allowed, linkAdmin, homeNew };
 }
 
 /** "Birou de evaluare" (Firma mea: colleagues, seats): only for the accounts the administration turned it on for (in test). */

@@ -95,6 +95,22 @@ export default async function Instrument({ params }: { params: Promise<{ key: st
     );
   }
 
+  if (key === "acasa") {
+    const ms = await modeSettings(db, "acasa");
+    const [users, all] = await Promise.all([testUsers(db, ms.users),
+      db.prepare(`SELECT u.id, COALESCE(NULLIF(u.name, ''), u.email) AS name, u.email, u.anevar_no AS anevar, u.is_superadmin AS sup,
+          (SELECT o.name FROM memberships m JOIN orgs o ON o.id = m.org_id WHERE m.user_id = u.id AND m.status = 'active' ORDER BY o.name LIMIT 1) AS org
+        FROM users u WHERE u.status = 'active' ORDER BY name COLLATE NOCASE LIMIT 3000`)
+        .all<{ id: string; name: string; email: string; anevar: string | null; sup: number; org: string | null }>()]);
+    return (
+      <AdminShell c={c} active="instrumente" pending={pending} title={tool.name} subtitle="Pagina de start nouă: mod de lucru și grupul de test" actions={<a className="btn btnGhost btnSm" href="/admin/instrumente">← Instrumente</a>}>
+        <CollabAdmin mode={ms.mode} users={users} counts={null} accounts={all.results} endpoint="/api/admin/acasa" name="Pagina Acasă nouă"
+          testNote={<>„Dezactivat”: toți (și super-adminii) văd pagina Acasă de acum. „Test”: super-adminii și grupul de test văd pagina nouă. „Activ”: toți o văd.</>} />
+        <ToolAnalytics u={u} events={events} />
+      </AdminShell>
+    );
+  }
+
   if (key === "inspectii") {
     const ms = await modeSettings(db, "inspectii");
     const [users, all, n] = await Promise.all([testUsers(db, ms.users),
