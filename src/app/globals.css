@@ -139,7 +139,8 @@ a.kpi:hover { border-color: var(--acc); transform: translateY(-2px); }
 .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 12px; }
 .span2 { grid-column: 1 / -1; }
 .check { display: flex; gap: 10px; align-items: flex-start; font-size: 13.5px; font-weight: 500; color: var(--muted); line-height: 1.5; cursor: pointer; }
-.check a { color: inherit; font-weight: 700; text-decoration: underline; text-underline-offset: 2px; }
+.check a { color: #9A5F00; font-weight: 700; text-decoration: underline; text-underline-offset: 2px; }
+.check a:hover { color: #141414; }
 .check input { width: 18px; height: 18px; margin: 1px 0 0; accent-color: var(--acc-ink); flex-shrink: 0; }
 .error { font-size: 13px; font-weight: 700; color: var(--err); }
 .okMsg { font-size: 13px; font-weight: 700; color: var(--ok-text); background: var(--ok-bg); border: 1px solid var(--ok-line); border-radius: 12px; padding: 10px 12px; }
