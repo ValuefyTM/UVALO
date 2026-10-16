@@ -97,11 +97,10 @@ export async function HomeDash({ db, c }: { db: Db; c: Ctx }) {
   const redo = rows.filter((r) => r.assignee_id === uid && r.status === "lucru" && r.redo_note);
   const onSite = todayRows.filter((r) => r.status === "lucru").length;
   // the map / calendar: what is open, plus what was finished in the last 14 days
-  const since = new Date(Date.now() - 14 * 864e5).toISOString();
-  const mapRows: HdRow[] = rows.filter((r) => mineToDo(r) && (open.includes(r) || (r.finished_at ?? "") > since)).slice(0, 120);
-  const nextRows = [...open.filter((r) => r.scheduled_at && r.scheduled_at.slice(0, 10) >= today)].sort((a, b) => a.scheduled_at!.localeCompare(b.scheduled_at!));
-  const lastDone = rows.filter((r) => r.status === "gata" || r.status === "pred").sort((a, b) => (b.finished_at ?? "").localeCompare(a.finished_at ?? ""));
-  const listRows: HdRow[] = [...nextRows.slice(0, 3), ...lastDone.slice(0, Math.max(1, 4 - Math.min(3, nextRows.length)))].slice(0, 4);
+  // the map / calendar / list: only what is not finished (În lucru, Programată, De programat)
+  const mapRows: HdRow[] = rows.filter((r) => mineToDo(r) && open.includes(r)).slice(0, 120);
+  const rank = (r: (typeof rows)[number]) => (r.status === "lucru" ? 0 : r.status === "plan" ? 1 : 2);
+  const listRows: HdRow[] = [...mapRows].sort((a, b) => rank(a) - rank(b) || (a.scheduled_at ?? "9999").localeCompare(b.scheduled_at ?? "9999")).slice(0, 4);
 
   // the month: inspections finished by me, average time, photos, AI readings; inspections per week (last 8 weeks)
   const [st, ph, weeks] = insp ? await Promise.all([

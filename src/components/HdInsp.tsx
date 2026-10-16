@@ -51,7 +51,7 @@ export function HdInsp({ rows: initial, list, meId, title }: { rows: HdRow[]; li
           <div className="hdMap">
             {placed.length ? <MapView rows={placed} bare /> : <p className="hdEmpty hdMapEmpty">Inspecțiile cu adresă găsită apar aici, pe hartă.</p>}
             <span className="hdLegend" aria-hidden="true">
-              {(["lucru", "plan", "prog", "gata"] as const).map((s) => <span key={s}><i style={{ background: STATUS[s].fg }} />{STATUS[s].label}</span>)}
+              {(["lucru", "plan", "prog"] as const).map((s) => <span key={s}><i style={{ background: STATUS[s].fg }} />{STATUS[s].label}</span>)}
             </span>
           </div>
           <div className="hdList">

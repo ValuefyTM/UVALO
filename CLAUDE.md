@@ -190,8 +190,8 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   `c.homeNew` în `context()`); `src/app/page.tsx` o arată în loc de pagina veche. Ceilalți văd pagina veche.
 - Conținut (doar ce are persoana în module): „Ce evaluăm azi?” + bara de căutare închisă, pe toată lățimea (`QuickSearch` cu `extra` = „+ Inspecție” și `recent` = ultimele parcele ca
   „Recente”), cifrele zilei, compacte pe un rând (inspecții azi / săptămâna asta / fișe de verificat = finalizate de verificat / lucrări noi în zonă), **Inspecții** pe
-  hartă sau calendar (`HdInsp`, refolosește `MapView` / `CalView` din `InspList`, alegerea în `localStorage` `home-insp-view`; sub hartă următoarele
-  și ultimele finalizate), telefonul (`devices`, push), „Necesită atenția ta” (fișe întoarse, de verificat, solicitări fără răspuns / refuzate,
+  hartă sau calendar (`HdInsp`, refolosește `MapView` / `CalView` din `InspList`, alegerea în `localStorage` `home-insp-view`; doar nefinalizatele — În lucru, Programată,
+  De programat; sub hartă primele 4, în lucru întâi), telefonul (`devices`, push), „Necesită atenția ta” (fișe întoarse, de verificat, solicitări fără răspuns / refuzate,
   fără dată, cereri noi la anunțul meu, mesaje necitite), Colaborări (anunțurile din zonă cu distanța), caruselul de instrumente (`HdTools`, iconițe
   Word / Chrome), „Luna ta” (finalizate, timp mediu, fotografii, analize AI, grafic pe 8 săptămâni), activitatea recentă (`phoneNotifs` + notificările
   Colaborări), „Analize de piață și comparabile” în curând. Fără „Documente recente” (cerut). Comparabile = „Localizator Comparabile”. Stiluri `.hd*`.
