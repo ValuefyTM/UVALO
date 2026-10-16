@@ -11,7 +11,7 @@ import { COUNTIES, KINDS, POST_SPECS, PROPS, type Kind } from "@/lib/collab-shar
 
 type Person = { id: string; name: string; init: string; sub: string; avatar: boolean; phone?: string | null; email?: string };
 type Card = { id: string; kind: Kind; title: string; note: string; city: string; county: string; prop: string | null; spec: string | null; due: string | null;
-  budget: number | null; status: string; created_at: string; dist: number | null };
+  budget: number | null; status: string; created_at: string; dist: number | null; lat?: number | null; lng?: number | null };
 type FeedPost = Card & { author: Person; own: boolean; inZone: boolean; requests: number; myRequest: string | null };
 type MyReq = { id: string; msg: string | null; status: string; created_at: string; conv_id: string | null; user: Person; base: string | null; dist: number | null };
 type MinePost = Card & { chosen_id: string | null; requests: MyReq[] };
@@ -28,6 +28,13 @@ const ago = (iso: string) => {
   const m = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
   return m < 60 ? `acum ${Math.max(1, m)} min` : m < 1440 ? `acum ${Math.round(m / 60)} h` : day(iso);
 };
+/** Distance in km, straight line (the post's place is its locality). */
+function kmFrom(a: [number, number], b: [number, number]) {
+  const r = (x: number) => (x * Math.PI) / 180, dLa = r(b[0] - a[0]), dLo = r(b[1] - a[1]);
+  const h = Math.sin(dLa / 2) ** 2 + Math.cos(r(a[0])) * Math.cos(r(b[0])) * Math.sin(dLo / 2) ** 2;
+  return 6371 * 2 * Math.asin(Math.sqrt(h));
+}
+const kmTxt = (k: number) => (k < 10 ? k.toLocaleString("ro-RO", { maximumFractionDigits: 1 }) : String(Math.round(k)));
 const money = (n: number | null) => (n ? `${n.toLocaleString("ro-RO")} lei` : "onorariu de stabilit");
 
 function Av({ p, size = 32 }: { p: Person; size?: number }) {
@@ -36,7 +43,7 @@ function Av({ p, size = 32 }: { p: Person; size?: number }) {
     : <span className="mcAv" style={{ width: size, height: size }} aria-hidden="true">{p.init}</span>;
 }
 
-export function MobileCollab({ on, app, online, say }: { on: boolean; app: string; online: boolean; say: (m: string) => void }) {
+export function MobileCollab({ on, app, online, say, pos }: { on: boolean; app: string; online: boolean; say: (m: string) => void; pos: React.RefObject<[number, number] | null> }) {
   const [st, setSt] = useState<St | null>(null);
   const [err, setErr] = useState("");
   const [tab, setTab] = useState<Tab>("feed");
@@ -44,6 +51,16 @@ export function MobileCollab({ on, app, online, say }: { on: boolean; app: strin
   const [open, setOpen] = useState<string | null>(null);
   const [conv, setConv] = useState<Conv | null>(null);
   const [busy, setBusy] = useState(false);
+  // where the phone is now: the distance to each post („12 km de tine”); asked once when the tab opens, the button asks again
+  const [here, setHere] = useState<[number, number] | null>(pos.current);
+  const [near, setNear] = useState(false); // sort by distance
+  const [locErr, setLocErr] = useState("");
+  const locate = useCallback((ask: boolean) => {
+    if (!("geolocation" in navigator)) { setLocErr("Telefonul nu dă locația."); return; }
+    navigator.geolocation.getCurrentPosition((p) => { setHere([p.coords.latitude, p.coords.longitude]); setLocErr(""); if (ask) setNear(true); },
+      () => { if (ask) setLocErr("Locația e blocată: pornește-o din setările telefonului pentru browser / aplicație."); }, { enableHighAccuracy: false, timeout: 10000, maximumAge: 120000 });
+  }, []);
+  useEffect(() => { if (on) locate(false); }, [on, locate]);
 
   const load = useCallback(async () => {
     const r = await fetch("/api/colaborari", { cache: "no-store" }).catch(() => null);
@@ -77,7 +94,9 @@ export function MobileCollab({ on, app, online, say }: { on: boolean; app: strin
   const mine = st?.mine ?? [];
   const unread = (st?.convs ?? []).reduce((n, c) => n + c.unread, 0);
   const newReqs = mine.reduce((n, p) => n + p.requests.filter((r) => r.status === "nou").length, 0);
-  const feed = (st?.feed ?? []).filter((p) => !p.own && (all || !st?.profile || p.inZone));
+  const distOf = (p: Card) => (here && p.lat != null && p.lng != null ? kmFrom(here, [p.lat, p.lng]) : null);
+  const feed = (st?.feed ?? []).filter((p) => !p.own && (all || !st?.profile || p.inZone)).map((p) => ({ ...p, here: distOf(p) }));
+  if (near && here) feed.sort((a, b) => (a.here ?? 1e9) - (b.here ?? 1e9));
   return (
     <>
       <header className="mbHead small"><b>Colaborări</b><small>Lucrări între evaluatori, în zona ta</small></header>
@@ -97,15 +116,20 @@ export function MobileCollab({ on, app, online, say }: { on: boolean; app: strin
               <small>Alegi zonele în care lucrezi și primești anunțurile de acolo (și pe email). Se face o singură dată, pe web.</small>
               <a className="mbBtn" href={`${app}/colaborari`} target="_blank" rel="noopener">Deschide pe web ↗</a></section>
           )}
-          {st.profile && (
-            <span className="mbOpts">
+          <span className="mbOpts">
+            {st.profile && <>
               <button type="button" aria-pressed={!all} onClick={() => setAll(false)}>În zonele mele</button>
               <button type="button" aria-pressed={all} onClick={() => setAll(true)}>Toate</button>
-            </span>
-          )}
+            </>}
+            <button type="button" aria-pressed={near && !!here} onClick={() => (here ? setNear(!near) : locate(true))}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true"><circle cx="12" cy="12" r="3.5" /><path d="M12 2v3M12 19v3M2 12h3M19 12h3" /></svg>
+              {here ? "Cele mai apropiate" : "Distanța față de mine"}
+            </button>
+          </span>
+          {locErr && <small className="mbErr">{locErr}</small>}
           {!feed.length && <p className="mbEmpty">{all || !st.profile ? "Niciun anunț activ acum." : "Niciun anunț în zonele tale acum. Vezi „Toate”."}</p>}
           {feed.map((p) => (
-            <FeedCard key={p.id} p={p} open={open === p.id} busy={busy} onToggle={() => setOpen(open === p.id ? null : p.id)}
+            <FeedCard key={p.id} p={p} here={p.here} open={open === p.id} busy={busy} onToggle={() => setOpen(open === p.id ? null : p.id)}
               onAsk={async (msg) => {
                 if (!p.inZone && st.profile && !confirm(`Anunțul e în afara zonelor tale (${p.county}). Ceri totuși detalii?`)) return;
                 await act({ action: "request", post_id: p.id, msg }, "Cererea a fost trimisă autorului.");
@@ -186,14 +210,16 @@ export function MobileCollab({ on, app, online, say }: { on: boolean; app: strin
   );
 }
 
-function FeedCard({ p, open, busy, onToggle, onAsk, onWithdraw }: { p: FeedPost; open: boolean; busy: boolean; onToggle: () => void; onAsk: (msg: string) => Promise<void>; onWithdraw: () => Promise<void> }) {
+function FeedCard({ p, here, open, busy, onToggle, onAsk, onWithdraw }: { p: FeedPost; here: number | null; open: boolean; busy: boolean; onToggle: () => void; onAsk: (msg: string) => Promise<void>; onWithdraw: () => Promise<void> }) {
   const [msg, setMsg] = useState("");
   return (
     <section className={`mbCard mcCard${open ? " open" : ""}`}>
       <button type="button" className="mcHit" aria-expanded={open} onClick={onToggle}>
         <span className="mcTop"><small className={`mcKind k-${p.kind}`}>{KINDS[p.kind]}</small>{!p.inZone && <small className="mcOut">În afara zonei</small>}<small className="mcAgo">{ago(p.created_at)}</small></span>
         <b>{p.title}</b>
-        <small className="mcMeta">{p.city}, {p.county}{p.dist != null ? ` · ${p.dist} km` : ""}{p.due ? ` · termen ${day(p.due)}` : ""}</small>
+        <small className="mcMeta">{p.city}, {p.county}{p.due ? ` · termen ${day(p.due)}` : ""}</small>
+        {here != null ? <small className="mcDist">{kmTxt(here)} km de tine{p.dist != null ? <span> · {p.dist} km de baza ta</span> : null}</small>
+          : p.dist != null ? <small className="mcDist base">{p.dist} km de baza ta</small> : null}
         <span className="mcMoney">{money(p.budget)}{p.requests ? <small> · {p.requests} {p.requests === 1 ? "cerere" : "cereri"}</small> : null}</span>
         {!open && <small className="mcNote clamp">{p.note}</small>}
       </button>

@@ -207,6 +207,8 @@ export async function collabState(db: D1Database, me: { id: string }) {
   const card = (p: PostRow) => ({
     id: p.id, kind: p.kind, title: p.title, note: p.note, city: p.city, county: p.county, prop: p.prop, spec: p.spec, due: p.due, budget: p.budget,
     status: p.status, created_at: p.created_at, test: !!p.test, dist: profile ? km(profile, p) : null,
+    // the place (locality, geocoded) for the distance from the phone's position in the phone app
+    lat: p.lat, lng: p.lng,
   });
   const u = (id: string, contact = false) => { const r = users.get(id); return r ? person(r, contact) : { id, name: "Cont șters", init: "?", sub: "", avatar: false }; };
 

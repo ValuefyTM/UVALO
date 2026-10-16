@@ -2620,3 +2620,8 @@ html:has(.mb) { min-height: calc(100% + env(safe-area-inset-top)); background: #
 .mcBubble.me { align-self: flex-end; background: #141414; color: #fff; border-radius: 14px 14px 4px 14px; } .mcBubble.me small { color: #9A9A9A; }
 .mcBubble.sys { align-self: center; background: #F4F0FA; color: #6A4C96; font-size: 12.5px; text-align: center; border-radius: 10px; }
 .mcSend { flex-direction: row !important; gap: 8px; align-items: flex-end; } .mcSend .mbIn { flex: 1; min-height: 42px; resize: none; } .mcSend .mbBtn { min-height: 42px; }
+.mcCard .mcDist { display: inline-flex; align-items: center; gap: 4px; align-self: flex-start; font-size: 12px !important; font-weight: 800; color: #1F5FAF; background: #EEF3FB; border-radius: 99px; padding: 2px 9px; }
+.mcCard .mcDist::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.mcCard .mcDist span { font-weight: 600; color: var(--muted); }
+.mcCard .mcDist.base { color: var(--muted); background: #F3EEE4; }
+.mbOpts button svg { vertical-align: -2px; margin-right: 4px; }

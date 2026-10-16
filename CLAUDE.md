@@ -312,6 +312,8 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   `GET ?conv=` la 8 s, `message`, Sună / Email după deschiderea conversației) și **+ Postează** (tip, proprietate, localitate, județ, specializare,
   termen, buget gol = de stabilit, descriere, titlu → `post`, apoi „Ale mele”). Fără profil: cardul „Activează-ți profilul” cu link spre web
   (profilul și zonele rămân pe web). Stiluri `.mc*`.
+  Distanța față de telefon: `collabState` dă și `lat`/`lng` ale anunțului (localitatea geocodată); tab-ul cere locația la deschidere și arată
+  pe fiecare card „N km de tine” (`.mcDist`, în linie dreaptă; + „km de baza ta” din profil), cu butonul „Cele mai apropiate” (sortare).
 - „În curând: Colaborări” (card pe Acasă, meniu) doar pentru evaluatori fără acces cât timp modul ≠ `on`; niciodată pentru nonevaluatori.
 
 ## Colaborări (`/colaborari`, modulul `colaborari`)
