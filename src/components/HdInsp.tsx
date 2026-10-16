@@ -76,7 +76,14 @@ export function HdInsp({ rows: initial, list, meId, title }: { rows: HdRow[]; li
                   {r.assign_state === "pending" && <em className="hdItemAsk">așteaptă acceptarea</em>}
                 </a>
               );
-            }) : <p className="hdEmpty">Nicio inspecție programată. <a href="/inspectii/nou">Creează una →</a></p>}
+            }) : (
+              <div className="hdListEmpty">
+                <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" /><path d="M14 3v5h5M9 14l2 2 4-4" /></svg>
+                <b>Nu ai inspecții în curs</b>
+                <span>Cele programate, în lucru sau de programat apar aici și pe hartă.</span>
+                <a className="hdChipBtn" href="/inspectii/nou">+ Inspecție nouă</a>
+              </div>
+            )}
           </div>
         </div>
       ) : (
