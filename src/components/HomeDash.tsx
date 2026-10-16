@@ -104,7 +104,7 @@ export async function HomeDash({ db, c }: { db: Db; c: Ctx }) {
   const listRows: HdRow[] = [...nextRows.slice(0, 3), ...lastDone.slice(0, Math.max(1, 4 - Math.min(3, nextRows.length)))].slice(0, 4);
 
   // the month: inspections finished by me, average time, photos, AI readings; inspections per week (last 8 weeks)
-  const [st, ph, weeks, docs] = insp ? await Promise.all([
+  const [st, ph, weeks] = insp ? await Promise.all([
     db.prepare(`SELECT SUM(CASE WHEN substr(finished_at, 1, 7) = ?2 THEN 1 ELSE 0 END) AS month,
       SUM(CASE WHEN substr(finished_at, 1, 7) = ?3 THEN 1 ELSE 0 END) AS prev,
       AVG(CASE WHEN substr(finished_at, 1, 7) = ?2 AND started_at IS NOT NULL THEN (julianday(finished_at) - julianday(started_at)) * 1440 END) AS avg_min
@@ -114,10 +114,7 @@ export async function HomeDash({ db, c }: { db: Db; c: Ctx }) {
       .bind(uid, monthStart).first<{ n: number }>().catch(() => null),
     db.prepare("SELECT finished_at FROM inspections WHERE assignee_id = ? AND finished_at > ? AND deleted_at IS NULL").bind(uid, new Date(Date.now() - 56 * 864e5).toISOString())
       .all<{ finished_at: string }>().then((r) => r.results).catch(() => []),
-    db.prepare(`SELECT f.id, f.kind, f.name, f.created_at, i.id AS insp, i.address, i.cad_nr FROM insp_files f JOIN inspections i ON i.id = f.inspection_id
-      WHERE f.kind IN ('cf', 'releveu', 'doc') AND i.deleted_at IS NULL AND (i.created_by = ?1 OR i.assignee_id = ?1) ORDER BY f.created_at DESC LIMIT 4`)
-      .bind(uid).all<{ id: string; kind: string; name: string | null; created_at: string; insp: string; address: string; cad_nr: string | null }>().then((r) => r.results).catch(() => []),
-  ]) : [null, null, [] as { finished_at: string }[], [] as never[]];
+  ]) : [null, null, [] as { finished_at: string }[]];
   const spark = Array.from({ length: 8 }, (_, i) => {
     const end = Date.now() - (7 - i) * 7 * 864e5, start = end - 7 * 864e5;
     return weeks.filter((w) => { const t = new Date(w.finished_at).getTime(); return t > start && t <= end; }).length;
@@ -152,7 +149,7 @@ export async function HomeDash({ db, c }: { db: Db; c: Ctx }) {
   const tools: HdTool[] = [];
   if (loc) tools.push({ key: "localizare", href: "/localizare", name: "Localizator cadastral", desc: "Parcele ANCPI, export PDF / Word", tag: list.length ? `${list.length} UAT` : undefined });
   if (amp) tools.push({ key: "amplasament", href: "/amplasament", name: "Analiză amplasament", desc: "Zona, dotări, descriere", tag: "AI" });
-  if (has("comparabile")) tools.push({ key: "comparabile", href: "/comparabile", name: "Comparabile", desc: "Hartă și tabel pentru raport" });
+  if (has("comparabile")) tools.push({ key: "comparabile", href: "/comparabile", name: "Localizator Comparabile", desc: "Hartă și tabel pentru raport" });
   if (has("word")) tools.push({ key: "word", href: "/word", name: "UVALO pentru Word", desc: "Add-in: anexe foto și acte", tag: toolUse.get("word") ? "folosit" : undefined });
   if (has("chrome")) tools.push({ key: "chrome", href: "/chrome", name: "UVALO pentru Chrome", desc: "Extensie: capturi de anunțuri", tag: toolUse.get("chrome") ? "folosit" : undefined });
   if (amp) tools.push({ key: "cf", href: "/amplasament", name: "CF / plan citit cu AI", desc: "Nr. cadastral, suprafețe, Stereo 70", dark: true });
@@ -168,10 +165,6 @@ export async function HomeDash({ db, c }: { db: Db; c: Ctx }) {
     !insp && aiN && { ico: "AI", tone: "gold", n: aiN.n, label: `analize AI în ${monthName}`, href: "/amplasament" },
   ].filter(Boolean) as { ico: string; tone: string; n: number; label: string; href: string }[];
 
-  const lead = [
-    insp && todayRows.length ? <b key="i">{plural(todayRows.length, "inspecție azi", "inspecții azi")}</b> : null,
-    collab && zoneN ? <b key="c" className="hdGold">{plural(zoneN, "lucrare nouă", "lucrări noi")}</b> : null,
-  ].filter(Boolean);
 
   return (
     <AppShell c={c} active="home" title={hello} subtitle={sub}
@@ -181,10 +174,7 @@ export async function HomeDash({ db, c }: { db: Db; c: Ctx }) {
         <section className="hdHero" aria-label="Căutare">
           <svg className="hdHeroArt" viewBox="0 0 400 200" aria-hidden="true"><g fill="none" stroke="#E0AD4F" strokeOpacity=".14" strokeWidth="1.2"><path d="M40 180 L120 60 L230 90 L300 20 L390 70" /><path d="M0 120 L90 140 L170 110 L260 160 L400 130" /><path d="M120 60 L170 110 M230 90 L260 160 M300 20 L330 120 L400 130" /><path d="M90 140 L40 180 M330 120 L260 160" /></g></svg>
           <div className="hdHeroHead">
-            <p className="hdLead">
-              {lead.length ? <>Ai {lead.length === 2 ? <>{lead[0]} și {lead[1]} de la colegi în zona ta</> : <>{lead[0]}{collab && zoneN ? " de la colegi în zona ta" : ""}</>}.</>
-                : <>Caută un imobil după nr. cadastral, adresă, coordonate sau încarcă un extras CF.</>}
-            </p>
+            <h2 className="hdAsk">Ce evaluăm azi?</h2>
             {parcels > 0 && <span className="hdMeta">Localizator · {list.length} UAT · {nf(parcels)} imobile</span>}
           </div>
           {loc ? (
@@ -201,7 +191,7 @@ export async function HomeDash({ db, c }: { db: Db; c: Ctx }) {
             {kpis.map((k) => (
               <a key={k.label} className="hdKpi" href={k.href}>
                 <span className={`hdKpiIco t-${k.tone}`}>{k.ico}</span>
-                <span><b>{nf(k.n)}</b><small>{k.label}</small></span>
+                <span className="hdKpiTxt"><b>{nf(k.n)}</b><small>{k.label}</small></span>
               </a>
             ))}
           </div>
@@ -289,22 +279,6 @@ export async function HomeDash({ db, c }: { db: Db; c: Ctx }) {
             </section>
           )}
 
-          <section className="hdCard hdPad" aria-labelledby="hdDocT">
-            <div className="hdHead"><h2 id="hdDocT">{docs.length ? "Documente recente" : "Ultimele imobile căutate"}</h2>{docs.length ? <a href="/inspectii">Toate →</a> : loc ? <a href="/localizare">Harta →</a> : null}</div>
-            {docs.length ? docs.map((d) => (
-              <a key={d.id} className="hdRowMain hdDocRow" href={`/inspectii/${d.insp}`}>
-                <span className={`hdDoc ${d.kind === "cf" ? "t-gold" : d.kind === "releveu" ? "t-blue" : "t-ink"}`}>{d.kind === "cf" ? "CF" : d.kind === "releveu" ? "RLV" : "DOC"}</span>
-                <span><b>{d.kind === "cf" ? "Extras CF" : d.kind === "releveu" ? "Releveu" : d.name || "Document"}{d.cad_nr ? ` ${d.cad_nr}` : ""}</b><small>{short(d.address)}</small></span>
-                <small className="hdWhen">{ago(d.created_at)}</small>
-              </a>
-            )) : recent.length ? recent.map((r) => (
-              <a key={r.href} className="hdRowMain hdDocRow" href={r.href}>
-                <span className="hdDoc t-gold">NR</span>
-                <span><b>{r.nr}</b><small>{[r.uat, r.area != null ? `${nf(r.area)} mp` : null].filter(Boolean).join(" · ")}</small></span>
-                <small className="hdWhen">{ago(r.at)}</small>
-              </a>
-            )) : <p className="hdEmpty">Actele atașate la inspecții și imobilele căutate apar aici.</p>}
-          </section>
 
           <section className="hdCard hdPad" aria-labelledby="hdActT">
             <h2 id="hdActT" className="hdH">Activitate recentă</h2>
@@ -319,7 +293,7 @@ export async function HomeDash({ db, c }: { db: Db; c: Ctx }) {
 
         <section className="hdSoon" aria-label="În curând">
           <span className="hdSoonTag">ÎN CURÂND</span>
-          <span className="hdSoonText"><b>Analize de piață pe zona ta</b><small>Prețuri și chirii din tranzacții și anunțuri, pe localitate și tip de imobil, gata de pus în raport.</small></span>
+          <span className="hdSoonText"><b>Analize de piață și comparabile</b><small>Prețuri și chirii din tranzacții și anunțuri, pe localitate și tip de imobil, gata de pus în raport.</small></span>
           <NotifyButton k="analize" done={!!asked} label="Anunță-mă la lansare" />
         </section>
       </div>
