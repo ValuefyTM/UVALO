@@ -403,7 +403,7 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
 - **Întrebare compusă** (`kind: "comp"`): o alegere cu întrebări de urmat pe răspuns (`sub: {răspuns: SubQ[]}`, tipuri unică / multiplă / text / număr);
   răspunsul la `answers[id]`, urmările la `answers["id.subId"]`; `compSummary()` pe o linie în fișa web. În editor: „+ Întrebare compusă” și, pe fiecare
   răspuns, „+ Întrebare după „X”” (redenumirea răspunsului mută și urmările). Migrația 0024 a șters (logic) copiile personale ale primelor fișe UVALO. Logica: `src/lib/insp.ts`; API unic `POST /api/inspectii {action}`.
-- Pagini: `/inspectii` (`InspList`: file Ale mele / Făcute pentru colegi / Făcute pentru mine; stările ca tab-uri segmentate `.inTabs` (cu numere)
+- Pagini: `/inspectii` (`InspList`: file **Toate** (implicit) / **Ale mele** (inclusiv cele făcute de colegi sau colaboratori pentru mine — nu mai au filă separată) / Făcute pentru colegi (+ Ale firmei); stările ca tab-uri segmentate `.inTabs` (cu numere)
   și căutarea `.inSearchBox` (adresă, nr. cad., contact, cod; numărul de rezultate) pe același rând, în cardul `.inFilterBar`; vederi Listă / **Listă + hartă** (`.inSplit`:
   carduri în stânga, harta lipicioasă în dreapta; cardul atins aprinde pinul, pinul derulează la card) / Hartă (Leaflet) / Calendar
   săptămânal cu „De programat” trase pe o oră → `schedule`; header închis la culoare (`AppShell dark` → `.top.topDark`, titlu alb, nu gros), în colțul de sus

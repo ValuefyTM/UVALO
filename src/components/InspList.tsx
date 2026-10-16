@@ -6,7 +6,9 @@ import { fmtWhen, STATUS, STATUSES, type InspRow, type Status } from "@/lib/insp
 
 type Row = InspRow & { who: "mine" | "forme" | "forothers" | "firm" };
 type View = "list" | "split" | "map" | "cal";
-const WHO = [["mine", "Ale mele"], ["forothers", "Făcute pentru colegi"], ["forme", "Făcute pentru mine"], ["firm", "Ale firmei"]] as const;
+type Tab = "all" | "mine" | "forothers" | "firm";
+// "Ale mele" = my work, whoever does it (also the ones colleagues / collaborators do for me); "Toate" = everything in the list
+const WHO: readonly (readonly [Tab, string])[] = [["all", "Toate"], ["mine", "Ale mele"], ["forothers", "Făcute pentru colegi"], ["firm", "Ale firmei"]];
 const ico = (d: React.ReactNode) => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{d}</svg>;
 const VIEWS: [View, string, React.ReactNode][] = [
   ["list", "Listă", ico(<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />)],
@@ -38,10 +40,10 @@ export function InspList({ rows: initial, meId, ops, mergeOrg = null, firmOrgs =
   const [rows, setRows] = useState(initial);
   // the office's administrator IS the firm: "Ale mele" also holds the firm's inspections prepared by colleagues. The operationals get
   // "Ale firmei" (every inspection of the firm) instead of "Ale mele" / "Făcute pentru colegi".
-  const inTab = (r: Row, k: Row["who"]) => (k === "firm" ? !!r.org_id && firmOrgs.includes(r.org_id)
-    : k === "mine" ? r.who === "mine" || (r.who === "firm" && !!mergeOrg && r.org_id === mergeOrg) : r.who === k);
-  const tabs = WHO.filter(([k]) => (k === "firm" ? firmOrgs.length > 0 : !(ops && (k === "forothers" || k === "mine"))));
-  const [who, setWho] = useState<Row["who"]>(ops ? "firm" : "mine");
+  const inTab = (r: Row, k: Tab) => (k === "all" ? true : k === "firm" ? !!r.org_id && firmOrgs.includes(r.org_id)
+    : k === "mine" ? r.who === "mine" || r.who === "forme" || (r.who === "firm" && !!mergeOrg && r.org_id === mergeOrg) : r.who === k);
+  const tabs = WHO.filter(([k]) => (k === "firm" ? firmOrgs.length > 0 : !ops));
+  const [who, setWho] = useState<Tab>(ops ? "firm" : "all");
   const [st, setSt] = useState<Status | "all">("all");
   const [q, setQ] = useState("");
   const [view, setView] = useState<View>("list");
@@ -99,14 +101,14 @@ export function InspList({ rows: initial, meId, ops, mergeOrg = null, firmOrgs =
       {view === "list" && (shown.length ? (
         <div className="card inTableBox">
           <table className="table inTable">
-            <thead><tr><th>Bunul</th><th>Contact</th><th>Programare</th><th>{who === "forothers" ? "Pentru" : who === "forme" ? "Făcută de" : "Cine o face"}</th><th>Stare</th><th /></tr></thead>
+            <thead><tr><th>Bunul</th><th>Contact</th><th>Programare</th><th>{who === "forothers" ? "Pentru" : "Cine o face"}</th><th>Stare</th><th /></tr></thead>
             <tbody>
               {shown.map((r) => (
                 <tr key={r.id}>
                   <td><a className="inAddr" href={`/inspectii/${r.id}`}><b>{r.address}</b><small>{[r.prop_type, r.cad_nr && `nr. cad. ${r.cad_nr}`, r.code].filter(Boolean).join(" · ")}</small></a></td>
                   <td>{r.contact_name || "—"}</td>
                   <td className="nowrap">{fmtWhen(r.scheduled_at)}</td>
-                  <td>{who === "forothers" ? <span className="inPerson"><UserAv id={r.created_by} name={r.owner_name} has={r.owner_av} size={26} />{r.owner_name}</span>
+                  <td>{r.who === "forothers" ? <span className="inPerson"><UserAv id={r.created_by} name={r.owner_name} has={r.owner_av} size={26} />{who === "forothers" ? r.owner_name : `Eu, pentru ${r.owner_name}`}</span>
                     : r.assignee_kind === "collab" && !r.assignee_id ? "Coleg din Colaborări (de ales)"
                     : r.assignee_id ? <span className="inPerson"><UserAv id={r.assignee_id} name={r.assignee_name ?? "?"} has={r.assignee_av} size={26} />{r.assignee_id === meId ? "Eu" : r.assignee_name}
                         {r.assign_state === "pending" && <em className="inAsk">așteaptă acceptarea</em>}</span>
@@ -143,12 +145,12 @@ export function InspList({ rows: initial, meId, ops, mergeOrg = null, firmOrgs =
   );
 }
 
-function Empty({ who }: { who: Row["who"] }) {
+function Empty({ who }: { who: Tab }) {
   return (
     <div className="card inEmpty">
-      <b>{who === "firm" ? "Firma nu are încă inspecții" : who === "mine" ? "Nicio inspecție încă" : who === "forme" ? "Niciun coleg nu face încă inspecții pentru tine" : "Nu faci încă inspecții pentru colegi"}</b>
-      <p className="hint">{who === "firm" ? "Aici apar toate inspecțiile biroului, indiferent cine le-a pregătit sau cine le face." : who === "mine" ? "Pregătește prima inspecție: bunul, fișa, contactul și programarea. Pe telefon doar o faci." : "Le vei vedea aici când un coleg din birou sau din Colaborări îți trimite o inspecție."}</p>
-      {(who === "mine" || who === "firm") && <a className="btn btnGold" href="/inspectii/nou">Inspecție nouă</a>}
+      <b>{who === "firm" ? "Firma nu are încă inspecții" : who === "mine" || who === "all" ? "Nicio inspecție încă" : "Nu faci încă inspecții pentru colegi"}</b>
+      <p className="hint">{who === "firm" ? "Aici apar toate inspecțiile biroului, indiferent cine le-a pregătit sau cine le face." : who === "mine" || who === "all" ? "Pregătește prima inspecție: bunul, fișa, contactul și programarea. Pe telefon doar o faci." : "Le vei vedea aici când un coleg din birou sau din Colaborări îți trimite o inspecție."}</p>
+      {who !== "forothers" && <a className="btn btnGold" href="/inspectii/nou">Inspecție nouă</a>}
     </div>
   );
 }
