@@ -72,6 +72,19 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   deschiderea Timișoarei; nu răspund la click (pane `strPane` sub parcele). Fișa parcelei din Timișoara arată „Cartier” și „Zonă de impozitare”
   (punctul central în poligon, `zoneInfo`). Refacere din GeoJSON-urile WGS84: `python3 tools/straturi/convert.py <dosar> localizare-data/straturi/timisoara.json`
   (`cartiere_timisoara_2024.geojson`, `zone_impozitare_timisoara_2026.geojson`, `cartiere_x_zone_procent.csv`).
+  **Grila notarială 2026** (bifa „Grilă notarială 2026”, oprită implicit): zonele din Studiul de piață al CNP Timișoara (Romprice, nr. 4100/10.12.2025)
+  — Timișoara 0–5, Dumbrăvița A–E, Giroc + Chișoda, Ghiroda, Moșnița Nouă + Veche + Urseni, Șag, Săcălaz, Dudeștii Noi, Jimbolia A–D (`GR_UATS`).
+  Zonarea din studiu e **pe străzi** (anexele 21–31, cu tronsoane pe numere poștale / intersecții / pare-impare), deci stratul = străzile OSM colorate
+  pe zone (tooltip: nume, zonă, tronson) + suprafețele zonelor (grilă de 15 m, zona străzii zonate celei mai apropiate la ≤ 220 m, vectorizată și
+  rotunjită). Fișa parcelei: „Zonă notarială 2026” + teren €/mp + strada după care s-a încadrat (centrul parcelei în poligon; > 120 m = „estimat”)
+  + „Toate valorile minime” (apartamente, case, comercial, extravilan din `grila-valori.json`). Date: `localizare-data/straturi/grila-<uat>.json`
+  (`/api/localizare/strat/grila-<uat>`, încărcate la bifă sau la deschiderea UAT-ului; `applyGrila()` și din `loadUat`).
+  Refacere: `tools/grila/` — `parse_streets.py` (textul anexelor din `pdftotext -layout` → `data/anexe-strazi.json`), `valori.py` (tabelele
+  transcrise → `data/valori.json`), `overpass.py` (străzile OSM pe dale + adresele; oglinzile `overpass.private.coffee` / `kumi.systems`,
+  `overpass-api.de` refuză IP-urile cloud), `build.py <anexe> <valori> <dosar osm> localizare-data <out>` (potrivire nume cu aliasuri `ALIAS`,
+  spina străzii = cel mai lung drum prin rețea, tăierea tronsoanelor, raster → poligoane; cere `.open-next/assets/_localizare/c/` din build);
+  `data/raport.json` = nepotrivirile (străzi lipsă din OSM, mai ales în Moșnița / Urseni) și tronsoanele estimate. La un studiu nou se refac
+  `anexe-strazi.json` + `valori.json` și se rulează din nou.
 - `tools/dxf/convert.py` — convertorul DXF ANCPI → date localizator (ezdxf, shapely, pyproj; Stereo70 → WGS84).
   Citește stratul `T_A1S1_<UAT>_<data>` și `*constructii*`; face **merge** cu datele existente.
   `--entry <key>` reface intrarea din `UATS` (versiune sha1[:10], dată, județ).

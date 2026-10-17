@@ -770,6 +770,7 @@ async function loadUat(key){
   const D=await getData(u);
   if(!D){$('load').hidden=true;$('out').innerHTML='<p class="flag">Datele pentru '+esc(u.name)+' nu s-au putut încărca. Reîncarcă pagina.</p>';return}
   U={...u,src:D.src,date:D.date?D.date.split('-').reverse().join('.'):''};
+  applyGrila();   // grila notarială a noii localități (sau se stinge, unde nu există)
   P=D.parcels; BL=D.B; TP=D.TP; byId=new Map(); P.forEach((p,i)=>{(byId.get(p.id)||byId.set(p.id,[]).get(p.id)).push(p)});
   ids=[...byId.keys()].sort();
   all.clearLayers(); sel.clearLayers(); cur=null;
