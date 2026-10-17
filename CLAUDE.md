@@ -78,7 +78,13 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   pe zone + suprafețele zonelor; **tooltip-ul `grHov`** urmează cursorul pe toată suprafața (`map.on('mousemove', grHover)`): zona, localitatea,
   prețurile principale (`grValues().short`) și strada + tronsonul când cursorul e la ≤ 15 m de o stradă zonată; suprafețele zonelor (grilă de 15 m, zona străzii zonate celei mai apropiate la ≤ 220 m, vectorizată și
   rotunjită). Fișa parcelei: „Zonă notarială 2026” + teren €/mp + strada după care s-a încadrat (centrul parcelei în poligon; > 120 m = „estimat”)
-  + „Toate valorile minime” (apartamente, case, comercial, extravilan din `grila-valori.json`). Date: `localizare-data/straturi/grila-<uat>.json`
+  + „Toate valorile minime” (apartamente, case, comercial, extravilan din `grila-valori.json`); blocul apare **doar cu stratul pornit**
+  (`grilaRefresh()` la bifă). **„Calculează valoarea de grilă”** (`gcOpen`, fereastra `#gc`): tipul bunului (teren / casă / apartament / spațiu
+  comercial / industrial / hotel-pensiune), câmpurile preluate din plan (suprafața parcelei, amprenta construcțiilor ca Sc parter), prețurile
+  din `grPrices()` și regulile studiului în `gcCalc()`: teren > 5.000 mp (Timișoara, −30% zonele 1–3 / −65% zonele 4–5) sau > 3.000 mp
+  (localități, −20% A–B / −80% C–E), drum −85%, spații verzi −70%, extravilan (8 €/mp Timișoara; €/ha pe localitate × categorie), casa pe
+  niveluri și perioade (localități: mansardă/subsol 50%), anexe, apartament pe camere / Su (Scd : 1,25) / mansardă −10% / subsol −30% + garaj
+  și boxă, spațiu comercial > 200 mp −20%, restaurant −20%, lemn/PVC −50%, industrial și hotel pe Scd; „Copiază rezumatul”. Date: `localizare-data/straturi/grila-<uat>.json`
   (`/api/localizare/strat/grila-<uat>`, încărcate la bifă sau la deschiderea UAT-ului; `applyGrila()` și din `loadUat`).
   Refacere: `tools/grila/` — `parse_streets.py` (textul anexelor din `pdftotext -layout` → `data/anexe-strazi.json`), `valori.py` (tabelele
   transcrise → `data/valori.json`), `overpass.py` (străzile OSM pe dale + adresele; oglinzile `overpass.private.coffee` / `kumi.systems`,

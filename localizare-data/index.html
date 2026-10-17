@@ -82,8 +82,9 @@ button,select,input{font:inherit;color:inherit}
 /* fișa */
 main{flex:1 0 auto;display:flex;flex-direction:column;gap:16px;padding:20px 24px}
 /* județ fără planuri: localizare după Stereo 70 sau CF / plan citit automat */
-#np{border:0;padding:0;border-radius:20px;width:min(560px,calc(100% - 24px));max-height:calc(100% - 24px);box-shadow:0 30px 80px -20px rgba(0,0,0,.55);color:var(--ink);font:13px/1.55 var(--sans)}
-#np::backdrop{background:rgba(20,20,20,.55)}
+#np,#gc{border:0;padding:0;border-radius:20px;width:min(560px,calc(100% - 24px));max-height:calc(100% - 24px);box-shadow:0 30px 80px -20px rgba(0,0,0,.55);color:var(--ink);font:13px/1.55 var(--sans)}
+#np::backdrop,#gc::backdrop{background:rgba(20,20,20,.55)}
+#gc{width:min(640px,calc(100% - 24px))}
 .npIn{padding:22px 22px 18px;display:flex;flex-direction:column;gap:12px;position:relative}
 .npIn h3{margin:0;font-size:18px;line-height:1.3;letter-spacing:-.01em;padding-right:30px}
 .npIn p{margin:0;color:var(--body)}
@@ -245,6 +246,19 @@ body.resizing #map{pointer-events:none}
 .grHov::before{border-top-color:rgba(20,20,20,.96)}
 .grHovH{display:flex;align-items:center;gap:7px;margin-bottom:4px}.grHovH i{width:11px;height:11px;border-radius:3px;display:inline-block}.grHovH b{font-size:13px}.grHovH small{color:#BDB3A0}
 .grHovS{color:#E0AD4F;margin-bottom:5px;font-weight:600}.grHovS small{color:#BDB3A0;font-weight:400}
+.gcBtn{display:inline-flex;align-items:center;gap:6px;margin-top:8px;background:var(--dark);color:#fff;border:0;border-radius:10px;padding:9px 13px;font-size:12.5px;font-weight:700;cursor:pointer}
+.gcBtn:hover{filter:brightness(1.15)}
+.gcTypes{display:flex;gap:6px;flex-wrap:wrap}.gcTypes button{border:1px solid var(--line-2);background:#fff;border-radius:999px;font-size:12px;font-weight:700;padding:6px 12px;cursor:pointer;color:var(--muted)}
+.gcTypes button[aria-pressed="true"]{background:var(--dark);border-color:var(--dark);color:#fff}
+.gcGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px 12px}.gcGrid .wide{grid-column:1/-1}
+.gcF{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted)}.gcF span{font-weight:700;font-size:11px;letter-spacing:.6px;text-transform:uppercase;color:var(--faint)}
+.gcF input,.gcF select{border:1px solid var(--line-3);border-radius:9px;padding:8px 10px;font:13px var(--sans);background:#fff;color:var(--ink);width:100%}
+.gcF input:focus,.gcF select:focus{outline:none;border-color:var(--acc)}.gcF small{color:var(--faint);font-size:11px}
+.gcF.chk{flex-direction:row;align-items:center;gap:8px;font-size:12.5px;color:var(--ink)}.gcF.chk input{width:auto}
+.gcRes{border:1px solid var(--line);border-radius:14px;padding:12px 14px;background:var(--subtle)}
+.gcRes table{width:100%;border-collapse:collapse;font-size:12.5px}.gcRes td{padding:4px 2px;border-bottom:1px solid var(--line-2);vertical-align:top}.gcRes td:last-child{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;font-family:var(--mono)}
+.gcRes tr.tot td{border-bottom:0;font-weight:800;font-size:14px;padding-top:8px}.gcRes .muted{margin:8px 0 0;font-size:11px}
+@media(max-width:560px){.gcGrid{grid-template-columns:1fr}}
 .grHovP{display:grid;grid-template-columns:auto auto;gap:2px 12px;font-size:11.5px}.grHovP span{color:#BDB3A0}.grHovP b{text-align:right;font-variant-numeric:tabular-nums}
 .grDet{margin-top:8px;border:1px solid var(--line-2);border-radius:10px;padding:8px 12px;background:#fff}
 .grDet summary{cursor:pointer;font-weight:700;font-size:13px}
@@ -379,6 +393,15 @@ body.resizing #map{pointer-events:none}
     <button type="button" class="fullOut" id="fullOut" hidden></button>
   </div>
 </div>
+<dialog id="gc" aria-labelledby="gcT"><div class="npIn">
+  <button type="button" class="npX" id="gcX" aria-label="Închide">×</button>
+  <h3 id="gcT">Valoare de grilă 2026</h3>
+  <p id="gcP"></p>
+  <div class="gcTypes" id="gcTypes" role="group" aria-label="Tipul bunului"></div>
+  <div class="gcGrid" id="gcForm"></div>
+  <div class="gcRes" id="gcRes" hidden></div>
+  <div class="npRow"><small>Valori minime notariale (Studiu de piață CNP Timișoara 2026, Romprice), orientative. Nu înlocuiesc evaluarea și nu țin loc de studiul propriu-zis.</small><button type="button" class="btn ghost" id="gcCopy">Copiază rezumatul</button></div>
+</div></dialog>
 <dialog id="np" aria-labelledby="npT"><div class="npIn">
   <button type="button" class="npX" id="npX" aria-label="Închide">×</button>
   <h3 id="npT"></h3>
@@ -561,6 +584,7 @@ function grHover(e){
 map.on('mousemove',grHover);map.on('mouseout',()=>{if(map.hasLayer(grHov))map.removeLayer(grHov)});
 function applyGrila(){
   const want=LY.grila, k=U&&GR_UATS.has(U.key)?U.key:null;
+  grilaRefresh();
   if(!want){put(grL,false);put(grS,false);return}
   if(!k){put(grL,false);put(grS,false);return}
   if(!GR[k]){loadGrila(k).then(d=>{if(d&&LY.grila&&U&&U.key===k){drawGrila(k);put(grL,true);put(grS,true);refreshLabels()}});return}
@@ -601,8 +625,11 @@ function grValues(k,r){
     ['Casă P+E (grup '+grup+'), parter',(()=>{const r=Lc.casa_pe.grup[grup];return r?fmtE(r[1])+' <small>≥2005</small> · '+fmtE(r[2])+' <small>1990–2004</small> · '+fmtE(r[4])+' <small>&lt;1965</small>':'—'})()],
     ['Spațiu comercial',fmtE(pick(Lc.com_new))+' <small>≥2000</small> · '+fmtE(Lc.com_old.grup[grup])+' <small>&lt;2000</small>'],
     ['Teren extravilan',fmtE((Lc.extravilan.by||{})[name])+'/ha']]}}
+let grCur=null;   // contextul ultimei fișe: {k, r, v, p} pentru calculator
+function grilaRefresh(){const box=$('out').querySelector('[data-gr]');if(!box)return;if(!LY.grila){box.hidden=true;return}if(cur&&cur.id!==undefined)grilaInfo(cur)}
 function grilaInfo(o){
   const box=$('out').querySelector('[data-gr]');if(!box||!U||!GR_UATS.has(U.key))return;
+  if(!LY.grila){box.hidden=true;return}
   const k=U.key;
   loadGrila(k).then(d=>{if(!d||!box.isConnected)return;const r=grAt(k,o.c||centroidW(o));const v=grValues(k,r);
     if(!r||!r.zone){box.innerHTML='<div class="facts zinfo"><div><small>Grilă notarială 2026</small><b>în afara străzilor zonate</b></div></div><p class="muted zmuted">Parcela nu e în apropierea unei străzi nominalizate în studiu. Terenul extravilan: '+(k==='timisoara'?'8 €/mp':'valoarea pe hectar a localității')+'.</p>';box.hidden=false;return}
@@ -611,8 +638,107 @@ function grilaInfo(o){
       '<div><small>Teren intravilan</small><b>'+(v&&v.teren!=null?fmtE(v.teren)+'/mp':'—')+'</b></div></div>'+
       (r.street?'<p class="muted zmuted">După '+esc(r.street.n)+(r.street.seg?' ('+esc(r.street.seg)+')':'')+', la '+Math.round(r.dist)+' m. </p>':'')+
       (v?'<details class="grDet"><summary>Toate valorile minime · '+v.h+'</summary><div class="grRows">'+v.lines.map(([a,b])=>'<div><span>'+a+'</span><b>'+b+'</b></div>').join('')+'</div>'+
-      '<p class="muted">Studiu de piață CNP Timișoara 2026 (Romprice). Valorile sunt minime notariale, în euro; reducerile din studiu (suprafețe mari, drum, spații verzi, mansardă, subsol) nu sunt aplicate. Orientativ.</p></details>':'');
+      '<p class="muted">Studiu de piață CNP Timișoara 2026 (Romprice). Valorile sunt minime notariale, în euro; reducerile din studiu (suprafețe mari, drum, spații verzi, mansardă, subsol) nu sunt aplicate. Orientativ.</p></details>':'')+
+      (v?'<button type="button" class="gcBtn" id="gcOpen"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8M8 11h2M14 11h2M8 15h2M14 15h2M8 19h2M14 19h2"/></svg>Calculează valoarea de grilă</button>':'');
+    grCur={k,r,v,p:o};
+    const ob=$('gcOpen');if(ob)ob.onclick=()=>gcOpen();
     box.hidden=false})}
+/* ---- Calculatorul de grilă: tipul bunului → câmpuri (suprafața parcelei și amprenta construcțiilor vin din plan) → valoarea după regulile studiului ---- */
+const GC_LOC={giroc:'Giroc',chisoda:'Chișoda',dumbravita:'Dumbrăvița',ghiroda:'Ghiroda','mosnita-noua':'Moșnița Nouă','mosnita-veche':'Moșnița Veche',urseni:'Urseni',sag:'Șag',sacalaz:'Săcălaz','dudestii-noi':'Dudeștii Noi',jimbolia:'Jimbolia',sanandrei:'Sânandrei'};
+const GC_TYPES=[['teren','Teren'],['casa','Casă'],['ap','Apartament'],['com','Spațiu comercial'],['ind','Industrial'],['hotel','Hotel / pensiune']];
+const YR=['la roșu','construit din 2005','1990–2004','1965–1989','înainte de 1965'];
+let gcType='teren';
+function gcPick(t,name,z){const b=t.by||{};let v=b[name]!==undefined?b[name]:b['*'];if(v&&typeof v==='object'&&!Array.isArray(v))v=v[z]!==undefined?v[z]:v[Object.keys(v)[0]];return v}
+function grPrices(k,r){
+  const z=r.zone, zk=z==='4/5'?'4':z, T=GRV.timisoara, Lc=GRV.localitati;
+  if(k==='timisoara'){
+    const rz=t=>{const Z=t.z||t.z2;return Z[zk]||Z[String(grIdx(zk))]||Z[String(grIdx(zk)-grIdx(zk)%2)]||null}, pk=String(grIdx(zk)-grIdx(zk)%2);
+    return {tim:true,name:'Timișoara',z,teren:T.teren.z[zk]?T.teren.z[zk][0]:null,extraMp:T.teren.extravilan,bigLot:5000,bigRed:grIdx(zk)>=4?.65:grIdx(zk)>=1?.30:0,
+      ap:{old:rz(T.ap_old),new:rz(T.ap_new),casa:rz(T.ap_casa)},com:rz(T.com),hotel:rz(T.hotel),pens:rz(T.pensiune),
+      casaPE:lv=>T.casa_pe.levels[lv][pk],casaP:lv=>T.casa_p.levels[lv][pk],lemn:T.casa_lemn.z2[pk],anCar:T.anexa_car.z2[pk],anLemn:T.anexa_lemn.z2[pk],
+      ind:T.industrial.rows,garaj:T.garaj.rows,boxa:300}}
+  const name=GC_LOC[r.loc]||r.loc, grup=Object.keys(GRV.grup).find(g=>GRV.grup[g].includes(name))||'C', arr=v=>Array.isArray(v)?v:null;
+  return {tim:false,name,grup,z,teren:gcPick(Lc.teren,name,z),extraHa:(Lc.extravilan.by||{})[name],bigLot:3000,bigRed:'AB'.includes(z[0])?.20:.80,
+    ap:{old:arr(gcPick(Lc.ap_old,name,z)),new:arr(gcPick(Lc.ap_new,name,z))},com:{new:gcPick(Lc.com_new,name,z),old:Lc.com_old.grup[grup]},hotel:Lc.hotel.grup[grup],pens:Lc.pensiune.grup[grup],
+    casaPE:Lc.casa_pe.grup[grup],casaP:Lc.casa_p.grup[grup],lemn:Lc.casa_lemn.grup[grup],anCar:Lc.anexa_car.grup[grup],anLemn:Lc.anexa_lemn.grup[grup],
+    ind:Object.fromEntries(Lc.industrial.rows.map((n,i)=>[n,Lc.industrial.grup[grup][i]])),grajd:Lc.grajd.grup[grup],magazie:Lc.magazie.grup[grup],garaj:Lc.garaj.rows,boxa:250}}
+const gcF=(id,label,inner,hint,cls)=>'<label class="gcF'+(cls?' '+cls:'')+'"><span>'+label+'</span>'+inner+(hint?'<small>'+hint+'</small>':'')+'</label>';
+const gcNum=(id,val,step)=>'<input type="number" id="'+id+'" value="'+(val==null?'':val)+'" min="0" step="'+(step||1)+'" inputmode="decimal">';
+const gcSel=(id,opts,val)=>'<select id="'+id+'">'+opts.map(([v,l])=>'<option value="'+v+'"'+(v===val?' selected':'')+'>'+l+'</option>').join('')+'</select>';
+const gcChk=(id,label,on)=>'<label class="gcF chk"><input type="checkbox" id="'+id+'"'+(on?' checked':'')+'> '+label+'</label>';
+const gcV=id=>{const e=$(id);if(!e)return null;if(e.type==='checkbox')return e.checked;if(e.type==='number'){const n=parseFloat(String(e.value).replace(',','.'));return isNaN(n)?0:n}return e.value};
+function gcOpen(){
+  if(!grCur||!GRV)return; const {k,r,p}=grCur, P=grPrices(k,r);
+  $('gcT').textContent='Valoare de grilă 2026 · Zona '+r.zone+' · '+P.name+(P.grup?' (grupul '+P.grup+')':'');
+  $('gcP').textContent=(p.id!==undefined?'Nr. cadastral '+p.id+' · ':'')+'suprafața din plan '+fmt(p.a,2)+' mp'+(p.bs&&p.bs.length?' · '+p.bs.length+' construcții, '+fmt(p.bs.reduce((s,b)=>s+b.a,0),2)+' mp la sol':'');
+  $('gcTypes').innerHTML=GC_TYPES.map(([v,l])=>'<button type="button" data-t="'+v+'" aria-pressed="'+(gcType===v)+'">'+l+'</button>').join('');
+  $('gcTypes').querySelectorAll('button').forEach(b=>b.onclick=()=>{gcType=b.dataset.t;gcOpen()});
+  $('gcForm').innerHTML=gcForm(gcType,P,p);
+  $('gcForm').querySelectorAll('input,select').forEach(e=>{e.oninput=gcCalc;e.onchange=gcCalc});
+  gcCalc(); if(!$('gc').open)$('gc').showModal()}
+function gcForm(t,P,p){
+  const S=p.a!=null?Math.round(p.a*100)/100:'', sol=p.bs&&p.bs.length?Math.round(p.bs.reduce((s,b)=>s+b.a,0)*100)/100:'';
+  const per=(id,rosu)=>gcSel(id,(rosu?[['0','la roșu']]:[]).concat([['1','construit din 2005'],['2','1990–2004'],['3','1965–1989'],['4','înainte de 1965']]),'1');
+  const teren=gcF('gc_teren','Teren (mp)',gcNum('gc_teren',S,0.01),'din planul cadastral');
+  if(t==='teren')return teren+gcF('gc_tp','Amplasare',gcSel('gc_tp',[['intra','Intravilan'],['extra','Extravilan']],'intra'))+
+    gcF('gc_cat','Categorie (intravilan)',gcSel('gc_cat',[['n','Construibil / curți'],['drum','Drum (−85%)'],['verde','Spații verzi, interdicție de construire (−70%)']],'n'))+
+    (P.tim?'':gcF('gc_cex','Categorie (extravilan)',gcSel('gc_cex',[['arabil','Arabil'],['pasune','Pășune, fâneață (90%)'],['livada','Livadă, vie, pădure (150%)'],['curti','Curți construcții (200%)'],['neprod','Neproductiv, drum (60%)'],['helesteu','Heleșteu (200%)']],'arabil')));
+  if(t==='casa')return gcF('gc_ct','Structura',gcSel('gc_ct',[['pe','Cărămidă, P+E / P+E+M'],['p','Cărămidă, P / P+M'],['lemn','Paiantă, cărămidă nearsă, lemn']],'pe'))+gcF('gc_per','Perioada construirii',per('gc_per',true))+
+    gcF('gc_sp','Sc parter (mp)',gcNum('gc_sp',sol,0.01),'amprenta la sol, din plan')+gcF('gc_se','Sc etaj / etaje (mp)',gcNum('gc_se',0,0.01))+gcF('gc_sm','Sc mansardă (mp)',gcNum('gc_sm',0,0.01))+gcF('gc_ss','Sc subsol / demisol (mp)',gcNum('gc_ss',0,0.01))+
+    gcF('gc_ac','Anexe cărămidă (mp)',gcNum('gc_ac',0,0.01))+gcF('gc_al','Anexe paiantă, lemn (mp)',gcNum('gc_al',0,0.01))+teren+gcChk('gc_incl','Adaugă valoarea terenului',true);
+  if(t==='ap')return gcF('gc_at','Imobilul',gcSel('gc_at',P.tim?[['old','Bloc construit înainte de 2005'],['new','Bloc construit din 2005'],['casa','Casă apartamentată']]:[['old','Construit înainte de 2000'],['new','Construit din 2000']],'old'))+
+    gcF('gc_cam','Camere',gcSel('gc_cam',[['0','1 cameră'],['1','2 camere'],['2','3 camere'],['3','4+ camere']],'1'))+gcF('gc_su','Suprafața (mp)',gcNum('gc_su','',0.01))+
+    gcF('gc_sk','Suprafața dată este',gcSel('gc_sk',[['su','utilă'],['scd','construită desfășurată (Su = Scd : 1,25)']],'su'))+
+    gcF('gc_poz','Poziția',gcSel('gc_poz',[['n','Etaj curent / parter'],['m','Mansardă (−10%)'],['d','Demisol / subsol locuibil (−30%)']],'n'))+
+    gcF('gc_gar','Garaj / parcare',gcSel('gc_gar',[['','—']].concat(P.garaj.filter(r=>/^\d+ euro$/.test(r[1])).map(r=>[r[1].split(' ')[0],r[0]+' · '+r[1]])),''))+gcF('gc_box','Boxă (mp utili)',gcNum('gc_box',0,0.01));
+  if(t==='com')return (P.tim?gcF('gc_cd','Destinația',gcSel('gc_cd',[['0','Comercial'],['1','Birouri']],'0')):gcF('gc_cp','Perioada',gcSel('gc_cp',[['new','Construit din 2000'],['old','Înainte de 2000']],'new')))+
+    gcF('gc_su','Suprafața utilă (mp)',gcNum('gc_su','',0.01),'peste 200 mp: diferența −20%')+gcF('gc_poz','Poziția',gcSel('gc_poz',[['n','Parter / etaj'],['m','Mansardă (−10%)'],['d','Subsol / demisol (−30%)']],'n'))+
+    gcF('gc_fel','Felul spațiului',gcSel('gc_fel',[['n','Comercial / birouri'],['rest','Restaurant, spital, cabinet, învățământ (−20%)'],['lemn','Structură lemn / PVC (−50%)']],'n'))+gcF('gc_tex','Teren în proprietate exclusivă (mp)',gcNum('gc_tex',0,0.01),'peste amprenta spațiului');
+  if(t==='ind'){const rows=Object.keys(P.ind).concat(P.tim?[]:['Grajd','Magazie cereale']);return gcF('gc_it','Tipul',gcSel('gc_it',rows.map(x=>[x,x]),rows[0]))+gcF('gc_per','Perioada',per('gc_per',false))+gcF('gc_scd','Sc desfășurată (mp)',gcNum('gc_scd',sol,0.01),'din plan: amprenta la sol')+teren+gcChk('gc_incl','Adaugă valoarea terenului',true)}
+  if(t==='hotel')return gcF('gc_ht','Tipul',gcSel('gc_ht',[['hotel','Hotel'],['pens','Pensiune']],'hotel'))+gcF('gc_st','Clasificarea',gcSel('gc_st',[['0','2 stele'],['1','3 stele'],['2','4+ stele']],'1'))+gcF('gc_scd','Sc desfășurată (mp)',gcNum('gc_scd',sol,0.01))+teren+gcChk('gc_incl','Adaugă valoarea terenului',true);
+  return ''}
+function gcTeren(P,S,extra,cat,cex){
+  const L=[]; if(!S)return {L,v:0};
+  if(extra){
+    if(P.tim){const v=S*P.extraMp;L.push(['Teren extravilan · '+fmt(S,0)+' mp × '+fmtE(P.extraMp)+'/mp',v]);return {L,v}}
+    if(P.extraHa==null){L.push(['Teren extravilan: localitatea nu e în tabelul studiului',0]);return {L,v:0}}
+    const m={arabil:1,pasune:.9,livada:1.5,curti:2,neprod:.6,helesteu:2}[cex]||1, v=S/10000*P.extraHa*m;
+    L.push(['Teren extravilan · '+fmt(S/10000,4)+' ha × '+fmtE(P.extraHa)+'/ha'+(m!==1?' × '+Math.round(m*100)+'%':''),v]);return {L,v}}
+  if(P.teren==null){L.push(['Teren: zona nu are valoare în tabel',0]);return {L,v:0}}
+  let v;
+  if(S>P.bigLot&&P.bigRed){const a=P.bigLot*P.teren,b=(S-P.bigLot)*P.teren*(1-P.bigRed);L.push(['Teren · primii '+fmt(P.bigLot,0)+' mp × '+fmtE(P.teren)+'/mp',a]);L.push(['Teren · restul '+fmt(S-P.bigLot,0)+' mp × '+fmtE(P.teren)+'/mp −'+Math.round(P.bigRed*100)+'%',b]);v=a+b}
+  else{v=S*P.teren;L.push(['Teren · '+fmt(S,0)+' mp × '+fmtE(P.teren)+'/mp',v])}
+  if(cat==='drum'){L.push(['Categoria drum −85%',-v*.85]);v*=.15}else if(cat==='verde'){L.push(['Spații verzi / interdicție −70%',-v*.70]);v*=.30}
+  return {L,v}}
+function gcCalc(){
+  if(!grCur)return; const {k,r}=grCur, P=grPrices(k,r), t=gcType; let L=[], tot=0;
+  const add=(l,v)=>{L.push([l,v]);tot+=v}, mul=(label,f)=>{if(f!==1){const d=tot*(f-1);L.push([label,d]);tot+=d}};
+  const pIdx=()=>+gcV('gc_per'), yIdx=i=>Math.max(0,i-1);   // YR: 0 la roșu…4; Y: 0..3
+  if(t==='teren'){const T=gcTeren(P,gcV('gc_teren'),gcV('gc_tp')==='extra',gcV('gc_cat'),gcV('gc_cex'));L=T.L;tot=T.v}
+  if(t==='casa'){const ct=gcV('gc_ct'),i=pIdx(),sp=gcV('gc_sp'),se=gcV('gc_se'),sm=gcV('gc_sm'),ss=gcV('gc_ss');
+    if(ct==='lemn'){const v=P.lemn[yIdx(i)];add('Casă paiantă / lemn · '+fmt(sp+se+sm+ss,0)+' mp × '+fmtE(v)+'/mp',(sp+se+sm+ss)*v)}
+    else if(P.tim){const lv=ct==='pe'?P.casaPE:P.casaP;[['parter',sp],['etaj',se],['mansardă',sm],['subsol/demisol',ss]].forEach(([n,a])=>{if(!a)return;const row=lv(n==='etaj'&&ct!=='pe'?'parter':n);if(!row)return;add((n[0].toUpperCase()+n.slice(1))+' · '+fmt(a,0)+' mp × '+fmtE(row[i])+'/mp',a*row[i])})}
+    else{const v=(ct==='pe'?P.casaPE:P.casaP)[i];if(sp+se)add('Parter + etaje · '+fmt(sp+se,0)+' mp × '+fmtE(v)+'/mp',(sp+se)*v);if(sm+ss)add('Mansardă / subsol · '+fmt(sm+ss,0)+' mp × 50% × '+fmtE(v)+'/mp',(sm+ss)*v*.5)}
+    const ac=gcV('gc_ac'),al=gcV('gc_al'),yi=yIdx(i);if(ac)add('Anexe cărămidă · '+fmt(ac,0)+' mp × '+fmtE(P.anCar[yi])+'/mp',ac*P.anCar[yi]);if(al)add('Anexe paiantă / lemn · '+fmt(al,0)+' mp × '+fmtE(P.anLemn[yi])+'/mp',al*P.anLemn[yi]);
+    if(gcV('gc_incl')){const T=gcTeren(P,gcV('gc_teren'),false,'n');T.L.forEach(([l,v])=>L.push([l,v]));tot+=T.v}}
+  if(t==='ap'){const at=gcV('gc_at'),cam=+gcV('gc_cam');let su=gcV('gc_su');if(gcV('gc_sk')==='scd'){su=su/1.25;}
+    const row=P.ap[at];if(!row||row[cam]==null)L.push(['Tabelul nu are valoare pentru această categorie',0]);
+    else{add('Apartament '+(cam+1)+(cam===3?'+':'')+' cam. · '+fmt(su,2)+' mp utili × '+fmtE(row[cam])+'/mp',su*row[cam]);const pz=gcV('gc_poz');mul(pz==='m'?'Mansardă −10%':'Demisol / subsol −30%',pz==='m'?.9:pz==='d'?.7:1)}
+    const g=gcV('gc_gar');if(g)add((P.garaj.find(x=>x[1].startsWith(g+' '))||['Garaj'])[0],+g);const bx=gcV('gc_box');if(bx)add('Boxă · '+fmt(bx,0)+' mp × '+fmtE(P.boxa)+'/mp',bx*P.boxa)}
+  if(t==='com'){const su=gcV('gc_su');const price=P.tim?P.com[+gcV('gc_cd')]:(gcV('gc_cp')==='new'?P.com.new:P.com.old);
+    if(price==null)L.push(['Tabelul nu are valoare',0]);else if(su){const a=Math.min(su,200),b=Math.max(0,su-200);add('Spațiu · '+fmt(a,0)+' mp × '+fmtE(price)+'/mp',a*price);if(b)add('Peste 200 mp · '+fmt(b,0)+' mp × '+fmtE(price)+'/mp −20%',b*price*.8);
+      const pz=gcV('gc_poz');mul(pz==='m'?'Mansardă −10%':'Subsol / demisol −30%',pz==='m'?.9:pz==='d'?.7:1);const f=gcV('gc_fel');mul(f==='rest'?'Restaurant, spital, cabinet, învățământ −20%':'Structură lemn / PVC −50%',f==='rest'?.8:f==='lemn'?.5:1)}
+    const tx=gcV('gc_tex');if(tx){const T=gcTeren(P,tx,false,'n');T.L.forEach(([l,v])=>L.push([l,v]));tot+=T.v}}
+  if(t==='ind'){const it=gcV('gc_it'),i=yIdx(pIdx()),scd=gcV('gc_scd');const row=it==='Grajd'?P.grajd:it==='Magazie cereale'?P.magazie:P.ind[it];
+    if(row&&scd)add(it+' · '+fmt(scd,0)+' mp × '+fmtE(row[i])+'/mp',scd*row[i]);if(gcV('gc_incl')){const T=gcTeren(P,gcV('gc_teren'),false,'n');T.L.forEach(([l,v])=>L.push([l,v]));tot+=T.v}}
+  if(t==='hotel'){const row=gcV('gc_ht')==='hotel'?P.hotel:P.pens,st=+gcV('gc_st'),scd=gcV('gc_scd');if(row&&scd)add((gcV('gc_ht')==='hotel'?'Hotel':'Pensiune')+' '+['2','3','4+'][st]+' stele · '+fmt(scd,0)+' mp × '+fmtE(row[st])+'/mp',scd*row[st]);
+    if(gcV('gc_incl')){const T=gcTeren(P,gcV('gc_teren'),false,'n');T.L.forEach(([l,v])=>L.push([l,v]));tot+=T.v}}
+  const box=$('gcRes');if(!L.length){box.hidden=true;return}
+  box.innerHTML='<table>'+L.map(([l,v])=>'<tr><td>'+l+'</td><td>'+(v<0?'−':'')+fmtE(Math.round(Math.abs(v)))+'</td></tr>').join('')+'<tr class="tot"><td>Valoare minimă de grilă</td><td>'+fmtE(Math.round(tot))+'</td></tr></table>'+
+    '<p class="muted">Zona '+esc(r.zone)+' · '+esc(P.name)+(r.street?' · după '+esc(r.street.n):'')+'. Suprafețele în mp construiți desfășurați (case, industrial, hoteluri) sau utili (apartamente, spații).</p>';
+  box.hidden=false; box._text=L.map(([l,v])=>l.replace(/<[^>]+>/g,'')+': '+(v<0?'−':'')+Math.round(Math.abs(v)).toLocaleString('ro-RO')+' €').concat(['Valoare minimă de grilă: '+Math.round(tot).toLocaleString('ro-RO')+' €','Zona '+r.zone+' · '+P.name+' · Studiu de piață CNP Timișoara 2026 (orientativ)']).join('\n')}
+$('gcX').addEventListener('click',()=>$('gc').close());$('gc').addEventListener('click',e=>{if(e.target===$('gc'))$('gc').close()});
+$('gcCopy').onclick=()=>{const t=$('gcRes')._text;if(!t)return;navigator.clipboard.writeText(t).then(()=>{$('gcCopy').textContent='Copiat ✓';setTimeout(()=>$('gcCopy').textContent='Copiază rezumatul',1500)}).catch(()=>{})};
 function applyLayers(){
   const want=LY.base==='map'?osm:(GM&&LY.strazi?hyb:sat);
   [hyb,sat,osm].forEach(l=>{if(l&&l!==want)put(l,false)});
