@@ -280,7 +280,7 @@ export async function postHook(db: D1Database, inspId: string, text: string) {
   if (!keys.length) return;
   const event = /ștearsă/.test(text) ? "inspection.deleted" : /^Creată/.test(text) ? "inspection.created" : /^Finalizat|^Completată|semnată/i.test(text) ? "inspection.finished" : /^Programată/.test(text) ? "inspection.scheduled"
     : /^Începută/.test(text) ? "inspection.started" : /^Retrimisă/.test(text) ? "inspection.reopened" : "inspection.updated";
-  const body = JSON.stringify({ event, id: r.id, ref: r.ext_ref, status: r.deleted_at ? "deleted" : r.status, scheduled_at: r.scheduled_at, started_at: r.started_at,
+  const body = JSON.stringify({ event, id: r.id, ref: r.ext_ref, status: r.deleted_at || event === "inspection.deleted" ? "deleted" : r.status, scheduled_at: r.scheduled_at, started_at: r.started_at,
     finished_at: r.finished_at, sheet_no: r.sheet_no, text, at: now() });
   const ts = Math.floor(Date.now() / 1000);
   for (const k of keys) {

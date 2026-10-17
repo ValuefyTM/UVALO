@@ -656,7 +656,8 @@ export async function addFile(db: D1Database, bucket: R2Bucket, c: Ctx, inspId: 
   if (f.size > FILE_MAX) return { error: "Fișierul are peste 15 MB." };
   const kind = (FILE_KINDS as readonly string[]).includes(meta.kind) ? meta.kind : "doc";
   const id = uuid(), key = `insp/${inspId}/${id}.${ext}`;
-  await bucket.put(key, f.stream(), { httpMetadata: { contentType: f.type } });
+  // R2 needs the length up front (a form file's stream has none): read whole, it is at most 15 MB
+  await bucket.put(key, await f.arrayBuffer(), { httpMetadata: { contentType: f.type } });
   await db.prepare("INSERT INTO insp_files (id, inspection_id, kind, name, room, r2_key, taken_at, lat, lng, meta) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
     .bind(id, inspId, kind, s(meta.name ?? f.name, 120) || null, s(meta.room, 60) || null, key, s(meta.taken_at, 30) || null, num(meta.lat), num(meta.lng),
       JSON.stringify({ type: f.type, size: f.size, by: c.user.id })).run();
