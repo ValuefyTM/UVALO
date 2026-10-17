@@ -674,7 +674,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - Rute: `GET /api/v1` (ping) · `GET /api/v1/inspectors?legit=` · `GET /api/v1/templates` · `PUT|DELETE /api/v1/templates/<ref>`
   (`{name, prop_type, template, enforced?}`, publicată imediat, versiune nouă doar la schimbare) · `POST /api/v1/inspections`
   (`{ref, legit, address, …, instructions?, due_on?, template_ref? | template_id?}`; același `ref` = actualizare / realocare cât nu e finalizată,
-  409 după) · `GET|DELETE /api/v1/inspections/<id|ref>` (`?reason=`) · `POST /api/v1/inspections/<id|ref>/files` (multipart `file`, `kind` cf|releveu|doc)
+  409 după) · `GET|DELETE /api/v1/inspections/<id|ref>` (`?reason=`; o inspecție finalizată se șterge doar cu `?force=1`) · `POST /api/v1/inspections/<id|ref>/files` (multipart `file`, `kind` cf|releveu|doc)
   · `GET /api/v1/files/<id>`.
 - **Evaluatorul se găsește după legitimația ANEVAR** (`inspectorByLegit`: `users.anevar_no` fără spații/puncte/cratime, cont `active`); primește
   inspecția **direct** (`assignee_kind = 'office'`, `assign_state` NULL, fără solicitare de acceptat), chiar dacă nu e membru / asociat al biroului;

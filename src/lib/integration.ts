@@ -224,11 +224,14 @@ export async function extInspection(db: D1Database, key: ApiKey, idOrRef: string
   };
 }
 
-/** Taken back by the software (the work no longer needs it): it leaves the valuer's phone, the history stays. */
-export async function cancelInspection(db: D1Database, key: ApiKey, idOrRef: string, reason: string) {
+/**
+ * Taken back by the software (the work no longer needs it): it leaves the valuer's phone, the history stays. A finished one
+ * only with `force` (the firm deleted the inspection and its sheet in its software: it goes from everywhere).
+ */
+export async function cancelInspection(db: D1Database, key: ApiKey, idOrRef: string, reason: string, force = false) {
   const r = await extRow(db, key, idOrRef);
   if (!r) return { error: "Inspecția nu există.", status: 404 };
-  if (r.status === "gata" || r.status === "pred") return { error: "Inspecția e finalizată și nu se mai anulează.", status: 409 };
+  if (!force && (r.status === "gata" || r.status === "pred")) return { error: "Inspecția e finalizată și nu se mai anulează (doar ștearsă, cu force=1).", status: 409 };
   await logIt(db, String(r.id), key.created_by, `Inspecția a fost ștearsă${reason ? `: ${reason}` : " (anulată din aplicația firmei)"}`);
   await db.prepare("UPDATE inspections SET deleted_at = ? WHERE id = ?").bind(now(), r.id).run();
   return { ok: true as const };
