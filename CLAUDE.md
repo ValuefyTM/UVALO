@@ -663,3 +663,26 @@ This version has breaking changes — APIs, conventions, and file structure may 
 This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
 
 <!-- END:nextjs-agent-rules -->
+
+## API de integrare (`/api/v1/*`, aplicația proprie a unei firme, ex. CRM-ul)
+
+- Migrația 0035: `api_keys` (cheia firmei: `prefix`, `key_hash` = sha256, `webhook_url`, `webhook_secret`, `revoked_at`), `inspections.ext_ref` și
+  `insp_templates.ext_ref` (id-ul din aplicația firmei, unic pe firmă), `api_hooks` (ultimele apeluri webhook, 200 pe cheie). Logica: `src/lib/integration.ts`.
+- Cheile: **Firma mea → Integrare** (`IntegrationPanel`, `#integrare`, doar pentru cine are modulul Inspecții sau super-admin; API sesiune
+  `/api/org/integration`: `create` → cheia `uvk_…` arătată o singură dată, `revoke`, `webhook {url, new_secret?}` → secretul `whs_…` arătat o dată).
+- Autentificare: `Authorization: Bearer uvk_…` (`keyApi`; firma activă; `last_used_at`). Fără mentenanță pe aceste rute.
+- Rute: `GET /api/v1` (ping) · `GET /api/v1/inspectors?legit=` · `GET /api/v1/templates` · `PUT|DELETE /api/v1/templates/<ref>`
+  (`{name, prop_type, template, enforced?}`, publicată imediat, versiune nouă doar la schimbare) · `POST /api/v1/inspections`
+  (`{ref, legit, address, …, instructions?, due_on?, template_ref? | template_id?}`; același `ref` = actualizare / realocare cât nu e finalizată,
+  409 după) · `GET|DELETE /api/v1/inspections/<id|ref>` (`?reason=`) · `POST /api/v1/inspections/<id|ref>/files` (multipart `file`, `kind` cf|releveu|doc)
+  · `GET /api/v1/files/<id>`.
+- **Evaluatorul se găsește după legitimația ANEVAR** (`inspectorByLegit`: `users.anevar_no` fără spații/puncte/cratime, cont `active`); primește
+  inspecția **direct** (`assignee_kind = 'office'`, `assign_state` NULL, fără solicitare de acceptat), chiar dacă nu e membru / asociat al biroului;
+  `created_by` = cine a creat cheia, `org_id` = firma cheii. Instrucțiunile și termenul (`due_on`) intră în `notes`. Fișa: a firmei (după ref / id),
+  `uvalo:<key>`, altfel cea UVALO după `prop_type`; la actualizare fișa se păstrează după ce a început completarea.
+- Fișele trimise prin API (`ext_ref`) nu se modifică / publică / șterg din editorul UVALO (`tplAction` refuză: „se modifică în aplicația firmei”); se pot duplica.
+- **Webhook**: `logIt` (orice rând de istoric) → `postHook` (în `waitUntil`) pentru inspecțiile cu `ext_ref`, la toate cheile active ale firmei cu webhook:
+  `{event, id, ref, status, scheduled_at, started_at, finished_at, sheet_no, text, at}`, `event` = inspection.created | scheduled | started | finished |
+  reopened | deleted | updated (fără apeluri pentru poze / fișiere șterse / link public). Semnătura `X-Uvalo-Signature: t=<unix>,v1=<hex HMAC-SHA256(secret, "<t>.<body>")>`,
+  timeout 8 s, rezultatul în `api_hooks` (arătat în panou). Aplicația citește apoi inspecția cu `GET /api/v1/inspections/<id>`.
+- Test local: `next dev -p 3300`, cheie + birou de test inserate în D1 local, un receptor HTTP pe 127.0.0.1 (webhook-ul acceptă `http://localhost|127.0.0.1` doar local).

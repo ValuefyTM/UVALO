@@ -10,6 +10,7 @@ import { leaveRequests } from "@/lib/office";
 import { officeLinks } from "@/lib/links";
 import { OfficePeople } from "@/components/OfficeLinks";
 import { DayBars, EventLog, UatCountTable } from "@/components/Charts";
+import { IntegrationPanel } from "@/components/IntegrationPanel";
 
 export const metadata: Metadata = { title: "Firma mea | UVALO" };
 export const dynamic = "force-dynamic";
@@ -47,6 +48,7 @@ export default async function Firm({ searchParams }: { searchParams: Promise<{ n
           seats={org.seats} used={used} canOwner={c.super || c.role === "owner"}
         />
       )}
+      {(c.super || c.modules.includes("inspectii")) && <IntegrationPanel />}
       <div className="cols">
         <DayBars days={days} label="Activitatea firmei, ultimele 30 de zile" />
         <UatCountTable title="Localități folosite (30 de zile)" rows={uats} countyOf={countyOf} empty="Nicio localitate deschisă încă." />

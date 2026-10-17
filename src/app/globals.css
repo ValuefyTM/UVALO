@@ -2929,3 +2929,15 @@ html:has(.mb) { -webkit-tap-highlight-color: transparent; -webkit-text-size-adju
 .hdTodoTxt { min-width: 0; }
 .hdTodo b { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .inPerson { min-width: 0; overflow-wrap: anywhere; }
+
+/* Firma mea → Integrare (API keys, webhook) */
+.intShown { display: flex; flex-direction: column; gap: 8px; }
+.intShown code { word-break: break-all; background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; font-size: 12.5px; }
+.intKeys { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.intKeys > li { border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }
+.intHead { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
+.intHead > span { flex: 1 1 auto; }
+.intHook, .intNew { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px; }
+.intHook .field, .intNew .field { flex: 1 1 280px; }
+.intHooks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: 12px; }
+.intHooks li { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }

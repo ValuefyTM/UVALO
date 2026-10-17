@@ -180,9 +180,11 @@ export async function tplAction(db: D1Database, c: Ctx, b: Record<string, unknow
       .bind(nid, forOrg ? "org" : "user", forOrg ? c.org!.id : c.user.id, name, src?.prop_type ?? null, JSON.stringify(tpl), c.user.id).run();
     return { ok: true, id: nid };
   }
-  const row = await db.prepare("SELECT id, owner_type, owner_id, draft, version FROM insp_templates WHERE id = ? AND deleted_at IS NULL").bind(id).first<{ id: string; owner_type: string; owner_id: string; draft: string; version: number }>();
+  const row = await db.prepare("SELECT id, owner_type, owner_id, draft, version, ext_ref FROM insp_templates WHERE id = ? AND deleted_at IS NULL").bind(id).first<{ id: string; owner_type: string; owner_id: string; draft: string; version: number; ext_ref: string | null }>();
   if (!row) return { error: "Fișa nu există sau a fost ștearsă." };
   if (!canEditTpl(c, row)) return { error: "Nu poți modifica această fișă." };
+  // kept in sync by the firm's software (integration API): changed there, not here (it can still be duplicated)
+  if (row.ext_ref) return { error: "Fișa vine din aplicația firmei (CRM) și se modifică acolo. O poți duplica pentru o variantă proprie." };
   if (action === "tpl_save") {
     const tpl = cleanTemplate(b.tpl);
     if (!qCount(tpl)) return { error: "Fișa trebuie să aibă cel puțin o întrebare." };
@@ -282,8 +284,11 @@ async function fullInsp(db: D1Database, r: Record<string, unknown>, id: string):
   };
 }
 
-async function logIt(db: D1Database, id: string, userId: string | null, text: string) {
+export async function logIt(db: D1Database, id: string, userId: string | null, text: string) {
   await db.prepare("INSERT INTO insp_log (inspection_id, user_id, text) VALUES (?, ?, ?)").bind(id, userId, text.slice(0, 300)).run();
+  // an inspection sent by the firm's software (integration API): its webhook hears every change
+  const hook = import("./integration").then((m) => m.postHook(db, id, text)).catch(() => {});
+  try { (await getCloudflareContext({ async: true })).ctx.waitUntil(hook); } catch { await hook; }
   if (/^(Fotografie adăugat|Fișier șters|Link public)|simulare|a început să fie completată/i.test(text)) return; // not worth a phone notification
   // done on the web (not in the phone app): the person's own phone is told too (e.g. sent back to complete, rescheduled)
   let fromWeb = false;
@@ -315,7 +320,7 @@ async function notifyLog(db: D1Database, id: string, userId: string | null, text
   }
 }
 
-async function nextCode(db: D1Database) {
+export async function nextCode(db: D1Database) {
   const y = new Date().getFullYear();
   const r = await db.prepare("SELECT COUNT(*) AS n FROM inspections WHERE code LIKE ?").bind(`INS-${y}-%`).first<{ n: number }>();
   return `INS-${y}-${String((r?.n ?? 0) + 1).padStart(4, "0")}`;
