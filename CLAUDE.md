@@ -66,6 +66,12 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   `no_plan_county`, `stereo_locate`.
   Pe telefon: harta 72svh, butonul ⤢ (`#full`) = hartă pe tot ecranul (`body.mapFull`), pornită automat de „Locația mea” și oprită la
   „×”; acolo, parcela atinsă dă butonul „Vezi fișa ↓” (`toOut`). Bara GPS e compactă: stare + ×, o linie de detalii, acțiuni pe un rând.
+  **Straturi Timișoara** (în panoul Straturi, oprite implicit): „Cartiere Timișoara” (contur alb punctat + nume, ascunse sub zoom 13)
+  și „Zone de impozitare Timișoara” (A–D colorate, HCL 620/25.11.2025, cu legendă). Datele în `localizare-data/straturi/timisoara.json`
+  (în subdosar, ca `copy-localizare` să nu le ia drept UAT), servite de `/api/localizare/strat/<uat>`, încărcate la prima bifă sau la
+  deschiderea Timișoarei; nu răspund la click (pane `strPane` sub parcele). Fișa parcelei din Timișoara arată „Cartier” și „Zonă de impozitare”
+  (punctul central în poligon, `zoneInfo`). Refacere din GeoJSON-urile WGS84: `python3 tools/straturi/convert.py <dosar> localizare-data/straturi/timisoara.json`
+  (`cartiere_timisoara_2024.geojson`, `zone_impozitare_timisoara_2026.geojson`, `cartiere_x_zone_procent.csv`).
 - `tools/dxf/convert.py` — convertorul DXF ANCPI → date localizator (ezdxf, shapely, pyproj; Stereo70 → WGS84).
   Citește stratul `T_A1S1_<UAT>_<data>` și `*constructii*`; face **merge** cu datele existente.
   `--entry <key>` reface intrarea din `UATS` (versiune sha1[:10], dată, județ).

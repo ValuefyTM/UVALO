@@ -234,6 +234,12 @@ body.resizing #map{pointer-events:none}
 .lb.topo{color:#ffe082;font-size:10.5px;font-weight:600}
 .lb.cb{color:#fff;font-size:10px}
 .lb.uat{font-size:12px;letter-spacing:.02em}
+.lb.cart{font:700 11.5px var(--sans);letter-spacing:.01em;max-width:150px;white-space:normal;text-align:center;width:max-content}
+.lb.zn{font:800 13px var(--sans);color:#fff;letter-spacing:.04em;opacity:.9}
+.zSmall .lb.cart{display:none}.zSmall .lb.zn{font-size:11px}
+.zinfo{grid-template-columns:1fr 1fr}
+.zinfo b i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:0}
+.zmuted{margin:6px 2px 0}
 /* GPS */
 .gpsBar{position:absolute;left:16px;right:16px;bottom:28px;z-index:1001;background:#fff;color:var(--ink);border-radius:14px;padding:10px 12px;box-shadow:0 8px 24px rgba(0,0,0,.3);font-size:12.5px;line-height:1.5;max-height:45%;overflow:auto;max-width:560px}
 .gpsBar .gHead{display:flex;gap:10px;align-items:flex-start}
@@ -469,19 +475,52 @@ if(GM){
 const all=L.layerGroup().addTo(map), bL=L.layerGroup().addTo(map), sel=L.layerGroup().addTo(map), lblL=L.layerGroup().addTo(map);
 const cadLbl=L.layerGroup(), topoLbl=L.layerGroup(), uatLbl=L.layerGroup();   // comutatoare pentru etichete (se desenează doar la zoom mare)
 /* Straturi (panoul din dreapta sus): fundal Satelit / Hartă și straturile cu bife. Google: „Străzi” = satelitul cu străzi. */
-const LY={base:'sat',strazi:true,uat:true,parcele:true,constructii:true,puncte:true,cad:false,topo:false};
+const LY={base:'sat',strazi:true,uat:true,parcele:true,constructii:true,puncte:true,cad:false,topo:false,cartiere:false,zone:false};
 // Alegerile din panou rămân ținute minte pe acest dispozitiv.
 const LY_KEY='uvalo-cad-layers';
 try{const s=JSON.parse(localStorage.getItem(LY_KEY)||'{}');for(const k in LY)if(typeof s[k]===typeof LY[k]&&(k!=='base'||s[k]==='sat'||s[k]==='map'))LY[k]=s[k]}catch(e){}
 const saveLayers=()=>{try{localStorage.setItem(LY_KEY,JSON.stringify(LY))}catch(e){}};
-const LAYERS=[['strazi','Străzi'],['uat','Nume localități'],['parcele','Parcele'],['constructii','Construcții'],['puncte','Numere puncte'],['cad','Numere cadastrale'],['topo','Numere topo']];
+const LAYERS=[['strazi','Străzi'],['uat','Nume localități'],['parcele','Parcele'],['constructii','Construcții'],['puncte','Numere puncte'],['cad','Numere cadastrale'],['topo','Numere topo'],['cartiere','Cartiere Timișoara'],['zone','Zone de impozitare Timișoara']];
 const put=(l,on)=>{if(!l)return;if(on){if(!map.hasLayer(l))l.addTo(map)}else if(map.hasLayer(l))map.removeLayer(l)};
+/* Straturi suplimentare (doar Timișoara): cartierele și zonele de impozitare (HCL), din /api/localizare/strat/<uat>.
+   Se încarcă la prima bifă sau când se deschide localitatea (pentru rândul „Cartier / Zonă” din fișa parcelei). Nu răspund
+   la click: parcelele de deasupra rămân de atins. */
+const ZC={A:'#D9432B',B:'#F2A93B',C:'#E8D44D',D:'#5FAE5A'}, STR_UAT='timisoara';
+map.createPane('strPane').style.zIndex=350;
+const cartL=L.layerGroup(), zoneL=L.layerGroup();
+let STR=null, strP=null;
+function loadStr(){
+  if(!strP)strP=fetch('/api/localizare/strat/'+STR_UAT,{credentials:'same-origin'}).then(r=>r.ok?r.json():null).then(d=>{
+    if(!d)return null;STR=d;
+    const lbl=(ll,html,cls)=>L.marker(ll,{icon:L.divIcon({className:'',html:'<div class="lb '+cls+'">'+html+'</div>',iconSize:[0,0]}),interactive:false,keyboard:false});
+    d.zone.p.forEach(z=>{L.polygon(z.r,{pane:'strPane',color:ZC[z.z],weight:2,opacity:.9,fillColor:ZC[z.z],fillOpacity:.2,interactive:false}).addTo(zoneL);
+      if(z.l)lbl(z.l,'Zona '+esc(z.z),'zn').addTo(zoneL)});
+    d.cartiere.p.forEach(c=>{L.polygon(c.r,{pane:'strPane',color:'#fff',weight:2,opacity:.95,dashArray:'6 5',fill:false,interactive:false}).addTo(cartL);
+      lbl(c.l,esc(c.n),'cart').addTo(cartL)});
+    return d}).catch(()=>{strP=null;return null});
+  return strP}
+function inRings(pt,rs){const y=pt[0],x=pt[1];let c=false;
+  for(const r of rs)for(let i=0,j=r.length-1;i<r.length;j=i++){const a=r[i],b=r[j];if((a[0]>y)!==(b[0]>y)&&x<(b[1]-a[1])*(y-a[0])/(b[0]-a[0])+a[1])c=!c}
+  return c}
+function strAt(ll){if(!STR)return null;const z=STR.zone.p.find(q=>inRings(ll,q.r)), c=STR.cartiere.p.find(q=>inRings(ll,q.r));return {z,c}}
+// rândul „Cartier · Zonă de impozitare” din fișa parcelei (doar în Timișoara)
+function zoneInfo(o){const box=$('out').querySelector('[data-zi]');if(!box)return;
+  loadStr().then(()=>{const r=strAt(o.c||centroidW(o));if(!r||(!r.z&&!r.c)||!box.isConnected)return;
+    box.innerHTML='<div class="facts zinfo"><div><small>Cartier</small><b>'+(r.c?esc(r.c.n):'—')+'</b></div><div><small>Zonă de impozitare</small><b>'+(r.z?'<i style="background:'+ZC[r.z.z]+'"></i>Zona '+esc(r.z.z):'—')+'</b></div></div>'+
+      '<p class="muted zmuted">Zonele după HCL '+esc(STR.zone.hcl)+' (pentru '+STR.zone.an+'), cartierele după harta din '+STR.cartiere.an+'. Orientativ: verifică încadrarea în certificatul fiscal.</p>';
+    box.hidden=false})}
+function applyStr(){
+  if((LY.cartiere||LY.zone)&&!STR){loadStr().then(d=>{if(d){applyStr();refreshLabels();
+    const u=UATS.find(x=>x.key===STR_UAT);if(u&&!map.getBounds().intersects(L.latLngBounds([u.bb[0],u.bb[1]],[u.bb[2],u.bb[3]])))map.flyToBounds(L.latLngBounds([u.bb[0],u.bb[1]],[u.bb[2],u.bb[3]]),{duration:.8})}});return}
+  put(zoneL,LY.zone);put(cartL,LY.cartiere);
+  $('mapwrap').classList.toggle('zSmall',map.getZoom()<13)}
+map.on('zoomend',()=>$('mapwrap').classList.toggle('zSmall',map.getZoom()<13));
 function applyLayers(){
   const want=LY.base==='map'?osm:(GM&&LY.strazi?hyb:sat);
   [hyb,sat,osm].forEach(l=>{if(l&&l!==want)put(l,false)});
   if(want&&!map.hasLayer(want)){want.addTo(map);want.bringToBack();map.fire('baselayerchange',{layer:want})}
   put(roads,LY.base==='sat'&&LY.strazi);
-  put(all,LY.parcele);put(bL,LY.constructii);put(cadLbl,LY.cad);put(topoLbl,LY.topo);put(uatLbl,LY.uat);
+  put(all,LY.parcele);put(bL,LY.constructii);put(cadLbl,LY.cad);put(topoLbl,LY.topo);put(uatLbl,LY.uat);applyStr();
   $('mapwrap').classList.toggle('nopts',!LY.puncte);
   $('bases').innerHTML=[['sat','Satelit'],['map','Hartă']].map(([k,l])=>'<button type="button" data-base="'+k+'" aria-pressed="'+(LY.base===k)+'">'+l+'</button>').join('');
   $('lyrList').innerHTML=LAYERS.map(([k,l])=>'<button type="button" data-ly="'+k+'" aria-pressed="'+LY[k]+'"><i></i>'+l+'</button>').join('');
@@ -510,6 +549,8 @@ function refreshLabels(){
   if(cur&&cur.id!==undefined)lg.push('<span><i style="border:2px solid #F2A93B;background:rgba(242,169,59,.25)"></i><b>Parcela '+esc(cur.id)+'</b></span>');
   else if(cur)lg.push('<span><i style="border:2px solid #ffd21f;background:#D9432B"></i><b>'+esc(cur.c||'Construcție')+'</b></span>');
   if(map.hasLayer(bL))lg.push('<span><i style="background:#D9432B"></i>Construcții</span>');
+  if(map.hasLayer(zoneL))lg.push('<span>Zone impozitare</span>'+'ABCD'.split('').map(k=>'<span><i style="background:'+ZC[k]+';opacity:.85"></i>'+k+'</span>').join(''));
+  if(map.hasLayer(cartL))lg.push('<span><i style="border:2px dashed #fff;background:transparent"></i>Cartiere</span>');
   if((map.hasLayer(cadLbl)||map.hasLayer(topoLbl))&&z<LBLZ)lg.push('<span>Apropie harta ca să vezi numerele</span>');
   $('legend').innerHTML=lg.join('<span class="sep"></span>');$('legend').hidden=!lg.length;
 }
@@ -806,6 +847,7 @@ function show(id,idx,fromMap){
   let h=(lastNear&&lastNear.ids.has(p.id)?'<button type="button" class="back" id="back">← Înapoi la parcelele din jurul adresei</button>':'')+
     rhead('Nr. cadastral · '+esc(U.name),p.id,list.length>1?'<span class="pill">contur '+(list.indexOf(p)+1)+' din '+list.length+'</span>':'');
   h+='<div class="facts"><div><small>Suprafață</small><b>'+fmt(p.a,2)+' mp</b></div><div><small>Perimetru</small><b>'+fmt(g.per,2)+' m</b></div><div><small>Puncte</small><b>'+p.s.length+'</b></div></div>';
+  if(U.key===STR_UAT)h+='<div data-zi hidden></div>';
   h+='<a class="ampBtn" href="/amplasament?uat='+encodeURIComponent(U.key)+'&amp;nr='+encodeURIComponent(p.id)+'"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="10" r="3"/><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/></svg>Generează analiza amplasamentului</a>';
   if(p.f&&p.f.includes('shared'))h+='<div class="flag">Același contur are mai multe numere cadastrale în plan (posibilă dezmembrare sau alipire). Verifică în extrasul CF.</div>';
   if(list.length>1)h+='<div class="flag">Numărul apare pe mai multe contururi:<br>'+list.map((q,k)=>'<button type="button" class="chip" data-i="'+q.i+'">contur '+(k+1)+'</button>').join('')+'</div>';
@@ -818,6 +860,7 @@ function show(id,idx,fromMap){
   h+='<div class="sec"><span class="h2">Vecini · '+p.n.length+'</span>'+(p.n.length?'<div class="nb">'+p.n.map(n=>'<button type="button" class="chip" data-id="'+esc(n)+'">'+esc(n)+'</button>').join('')+'</div>':'<p class="muted">Niciun imobil înscris lipit de contur (drum, parcelă neînscrisă sau limită de UAT).</p>')+'</div>';
   out.innerHTML=h;
   wireResult(p,()=>show(p.id,p.i));
+  if(U.key===STR_UAT)zoneInfo(p);
   out.querySelectorAll('[data-id]').forEach(b=>b.onclick=()=>{$('q').value=b.dataset.id;show(b.dataset.id,null,false);scrollToMap()});
   out.querySelectorAll('[data-i]').forEach(b=>b.onclick=()=>show(p.id,+b.dataset.i));
   out.querySelectorAll('[data-b]').forEach(x=>x.onclick=()=>showBuilding(BL[+x.dataset.b]));
