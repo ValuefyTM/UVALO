@@ -241,6 +241,11 @@ body.resizing #map{pointer-events:none}
 .zinfo b i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:0}
 .zmuted{margin:6px 2px 0}
 .grTip{font:12px var(--sans)}
+.grHov{background:rgba(20,20,20,.96);color:#fff;border:0;border-radius:10px;padding:8px 10px;box-shadow:0 6px 20px rgba(0,0,0,.35);min-width:210px}
+.grHov::before{border-top-color:rgba(20,20,20,.96)}
+.grHovH{display:flex;align-items:center;gap:7px;margin-bottom:4px}.grHovH i{width:11px;height:11px;border-radius:3px;display:inline-block}.grHovH b{font-size:13px}.grHovH small{color:#BDB3A0}
+.grHovS{color:#E0AD4F;margin-bottom:5px;font-weight:600}.grHovS small{color:#BDB3A0;font-weight:400}
+.grHovP{display:grid;grid-template-columns:auto auto;gap:2px 12px;font-size:11.5px}.grHovP span{color:#BDB3A0}.grHovP b{text-align:right;font-variant-numeric:tabular-nums}
 .grDet{margin-top:8px;border:1px solid var(--line-2);border-radius:10px;padding:8px 12px;background:#fff}
 .grDet summary{cursor:pointer;font-weight:700;font-size:13px}
 .grRows{margin-top:8px;display:grid;gap:6px}
@@ -539,8 +544,21 @@ function loadGrila(k){
 function drawGrila(k){
   grL.clearLayers();grS.clearLayers();const d=GR[k];if(!d)return;
   d.zones.forEach(z=>L.polygon(z.r,{pane:'grPane',color:grColor(z.z),weight:1,opacity:.6,fillColor:grColor(z.z),fillOpacity:.22,interactive:false}).addTo(grL));
-  d.streets.forEach(s=>{const c=grColor(s.z);L.polyline(s.l,{pane:'grLines',color:c,weight:4,opacity:.95,dashArray:s.side?'8 6':null})
-    .bindTooltip('<b>'+esc(s.n)+'</b> · zona '+esc(s.z)+(s.seg?'<br><small>'+esc(s.seg)+(s.side?' · '+(s.side===1?'numere impare':'numere pare'):'')+'</small>':''),{sticky:true,className:'grTip'}).addTo(grS)})}
+  d.streets.forEach(s=>L.polyline(s.l,{pane:'grLines',color:grColor(s.z),weight:4,opacity:.95,dashArray:s.side?'8 6':null,interactive:false}).addTo(grS))}
+/* Tooltip-ul grilei: urmează cursorul pe toată suprafața zonei (zona, localitatea, prețurile principale; strada și tronsonul când cursorul e la ≤ 15 m). */
+const grHov=L.tooltip({direction:'top',offset:[0,-10],opacity:.97,className:'grTip grHov',interactive:false});
+let grHovPend=null;
+function grHover(e){
+  if(!LY.grila||!U||!GR[U.key]||!map.hasLayer(grL)){if(map.hasLayer(grHov))map.removeLayer(grHov);return}
+  if(grHovPend)return; grHovPend=requestAnimationFrame(()=>{grHovPend=null;
+    const k=U.key, r=grAt(k,[e.latlng.lat,e.latlng.lng]), v=r&&r.zone?grValues(k,r):null;
+    if(!v){if(map.hasLayer(grHov))map.removeLayer(grHov);return}
+    const st=r.street&&r.dist<=15?r.street:null;
+    let h='<div class="grHovH"><i style="background:'+grColor(r.zone)+'"></i><b>Zona '+esc(r.zone)+'</b><small>'+v.h.replace(/^Zona \S+ · /,'')+'</small></div>';
+    if(st)h+='<div class="grHovS">'+esc(st.n)+(st.seg?' <small>· '+esc(st.seg)+(st.side?' · '+(st.side===1?'nr. impare':'nr. pare'):'')+'</small>':'')+'</div>';
+    h+='<div class="grHovP">'+v.short.map(([a,b])=>'<span>'+a+'</span><b>'+b+'</b>').join('')+'</div>';
+    grHov.setContent(h).setLatLng(e.latlng); if(!map.hasLayer(grHov))grHov.addTo(map)})}
+map.on('mousemove',grHover);map.on('mouseout',()=>{if(map.hasLayer(grHov))map.removeLayer(grHov)});
 function applyGrila(){
   const want=LY.grila, k=U&&GR_UATS.has(U.key)?U.key:null;
   if(!want){put(grL,false);put(grS,false);return}
@@ -565,8 +583,8 @@ function grValues(k,r){
   if(!GRV||!r||!r.zone)return null; const z=r.zone, loc=r.loc;
   const row=(t,z0)=>{const Z=t.z||t.z2;if(!Z)return null;if(Z[z0])return Z[z0];const i=grIdx(z0);return Z[String(i)]||Z[String(i-1)]||Z[String(i-i%2)]||null};
   if(k==='timisoara'){const T=GRV.timisoara, zk=z==='4/5'?'4':z;
-    const teren=T.teren.z[zk]?T.teren.z[zk][0]:null;
-    return {h:'Zona '+esc(z)+' · Timișoara', teren, lines:[
+    const teren=T.teren.z[zk]?T.teren.z[zk][0]:null, ro=row(T.ap_old,zk)||[], rn=row(T.ap_new,zk)||[], cp=T.casa_pe.levels.parter[String(grIdx(zk)-grIdx(zk)%2)]||T.casa_pe.levels.parter['0'], cm=row(T.com,zk)||[];
+    return {h:'Zona '+esc(z)+' · Timișoara', teren, short:[['Teren',fmtE(teren)+'/mp'],['Ap. vechi 2 cam',fmtE(ro[1])+'/mp'],['Ap. nou 2 cam',fmtE(rn[1])+'/mp'],['Casă parter ≥2005',fmtE(cp&&cp[1])+'/mp'],['Comercial',fmtE(cm[0])+'/mp']], lines:[
       ['Apartament vechi (<2005)',(row(T.ap_old,zk)||[]).map(fmtE).join(' / ')+' <small>1–4+ cam, /mp util</small>'],
       ['Apartament nou (≥2005)',(row(T.ap_new,zk)||[]).map(fmtE).join(' / ')+' <small>1–4+ cam</small>'],
       ['Casă P+E, parter',(()=>{const r=T.casa_pe.levels.parter[String(grIdx(zk)-grIdx(zk)%2)]||T.casa_pe.levels.parter['0'];return r?fmtE(r[1])+' <small>≥2005</small> · '+fmtE(r[2])+' <small>1990–2004</small> · '+fmtE(r[4])+' <small>&lt;1965</small>':'—'})()],
@@ -575,8 +593,9 @@ function grValues(k,r){
   const Lc=GRV.localitati, name={giroc:'Giroc',chisoda:'Chișoda',dumbravita:'Dumbrăvița',ghiroda:'Ghiroda','mosnita-noua':'Moșnița Nouă','mosnita-veche':'Moșnița Veche',urseni:'Urseni',sag:'Șag',sacalaz:'Săcălaz','dudestii-noi':'Dudeștii Noi',jimbolia:'Jimbolia',sanandrei:'Sânandrei'}[loc]||loc;
   const pick=(t,extraZone)=>{const b=t.by||{};let v=b[name]!==undefined?b[name]:b['*'];if(v&&typeof v==='object'&&!Array.isArray(v)){v=v[z]||v[Object.keys(v)[0]]}return v};
   const grup=Object.keys(GRV.grup).find(g=>GRV.grup[g].includes(name))||'C';
-  const terenV=pick(Lc.teren); const apn=pick(Lc.ap_new), apo=pick(Lc.ap_old);
-  return {h:'Zona '+esc(z)+' · '+esc(name)+' <small>(grupul '+grup+')</small>', teren:terenV, lines:[
+  const terenV=pick(Lc.teren); const apn=pick(Lc.ap_new), apo=pick(Lc.ap_old), cpg=Lc.casa_pe.grup[grup];
+  return {h:'Zona '+esc(z)+' · '+esc(name)+' <small>(grupul '+grup+')</small>', teren:terenV,
+    short:[['Teren',fmtE(terenV)+'/mp'],['Ap. nou 2 cam',fmtE(Array.isArray(apn)?apn[1]:apn)+'/mp'],['Ap. vechi 2 cam',fmtE(Array.isArray(apo)?apo[1]:apo)+'/mp'],['Casă P+E ≥2005',fmtE(cpg&&cpg[1])+'/mp'],['Comercial nou',fmtE(pick(Lc.com_new))+'/mp']], lines:[
     ['Apartament nou (≥2000)',Array.isArray(apn)?apn.map(fmtE).join(' / ')+' <small>1–4+ cam</small>':fmtE(apn)],
     ['Apartament vechi (<2000)',Array.isArray(apo)?apo.map(fmtE).join(' / ')+' <small>1–4+ cam</small>':fmtE(apo)],
     ['Casă P+E (grup '+grup+'), parter',(()=>{const r=Lc.casa_pe.grup[grup];return r?fmtE(r[1])+' <small>≥2005</small> · '+fmtE(r[2])+' <small>1990–2004</small> · '+fmtE(r[4])+' <small>&lt;1965</small>':'—'})()],

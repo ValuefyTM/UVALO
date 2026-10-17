@@ -75,7 +75,8 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   **Grila notarială 2026** (bifa „Grilă notarială 2026”, oprită implicit): zonele din Studiul de piață al CNP Timișoara (Romprice, nr. 4100/10.12.2025)
   — Timișoara 0–5, Dumbrăvița A–E, Giroc + Chișoda, Ghiroda, Moșnița Nouă + Veche + Urseni, Șag, Săcălaz, Dudeștii Noi, Jimbolia A–D (`GR_UATS`).
   Zonarea din studiu e **pe străzi** (anexele 21–31, cu tronsoane pe numere poștale / intersecții / pare-impare), deci stratul = străzile OSM colorate
-  pe zone (tooltip: nume, zonă, tronson) + suprafețele zonelor (grilă de 15 m, zona străzii zonate celei mai apropiate la ≤ 220 m, vectorizată și
+  pe zone + suprafețele zonelor; **tooltip-ul `grHov`** urmează cursorul pe toată suprafața (`map.on('mousemove', grHover)`): zona, localitatea,
+  prețurile principale (`grValues().short`) și strada + tronsonul când cursorul e la ≤ 15 m de o stradă zonată; suprafețele zonelor (grilă de 15 m, zona străzii zonate celei mai apropiate la ≤ 220 m, vectorizată și
   rotunjită). Fișa parcelei: „Zonă notarială 2026” + teren €/mp + strada după care s-a încadrat (centrul parcelei în poligon; > 120 m = „estimat”)
   + „Toate valorile minime” (apartamente, case, comercial, extravilan din `grila-valori.json`). Date: `localizare-data/straturi/grila-<uat>.json`
   (`/api/localizare/strat/grila-<uat>`, încărcate la bifă sau la deschiderea UAT-ului; `applyGrila()` și din `loadUat`).
