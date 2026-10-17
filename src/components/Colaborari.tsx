@@ -6,6 +6,7 @@ import { NotifyButton } from "./NotifyButton";
 import { CollabArt } from "./CollabArt";
 import { Referral } from "./Referral";
 import { COUNTIES, KINDS, POST_SPECS, PROPS, SKILL_SUGGESTIONS, YEARS, type CollabMode, type Kind } from "@/lib/collab-shared";
+import { nr } from "@/lib/plural";
 
 type State = CollabState & { mode: CollabMode };
 type FeedPost = State["feed"][number];
@@ -211,7 +212,7 @@ function Feed({ s, firmsAsked, zone, setZone, hl, composeOpen, setComposeOpen, r
       <div className="cbChips">
         {["", "EPI", "EI", "EBM"].map((v) => <button key={v || "all"} type="button" className="cbChip" aria-pressed={spec === v} onClick={() => setSpec(v)}>{v || "Toate"}</button>)}
       </div>
-      <span className="cbCount">{list.length === 1 ? "1 anunț" : `${list.length} anunțuri`}{active > 0 && <> · <button type="button" className="linkBtn" onClick={() => { setCounty(""); setProp(""); setSpec(""); setSort("noi"); }}>Resetează</button></>}</span>
+      <span className="cbCount">{nr(list.length, "anunț", "anunțuri")}{active > 0 && <> · <button type="button" className="linkBtn" onClick={() => { setCounty(""); setProp(""); setSpec(""); setSort("noi"); }}>Resetează</button></>}</span>
     </>
   );
 
@@ -324,7 +325,7 @@ function PostCard({ p, s, hl, outZone, reload, flash, toMine }: { p: FeedPost; s
         <span className="cbFact line">{f.k}: <b className={f.none ? "muted" : ""}>{f.v}</b></span>
       </div>
       <div className="cbPostFoot">
-        <span className="cbMuted">{p.requests === 0 ? "Nimeni nu a cerut încă detalii" : p.requests === 1 ? "1 coleg a cerut detalii" : `${p.requests} colegi au cerut detalii`}</span>
+        <span className="cbMuted">{p.requests === 0 ? "Nimeni nu a cerut încă detalii" : p.requests === 1 ? "1 coleg a cerut detalii" : `${nr(p.requests, "coleg", "colegi")} au cerut detalii`}</span>
         {p.own ? (
           <span className="cbOwn"><span className="cbMuted">Postarea ta</span><button type="button" className="btn btnGhost btnSm" onClick={toMine}>Vezi cererile →</button></span>
         ) : p.myRequest ? (

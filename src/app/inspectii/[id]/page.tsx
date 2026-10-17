@@ -165,7 +165,7 @@ export default async function InspDoc({ params }: { params: Promise<{ id: string
               <figure key={p.id}>
                 <a className="inPhBox" href={`/api/inspectii/file/${p.id}`} target="_blank" rel="noopener">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={`/api/inspectii/file/${p.id}`} alt={p.room ?? p.name ?? "Fotografie"} loading="lazy" /><span className="inPhN">{i + 1}</span>
+                  <img src={`/api/inspectii/file/${p.id}`} alt={p.room ?? p.name ?? "Fotografie"} loading="lazy" decoding="async" /><span className="inPhN">{i + 1}</span>
                 </a>
                 <figcaption><b>{p.room ?? p.name}</b><span>{p.taken_at ? fmtDate(p.taken_at, true) : ""}</span><InspCoverPick id={x.id} fileId={p.id} on={cover?.id === p.id} /><InspFileDelete id={p.id} /></figcaption>
               </figure>
@@ -178,7 +178,7 @@ export default async function InspDoc({ params }: { params: Promise<{ id: string
             {sec(String(groups.length + 4 - (ownFind ? 1 : 0)).padStart(2, "0"), "Acte")}
             {docs.length ? <ul className="inDocs">{docs.map((d) => (
               <li key={d.id}><a href={`/api/inspectii/file/${d.id}`} target="_blank" rel="noopener"><span className="inDocIco">{d.kind === "cf" ? "CF" : d.kind === "releveu" ? "RLV" : "DOC"}</span>
-                <b>{d.name ?? d.kind}</b><small>{d.kind === "cf" ? "Extras de carte funciară" : d.kind === "releveu" ? "Releveu" : "Document"}</small></a><InspFileDelete id={d.id} /></li>
+                <b title={d.name ?? d.kind}>{d.name ?? d.kind}</b><small>{d.kind === "cf" ? "Extras de carte funciară" : d.kind === "releveu" ? "Releveu" : "Document"}</small></a><InspFileDelete id={d.id} /></li>
             ))}</ul>
               : <p className="hint">Niciun act atașat. Extrasul CF și releveul încărcate la pregătire apar aici.</p>}
             <span className="inUps"><InspFileUpload id={x.id} kind="cf" label="Adaugă extras CF" /><InspFileUpload id={x.id} kind="releveu" label="Adaugă releveu" /><InspFileUpload id={x.id} kind="doc" label="Alt document" /></span>

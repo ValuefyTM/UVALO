@@ -6,6 +6,9 @@ type Uat = { key: string; name: string; county: string };
 
 const norm = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9/]+/g, " ").trim();
 
+// words that may sit next to the UAT / county without making the text an address
+const NOISE = new Set(["jud", "judet", "judetul", "uat", "com", "comuna", "loc", "localitatea", "mun", "municipiul", "oras", "orasul", "sat", "satul", "ro", "romania", "nr", "cad", "cf", "topo"]);
+
 /** What the text asks for: an address / coordinates, or a cadastral / topo number with the UAT (and county) it names. */
 function read(text: string, uats: Uat[]) {
   const q = text.trim();
@@ -23,6 +26,12 @@ function read(text: string, uats: Uat[]) {
   const hits = uats.filter((u) => place.includes(` ${norm(u.name)} `) && (!counties.length || counties.includes(u.county)));
   const best = Math.max(0, ...hits.map((u) => norm(u.name).length));
   const found = hits.filter((u) => norm(u.name).length === best);
+  // other words left besides the UAT / county ("1 Decembrie 1918 nr. 5, Giroc", "1 Mai 15, Lugoj"): it is a street, not a cadastral number
+  if (found.length) {
+    let rest = place;
+    for (const w of [norm(found[0].name), ...counties.map(norm)]) rest = rest.replace(` ${w} `, " ");
+    if (rest.split(" ").some((t) => t && !NOISE.has(t))) return { kind: "address" as const, q };
+  }
   if (found.length === 1) return { kind: "number" as const, nr, uat: found[0] };
   if (found.length > 1) return { kind: "number" as const, nr, uat: null, ask: "county" as const, options: found };
   return { kind: "number" as const, nr, uat: null, ask: "unknown" as const };
@@ -99,7 +108,7 @@ export function QuickSearch({ uats, amp = false, dark = false, extra, recent }: 
   } : {};
 
   const p = doc?._place ?? null;
-  const nr = doc?.nr_cadastral?.match(/\d+/)?.[0] ?? null;
+  const nr = doc?.nr_cadastral?.match(/\d+(?:\/\d+)*/)?.[0] ?? null;
   const toMap = p?.uat ? (p.inPlan && nr ? `/localizare?uat=${encodeURIComponent(p.uat.key)}&q=${encodeURIComponent(nr)}` : `/localizare?adr=${p.lat.toFixed(6)},${p.lng.toFixed(6)}`)
     : p ? `https://www.google.com/maps?q=${p.lat.toFixed(6)},${p.lng.toFixed(6)}` : null;
   const stated = doc?.suprafata_masurata_mp ?? doc?.suprafata_din_acte_mp ?? null;

@@ -378,3 +378,6 @@ export function coverPhoto<F extends { id: string; kind: string; room: string | 
   const ph = files.filter((f) => f.kind === "photo");
   return ph.find((f) => f.id === coverId) ?? ph.find((f) => /^exterior/i.test(f.room ?? "")) ?? ph[0] ?? null;
 }
+
+/** Search without diacritics: "timisoara" finds "Timișoara"; ș (comma) and ş (cedilla) are the same letter. */
+export const fold = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();

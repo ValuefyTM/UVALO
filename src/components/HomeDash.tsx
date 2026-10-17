@@ -14,6 +14,7 @@ import { InspBell } from "./InspBell";
 import { HdInsp, type HdRow } from "./HdInsp";
 import { HdTools, type HdTool } from "./HdTools";
 import { HdPhone } from "./HdPhone";
+import { nr } from "@/lib/plural";
 
 const TZ = "Europe/Bucharest";
 const dayOf = (d: Date) => d.toLocaleDateString("en-CA", { timeZone: TZ });
@@ -29,7 +30,7 @@ function ago(iso: string) {
 }
 const initials = (s: string | null | undefined) => (s ?? "?").split(/[\s@.]+/).filter(Boolean).slice(0, 2).map((w) => w[0]!.toUpperCase()).join("") || "?";
 const short = (a: string) => a.split(",").slice(0, 2).join(",").trim();
-const plural = (n: number, one: string, many: string) => (n === 1 ? `o ${one}` : `${n} ${many}`);
+const plural = (n: number, one: string, many: string) => (n === 1 ? `o ${one}` : nr(n, one, many));
 
 type Db = D1Database;
 
@@ -234,7 +235,7 @@ export async function HomeDash({ db, c }: { db: Db; c: Ctx }) {
               {todo.length ? todo.slice(0, 4).map((t) => (
                 <a key={t.title + t.href} className="hdTodo" href={t.href}>
                   <span className={`hdTodoIco t-${t.tone}`}>{t.ico}</span>
-                  <span><b>{t.title}</b><small>{t.sub}</small></span>
+                  <span className="hdTodoTxt"><b title={t.title}>{t.title}</b><small title={t.sub}>{t.sub}</small></span>
                   <span className="hdGo" aria-hidden="true">›</span>
                 </a>
               )) : <p className="hdEmpty">Nimic urgent. Totul e la zi.</p>}

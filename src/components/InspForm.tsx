@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { UserAv } from "./UserAv";
-import { ASSIGN_LABEL, CONTACT_ROLES, qCount, typesOf, type AssignKind, type Template } from "@/lib/insp-shared";
+import { ASSIGN_LABEL, CONTACT_ROLES, fold, qCount, typesOf, type AssignKind, type Template } from "@/lib/insp-shared";
+import { nr } from "@/lib/plural";
 
 export type FormTpl = { id: string; name: string; owner: string; version: number; prop: string | null; enforced: boolean; tpl: Template };
 export type FormInit = {
@@ -22,7 +23,7 @@ const toMin = (x: string) => { const [h, m] = x.split(":").map(Number); return h
 /** "Cine o face" → din birou: the office's people grouped (evaluators, angajați, colaboratori), with the availability on the chosen day. */
 export function TeamPick({ team, value, onPick, date, time, dur, selfId }: { team: TeamPerson[]; value: string; onPick: (id: string) => void; date: string; time: string; dur: number; selfId?: string }) {
   const [q, setQ] = useState("");
-  const shown = team.filter((p) => !q.trim() || p.name.toLowerCase().includes(q.trim().toLowerCase()));
+  const shown = team.filter((p) => !q.trim() || fold(p.name).includes(fold(q.trim())));
   const day = (p: TeamPerson) => p.busy.filter((b) => b.id !== selfId && b.at.slice(0, 10) === date);
   const clash = (p: TeamPerson) => !!date && !!time && day(p).some((b) => toMin(hm(b.at)) < toMin(time) + dur && toMin(time) < toMin(hm(b.at)) + b.min);
   const next = (p: TeamPerson) => p.busy.find((b) => b.id !== selfId && b.at.slice(0, 16) >= new Date().toISOString().slice(0, 16));
@@ -44,7 +45,7 @@ export function TeamPick({ team, value, onPick, date, time, dur, selfId }: { tea
                   <span className={`tpAvail${bad ? " bad" : date && !d.length ? " free" : ""}`}>
                     {date
                       ? bad ? `ocupat atunci · ${d.map((b) => `${hm(b.at)}–${addMin(b.at, b.min)}`).join(", ")}`
-                        : d.length ? `${d.length === 1 ? "o inspecție" : `${d.length} inspecții`} în ziua aleasă · ${d.map((b) => `${hm(b.at)}–${addMin(b.at, b.min)}`).join(", ")}` : "liber în ziua aleasă"
+                        : d.length ? `${d.length === 1 ? "o inspecție" : nr(d.length, "inspecție", "inspecții")} în ziua aleasă · ${d.map((b) => `${hm(b.at)}–${addMin(b.at, b.min)}`).join(", ")}` : "liber în ziua aleasă"
                       : nx ? `următoarea: ${nx.at.slice(8, 10)}.${nx.at.slice(5, 7)}, ${hm(nx.at)}` : "nicio inspecție programată"}
                   </span>
                 </button>
@@ -144,7 +145,8 @@ export function InspForm({ init, tpls, team, canRead, ops }: { init: FormInit; t
           </div>
           <label className="inRlv">
             <input type="file" hidden accept="application/pdf,image/jpeg,image/png,image/webp" onChange={(e) => { const f = e.target.files?.[0]; if (f) { setFiles((x) => [...x.filter((y) => y.kind !== "releveu"), { f, kind: "releveu" }]); } e.target.value = ""; }} />
-            <span className="btn btnGhost btnSm">{files.some((x) => x.kind === "releveu") ? `✓ Releveu: ${files.find((x) => x.kind === "releveu")!.f.name}` : "Atașează releveul"}</span>
+            <span className="btn btnGhost btnSm">{files.some((x) => x.kind === "releveu") ? "✓ Releveu atașat · schimbă" : "Atașează releveul"}</span>
+            {files.some((x) => x.kind === "releveu") && <small className="inFileName" title={files.find((x) => x.kind === "releveu")!.f.name}>{files.find((x) => x.kind === "releveu")!.f.name}</small>}
             <small>se păstrează la inspecție; încăperile le scrii mai jos</small>
           </label>
           <div className="inRooms">
