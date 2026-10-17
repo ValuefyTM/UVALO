@@ -6,6 +6,9 @@ import { allFiles, allFinish, delFile, flush, progress, putFile, putFinish, read
 import { InstallHint } from "./InstallHint";
 import { MobileCollab } from "./MobileCollab";
 
+/** The first phone number of a field that may hold two ("0721 123 456 / 0256 …"), digits and + only, for tel: / sms: links. */
+const firstPhone = (s: string) => (s.split(/[\/,;]|\bsau\b/)[0] ?? s).replace(/[^\d+]/g, "");
+
 type Insp = InspRow & {
   cf_nr: string | null; area_util: number | null; area_land: number | null; rooms: { n: string; a: number | null }[]; template: Template; template_name: string | null;
   contact_phone: string | null; contact_role: string | null; answers: Record<string, string | string[]>; room_answers: Room[];
@@ -958,8 +961,8 @@ function Detail({ x, draft, mine, onBack, onStart, onSchedule, onAnswer }: { x: 
             <span className="mbAvImg" aria-hidden="true">{initials(x.contact_name)}</span>
             <span><small className="mbCap">{(x.contact_role ?? "Persoana de contact").toUpperCase()}</small><b>{x.contact_name}</b>{x.contact_phone && <small>{x.contact_phone}</small>}</span>
             {x.contact_phone && <span className="mbContactBtns">
-              <a className="mbIconBtn dark" href={`tel:${x.contact_phone.replace(/\s+/g, "")}`} aria-label="Sună"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2" /></svg></a>
-              <a className="mbIconBtn" href={`sms:${x.contact_phone.replace(/\s+/g, "")}`} aria-label="SMS"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg></a>
+              <a className="mbIconBtn dark" href={`tel:${firstPhone(x.contact_phone)}`} aria-label="Sună"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2" /></svg></a>
+              <a className="mbIconBtn" href={`sms:${firstPhone(x.contact_phone)}`} aria-label="SMS"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg></a>
             </span>}
           </section>
         )}
@@ -1257,8 +1260,15 @@ function Photos({ x, d, pending, onBack, onPhotos, onDelete, onMove }: {
   const target = useRef(room); // the category the open picker adds to
   useEffect(() => { target.current = room; }, [room]);
   const sent = x.files.filter((f) => f.kind === "photo");
-  const urls = useMemo(() => new Map(pending.map((p) => [p.id, URL.createObjectURL(p.blob)])), [pending]);
-  useEffect(() => () => urls.forEach((u) => URL.revokeObjectURL(u)), [urls]);
+  // one preview URL per photo, kept while the photo is on the phone (re-creating them all on every upload reloads every thumbnail)
+  const urlCache = useRef(new Map<string, string>());
+  const urls = useMemo(() => {
+    const c = urlCache.current, live = new Set(pending.map((p) => p.id));
+    for (const [id, u] of c) if (!live.has(id)) { URL.revokeObjectURL(u); c.delete(id); }
+    for (const p of pending) if (!c.has(p.id)) c.set(p.id, URL.createObjectURL(p.blob));
+    return new Map(c);
+  }, [pending]);
+  useEffect(() => () => { urlCache.current.forEach((u) => URL.revokeObjectURL(u)); urlCache.current.clear(); }, []);
   // while dragging every category is shown, so a photo can go to an empty one too
   const groups = cats.map((c) => ({ c, sent: sent.filter((f) => f.room === c), local: pending.filter((p) => p.room === c) }))
     .filter((g) => drag || g.sent.length || g.local.length || g.c === room);
@@ -1354,7 +1364,7 @@ function Photos({ x, d, pending, onBack, onPhotos, onDelete, onMove }: {
                   return (
                     <span key={f.id} className={`mbPhItem${drag?.id === f.id ? " lifted" : ""}`} {...holdProps(f.id, false, src, g.c)}>
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={src} alt={g.c} loading="lazy" draggable={false} />
+                      <img src={src} alt={g.c} loading="lazy" decoding="async" draggable={false} />
                       <button type="button" className="mbPhDel" aria-label="Șterge fotografia" onClick={() => onDelete(f.id, false)}>×</button>
                     </span>
                   );
@@ -1362,7 +1372,7 @@ function Photos({ x, d, pending, onBack, onPhotos, onDelete, onMove }: {
                 {g.local.map((p) => (
                   <span key={p.id} className={`mbPhItem mbPhLocal${drag?.id === p.id ? " lifted" : ""}`} {...holdProps(p.id, true, urls.get(p.id) ?? "", g.c)}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={urls.get(p.id)} alt={g.c} draggable={false} /><em>PE TELEFON</em>
+                    <img src={urls.get(p.id)} alt={g.c} decoding="async" draggable={false} /><em>PE TELEFON</em>
                     <button type="button" className="mbPhDel" aria-label="Șterge fotografia" onClick={() => onDelete(p.id, true)}>×</button>
                   </span>
                 ))}

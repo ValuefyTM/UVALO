@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { nr } from "@/lib/plural";
 
 async function post(url: string, body: unknown) {
   const r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }).catch(() => null);
@@ -379,7 +380,7 @@ export function CollabAdmin({ mode: m0, users: u0, counts: c0, accounts, endpoin
                       <span><b>{a.name}</b><small>{[a.email, a.anevar ? `ANEVAR ${a.anevar}` : null, a.org].filter(Boolean).join(" · ")}</small></span>
                     </label>
                   ))}
-                  {list.length > shown.length && <p className="hint" style={{ padding: "8px 12px" }}>Încă {list.length - shown.length} conturi: restrânge căutarea.</p>}
+                  {list.length > shown.length && <p className="hint" style={{ padding: "8px 12px" }}>Încă {nr(list.length - shown.length, "cont", "conturi")}: restrânge căutarea.</p>}
                 </div>
                 <div className="actions" style={{ justifyContent: "space-between", flexWrap: "wrap" }}>
                   <span className="hint">{sel.length ? `${sel.length} ${sel.length === 1 ? "cont selectat" : "conturi selectate"}` : "Niciun cont selectat"}{sel.length > 0 && <> · <button type="button" className="linkBtn" onClick={() => setSel([])}>Deselectează</button></>}</span>

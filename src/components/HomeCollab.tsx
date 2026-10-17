@@ -3,6 +3,7 @@
 import type { CollabState } from "@/lib/collab";
 import type { Kind } from "@/lib/collab-shared";
 import { CollabArt } from "./CollabArt";
+import { nr } from "@/lib/plural";
 
 const TZ = "Europe/Bucharest";
 function ago(iso: string) {
@@ -57,7 +58,7 @@ export function CollabHome({ s }: { s: CollabState }) {
       <div className="hcGrid">
         <div className="hcBox">
           <div className="hcBoxHead">
-            <b>{z.available ? <>Ultimele anunțuri · <span className="hcRed">{zone.length === 1 ? "1 activ" : `${zone.length} active`} în zonele tale</span></> : "Ultimele anunțuri"}</b>
+            <b>{z.available ? <>Ultimele anunțuri · <span className="hcRed">{nr(zone.length, "activ", "active")} în zonele tale</span></> : "Ultimele anunțuri"}</b>
             {zoneText && <small>{zoneText}</small>}
           </div>
           {!z.available ? (
@@ -82,7 +83,7 @@ export function CollabHome({ s }: { s: CollabState }) {
                 : <a className="btn btnGold btnSm hcGo" href={`/colaborari?post=${p.id}`}>Vreau detalii</a>}
             </article>
           ))}
-          {z.available && zone.length > 0 && <a className="hcMore" href="/colaborari">{zone.length > 3 ? `Vezi toate cele ${zone.length} anunțuri din zonele tale →` : "Vezi anunțurile →"}</a>}
+          {z.available && zone.length > 0 && <a className="hcMore" href="/colaborari">{zone.length > 3 ? `Vezi toate cele ${nr(zone.length, "anunț", "anunțuri")} din zonele tale →` : "Vezi anunțurile →"}</a>}
         </div>
 
         <div className="hcSide">

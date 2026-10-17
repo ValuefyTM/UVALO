@@ -27,7 +27,7 @@ export function FsGallery({ groups }: { groups: { r: string; ph: Ph[] }[] }) {
             {ph.map((p) => (
               <button key={p.id} type="button" onClick={() => setAt(all.indexOf(p))} aria-label={`Deschide fotografia ${r}`}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={p.src} alt={r} loading="lazy" />
+                <img src={p.src} alt={r} loading="lazy" decoding="async" />
               </button>
             ))}
           </div>

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { UserAv } from "./UserAv";
 import { InspDelete } from "./InspDelete";
-import { fmtWhen, STATUS, STATUSES, type InspRow, type Status } from "@/lib/insp-shared";
+import { fmtWhen, fold, STATUS, STATUSES, type InspRow, type Status } from "@/lib/insp-shared";
 
 type Row = InspRow & { who: "mine" | "forme" | "forothers" | "firm" };
 type View = "list" | "split" | "map" | "cal";
@@ -18,7 +18,9 @@ const VIEWS: [View, string, React.ReactNode][] = [
   ["cal", "Calendar", ico(<><rect x="3.5" y="5" width="17" height="15.5" rx="2.5" /><path d="M3.5 10h17M8 3v4M16 3v4" /></>)],
 ];
 const DAYS = ["LUN", "MAR", "MIE", "JOI", "VIN", "SÂM", "DUM"];
-const H0 = 7, H1 = 20, HH = 48; // calendar: 07–20, 48 px per hour
+const H0 = 7, H1 = 20, HH = 48; // calendar: 07–20 by default (widened to the week's inspections), 48 px per hour
+// text that goes into Leaflet (tooltips are inserted as HTML): addresses come from colleagues and from AI-read documents
+const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 
 const pad = (n: number) => String(n).padStart(2, "0");
 const ymd = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
@@ -56,7 +58,12 @@ export function InspList({ rows: initial, meId, ops, mergeOrg = null, firmOrgs =
   const pick = (v: View) => { setView(v); try { localStorage.setItem("insp-view", v); } catch {} };
 
   const inWho = rows.filter((r) => inTab(r, who));
-  const shown = inWho.filter((r) => (st === "all" || r.status === st) && (!q.trim() || `${r.address} ${r.cad_nr ?? ""} ${r.contact_name ?? ""} ${r.code}`.toLowerCase().includes(q.trim().toLowerCase())));
+  const qf = fold(q.trim());
+  const shown = useMemo(() => inWho.filter((r) => (st === "all" || r.status === st) && (!qf || fold(`${r.address} ${r.cad_nr ?? ""} ${r.contact_name ?? ""} ${r.code}`).includes(qf))),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [rows, who, st, qf]);
+  const filtered = !!qf || st !== "all";
+  const clear = () => { setQ(""); setSt("all"); };
 
   async function schedule(id: string, when: string) {
     setMsg("");
@@ -100,6 +107,7 @@ export function InspList({ rows: initial, meId, ops, mergeOrg = null, firmOrgs =
         </label>
       </div>
       {msg && <p className="note" role="alert">{msg}</p>}
+      {rows.length >= 800 && <p className="hint">Se afișează cele mai recente 800 de inspecții; cele mai vechi nu apar în listă.</p>}
 
       {view === "list" && (shown.length ? (
         <div className="card inTableBox">
@@ -125,7 +133,7 @@ export function InspList({ rows: initial, meId, ops, mergeOrg = null, firmOrgs =
             </tbody>
           </table>
         </div>
-      ) : <Empty who={who} />)}
+      ) : <Empty who={who} filtered={filtered} q={q.trim()} onClear={clear} />)}
 
       {view === "split" && (shown.length ? (
         <div className="inSplit">
@@ -142,14 +150,21 @@ export function InspList({ rows: initial, meId, ops, mergeOrg = null, firmOrgs =
           </div>
           <MapView rows={shown} focus={focus} onPin={(id) => { setFocus(id); document.getElementById(`ic-${id}`)?.scrollIntoView({ behavior: "smooth", block: "nearest" }); }} bare />
         </div>
-      ) : <Empty who={who} />)}
+      ) : <Empty who={who} filtered={filtered} q={q.trim()} onClear={clear} />)}
       {view === "map" && <MapView rows={shown} />}
       {view === "cal" && <CalView rows={shown} unplanned={inWho.filter((r) => r.status === "prog")} onSchedule={schedule} />}
     </div>
   );
 }
 
-function Empty({ who }: { who: Tab }) {
+function Empty({ who, filtered, q, onClear }: { who: Tab; filtered?: boolean; q?: string; onClear?: () => void }) {
+  if (filtered) return (
+    <div className="card inEmpty">
+      <b>{q ? `Niciun rezultat pentru „${q}”` : "Nicio inspecție cu starea aleasă"}</b>
+      <p className="hint">Verifică textul căutat sau alege altă stare.</p>
+      <button type="button" className="btn btnGhost" onClick={onClear}>Arată toate</button>
+    </div>
+  );
   return (
     <div className="card inEmpty">
       <b>{who === "firm" ? "Firma nu are încă inspecții" : who === "mine" || who === "all" ? "Nicio inspecție încă" : "Nu faci încă inspecții pentru colegi"}</b>
@@ -184,7 +199,11 @@ export function MapView({ rows, focus = null, onPin, bare = false }: { rows: Row
     el.current?.querySelectorAll<HTMLElement>(".inPin").forEach((p) => p.classList.toggle("on", p.dataset.id === focus));
   }, [focus]);
   const pinRef = useRef(onPin); pinRef.current = onPin;
+  // the parent re-renders on every hover (new arrays): the map is rebuilt only when the pins themselves change
+  const pinsKey = placed.map((r) => `${r.id}:${r.lat}:${r.lng}:${r.status}:${r.address}`).join("|");
+  const placedRef = useRef(placed); placedRef.current = placed;
   useEffect(() => {
+    const placed = placedRef.current;
     let m: LMap | null = null, gone = false;
     loadLeaflet().then((L) => {
       if (gone || !el.current) return;
@@ -193,14 +212,14 @@ export function MapView({ rows, focus = null, onPin, bare = false }: { rows: Row
       placed.forEach((r, i) => {
         const icon = L.divIcon({ className: "", html: `<span class="inPin" data-id="${r.id}" style="background:${STATUS[r.status].fg}">${i + 1}</span>`, iconSize: [28, 28], iconAnchor: [14, 28] });
         const mk = L.marker([r.lat!, r.lng!], { icon });
-        mk.addTo(m!).bindTooltip(`${r.address} · ${STATUS[r.status].label}`);
+        mk.addTo(m!).bindTooltip(`${esc(r.address)} · ${STATUS[r.status].label}`);
         mk.on("click", () => { if (pinRef.current) pinRef.current(r.id); else location.href = `/inspectii/${r.id}`; });
       });
       if (placed.length) m.fitBounds(L.latLngBounds(placed.map((r) => [r.lat!, r.lng!])), { padding: [40, 40], maxZoom: 15 });
       else m.setView([45.75, 21.23], 9);
     }).catch(() => {});
     return () => { gone = true; m?.remove(); };
-  }, [placed]);
+  }, [pinsKey]);
   if (bare) return <div ref={el} className="inMap inSplitMap" role="region" aria-label="Harta inspecțiilor" />;
   return (
     <div className="inMapWrap">
@@ -227,12 +246,17 @@ export function CalView({ rows, unplanned, onSchedule }: { rows: Row[]; unplanne
     : `${start.getDate()} ${MONTHS[start.getMonth()]} – ${end.getDate()} ${MONTHS[end.getMonth()]} ${end.getFullYear()}`;
   const move = (w: number) => setStart((s) => { const d = new Date(s); d.setDate(d.getDate() + 7 * w); return d; });
   const nowH = new Date().getHours() + new Date().getMinutes() / 60;
+  // hour range: 07–20, widened so an inspection at 06:00 or 20:30 is not drawn off the grid
+  const inWeek = rows.filter((r) => r.scheduled_at && days.some((d) => r.scheduled_at!.startsWith(ymd(d))));
+  const hOf = (r: Row) => { const [a, b] = r.scheduled_at!.slice(11, 16).split(":").map(Number); return a + b / 60; };
+  const h0 = Math.min(H0, ...inWeek.map((r) => Math.floor(hOf(r))));
+  const h1 = Math.max(H1, ...inWeek.map((r) => Math.min(24, Math.ceil(hOf(r) + (r.duration_min || 60) / 60))));
   const drop = (e: React.DragEvent<HTMLDivElement>, day: Date) => {
     e.preventDefault();
     const id = e.dataTransfer.getData("text/insp");
     if (!id) return;
     const y = e.clientY - e.currentTarget.getBoundingClientRect().top;
-    const h = Math.max(H0, Math.min(H1 - 1, H0 + Math.floor((y / HH) * 2) / 2));
+    const h = Math.max(h0, Math.min(h1 - 1, h0 + Math.floor((y / HH) * 2) / 2));
     onSchedule(id, `${ymd(day)}T${pad(Math.floor(h))}:${h % 1 ? "30" : "00"}`);
   };
   return (
@@ -248,24 +272,25 @@ export function CalView({ rows, unplanned, onSchedule }: { rows: Row[]; unplanne
           <div className="inCalGrid">
             <span />
             {days.map((d, i) => <span key={i} className={`inCalDay${ymd(d) === today ? " today" : ""}${i > 4 ? " wk" : ""}`}><small>{DAYS[i]}</small><b>{d.getDate()}</b></span>)}
-            <div className="inCalHours">{Array.from({ length: H1 - H0 }, (_, i) => <span key={i} style={{ height: HH }}>{pad(H0 + i)}</span>)}</div>
+            <div className="inCalHours">{Array.from({ length: h1 - h0 }, (_, i) => <span key={i} style={{ height: HH }}>{pad(h0 + i)}</span>)}</div>
             {days.map((d, i) => {
               const key = ymd(d);
-              const evs = rows.filter((r) => r.scheduled_at?.startsWith(key));
+              const evs = lanes(rows.filter((r) => r.scheduled_at?.startsWith(key)), hOf);
               return (
-                <div key={i} className={`inCalCol${key === today ? " today" : ""}${i > 4 ? " wk" : ""}`} style={{ height: (H1 - H0) * HH }}
+                <div key={i} className={`inCalCol${key === today ? " today" : ""}${i > 4 ? " wk" : ""}`} style={{ height: (h1 - h0) * HH }}
                   onDragOver={(e) => e.preventDefault()} onDrop={(e) => drop(e, d)}>
-                  {evs.map((r) => {
-                    const [hh, mm] = r.scheduled_at!.slice(11, 16).split(":").map(Number);
-                    const top = Math.max(0, (hh + mm / 60 - H0) * HH), h = Math.max(24, (r.duration_min / 60) * HH - 4);
+                  {evs.map(({ r, lane, of }) => {
+                    const top = Math.max(0, (hOf(r) - h0) * HH), h = Math.max(24, ((r.duration_min || 60) / 60) * HH - 4);
                     return (
-                      <a key={r.id} href={`/inspectii/${r.status === "prog" || r.status === "plan" ? `nou?id=${r.id}` : r.id}`} className="inEv"
-                        style={{ top: top + 2, height: h, color: STATUS[r.status].fg, background: STATUS[r.status].bg }}>
+                      <a key={r.id} href={`/inspectii/${r.status === "prog" || r.status === "plan" ? `nou?id=${r.id}` : r.id}`} className={`inEv${h < 40 ? " short" : ""}`}
+                        title={`${r.scheduled_at!.slice(11, 16)} · ${r.address} · ${STATUS[r.status].label}`}
+                        style={{ top: top + 2, height: h, color: STATUS[r.status].fg, background: STATUS[r.status].bg,
+                          ...(of > 1 ? { left: `calc(${(lane / of) * 100}% + 2px)`, right: "auto", width: `calc(${100 / of}% - 4px)` } : {}) }}>
                         <b>{r.scheduled_at!.slice(11, 16)} · {r.address.split(",")[0]}</b><small>{STATUS[r.status].label}</small>
                       </a>
                     );
                   })}
-                  {key === today && nowH > H0 && nowH < H1 && <span className="inNow" style={{ top: (nowH - H0) * HH }} />}
+                  {key === today && nowH > h0 && nowH < h1 && <span className="inNow" style={{ top: (nowH - h0) * HH }} />}
                 </div>
               );
             })}
@@ -284,4 +309,22 @@ export function CalView({ rows, unplanned, onSchedule }: { rows: Row[]; unplanne
       </aside>
     </div>
   );
+}
+
+/** Inspections of one day that overlap are placed side by side: each gets its lane and the number of lanes of its group. */
+function lanes(rs: Row[], hOf: (r: Row) => number) {
+  const sorted = [...rs].sort((a, b) => hOf(a) - hOf(b));
+  const out: { r: Row; lane: number; of: number }[] = [];
+  let group: { r: Row; lane: number; of: number }[] = [], ends: number[] = [], groupEnd = -1;
+  const flush = () => { group.forEach((g) => (g.of = ends.length)); out.push(...group); group = []; ends = []; };
+  for (const r of sorted) {
+    const a = hOf(r), b = a + (r.duration_min || 60) / 60;
+    if (group.length && a >= groupEnd) flush();
+    let lane = ends.findIndex((e) => e <= a);
+    if (lane < 0) { lane = ends.length; ends.push(b); } else ends[lane] = b;
+    group.push({ r, lane, of: 1 });
+    groupEnd = Math.max(groupEnd, b);
+  }
+  flush();
+  return out;
 }

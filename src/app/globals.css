@@ -2913,3 +2913,19 @@ html:has(.mb) { -webkit-tap-highlight-color: transparent; -webkit-text-size-adju
 .mbNav button:active { color: #fff; }
 .mbSheet { max-height: calc(100dvh - env(safe-area-inset-top, 0px) - 12px); overflow-y: auto; overscroll-behavior: contain; }
 .mbSecs, .mbOwn, .mcTabs { overscroll-behavior-x: contain; }
+.inEv.short small { display: none; }
+.inEv.short { padding: 3px 6px; }
+.inEv b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Texte lungi: emailuri în loc de nume, nume de fișiere, adrese fără spații */
+.fsRows dd { overflow-wrap: anywhere; min-width: 0; }
+.inKpis b, .inKpis em { overflow-wrap: anywhere; }
+.tpAvail { max-width: 45%; overflow-wrap: anywhere; }
+.inDocs li a b { overflow-wrap: anywhere; padding-right: 26px; }
+.inFileName { display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cbContact a { overflow-wrap: anywhere; min-width: 0; }
+.cbConvText { min-width: 0; }
+.cbConvText b { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hdTodoTxt { min-width: 0; }
+.hdTodo b { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.inPerson { min-width: 0; overflow-wrap: anywhere; }
