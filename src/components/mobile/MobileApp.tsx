@@ -218,6 +218,7 @@ export function MobileApp() {
       if (busy || !ok() || window.scrollY > 0 || e.touches.length > 1) return;
       if ((e.target as Element).closest?.(".mbMap, .mbSig, .mbSheetBg, input, textarea, select")) return;
       y0 = e.touches[0].clientY; d = 0;
+      window.addEventListener("touchmove", move, { passive: false });
     };
     const move = (e: TouchEvent) => {
       if (y0 == null) return;
@@ -228,6 +229,7 @@ export function MobileApp() {
       setPull(Math.min(130, d));
     };
     const end = async () => {
+      window.removeEventListener("touchmove", move);
       if (y0 == null) return;
       y0 = null;
       setDrag(false);
@@ -236,7 +238,6 @@ export function MobileApp() {
       try { await refreshRef.current(); } finally { busy = false; setPulling(false); setPull(0); }
     };
     window.addEventListener("touchstart", start, { passive: true });
-    window.addEventListener("touchmove", move, { passive: false });
     window.addEventListener("touchend", end);
     window.addEventListener("touchcancel", end);
     return () => {
@@ -522,7 +523,7 @@ function Login({ onDone }: { onDone: () => void }) {
         {step === "pair" && (
           <form onSubmit={async (e) => { e.preventDefault(); if (await post("/api/m/pair", { code, standalone })) onDone(); }}>
             <p className="mbNote">Pe calculator, în UVALO → <b>Inspecții</b>, apasă „Arată codul de conectare”. Scanează codul QR cu camera telefonului sau scrie aici cele 6 cifre.</p>
-            <label className="mbField">Codul de conectare<input inputMode="numeric" maxLength={6} value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))} required /></label>
+            <label className="mbField">Codul de conectare<input inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))} required /></label>
             <button className="mbBtn gold big" disabled={busy || code.length < 6}>Conectează telefonul</button>
           </form>
         )}
@@ -1565,12 +1566,12 @@ function NewInsp({ tpls, firms, online, pos, onBack, onDone }: { tpls: Tpl[]; fi
           </span>
         )}
         <span className="mbGrid2">
-          <label className="mbField">Nr. cadastral<input className="mbIn" inputMode="numeric" value={f.cad_nr} onChange={(e) => set("cad_nr", e.target.value)} /></label>
-          <label className="mbField">Carte funciară<input className="mbIn" value={f.cf_nr} onChange={(e) => set("cf_nr", e.target.value)} /></label>
+          <label className="mbField">Nr. cadastral<input className="mbIn" inputMode="text" autoCapitalize="characters" autoCorrect="off" spellCheck={false} value={f.cad_nr} onChange={(e) => set("cad_nr", e.target.value)} /></label>
+          <label className="mbField">Carte funciară<input className="mbIn" autoCapitalize="characters" autoCorrect="off" spellCheck={false} value={f.cf_nr} onChange={(e) => set("cf_nr", e.target.value)} /></label>
         </span>
         <small className="mbCap">PERSOANA DE CONTACT</small>
-        <input className="mbIn" placeholder="Nume" value={f.contact_name} onChange={(e) => set("contact_name", e.target.value)} />
-        <input className="mbIn" placeholder="Telefon" inputMode="tel" value={f.contact_phone} onChange={(e) => set("contact_phone", e.target.value)} />
+        <input className="mbIn" placeholder="Nume" autoCapitalize="words" autoComplete="off" value={f.contact_name} onChange={(e) => set("contact_name", e.target.value)} />
+        <input className="mbIn" placeholder="Telefon" type="tel" inputMode="tel" autoComplete="off" value={f.contact_phone} onChange={(e) => set("contact_phone", e.target.value)} />
         <span className="mbOpts">{CONTACT_ROLES.map((t) => <button key={t} type="button" aria-pressed={f.contact_role === t} onClick={() => set("contact_role", f.contact_role === t ? "" : t)}>{t}</button>)}</span>
         <small className="mbCap">CÂND</small>
         <span className="mbOpts">
