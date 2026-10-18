@@ -908,9 +908,13 @@ function Detail({ x, draft, mine, onBack, onStart, onSchedule, onAnswer }: { x: 
   const madeAt = done && x.finished_at ? x.finished_at : x.redo_note && x.redo_prev_at ? x.redo_prev_at : null;
   const qn = x.template.groups.reduce((t, g) => t + g.qs.length, 0);
   // everything known about the property, only what is filled in
+  // what the firm's app knows about the property (make, model, VIN, rooms, floor…) comes right after its type
+  const own = (x.facts ?? []).filter((f) => f.label !== "Tip bun").map((f): [string, string] => [f.label, f.value]);
+  const kind = x.facts?.find((f) => f.label === "Tip bun")?.value;
   const facts: [string, string][] = ([
     ["Data inspecției", madeAt ? `${fmtDay(madeAt)}, ${fmtHour(madeAt)}` : ""],
-    ["Tipul bunului", x.prop_type ?? ""],
+    ["Tipul bunului", kind ? `${kind}${x.prop_type && !x.prop_type.toLowerCase().startsWith(kind.toLowerCase()) ? ` · ${x.prop_type}` : ""}` : x.prop_type ?? ""],
+    ...own,
     ["Nr. cadastral", x.cad_nr ?? ""],
     ["Carte funciară", x.cf_nr ?? ""],
     ["Localitate (UAT)", x.uat ?? ""],
@@ -1000,11 +1004,6 @@ function Detail({ x, draft, mine, onBack, onStart, onSchedule, onAnswer }: { x: 
           </section>
         )}
 
-        {!!x.facts?.length && (
-          <section className="mbCard mbFacts"><small className="mbCap">DATE DESPRE BUN</small>
-            <dl>{x.facts.map((f) => <div key={f.label}><dt>{f.label}</dt><dd>{f.value}</dd></div>)}</dl>
-          </section>
-        )}
         {x.notes && <section className="mbCard mbNoteCard"><small className="mbCap">NOTE PENTRU INSPECȚIE</small><span>{x.notes}</span></section>}
 
         <section className="mbCard mbTplCard">

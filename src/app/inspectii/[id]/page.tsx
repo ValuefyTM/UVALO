@@ -122,6 +122,8 @@ export default async function InspDoc({ params }: { params: Promise<{ id: string
               <div><dt>Telefon</dt><dd>{x.contact_phone || "—"}</dd></div>
               <div><dt>Fișa</dt><dd>{x.template_name ?? "—"}{x.template_version ? ` · v${x.template_version}` : ""}</dd></div>
               <div><dt>Nr. și data fișei</dt><dd>{sheetNo ? `${sheetNo} · ${fmtDate(sheetAt ?? "", true)}` : "se dau când începe completarea"}</dd></div>
+              {/* what the firm's app knows about the property (make, model, VIN, rooms, floor…) */}
+              {(x.facts ?? []).map((f) => <div key={f.label}><dt>{f.label}</dt><dd>{f.value}</dd></div>)}
             </dl>
           </section>
 
