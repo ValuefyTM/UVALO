@@ -143,6 +143,32 @@ async function pickTemplate(db: D1Database, key: ApiKey, b: Record<string, unkno
 const extRow = (db: D1Database, key: ApiKey, idOrRef: string) => db.prepare(`SELECT * FROM inspections WHERE org_id = ? AND (id = ? OR ext_ref = ?) AND deleted_at IS NULL
   ORDER BY created_at DESC LIMIT 1`).bind(key.org_id, idOrRef, idOrRef).first<Record<string, unknown>>();
 
+type Fact = { label: string; value: string; keys: string[] };
+
+/** The property's details sent by the firm: `[{ label, value, keys? }]` (keys: question ids that ask the same, e.g. "vin"). */
+function cleanFacts(v: unknown): Fact[] {
+  return (Array.isArray(v) ? v : []).slice(0, 40).map((x: { label?: unknown; value?: unknown; keys?: unknown }) => ({
+    label: s(x?.label, 80), value: s(typeof x?.value === "number" ? String(x.value) : x?.value, 200),
+    keys: Array.isArray(x?.keys) ? x.keys.map((k: unknown) => s(k, 40)).filter(Boolean).slice(0, 8) : [],
+  })).filter((x) => x.label && x.value);
+}
+
+const norm = (x: string) => x.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
+
+/** The answers the firm's details give: a question with the id of a fact (or the same text) gets its value, when it fits the question. */
+function prefill(tpl: Template, facts: Fact[]): Record<string, string | string[]> {
+  const out: Record<string, string | string[]> = {};
+  for (const g of tpl.groups) for (const q of g.qs) {
+    const f = facts.find((x) => x.keys.includes(q.id)) ?? facts.find((x) => norm(x.label) === norm(q.t));
+    if (!f) continue;
+    if (q.kind === "number") { const n = f.value.replace(/[^\d.,-]/g, "").replace(",", "."); if (n) out[q.id] = n; }
+    else if (q.kind === "one" || q.kind === "comp") { const o = (q.options ?? []).find((x) => norm(x) === norm(f.value)); if (o) out[q.id] = o; }
+    else if (q.kind === "many") { const o = (q.options ?? []).filter((x) => f.value.split(/,\s*/).some((v) => norm(v) === norm(x))); if (o.length) out[q.id] = o; }
+    else if (q.kind === "text") out[q.id] = f.value;
+  }
+  return out;
+}
+
 /**
  * Creates the inspection (or updates the one with the same `ref`, while it is not finished): the valuer is found by `legit`
  * (ANEVAR card) and gets it directly. A finished one is not changed: a new inspection of the same property comes with a new ref.
@@ -168,6 +194,7 @@ export async function putInspection(db: D1Database, key: ApiKey, b: Record<strin
     contact_name: s(b.contact_name, 120) || null, contact_phone: s(b.contact_phone, 40) || null, contact_role: s(b.contact_role, 60) || null,
   };
   if (v.lat == null) { const g = await geocode(address).catch(() => null); if (g?.[0]) { v.lat = g[0].lat; v.lng = g[0].lng; } }
+  const facts = cleanFacts(b.facts);
   const ts = now();
   if (old) {
     const id = String(old.id), moved = old.assignee_id !== who.id;
@@ -182,6 +209,8 @@ export async function putInspection(db: D1Database, key: ApiKey, b: Record<strin
         v.contact_name, v.contact_phone, v.contact_role, notes, who.id,
         keepTpl ? 1 : 0, tpl.id, keepTpl ? 1 : 0, tpl.name, keepTpl ? 1 : 0, tpl.version, keepTpl ? 1 : 0, JSON.stringify(tpl.tpl),
         moved ? 1 : 0, moved ? 1 : 0, ts, id).run();
+    await db.prepare("UPDATE inspections SET facts = ? WHERE id = ?").bind(JSON.stringify(facts), id).run();
+    if (!keepTpl && !old.started_at) await db.prepare("UPDATE inspections SET answers = ? WHERE id = ?").bind(JSON.stringify(prefill(tpl.tpl, facts)), id).run();
     if (moved) {
       await logIt(db, id, key.created_by, `Realocată lui ${who.name}`);
       const prev = old.assignee_id ? String(old.assignee_id) : null;
@@ -198,6 +227,7 @@ export async function putInspection(db: D1Database, key: ApiKey, b: Record<strin
     VALUES (?, ?, ?, ?, ?, 'office', NULL, 'prog', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?)`)
     .bind(id, code, key.created_by, key.org_id, who.id, v.address, v.cad_nr, v.cf_nr, v.uat, v.county, v.lat, v.lng, v.prop_type, v.area_util, v.area_land,
       JSON.stringify(rooms), tpl.id, tpl.name, tpl.version, JSON.stringify(tpl.tpl), v.contact_name, v.contact_phone, v.contact_role, notes, ref, ts, ts).run();
+  await db.prepare("UPDATE inspections SET facts = ?, answers = ? WHERE id = ?").bind(JSON.stringify(facts), JSON.stringify(prefill(tpl.tpl, facts)), id).run();
   await logIt(db, id, key.created_by, "Creată din aplicația firmei");
   return { ok: true, id, code, created: true };
 }
@@ -216,7 +246,7 @@ export async function extInspection(db: D1Database, key: ApiKey, idOrRef: string
     inspector: who ? { name: who.name, legit: who.anevar_no } : null,
     scheduled_at: r.scheduled_at, duration_min: r.duration_min, started_at: r.started_at, finished_at: r.finished_at,
     sheet: { no: r.sheet_no, at: r.sheet_at, rev: r.sheet_rev, template: { id: r.template_id, name: r.template_name, version: r.template_version, ...cleanTemplate(J(r.template, {})) },
-      answers: J(r.answers, {}), rooms: J(r.room_answers, []), findings: J(r.findings, {}), signed_name: r.signed_name, signed_at: r.signed_at,
+      facts: J(r.facts, []), answers: J(r.answers, {}), rooms: J(r.room_answers, []), findings: J(r.findings, {}), signed_name: r.signed_name, signed_at: r.signed_at,
       cover_file_id: r.cover_file_id, redo_note: r.redo_note },
     contact: { name: r.contact_name, phone: r.contact_phone, role: r.contact_role }, notes: r.notes,
     files: files.results.map((f) => ({ id: f.id, kind: f.kind, name: f.name, room: f.room, taken_at: f.taken_at, lat: f.lat, lng: f.lng, type: J<{ type?: string }>(f.meta, {}).type ?? null })),

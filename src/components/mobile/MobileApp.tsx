@@ -15,6 +15,8 @@ type Insp = InspRow & {
   findings: { diff?: string; defects?: string; notes?: string }; started_at: string | null; notes: string | null;
   files: { id: string; kind: string; name: string | null; room: string | null; taken_at: string | null }[];
   uat?: string | null; county?: string | null; template_version?: number | null; created_at?: string; redo_note?: string | null;
+  /** the property's details from the firm's app (marca, model, nr. camere…) */
+  facts?: { label: string; value: string }[];
 };
 type Room = { n: string; a: number | null; floor?: string; walls?: string; ceiling?: string; state?: string; std?: boolean };
 type Me = { id: string; name: string; email: string; avatar?: boolean; anevar_no?: string | null; county?: string | null; phone?: string | null;
@@ -279,7 +281,8 @@ export function MobileApp() {
 
   function newDraft(x: Insp): Draft {
     const d: Draft = {
-      answers: Object.keys(x.answers).length ? x.answers : Object.fromEntries(x.template.groups.flatMap((g) => g.qs.filter((q) => q.def).map((q) => [q.id, q.kind === "many" ? [q.def!] : q.def!]))),
+      // the sheet's default answers, under what is already filled in (the property's details sent by the firm, or the answers so far)
+      answers: { ...(x.started_at ? {} : Object.fromEntries(x.template.groups.flatMap((g) => g.qs.filter((q) => q.def).map((q) => [q.id, q.kind === "many" ? [q.def!] : q.def!])))), ...x.answers },
       rooms: x.room_answers.length ? x.room_answers : x.rooms.map((r) => ({ ...r })), findings: { diff: x.findings.diff ?? "", defects: x.findings.defects ?? "", notes: x.findings.notes ?? "" },
       started_at: x.started_at ?? "", rev: x.sheet_rev ?? 0,
     };
@@ -997,6 +1000,11 @@ function Detail({ x, draft, mine, onBack, onStart, onSchedule, onAnswer }: { x: 
           </section>
         )}
 
+        {!!x.facts?.length && (
+          <section className="mbCard mbFacts"><small className="mbCap">DATE DESPRE BUN</small>
+            <dl>{x.facts.map((f) => <div key={f.label}><dt>{f.label}</dt><dd>{f.value}</dd></div>)}</dl>
+          </section>
+        )}
         {x.notes && <section className="mbCard mbNoteCard"><small className="mbCap">NOTE PENTRU INSPECȚIE</small><span>{x.notes}</span></section>}
 
         <section className="mbCard mbTplCard">

@@ -2944,3 +2944,8 @@ html:has(.mb) { -webkit-tap-highlight-color: transparent; -webkit-text-size-adju
 /* a question's photo: camera or gallery */
 .mbQPh { display: flex; flex-wrap: wrap; gap: 4px 16px; }
 .mbNextStep { width: 100%; margin-top: 8px; }
+/* the property's details from the firm's app */
+.mbFacts dl { margin: 6px 0 0; display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; font-size: 13px; }
+.mbFacts dl > div { display: contents; }
+.mbFacts dt { color: var(--muted, #6b6b6b); }
+.mbFacts dd { margin: 0; font-weight: 700; }
