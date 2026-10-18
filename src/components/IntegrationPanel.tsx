@@ -27,12 +27,13 @@ function McpHelp({ app }: { app: string }) {
       </p>
       {open && (
         <div className="intMcpBody">
-          <p className="hint">Adresa serverului: <code className="mono">{url}</code>, autentificare <code className="mono">Authorization: Bearer uvk_…</code>.
-            Unde nu se pot trimite antete (claude.ai → Conectori personalizați), pune cheia în adresă: <code className="mono">{url}/uvk_…</code></p>
+          <p className="hint"><b>claude.ai</b> (Setări → Conectori → Adaugă conector personalizat): adresa cu cheia în ea, fără OAuth:</p>
+          <pre className="mono">{`${url}/uvk_…`}</pre>
           <p className="hint"><b>Claude Code</b></p>
-          <pre className="mono">{`claude mcp add --transport http uvalo ${url} --header "Authorization: Bearer uvk_…"`}</pre>
-          <p className="hint"><b>Claude Desktop</b> (claude_desktop_config.json)</p>
-          <pre className="mono">{JSON.stringify({ mcpServers: { uvalo: { command: "npx", args: ["-y", "mcp-remote", url, "--header", "Authorization: Bearer uvk_…"] } } }, null, 2)}</pre>
+          <pre className="mono">{`claude mcp add --transport http uvalo ${url}/uvk_…`}</pre>
+          <p className="hint"><b>Claude Desktop</b> (claude_desktop_config.json; cheia în adresă, nu în antet — antetele cu spații se pierd):</p>
+          <pre className="mono">{JSON.stringify({ mcpServers: { uvalo: { command: "npx", args: ["-y", "mcp-remote", `${url}/uvk_…`, "--transport", "http-only"] } } }, null, 2)}</pre>
+          <p className="hint">Pentru alte aplicații: <code className="mono">{url}</code> cu antetul <code className="mono">Authorization: Bearer uvk_…</code> (sau <code className="mono">?key=uvk_…</code>).</p>
           <p className="hint">Instrumente: <code className="mono">localitati</code>, <code className="mono">parcela</code>, <code className="mono">parcela_la_coordonate</code>,{" "}
             <code className="mono">parcela_la_adresa</code>, <code className="mono">grila_notariala</code>, <code className="mono">conversie_coordonate</code>. Folosirea se vede în Activitate (acțiunile „mcp_…”).</p>
         </div>

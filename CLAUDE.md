@@ -718,7 +718,8 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   `src/app/api/mcp/[[...key]]/route.ts` (fără SDK): `initialize` (versiunile 2025-06-18 / 2025-03-26 / 2024-11-05, `instructions` cu numele firmei),
   `ping`, `tools/list`, `tools/call`, `resources/list` și `prompts/list` goale. Erorile instrumentelor (`ToolError`) = `isError: true` cu mesaj în română.
 - Autentificare = **cheia API a firmei** (aceeași din Firma mea → Integrare, `uvk_…`): `Authorization: Bearer uvk_…` sau, pentru clienții care nu trimit
-  antete (claude.ai → Conectori personalizați), în cale: `/api/mcp/uvk_…`. Modulele = planul firmei (minus instrumentele dezactivate): fără `localizare` →
+  antete (claude.ai → Conectori personalizați), în cale: `/api/mcp/uvk_…` (sau `?key=`); varianta cu cheia în adresă e cea recomandată peste tot
+  (`mcp-remote` din Claude Desktop pierde antetele cu spații). Modulele = planul firmei (minus instrumentele dezactivate): fără `localizare` →
   fiecare apel refuză; `parcela_la_adresa` cere și `google_maps`. Fără mentenanță pe această rută. Folosirea → `events` (`module = localizare`,
   `action = mcp_<instrument>`, pe contul care a creat cheia). Panoul „Integrare” apare acum și pentru firmele cu doar localizator (`IntegrationPanel`
   cu `app` + `inspectii`; blocul `McpHelp` cu adresa, comenzile pentru Claude Code / Claude Desktop (`mcp-remote`) și lista instrumentelor).

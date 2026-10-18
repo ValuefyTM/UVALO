@@ -19,7 +19,7 @@ const unauthorized = (error: string) => NextResponse.json({ error }, { status: 4
 async function auth(req: Request, path: string[]) {
   const db = await getDb();
   if (!db) return { res: NextResponse.json({ error: "Baza de date nu este disponibilă." }, { status: 503 }) };
-  const raw = ((req.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "").trim() || path[0] || "").trim();
+  const raw = ((req.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "").trim() || path[0] || new URL(req.url).searchParams.get("key") || "").trim();
   if (!/^uvk_[A-Za-z0-9_-]{20,80}$/.test(raw)) return { res: unauthorized("Cheie API lipsă sau greșită: trimite „Authorization: Bearer uvk_…” (cheia din Firma mea → Integrare).") };
   const key = await db.prepare(`SELECT k.id, k.org_id, k.created_by, k.name FROM api_keys k JOIN orgs o ON o.id = k.org_id WHERE k.key_hash = ? AND k.revoked_at IS NULL`)
     .bind(await sha256(raw)).first<{ id: string; org_id: string; created_by: string; name: string }>();
