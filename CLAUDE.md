@@ -711,3 +711,29 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   reopened | deleted | updated (fără apeluri pentru poze / fișiere șterse / link public). Semnătura `X-Uvalo-Signature: t=<unix>,v1=<hex HMAC-SHA256(secret, "<t>.<body>")>`,
   timeout 8 s, rezultatul în `api_hooks` (arătat în panou). Aplicația citește apoi inspecția cu `GET /api/v1/inspections/<id>`.
 - Test local: `next dev -p 3300`, cheie + birou de test inserate în D1 local, un receptor HTTP pe 127.0.0.1 (webhook-ul acceptă `http://localhost|127.0.0.1` doar local).
+
+## Server MCP (`/api/mcp`, pentru Claude și alți asistenți)
+
+- Model Context Protocol, transport **Streamable HTTP fără sesiuni** (JSON-RPC pe POST; GET/DELETE → 405; notificările → 202), scris de mână în
+  `src/app/api/mcp/[[...key]]/route.ts` (fără SDK): `initialize` (versiunile 2025-06-18 / 2025-03-26 / 2024-11-05, `instructions` cu numele firmei),
+  `ping`, `tools/list`, `tools/call`, `resources/list` și `prompts/list` goale. Erorile instrumentelor (`ToolError`) = `isError: true` cu mesaj în română.
+- Autentificare = **cheia API a firmei** (aceeași din Firma mea → Integrare, `uvk_…`): `Authorization: Bearer uvk_…` sau, pentru clienții care nu trimit
+  antete (claude.ai → Conectori personalizați), în cale: `/api/mcp/uvk_…`. Modulele = planul firmei (minus instrumentele dezactivate): fără `localizare` →
+  fiecare apel refuză; `parcela_la_adresa` cere și `google_maps`. Fără mentenanță pe această rută. Folosirea → `events` (`module = localizare`,
+  `action = mcp_<instrument>`, pe contul care a creat cheia). Panoul „Integrare” apare acum și pentru firmele cu doar localizator (`IntegrationPanel`
+  cu `app` + `inspectii`; blocul `McpHelp` cu adresa, comenzile pentru Claude Code / Claude Desktop (`mcp-remote`) și lista instrumentelor).
+- Instrumentele (`src/lib/mcp-localizare.ts`, deocamdată doar Localizatorul): **`localitati`** (UAT-urile cu plan + satele → comună din `VILLAGES`),
+  **`parcela`** (`nr` [+ `localitate`, `geojson`]: suprafața din plan, perimetrul, inventarul de coordonate X/Y + GPS + laturi, centrul, construcțiile
+  cu suprafața la sol și POT, vecinii, nr. topo, observații (`shared`, `o`), cartier + zonă de impozitare în Timișoara, grila notarială 2026 cu toate
+  valorile, linkuri localizator / amplasament / Google Maps; fără localitate caută în toate planurile prin centroide), **`parcela_la_coordonate`**
+  (lat/lng sau Stereo 70 x = nord / y = est; ordinea se decide după ce cade în România), **`parcela_la_adresa`** (Google Geocoding → același lucru),
+  **`grila_notariala`** (punct sau localitate + zonă → valorile; doar localitatea → schema zonelor), **`conversie_coordonate`** (Stereo 70 ↔ WGS84,
+  `wgs84ToStereo70` = Newton pe formulele directe, în `src/lib/stereo70.ts`).
+- Datele: nu se parsează un plan întreg în worker (Timișoara 8,5 MB). `scripts/copy-localizare.mjs` scrie la build, pe lângă centroide
+  (`_localizare/c/<uat>.json`, acum `id → [lat, lng, suprafață, rază]`, raza = cel mai depărtat colț de centru, în m; `c/index.json` are și `date`, `b`),
+  **shard-urile** `_localizare/s/<uat>/<nn>.json` (32 pe UAT, după hash-ul numărului — `shardOf` identic în script și în `mcp-localizare.ts`; fiecare
+  parcelă cu construcțiile ei `b: [[nume, z]]`). Parcela de sub un punct: candidații din centroide (distanța ≤ rază + 5 m) → shard-uri → punct în
+  poligon (în planul Stereo 70; la suprapuneri cea curentă, apoi cea mai mică). Straturile (`straturi/timisoara.json`, `grila-*.json`, `grila-valori.json`)
+  se citesc din assets și se țin în memorie (`grAt` / `grValues` portate din `index.html`, cu valorile ca obiect, nu HTML).
+- Test local: `npm run cf:build`, `npx wrangler dev --port 8797`, o cheie în `api_keys` (sha256) pe o firmă cu `localizare`, apoi
+  `curl -X POST http://127.0.0.1:8797/api/mcp -H "Authorization: Bearer uvk_…" -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"parcela","arguments":{"nr":"405240","localitate":"Giroc"}}}'`.

@@ -3,14 +3,16 @@
 import { locatorAsset } from "./locator";
 import { COUNTY_CENTRES, normName, orient, ringArea } from "./stereo70";
 
-type Uat = { key: string; name: string; county?: string | null; n: number; v?: string | null; bb?: [number, number, number, number] | null };
-const cache = new Map<string, Promise<Record<string, [number, number]> | null>>();
+export type Uat = { key: string; name: string; county?: string | null; n: number; v?: string | null; bb?: [number, number, number, number] | null; date?: string | null; b?: number };
+/** id → [lat, lng, area (mp), reach (m: the farthest corner from the centre)]; older builds have only [lat, lng]. */
+export type Centre = [number, number, number?, number?];
+const cache = new Map<string, Promise<Record<string, Centre> | null>>();
 let uatList: Promise<Uat[]> | null = null;
 
-const norm = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[-.]/g, " ").replace(/\s+/g, " ").trim();
+export const norm = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[-.]/g, " ").replace(/\s+/g, " ").trim();
 
 /** Villages that belong to a commune whose plan is in the locator (the plans are per UAT). */
-const VILLAGES: Record<string, string> = {
+export const VILLAGES: Record<string, string> = {
   "mosnita veche": "mosnita-noua", urseni: "mosnita-noua", albina: "mosnita-noua", rudicica: "mosnita-noua",
   chisoda: "giroc", "giarmata vii": "ghiroda", cerneteaz: "giarmata",
   utvin: "sinmihaiu-roman", "sinmihaiu german": "sinmihaiu-roman", "sanmihaiu german": "sinmihaiu-roman", "sanmihaiu roman": "sinmihaiu-roman", sabranca: "sinmihaiu-roman",
@@ -35,11 +37,17 @@ export async function uats(req: Request) {
   if (!list.length) uatList = null;
   return list;
 }
+/** The UAT of a locality name (a village → its commune's plan), or undefined. */
+export const uatOfName = (list: Uat[], city: string) => {
+  const c = norm(city);
+  return c ? VILLAGES[c] ?? list.find((u) => norm(u.name) === c)?.key : undefined;
+};
+
 /** Parcel centres of one UAT; the last 10 UATs stay in memory (all 59 would not fit in a worker). */
-function centres(key: string, req: Request) {
+export function centres(key: string, req: Request) {
   let p = cache.get(key);
   if (p) { cache.delete(key); cache.set(key, p); return p; }
-  p = locatorAsset(`c/${key}.json`, req).then((r) => (r ? r.json().then((d) => (d as { p: Record<string, [number, number]> }).p) : null)).catch(() => null);
+  p = locatorAsset(`c/${key}.json`, req).then((r) => (r ? r.json().then((d) => (d as { p: Record<string, Centre> }).p) : null)).catch(() => null);
   cache.set(key, p);
   while (cache.size > 10) cache.delete(cache.keys().next().value!);
   return p;
@@ -56,14 +64,13 @@ export async function locateParcel(req: Request, nrRaw: string, city?: string | 
   const nr = cadastralRoot(nrRaw);
   if (!nr) return { nr: null, error: "Numărul cadastral nu conține cifre." };
   const list = await uats(req);
-  const c = city ? norm(city) : "";
-  const key = c ? VILLAGES[c] ?? list.find((u) => norm(u.name) === c)?.key : undefined;
+  const key = city ? uatOfName(list, city) : undefined;
   if (key) {
     const p = (await centres(key, req))?.[nr];
     const name = list.find((u) => u.key === key)?.name ?? key;
     return p ? { nr, uat: name, lat: p[0], lng: p[1], match: "uat" } : { nr, error: `Numărul ${nr} nu apare în planul ${name}.` };
   }
-  const hits: { name: string; p: [number, number] }[] = [];
+  const hits: { name: string; p: Centre }[] = [];
   for (const u of list) {
     const p = (await centres(u.key, req))?.[nr];
     if (p) hits.push({ name: u.name, p });

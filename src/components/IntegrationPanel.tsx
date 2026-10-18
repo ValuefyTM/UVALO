@@ -14,7 +14,34 @@ async function post(body: object) {
   return r?.ok ? d : { error: d?.error ?? "Nu am putut salva. Încearcă din nou." };
 }
 
-export function IntegrationPanel() {
+/** How to connect the UVALO MCP server (Claude and other assistants) with a firm key. */
+function McpHelp({ app }: { app: string }) {
+  const [open, setOpen] = useState(false);
+  const url = `${app}/api/mcp`;
+  return (
+    <div className="intMcp">
+      <p className="hint">
+        <b>MCP pentru Claude.</b> Aceeași cheie deschide și serverul MCP al UVALO: Claude (Desktop, claude.ai, Claude Code) poate căuta imobile după nr. cadastral,
+        coordonate sau adresă, poate citi conturul, construcțiile, vecinii, zona de impozitare și grila notarială 2026 — deocamdată doar Localizatorul cadastral.{" "}
+        <button type="button" className="lnk" onClick={() => setOpen(!open)}>{open ? "Ascunde instrucțiunile" : "Cum se conectează"}</button>
+      </p>
+      {open && (
+        <div className="intMcpBody">
+          <p className="hint">Adresa serverului: <code className="mono">{url}</code>, autentificare <code className="mono">Authorization: Bearer uvk_…</code>.
+            Unde nu se pot trimite antete (claude.ai → Conectori personalizați), pune cheia în adresă: <code className="mono">{url}/uvk_…</code></p>
+          <p className="hint"><b>Claude Code</b></p>
+          <pre className="mono">{`claude mcp add --transport http uvalo ${url} --header "Authorization: Bearer uvk_…"`}</pre>
+          <p className="hint"><b>Claude Desktop</b> (claude_desktop_config.json)</p>
+          <pre className="mono">{JSON.stringify({ mcpServers: { uvalo: { command: "npx", args: ["-y", "mcp-remote", url, "--header", "Authorization: Bearer uvk_…"] } } }, null, 2)}</pre>
+          <p className="hint">Instrumente: <code className="mono">localitati</code>, <code className="mono">parcela</code>, <code className="mono">parcela_la_coordonate</code>,{" "}
+            <code className="mono">parcela_la_adresa</code>, <code className="mono">grila_notariala</code>, <code className="mono">conversie_coordonate</code>. Folosirea se vede în Activitate (acțiunile „mcp_…”).</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function IntegrationPanel({ app, inspectii = true }: { app: string; inspectii?: boolean }) {
   const [keys, setKeys] = useState<Key[] | null>(null);
   const [name, setName] = useState("");
   const [shown, setShown] = useState<{ label: string; value: string } | null>(null);
@@ -40,9 +67,14 @@ export function IntegrationPanel() {
 
   return (
     <section className="card" id="integrare">
-      <h2>Integrare <span className="hint" style={{ fontWeight: 400 }}>· aplicația firmei (CRM)</span></h2>
-      <p className="hint">Cu o cheie API, aplicația firmei trimite inspecții evaluatorilor (după legitimația ANEVAR; le primesc direct pe telefon), ține fișele firmei
-        sincronizate și citește fișele finalizate. La fiecare schimbare UVALO apelează webhook-ul, semnat cu secretul lui.</p>
+      <h2>Integrare <span className="hint" style={{ fontWeight: 400 }}>· aplicația firmei (CRM) și Claude (MCP)</span></h2>
+      {inspectii ? (
+        <p className="hint">Cu o cheie API, aplicația firmei trimite inspecții evaluatorilor (după legitimația ANEVAR; le primesc direct pe telefon), ține fișele firmei
+          sincronizate și citește fișele finalizate. La fiecare schimbare UVALO apelează webhook-ul, semnat cu secretul lui.</p>
+      ) : (
+        <p className="hint">Cu o cheie API, aplicația firmei sau Claude folosesc datele UVALO. Webhook-ul și inspecțiile prin API cer modulul Inspecții.</p>
+      )}
+      <McpHelp app={app} />
       {shown && (
         <div className="note intShown">
           <b>{shown.label}</b>

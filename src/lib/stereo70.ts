@@ -34,6 +34,30 @@ export function stereo70ToWgs84(E: number, N: number): [number, number] {
   return [lat / D, Math.atan2(Y2, X2) / D];
 }
 
+/** WGS84 → Stereo 70 [E, N] (metres), by Newton iterations over the forward formulas (the map is nearly affine, so a few steps give millimetres). */
+export function wgs84ToStereo70(lat: number, lng: number): [number, number] {
+  let E = 500000, N = 500000;
+  for (let k = 0; k < 15; k++) {
+    const [la, lo] = stereo70ToWgs84(E, N);
+    const dla = lat - la, dlo = lng - lo;
+    if (Math.abs(dla) < 1e-11 && Math.abs(dlo) < 1e-11) break;
+    const [la1, lo1] = stereo70ToWgs84(E + 1, N), [la2, lo2] = stereo70ToWgs84(E, N + 1);
+    const a = la1 - la, b = la2 - la, c = lo1 - lo, d = lo2 - lo, det = a * d - b * c;
+    if (!det) break;
+    E += (dla * d - b * dlo) / det;
+    N += (a * dlo - c * dla) / det;
+  }
+  return [E, N];
+}
+
+/** Delta-encoded ring of the locator data (millimetres) → Stereo 70 metres [E, N]. */
+export function decodeRing(z: number[]) {
+  const r: number[][] = [];
+  let x = 0, y = 0;
+  for (let i = 0; i < z.length; i += 2) { x += z[i]; y += z[i + 1]; r.push([x / 1000, y / 1000]); }
+  return r;
+}
+
 /** Centre of a polygon (area centroid in the plane; the mean of its corners for degenerate rings). */
 export function centroid(ring: number[][]): [number, number] {
   let s = 0, cx = 0, cy = 0;
