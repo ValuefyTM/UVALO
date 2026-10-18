@@ -4,7 +4,8 @@ import { collabAllowed, collabSettings } from "./collab";
 import type { CollabMode } from "./collab-shared";
 import { modeAllowed, modeSettings } from "./modmode";
 import { now } from "./db";
-import { currentSession, type Session, type User } from "./auth";
+import { cookies } from "next/headers";
+import { currentSession, getUser, type Session, type User } from "./auth";
 
 export type Role = "owner" | "admin" | "member";
 export const ROLE_LABEL: Record<Role, string> = { owner: "Titular cont", admin: "Administrator", member: "Membru" };
@@ -53,12 +54,25 @@ export type Ctx = {
   linkAdmin: string[];
   /** The new home page (dashboard): by its mode (Admin → Instrumente → Acasă nouă); off = the current home page for everyone. */
   homeNew: boolean;
+  /** Set when a super-admin looks at the platform as another person (read-only): who is shown, and who really is signed in. */
+  viewAs?: { id: string; name: string; email: string; by: User } | null;
 };
+
+/** "Vezi ca utilizatorul": a super-admin's cookie with the id of the person whose platform they look at (read-only; worker.ts refuses writes). */
+export const VIEW_COOKIE = "vf_view";
 
 export async function context(db: D1Database): Promise<Ctx | null> {
   const s = await currentSession(db);
   if (!s) return null;
-  return contextOf(db, s.user, s.session);
+  const c = await contextOf(db, s.user, s.session);
+  if (!c.super) return c;
+  const v = (await cookies()).get(VIEW_COOKIE)?.value;
+  if (!v || v === s.user.id) return c;
+  const target = await getUser(db, v);
+  if (!target) return c;
+  // the platform as that person sees it (their firm, plan, modules; not a super-admin), with the real session kept for signing out
+  const vc = await contextOf(db, target, { id: `view:${s.session.id}`, user_id: target.id, org_id: null, created_at: s.session.created_at, last_seen_at: null });
+  return { ...vc, session: s.session, viewAs: { id: target.id, name: target.name || target.email, email: target.email, by: s.user } };
 }
 
 /** The context of a known person and session (the cookie session, or a pseudo-session `oauth:<token>` for the MCP tokens). */
@@ -70,7 +84,7 @@ export async function contextOf(db: D1Database, user: User, session: Session): P
     .all<Membership>();
   const orgId = session.org_id && orgs.some((o) => o.org_id === session.org_id) ? session.org_id : orgs[0]?.org_id ?? null;
   if (orgId !== session.org_id) {
-    if (!session.id.startsWith("oauth:")) await db.prepare("UPDATE sessions SET org_id = ? WHERE id = ?").bind(orgId, session.id).run();
+    if (!/^(oauth|view):/.test(session.id)) await db.prepare("UPDATE sessions SET org_id = ? WHERE id = ?").bind(orgId, session.id).run();
     session.org_id = orgId;
   }
   const org = orgId ? await db.prepare(`${ORG_SQL} WHERE o.id = ?`).bind(orgId).first<Org>() : null;

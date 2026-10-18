@@ -10,7 +10,7 @@ export async function page(opts: { maint?: boolean } = {}): Promise<{ db: D1Data
   if (!db) throw new Error("Baza de date nu este disponibilă.");
   const c = await context(db);
   if (!c) redirect("/login");
-  if (!c.super && !opts.maint && (await maintenance(db)).on) redirect("/mentenanta");
+  if (!c.super && !c.viewAs && !opts.maint && (await maintenance(db)).on) redirect("/mentenanta");
   return { db, c };
 }
 

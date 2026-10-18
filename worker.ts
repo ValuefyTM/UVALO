@@ -33,6 +33,16 @@ function clean(req: Request) {
 
 const hosts = (v: string) => v.split(",").map((h) => h.trim().toLowerCase()).filter(Boolean);
 
+/** "Vezi ca utilizatorul" (a super-admin's cookie vf_view, src/lib/access.ts): the platform is read-only — every request that
+ * could change something is refused here, before the app; only leaving the view and signing out go through. */
+const VIEW_ALLOWED = new Set(["/api/admin/view", "/api/auth/logout"]);
+function readOnlyView(req: Request, url: URL) {
+  if (["GET", "HEAD", "OPTIONS"].includes(req.method) || VIEW_ALLOWED.has(url.pathname)) return null;
+  if (!/(^|;\s*)vf_view=[^;]+/.test(req.headers.get("cookie") ?? "")) return null;
+  return Response.json({ error: "Ești în modul „Vezi ca utilizatorul”: doar vizualizare, nimic nu se modifică. Ieși din vizualizare ca să faci schimbări." },
+    { status: 403, headers: { "Cache-Control": "no-store" } });
+}
+
 /**
  * The schedule (wrangler "triggers": every 15 minutes): the phone reminders of Inspecții, sent by the app's /api/m/cron.
  * The call carries a key kept in the database (app_settings "cron_key", made on the first run), so nobody else can trigger it.
@@ -58,6 +68,8 @@ export default {
     const url = new URL(req.url);
     const host = url.hostname.toLowerCase();
     const to = (env.APP_URL || "https://app.uvalo.ro").replace(/\/$/, "");
+    const ro = readOnlyView(req, url);
+    if (ro) return ro;
     if (hosts(env.SITE_HOSTS ?? "uvalo.ro,www.uvalo.ro").includes(host)) {
       if (url.pathname === "/") return app.fetch(new Request(new URL(`/site${url.search}`, url), clean(req)), env, ctx);
       if (!SITE_FILES.test(url.pathname)) return Response.redirect(`${to}${url.pathname}${url.search}`, 302);

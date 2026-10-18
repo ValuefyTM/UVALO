@@ -19,7 +19,7 @@ export async function locatorAccess(module = "localizare"): Promise<{ db: D1Data
   if (!db) return { status: 503 };
   const c = await context(db);
   if (!c) return { status: 401 };
-  if (!c.super && (await maintenance(db)).on) return { status: 503, c, maintenance: true };
+  if (!c.super && !c.viewAs && (await maintenance(db)).on) return { status: 503, c, maintenance: true };
   if (!c.modules.includes(module)) return { status: 403, c };
   return { db, c };
 }

@@ -6,6 +6,7 @@ import { getDb } from "@/lib/db";
 import { relevantCount } from "@/lib/collab";
 import { LogoutButton, MenuButton, OrgSwitch } from "./ClientBits";
 import { Referral } from "./Referral";
+import { ViewAsStrip } from "./ViewAs";
 
 type Key = "home" | "instrumente" | "colaborari" | "inspectii" | "localizare" | "amplasament" | "comparabile" | "word" | "chrome" | "firma" | "cont";
 // the tools' own pages light up "Instrumente" in the menu
@@ -114,6 +115,7 @@ export async function AppShell(props: { c: Ctx; active: Key; title: string; subt
       </aside>
       <div className="main">
         {mnt && <div className="mntStrip">Mentenanță pornită: utilizatorii văd pagina „Revenim în curând”. Doar administratorii UVALO văd platforma. <a href="/admin">Oprește din Admin → Panou</a></div>}
+        {c.viewAs && <ViewAsStrip name={c.viewAs.name} email={c.viewAs.email} />}
         <header className={props.dark ? "top topDark" : "top"}>
           <div>
             <h1>{props.title}</h1>

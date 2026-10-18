@@ -2946,6 +2946,19 @@ html:has(.mb) { -webkit-tap-highlight-color: transparent; -webkit-text-size-adju
 .intMcpBody { display: flex; flex-direction: column; gap: 6px; }
 .intMcpBody pre { margin: 0; background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; font-size: 12px; white-space: pre-wrap; word-break: break-all; }
 .intMcpBody code, .clMoreBody code { background: #fff; border: 1px solid var(--line); border-radius: 6px; padding: 1px 5px; }
+/* Vezi ca utilizatorul (super-admin, doar vizualizare) */
+.vaStrip { background: #1A1714; color: #fff; font-size: 12.5px; padding: 8px 16px; text-align: center; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px 14px; }
+.vaStrip b { color: var(--acc); }
+.vaStrip button { background: var(--acc); color: #1A1714; border: 0; border-radius: 8px; padding: 5px 10px; font: inherit; font-weight: 700; cursor: pointer; }
+.vaOpen { align-self: flex-start; background: none; border: 1px dashed var(--line); border-radius: 10px; padding: 6px 12px; font: inherit; font-size: 12.5px; color: var(--muted-2); cursor: pointer; margin-bottom: 14px; }
+.vaOpen:hover { border-color: var(--ink); color: var(--ink); }
+.vaCard { gap: 10px; margin-bottom: 18px; }
+.vaHead { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
+.vaHead .hint { flex: 1 1 320px; }
+.vaSearch { position: relative; }
+.vaHits { list-style: none; margin: 6px 0 0; padding: 4px; border: 1px solid var(--line); border-radius: 12px; background: #fff; display: flex; flex-direction: column; }
+.vaHits button { width: 100%; text-align: left; background: none; border: 0; padding: 8px 10px; border-radius: 8px; font: inherit; font-size: 13.5px; cursor: pointer; }
+.vaHits button:hover { background: var(--acc-soft); }
 /* Contul meu → UVALO în Claude (OAuth) */
 .clUrl { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .clUrl code { flex: 1 1 240px; background: var(--acc-soft); border: 1px solid var(--acc-line); border-radius: 10px; padding: 9px 12px; font-size: 13px; word-break: break-all; }

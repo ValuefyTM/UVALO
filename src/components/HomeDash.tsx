@@ -14,6 +14,7 @@ import { InspBell } from "./InspBell";
 import { HdInsp, type HdRow } from "./HdInsp";
 import { HdTools, type HdTool } from "./HdTools";
 import { HdPhone } from "./HdPhone";
+import { ViewAsPicker } from "./ViewAs";
 import { nr } from "@/lib/plural";
 
 const TZ = "Europe/Bucharest";
@@ -171,6 +172,7 @@ export async function HomeDash({ db, c }: { db: Db; c: Ctx }) {
   return (
     <AppShell c={c} active="home" title={hello} subtitle={sub}
       actions={insp ? <>{notifs.length > 0 && <InspBell items={notifs} />}<InspPreview appUrl={inspUrl()} /></> : undefined}>
+      {(c.super || c.viewAs) && <ViewAsPicker current={c.viewAs ? { id: c.viewAs.id, name: c.viewAs.name } : null} />}
       {c.block && !c.super && <div className="note">{c.block} Scrie-ne la <a className="rowLink" href="mailto:office@uvalo.ro">office@uvalo.ro</a> ca să reactivăm accesul.</div>}
       <div className="hd">
         <section className="hdHero" aria-label="Căutare">

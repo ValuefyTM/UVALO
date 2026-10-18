@@ -2,6 +2,7 @@
 import type { Ctx } from "./access";
 
 export async function track(db: D1Database, c: Pick<Ctx, "user" | "session" | "org"> | null, module: string, action: string, target?: string | null, meta?: unknown) {
+  if (c && (c as Ctx).viewAs) return; // a super-admin looking as someone else leaves no trace in that person's activity
   try {
     await db
       .prepare("INSERT INTO events (user_id, org_id, session_id, module, action, target, meta) VALUES (?, ?, ?, ?, ?, ?, ?)")
