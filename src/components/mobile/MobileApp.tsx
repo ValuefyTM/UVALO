@@ -113,7 +113,9 @@ export function MobileApp() {
     return () => window.removeEventListener("popstate", on, true);
   }, []);
 
-  const refreshQueue = useCallback(async () => { setPending(await allFiles()); setFinishQ((await allFinish()).length); }, []);
+  // the inspections finished on the phone (sent, or waiting for signal) leave the active list at once
+  const [finished, setFinished] = useState<Set<string>>(new Set());
+  const refreshQueue = useCallback(async () => { setPending(await allFiles()); const f = await allFinish(); setFinishQ(f.length); setFinished((o) => new Set([...o, ...f.map((x) => x.insp)])); }, []);
   // what /api/m/state returned, shown at once on the next start (the app opens from the phone's memory, then refreshes)
   const apply = useCallback((j: Record<string, unknown>) => {
     setMe(j.user as Me);
@@ -385,6 +387,8 @@ export function MobileApp() {
     await putFinish({ id: cur.id, insp: cur.id, body: { action: "finish", id: cur.id, answers: draft.answers, room_answers: draft.rooms, findings: draft.findings,
       started_at: draft.started_at, signed_name: signed, new_sig: !!sig, rev: draft.rev ?? 0 } });
     try { localStorage.removeItem(`insp-draft-${cur.id}`); } catch {}
+    setFinished((o) => new Set([...o, cur.id]));
+    setItems((l) => l.map((i) => (i.id === cur.id ? { ...i, status: "gata" as const, finished_at: i.finished_at ?? new Date().toISOString() } : i)));
     const left = await flush();
     await refreshQueue();
     say(left ? "Salvat pe telefon. Se trimite singur când ai semnal." : "Inspecția a fost trimisă.");
@@ -427,7 +431,7 @@ export function MobileApp() {
       )}
       <div className="mbPage" style={pull || drag ? { transform: `translateY(${pull}px)`, transition: drag ? "none" : undefined } : undefined}>
       {!online && <div className="mbOffline">Fără semnal · lucrezi pe telefon, se trimite când revine rețeaua</div>}
-      {view.v === "home" && <Home me={me} items={items.filter((i) => !isDone(i))} queueN={queueN} onQueue={() => go({ v: "queue" })} pos={pos} unread={unread} scope={scope} setScope={setScope} st={st} setSt={setSt} onBell={() => go({ v: "notifs" })} onMe={() => go({ v: "account" })} onSchedule={setSched} onNew={() => go({ v: "new" })} onOpen={(id) => open(id, { v: "detail", id })} onStart={(id) => open(id, { v: "form", id, sec: 0 })} />}
+      {view.v === "home" && <Home me={me} items={items.filter((i) => !isDone(i) && !finished.has(i.id))} queueN={queueN} onQueue={() => go({ v: "queue" })} pos={pos} unread={unread} scope={scope} setScope={setScope} st={st} setSt={setSt} onBell={() => go({ v: "notifs" })} onMe={() => go({ v: "account" })} onSchedule={setSched} onNew={() => go({ v: "new" })} onOpen={(id) => open(id, { v: "detail", id })} onStart={(id) => open(id, { v: "form", id, sec: 0 })} />}
       {view.v === "detail" && cur && <Detail x={cur} draft={draft} mine={!cur.ro && (!me || cur.assignee_id === me.id)} onSchedule={setSched}
         onAnswer={async (ok) => {
           const r = await fetch("/api/inspectii", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: ok ? "accept" : "decline", id: cur.id }) }).catch(() => null);
@@ -439,6 +443,7 @@ export function MobileApp() {
         onStart={() => go({ v: "form", id: cur.id, sec: 0 })} />}
       {view.v === "form" && cur && draft && (
         <Form x={cur} d={draft} sec={view.sec} photos={pending.filter((p) => p.insp === cur.id && p.kind === "photo").length + cur.files.filter((f) => f.kind === "photo").length}
+          pending={pending.filter((p) => p.insp === cur.id && p.kind === "photo")}
           onBack={() => history.back()} onSec={(s) => setViewState({ v: "form", id: cur.id, sec: s })} change={change} onPhoto={addPhoto}
           onRooms={() => go({ v: "rooms", id: cur.id })} onPhotos={() => go({ v: "photos", id: cur.id })} onSign={() => go({ v: "sign", id: cur.id })} />
       )}
@@ -1055,9 +1060,9 @@ function SubInput({ sq, v, set }: { sq: SubQ; v: string | string[] | undefined; 
   );
 }
 
-function QInput({ q, v, set, onPhoto, answers, setKey }: { q: Question; v: string | string[] | undefined; set: (v: string | string[]) => void; onPhoto: (f: File, room: string) => void;
-  answers?: Record<string, string | string[]>; setKey?: (k: string, v: string | string[]) => void }) {
-  const cam = useRef<HTMLInputElement>(null), gal = useRef<HTMLInputElement>(null);
+function QInput({ q, v, set, onPhoto, answers, setKey, thumbs = [] }: { q: Question; v: string | string[] | undefined; set: (v: string | string[]) => void; onPhoto: (f: File, room: string) => void;
+  answers?: Record<string, string | string[]>; setKey?: (k: string, v: string | string[]) => void; thumbs?: string[] }) {
+  const pickRef = useRef<HTMLInputElement>(null);
   return (
     <div className="mbQ">
       <span className="mbQT">{q.t}{q.req && <i aria-label="obligatorie"> *</i>}</span>
@@ -1075,23 +1080,31 @@ function QInput({ q, v, set, onPhoto, answers, setKey }: { q: Question; v: strin
       {q.kind === "text" && <textarea className="mbIn" rows={2} value={(v as string) ?? ""} onChange={(e) => set(e.target.value)} />}
       {q.kind === "number" && <span className="mbNum"><input className="mbIn" inputMode="decimal" value={(v as string) ?? ""} onChange={(e) => set(e.target.value.replace(/[^\d.,-]/g, ""))} />{q.unit && <em>{q.unit}</em>}</span>}
       {q.kind === "date" && <input className="mbIn" type="date" value={(v as string) ?? ""} onChange={(e) => set(e.target.value)} />}
-      {q.photo && <>
-        <input ref={cam} type="file" accept="image/*" capture="environment" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) onPhoto(f, q.t); e.target.value = ""; }} />
-        <input ref={gal} type="file" accept="image/*" multiple hidden onChange={(e) => { for (const f of Array.from(e.target.files ?? [])) onPhoto(f, q.t); e.target.value = ""; }} />
+      {q.photo && (
+        // one button: the phone offers the camera or the gallery; the photos of the question show small next to it
         <span className="mbQPh">
-          <button type="button" className="mbLink" onClick={() => cam.current?.click()}>+ Fotografiază pentru „{q.t}”</button>
-          <button type="button" className="mbLink" onClick={() => gal.current?.click()}>+ Din galerie</button>
+          <input ref={pickRef} type="file" accept="image/*" multiple hidden onChange={(e) => { for (const f of Array.from(e.target.files ?? [])) onPhoto(f, q.t); e.target.value = ""; }} />
+          <button type="button" className="mbQPhBtn" aria-label={`Fotografie pentru „${q.t}”`} onClick={() => pickRef.current?.click()}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z" /><circle cx="12" cy="13" r="3.5" /></svg>
+            <b aria-hidden="true">+</b>
+          </button>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          {thumbs.map((src) => <img key={src} src={src} alt="" className="mbQThumb" />)}
         </span>
-      </>}
+      )}
     </div>
   );
 }
 
-function Form({ x, d, sec, photos, onBack, onSec, change, onPhoto, onRooms, onPhotos, onSign }: {
-  x: Insp; d: Draft; sec: number; photos: number; onBack: () => void; onSec: (s: number) => void; change: (f: (d: Draft) => Draft) => void;
+function Form({ x, d, sec, photos, pending, onBack, onSec, change, onPhoto, onRooms, onPhotos, onSign }: {
+  x: Insp; d: Draft; sec: number; photos: number; pending: QPhoto[]; onBack: () => void; onSec: (s: number) => void; change: (f: (d: Draft) => Draft) => void;
   onPhoto: (f: File, room: string) => void; onRooms: () => void; onPhotos: () => void; onSign: () => void;
 }) {
   const groups = x.template.groups;
+  // the photos of each question (sent ones from the server, the ones still on the phone from memory)
+  const local = useMemo(() => pending.map((p) => ({ room: p.room, src: URL.createObjectURL(p.blob) })), [pending]);
+  useEffect(() => () => local.forEach((p) => URL.revokeObjectURL(p.src)), [local]);
+  const thumbsOf = (room: string) => [...x.files.filter((f) => f.kind === "photo" && f.room === room).map((f) => `/api/inspectii/file/${f.id}`), ...local.filter((p) => p.room === room).map((p) => p.src)];
   // the template's own "Constatări" group (UVALO sheets) replaces the free-text findings step
   const ownFind = groups.some((gr) => gr.id === "constatari");
   const last = ownFind ? groups.length - 1 : groups.length;
@@ -1100,8 +1113,8 @@ function Form({ x, d, sec, photos, onBack, onSec, change, onPhoto, onRooms, onPh
   const isFind = !ownFind && sec >= groups.length;
   const g = groups[sec];
   const roomsDone = d.rooms.filter(roomDone).length;
-  // the next section opens only when this one's required questions are answered
-  const secReq = g ? g.qs.filter((q) => !isOptional(q)) : [];
+  // the next section opens only when this one's required questions (marked *) are answered; the others can stay empty
+  const secReq = g ? g.qs.filter((q) => q.req) : [];
   const secLeft = secReq.filter((q) => !answered(d.answers[q.id])).length;
   // the current section's chip is scrolled into view (the chips row is wider than the screen)
   const secsRef = useRef<HTMLElement>(null);
@@ -1127,7 +1140,7 @@ function Form({ x, d, sec, photos, onBack, onSec, change, onPhoto, onRooms, onPh
         {x.redo_note && <div className="mbRedo small"><b>De completat</b><span>{x.redo_note}</span></div>}
         {!isFind && g && <>
           <h2 className="mbH2">{g.name}</h2>
-          {g.qs.map((q) => <QInput key={q.id} q={q} v={d.answers[q.id]} onPhoto={onPhoto} answers={d.answers}
+          {g.qs.map((q) => <QInput key={q.id} q={q} v={d.answers[q.id]} onPhoto={onPhoto} answers={d.answers} thumbs={q.photo ? thumbsOf(q.t) : []}
             set={(v) => change((o) => { o.answers[q.id] = v; return o; })} setKey={(k, v) => change((o) => { o.answers[k] = v; return o; })} />)}
         </>}
         {isFind && <>
@@ -1410,20 +1423,17 @@ function Photos({ x, d, pending, onBack, onNext, onPhotos, onDelete, onMove }: {
           // the chosen group shows up (even empty) — bring it into view
           setTimeout(() => document.querySelector(`[data-cat="${CSS.escape(c)}"]`)?.scrollIntoView({ behavior: "smooth", block: "center" }), 50);
         }}>{cats.map((c) => <option key={c}>{c}</option>)}</select></label>
-        <span className="mbGrid2">
-          <button type="button" className="mbBtn gold big" disabled={busy} onClick={() => pick(cam.current, room)}>
+        <span className="mbGrid2 mbPhBtns">
+          <button type="button" className="mbBtn gold" disabled={busy} onClick={() => pick(cam.current, room)}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z" /><circle cx="12" cy="13" r="3.5" /></svg>Fotografiază
           </button>
-          <button type="button" className="mbBtn dark big" disabled={busy} onClick={() => pick(gal.current, room)}>
+          <button type="button" className="mbBtn dark" disabled={busy} onClick={() => pick(gal.current, room)}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2.5" /><circle cx="9" cy="10" r="2" /><path d="M21 16l-5-5-9 9" /></svg>Din galerie
           </button>
         </span>
         {/* done only once the photos are prepared and sent (offline they wait on the phone and the buttons work) */}
         {(busy || up) && <small className="mbCenterSmall">{busy || up?.phase === "prep" ? "Se pregătesc fotografiile…" : `Se încarcă fotografiile${up?.total ? ` · ${up.done}/${up.total}` : ""}…`}</small>}
-        <span className="mbGrid2 mbNextStep">
-          <button type="button" className="mbBtn big" disabled={busy || !!up} onClick={onBack}>Gata</button>
-          <button type="button" className="mbBtn big" disabled={busy || !!up} onClick={onNext}>Semnătură →</button>
-        </span>
+        <button type="button" className="mbBtn gold big mbNextStep" disabled={busy || !!up} onClick={onNext}>Mai departe: Semnătură →</button>
       </footer>
     </>
   );

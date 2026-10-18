@@ -2942,5 +2942,10 @@ html:has(.mb) { -webkit-tap-highlight-color: transparent; -webkit-text-size-adju
 .intHooks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: 12px; }
 .intHooks li { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 /* a question's photo: camera or gallery */
-.mbQPh { display: flex; flex-wrap: wrap; gap: 4px 16px; }
+.mbQPh { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 4px; }
+.mbQPhBtn { position: relative; width: 44px; height: 44px; border-radius: 12px; border: 1.5px dashed var(--acc, #f2a93b); background: var(--acc-soft, #fdf1dc); color: var(--acc-text, #9a5f00); display: grid; place-items: center; }
+.mbQPhBtn b { position: absolute; right: 3px; bottom: 1px; font-size: 13px; line-height: 1; }
+.mbQThumb { width: 44px; height: 44px; border-radius: 10px; object-fit: cover; background: #eee; }
+.mbPhBtns .mbBtn { min-height: 44px; padding: 8px 10px; font-size: 13.5px; }
+.mbPhBtns .mbBtn svg { width: 17px; height: 17px; }
 .mbNextStep { width: 100%; margin-top: 8px; }
