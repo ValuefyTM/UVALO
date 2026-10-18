@@ -284,7 +284,8 @@ export function MobileApp() {
       started_at: x.started_at ?? "", rev: x.sheet_rev ?? 0,
     };
     // a building with no rooms from the floor survey gets the standard ones (replaced by "Preia din RLV")
-    if (!d.rooms.length && !/^teren/i.test(x.prop_type ?? "")) d.rooms = STANDARD_ROOMS.map((n) => ({ n, a: null, std: true }));
+    // (only when the sheet asks the rooms' finishes)
+    if (!d.rooms.length && x.template.rooms && !/^teren/i.test(x.prop_type ?? "")) d.rooms = STANDARD_ROOMS.map((n) => ({ n, a: null, std: true }));
     return d;
   }
 
@@ -438,8 +439,8 @@ export function MobileApp() {
           onBack={() => history.back()} onSec={(s) => setViewState({ v: "form", id: cur.id, sec: s })} change={change} onPhoto={addPhoto}
           onRooms={() => go({ v: "rooms", id: cur.id })} onPhotos={() => go({ v: "photos", id: cur.id })} onSign={() => go({ v: "sign", id: cur.id })} />
       )}
-      {view.v === "rooms" && cur && draft && <Rooms x={cur} d={draft} change={change} onBack={() => history.back()} onPhoto={addPhoto} onRlv={readRlv} />}
-      {view.v === "photos" && cur && draft && <Photos x={cur} d={draft} pending={pending.filter((p) => p.insp === cur.id && p.kind === "photo")} onBack={() => history.back()} onPhotos={addPhotos} onDelete={deletePhoto} onMove={movePhoto} />}
+      {view.v === "rooms" && cur && draft && <Rooms x={cur} d={draft} change={change} onBack={() => history.back()} onNext={() => go({ v: "photos", id: cur.id })} onPhoto={addPhoto} onRlv={readRlv} />}
+      {view.v === "photos" && cur && draft && <Photos x={cur} d={draft} pending={pending.filter((p) => p.insp === cur.id && p.kind === "photo")} onBack={() => history.back()} onNext={() => go({ v: "sign", id: cur.id })} onPhotos={addPhotos} onDelete={deletePhoto} onMove={movePhoto} />}
       {view.v === "sign" && cur && draft && <Sign x={cur} d={draft} photos={pending.filter((p) => p.insp === cur.id && p.kind === "photo").length + cur.files.filter((f) => f.kind === "photo").length} change={change} onBack={() => history.back()} onFinish={finish}
         onRooms={() => go({ v: "rooms", id: cur.id })} onPhotos={() => go({ v: "photos", id: cur.id })} />}
       {view.v === "queue" && <Queue pending={pending} finishN={finishQ} items={items} online={online} onSend={async () => { const n = await sendAll(); say(n ? "Mai sunt elemente de trimis." : "Totul a fost trimis."); }} />}
@@ -1049,7 +1050,7 @@ function SubInput({ sq, v, set }: { sq: SubQ; v: string | string[] | undefined; 
 
 function QInput({ q, v, set, onPhoto, answers, setKey }: { q: Question; v: string | string[] | undefined; set: (v: string | string[]) => void; onPhoto: (f: File, room: string) => void;
   answers?: Record<string, string | string[]>; setKey?: (k: string, v: string | string[]) => void }) {
-  const cam = useRef<HTMLInputElement>(null);
+  const cam = useRef<HTMLInputElement>(null), gal = useRef<HTMLInputElement>(null);
   return (
     <div className="mbQ">
       <span className="mbQT">{q.t}{q.req && <i aria-label="obligatorie"> *</i>}</span>
@@ -1069,7 +1070,11 @@ function QInput({ q, v, set, onPhoto, answers, setKey }: { q: Question; v: strin
       {q.kind === "date" && <input className="mbIn" type="date" value={(v as string) ?? ""} onChange={(e) => set(e.target.value)} />}
       {q.photo && <>
         <input ref={cam} type="file" accept="image/*" capture="environment" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) onPhoto(f, q.t); e.target.value = ""; }} />
-        <button type="button" className="mbLink" onClick={() => cam.current?.click()}>+ Fotografie pentru „{q.t}”</button>
+        <input ref={gal} type="file" accept="image/*" multiple hidden onChange={(e) => { for (const f of Array.from(e.target.files ?? [])) onPhoto(f, q.t); e.target.value = ""; }} />
+        <span className="mbQPh">
+          <button type="button" className="mbLink" onClick={() => cam.current?.click()}>+ Fotografiază pentru „{q.t}”</button>
+          <button type="button" className="mbLink" onClick={() => gal.current?.click()}>+ Din galerie</button>
+        </span>
       </>}
     </div>
   );
@@ -1133,7 +1138,7 @@ function Form({ x, d, sec, photos, onBack, onSec, change, onPhoto, onRooms, onPh
             ? <button type="button" className="mbBtn gold big" disabled={secLeft > 0} onClick={() => { onSec(sec + 1); window.scrollTo(0, 0); }}>
                 {secLeft ? `Mai ai ${secLeft} ${secLeft === 1 ? "întrebare obligatorie" : "întrebări obligatorii"}` : `Secțiunea următoare: ${sec + 1 < groups.length ? groups[sec + 1].name : "Constatări"} →`}
               </button>
-            : <button type="button" className="mbBtn gold big" onClick={onSign}>Încheie inspecția →</button>}
+            : <button type="button" className="mbBtn gold big" onClick={x.template.rooms ? onRooms : onPhotos}>{x.template.rooms ? "Mai departe: Finisaje încăperi →" : "Mai departe: Fotografii →"}</button>}
         </span>
       </footer>
     </>
@@ -1167,8 +1172,8 @@ function Tiles({ d, photos, kept, rooms, onRooms, onPhotos, onSign }: { d: Draft
 
 /* ---------- rooms (from the floor plan) ---------- */
 
-function Rooms({ x, d, change, onBack, onPhoto, onRlv }: {
-  x: Insp; d: Draft; change: (f: (d: Draft) => Draft) => void; onBack: () => void; onPhoto: (f: File, room: string) => void;
+function Rooms({ x, d, change, onBack, onNext, onPhoto, onRlv }: {
+  x: Insp; d: Draft; change: (f: (d: Draft) => Draft) => void; onBack: () => void; onNext: () => void; onPhoto: (f: File, room: string) => void;
   onRlv: (src: { fileId: string } | { file: File }) => Promise<Room[] | null>;
 }) {
   const cam = useRef<HTMLInputElement>(null), rlvCam = useRef<HTMLInputElement>(null), rlvFile = useRef<HTMLInputElement>(null);
@@ -1221,6 +1226,7 @@ function Rooms({ x, d, change, onBack, onPhoto, onRlv }: {
         ))}
         <button type="button" className="mbBtn" onClick={() => { const n = prompt("Numele încăperii"); if (n?.trim()) change((o) => { o.rooms.push({ n: n.trim(), a: null }); return o; }); }}>+ Încăpere</button>
       </div>
+      <footer className="mbFoot"><button type="button" className="mbBtn gold big" onClick={onNext}>Mai departe: Fotografii →</button></footer>
       {sheet && (
         <div className="mbSheetBg" onClick={() => setSheet(false)}>
           <div className="mbSheet" onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Preia din RLV">
@@ -1243,16 +1249,16 @@ function Rooms({ x, d, change, onBack, onPhoto, onRlv }: {
 
 type DragPh = { id: string; local: boolean; src: string; from: string; x: number; y: number; over: string | null };
 
-function Photos({ x, d, pending, onBack, onPhotos, onDelete, onMove }: {
-  x: Insp; d: Draft; pending: QPhoto[]; onBack: () => void; onPhotos: (f: File[], room: string, gallery: boolean) => Promise<void>;
+function Photos({ x, d, pending, onBack, onNext, onPhotos, onDelete, onMove }: {
+  x: Insp; d: Draft; pending: QPhoto[]; onBack: () => void; onNext: () => void; onPhotos: (f: File[], room: string, gallery: boolean) => Promise<void>;
   onDelete: (id: string, local: boolean) => void; onMove: (id: string, local: boolean, room: string) => Promise<void>;
 }) {
   const cats = useMemo(() => {
-    const c = photoCategories(x.prop_type);
+    const c = photoCategories(x.prop_type, x.template.photos);
     // the standard rooms keep their own name (Bucătărie is already a category); the survey's rooms get their number
     const before = d.rooms.some((r) => r.std) ? c.before.filter((n) => n !== "Baie") : c.before; // "Băi (spații umede)" takes its place
     return [...new Set([...before, ...d.rooms.map((r, i) => (r.std ? r.n : `${r.n} · rlv ${i + 1}`)), ...c.after])];
-  }, [d.rooms, x.prop_type]);
+  }, [d.rooms, x.prop_type, x.template.photos]);
   const [room, setRoom] = useState(cats[0]);
   const [busy, setBusy] = useState(false);
   const [drag, setDrag] = useState<DragPh | null>(null);
@@ -1400,6 +1406,7 @@ function Photos({ x, d, pending, onBack, onPhotos, onDelete, onMove }: {
           </button>
         </span>
         {busy && <small className="mbCenterSmall">Se pregătesc fotografiile…</small>}
+        <button type="button" className="mbBtn big mbNextStep" disabled={busy} onClick={onNext}>Mai departe: Semnătură →</button>
       </footer>
     </>
   );

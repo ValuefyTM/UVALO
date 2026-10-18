@@ -10,8 +10,11 @@ export type SubQ = { id: string; t: string; kind: SubKind; options?: string[]; u
  */
 export type Question = { id: string; t: string; kind: QKind; options?: string[]; def?: string; unit?: string; req?: boolean; pdf?: boolean; photo?: boolean; sub?: Record<string, SubQ[]> };
 export type Group = { id: string; name: string; qs: Question[] };
-/** `rooms` = the sheet asks the finishes of each room (floor, walls, ceiling, state); off by default, turned on in the sheet editor. */
-export type Template = { groups: Group[]; rooms?: boolean };
+/**
+ * `rooms` = the sheet asks the finishes of each room (floor, walls, ceiling, state); off by default, turned on in the sheet editor.
+ * `photos` = the photo groups the sheet suggests (else the ones of the property type).
+ */
+export type Template = { groups: Group[]; rooms?: boolean; photos?: string[] };
 
 export const QKIND_LABEL: Record<QKind, string> = { one: "Alegere unică", many: "Alegere multiplă", text: "Text", number: "Număr", date: "Dată", comp: "Compusă (întrebări după răspuns)" };
 export const SUBKIND_LABEL: Record<SubKind, string> = { one: "Alegere unică", many: "Alegere multiplă", text: "Text", number: "Număr" };
@@ -44,7 +47,9 @@ export function typesOf(list: (string | null | undefined)[]) {
   const set = [...new Set(list.filter((x): x is string => !!x && !!x.trim()))];
   return [...PROP_TYPES.filter((p) => set.includes(p)), ...set.filter((p) => !PROP_TYPES.includes(p)).sort((a, b) => a.localeCompare(b, "ro"))];
 }
-export const PROP_TYPES = ["Apartament", "Casă", "Teren", "Spațiu comercial / Hală", "Accesoriu (parcare, garaj, boxă)"];
+export const PROP_TYPES = ["Apartament", "Casă", "Teren", "Spațiu comercial / Hală", "Accesoriu (parcare, garaj, boxă)", "Bun mobil (autovehicul, utilaj)"];
+/** A movable good (car, van, machine): no rooms, its own photo groups. */
+export const isMovable = (propType: string | null | undefined) => /bun mobil|autovehicul|autoturism|autoutilitar|utilaj|motoscuter|vehicul/i.test(propType ?? "");
 export const CONTACT_ROLES = ["Proprietar", "Client", "Chiriaș", "Agent imobiliar", "Altă persoană"];
 export const ASSIGN_LABEL = { me: "Eu", office: "Cineva din birou", collab: "Un coleg din Colaborări" } as const;
 export type AssignKind = keyof typeof ASSIGN_LABEL;
@@ -292,6 +297,21 @@ const ACCESORIU: Group[] = [
   { id: "obs", name: "Observații", qs: [txt("notes", "Observații")] },
 ];
 
+const BUN_MOBIL: Group[] = [
+  { id: "identificare", name: "Identificare", qs: [
+    txt("make", "Marca", { req: true }), txt("model", "Model", { req: true }), num("year", "An fabricație", undefined, { req: true }),
+    txt("plate", "Nr. înmatriculare"), txt("vin", "Serie șasiu (VIN)", { req: true }), num("mileage", "Kilometraj / ore funcționare", "km"),
+    one("fuel", "Combustibil", ["Benzină", "Motorină", "GPL", "Hibrid", "Electric", "Altul"]), one("gearbox", "Cutie de viteze", ["Manuală", "Automată"]),
+    txt("color", "Culoare"),
+  ] },
+  { id: "stare", name: "Stare tehnică", qs: [
+    one("body", "Caroserie", STARE, { req: true }), one("interior", "Interior", STARE, { req: true }), one("engine", "Motor / funcționare", ["Pornește și funcționează", "Pornește cu probleme", "Nu pornește", "Neverificat"], { req: true }),
+    one("tyres", "Anvelope", STARE), many("equipment", "Dotări", ["Climatizare", "Navigație", "Senzori parcare", "Cameră marșarier", "Scaune încălzite", "Cârlig remorcare"]),
+    txt("damages", "Degradări vizibile"),
+  ] },
+  { id: "obs", name: "Observații", qs: [txt("notes", "Observații")] },
+];
+
 /** The UVALO templates (read-only; a person or a firm duplicates one to change it). */
 export const UVALO_TEMPLATES: { key: string; name: string; prop: string; tpl: Template }[] = [
   { key: "apartament", name: "Template UVALO", prop: "Apartament", tpl: { groups: APARTAMENT } },
@@ -299,6 +319,7 @@ export const UVALO_TEMPLATES: { key: string; name: string; prop: string; tpl: Te
   { key: "teren", name: "Template UVALO", prop: "Teren", tpl: { groups: TEREN } },
   { key: "comercial", name: "Template UVALO", prop: "Spațiu comercial / Hală", tpl: { groups: COMERCIAL } },
   { key: "accesoriu", name: "Template UVALO", prop: "Accesoriu (parcare, garaj, boxă)", tpl: { groups: ACCESORIU } },
+  { key: "bun-mobil", name: "Template UVALO", prop: "Bun mobil (autovehicul, utilaj)", tpl: { groups: BUN_MOBIL } },
 ];
 
 /** Rooms of the floor survey (releveu), described at the visit: the same lists as the VALUEFY sheet. */
@@ -314,8 +335,14 @@ export const STANDARD_ROOMS = ["Bucătărie", "Băi (spații umede)", "Dormitoar
 /** A room's finishes are complete when all four are chosen (floor, walls, ceiling, state). */
 export const roomDone = (r: { floor?: string; walls?: string; ceiling?: string; state?: string }) => !!(r.floor && r.walls && r.ceiling && r.state);
 
-/** Photo categories (the VALUEFY list), by the kind of property; the rooms are added between them. */
-export function photoCategories(propType: string | null | undefined) {
+/** The photo groups of a movable good. */
+export const MOVABLE_PHOTOS = ["Exterior – față", "Exterior – spate", "Lateral stânga", "Lateral dreapta", "Interior / bord", "Kilometraj / ore", "Serie șasiu (VIN)",
+  "Compartiment motor", "Anvelope / jante", "Degradări", "Documente (talon, CIV)", "Altele"];
+
+/** Photo categories: the ones the sheet sets, else by the kind of property (the VALUEFY list); the rooms are added between them. */
+export function photoCategories(propType: string | null | undefined, own?: string[] | null) {
+  if (own?.length) return { before: own.filter((x) => x !== "Altele"), after: ["Altele"] };
+  if (isMovable(propType)) return { before: MOVABLE_PHOTOS.filter((x) => x !== "Altele"), after: ["Altele"] };
   const t = (propType ?? "").toLowerCase();
   const land = t.startsWith("teren"), acc = t.startsWith("accesoriu"), home = /apartament|cas/.test(t) || !t;
   return {
@@ -335,6 +362,8 @@ export function cleanTemplate(v: unknown): Template {
   const s = (x: unknown, m = 160) => (typeof x === "string" ? x.trim().slice(0, m) : "");
   return {
     ...((v as Template | null)?.rooms === true ? { rooms: true } : {}),
+    ...(Array.isArray((v as Template | null)?.photos) && (v as Template).photos!.length
+      ? { photos: [...new Set((v as Template).photos!.map((x) => s(x, 60)).filter(Boolean))].slice(0, 30) } : {}),
     groups: g0.map((g, gi) => ({
       id: s(g?.id, 40) || `g${gi + 1}`,
       name: s(g?.name, 80) || "Grup",
