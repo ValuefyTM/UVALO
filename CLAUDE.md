@@ -583,6 +583,11 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
 - **Notificări push** (Web Push; pe iPhone doar cu aplicația instalată, iOS 16.4+): `src/lib/webpush.ts` = cheile VAPID făcute la prima folosire
   și ținute în `app_settings` „vapid”, criptare aes128gcm (RFC 8291) + semnătură ES256, totul cu WebCrypto (fără bibliotecă). Abonările în
   `insp_push` (migrația 0025; 404/410 de la serviciul de push → abonare ștearsă), `/api/m/push` (GET cheia, POST `{sub}` / `{action: test}`, DELETE).
+  **Forma notificării** (`notifyLog`): titlul = felul evenimentului („Inspecție nouă alocată”, „Solicitare de inspecție”, „Inspecție realocată”,
+  „Inspecție întoarsă în lucru”, „Fișă de inspecție ștearsă”, „Inspecție ștearsă”, „Inspecție programată”, „Solicitare acceptată / refuzată”,
+  „Inspecție începută / finalizată / predată”, „Document adăugat”, altfel „Inspecție actualizată”); corpul = tipul bunului · adresa, apoi mesajul
+  pentru evaluator când există (`notes` / instrucțiunile la alocare, nota „ce trebuie completat”, motivul ștergerii / refuzului, data programării,
+  de la cine). Memento-urile din cron au și ele tipul bunului.
   Se trimit: (1) din `logIt()` în `insp.ts`, ce face cineva pe o inspecție ajunge la ceilalți implicați (cine a pregătit-o / cine o face; o acțiune
   făcută de pe web — alt host decât `INSP_HOSTS` — ajunge și la telefonul propriu dacă ești cel care face inspecția, ex. retrimiterea; nu pozele, nu
   simulările; „Inspecție nouă pentru tine” la atribuire); (2) din program: `wrangler.jsonc` „triggers” la 15 minute → `worker.ts` `scheduled` →

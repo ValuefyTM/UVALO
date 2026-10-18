@@ -20,12 +20,12 @@ export async function POST(req: Request) {
   let sent = 0;
 
   // an hour before
-  const { results: soon } = await db.prepare(`SELECT i.id, i.address, i.scheduled_at, i.assignee_id FROM inspections i
+  const { results: soon } = await db.prepare(`SELECT i.id, i.address, i.prop_type, i.scheduled_at, i.assignee_id FROM inspections i
     WHERE i.status = 'plan' AND i.deleted_at IS NULL AND i.assignee_id IN (SELECT user_id FROM insp_push) AND i.scheduled_at >= ? AND i.scheduled_at < ?`)
-    .bind(from, to).all<{ id: string; address: string; scheduled_at: string; assignee_id: string }>();
+    .bind(from, to).all<{ id: string; address: string; prop_type: string | null; scheduled_at: string; assignee_id: string }>();
   for (const i of soon) {
     if (!(await once(db, `soon:${i.id}:${i.scheduled_at}`))) continue;
-    sent += await notifyUser(db, i.assignee_id, { title: `Peste o oră, la ${i.scheduled_at.slice(11, 16)}`, body: i.address, url: `/?open=${i.id}`, tag: `insp-${i.id}` });
+    sent += await notifyUser(db, i.assignee_id, { title: `Peste o oră, la ${i.scheduled_at.slice(11, 16)}`, body: [i.prop_type, i.address].filter(Boolean).join(" · "), url: `/?open=${i.id}`, tag: `insp-${i.id}` });
   }
 
   // the morning summary, between 7:00 and 7:15

@@ -301,38 +301,54 @@ export async function logIt(db: D1Database, id: string, userId: string | null, t
   try { (await getCloudflareContext({ async: true })).ctx.waitUntil(p); } catch { await p; }
 }
 
-/** What someone did on an inspection goes, as a phone notification, to the others involved (who prepared it, who does it). */
+/** What someone did on an inspection goes, as a phone notification, to the others involved (who prepared it, who does it).
+ *  Title = the kind of event ("Inspecție nouă alocată", "Fișă de inspecție ștearsă"…); body = the property type and address, then the
+ *  message for the evaluator when there is one (instructions, what to complete, the reason, the schedule). */
 async function notifyLog(db: D1Database, id: string, userId: string | null, text: string, fromWeb = false) {
-  const r = await db.prepare(`SELECT i.address, i.assignee_id, i.created_by, i.org_id, COALESCE(NULLIF(u.name, ''), u.email) AS who
+  const r = await db.prepare(`SELECT i.address, i.prop_type, i.notes, i.assignee_id, i.created_by, i.org_id, COALESCE(NULLIF(u.name, ''), u.email) AS who
     FROM inspections i LEFT JOIN users u ON u.id = ? WHERE i.id = ?`).bind(userId ?? "", id)
-    .first<{ address: string; assignee_id: string | null; created_by: string; org_id: string | null; who: string | null }>();
+    .first<{ address: string; prop_type: string | null; notes: string | null; assignee_id: string | null; created_by: string; org_id: string | null; who: string | null }>();
   if (!r) return;
   // several inspections sent together by the firm's app (the assets of one report): one notification, replaced as they come
   if (/^Creată din aplicația firmei/.test(text) && r.assignee_id && r.org_id) {
     const since = new Date(Date.now() - 15 * 60_000).toISOString();
-    const { results } = await db.prepare(`SELECT address FROM inspections WHERE assignee_id = ? AND org_id = ? AND ext_ref IS NOT NULL AND deleted_at IS NULL
-        AND status = 'prog' AND created_at >= ? ORDER BY created_at`).bind(r.assignee_id, r.org_id, since).all<{ address: string }>();
+    const { results } = await db.prepare(`SELECT address, prop_type FROM inspections WHERE assignee_id = ? AND org_id = ? AND ext_ref IS NOT NULL AND deleted_at IS NULL
+        AND status = 'prog' AND created_at >= ? ORDER BY created_at`).bind(r.assignee_id, r.org_id, since).all<{ address: string; prop_type: string | null }>();
     if (results.length > 1) {
-      const where = [...new Set(results.map((x) => x.address))];
+      const where = [...new Set(results.map((x) => [x.prop_type, x.address].filter(Boolean).join(" · ")))];
       await notifyUser(db, r.assignee_id, {
-        title: `${results.length} inspecții noi pentru tine`, body: `${where.slice(0, 3).join(" · ")}${where.length > 3 ? ` și încă ${where.length - 3}` : ""}${r.who ? ` · de la ${r.who}` : ""}`,
+        title: `${results.length} inspecții noi alocate`, body: `${where.slice(0, 3).join("\n")}${where.length > 3 ? `\nși încă ${where.length - 3}` : ""}${r.who ? `\nde la ${r.who}` : ""}`,
         url: "/", tag: `insp-new-${r.assignee_id}`,
       });
       return;
     }
   }
-  const nice = text.replace(/(\d{4})-(\d{2})-(\d{2})[ T](\d{2}:\d{2})/, "$3.$2.$1, $4");
+  const nice = (t: string) => t.replace(/(\d{4})-(\d{2})-(\d{2})[ T](\d{2}:\d{2})/, "$3.$2.$1, $4");
+  const what = [r.prop_type, r.address].filter(Boolean).join(" · ");
+  const note = (r.notes ?? "").trim();
+  const from = r.who ? ` · de la ${r.who}` : "";
   for (const to of new Set([r.assignee_id, r.created_by].filter((x): x is string => !!x && (x !== userId || (fromWeb && x === r.assignee_id))))) {
-    const fresh = /^Creată/.test(text) && to === r.assignee_id;
-    const ask = /^Solicitare de inspecție/.test(text) && to === r.assignee_id;
-    const moved = /^Realocată/.test(text) && to === r.assignee_id;
-    const redo = text.match(/^Retrimisă pe telefon pentru completare: ([\s\S]*)/);
-    await notifyUser(db, to, {
-      title: ask ? "Solicitare de inspecție" : moved ? "Inspecție nouă pentru tine" : fresh ? "Inspecție nouă pentru tine" : redo ? `De completat · ${r.address}` : r.address,
-      body: ask || fresh || moved ? `${r.address}${r.who ? ` · de la ${r.who}` : ""}` : redo ? redo[1] : `${r.who ?? "Cineva"}: ${nice}`,
-      // a new one from the firm's app shares its tag with the grouped notification (the next one replaces it)
-      url: `/?open=${id}`, tag: fresh && /aplicația firmei/.test(text) ? `insp-new-${to}` : `insp-${id}`,
-    });
+    const mine = to === r.assignee_id;   // the person who does the inspection
+    const fresh = /^Creată/.test(text) && mine;
+    let title: string, lines: string[] = [what];
+    let m: RegExpMatchArray | null;
+    if (/^Creată/.test(text)) { title = mine ? "Inspecție nouă alocată" : "Inspecție creată"; if (note) lines.push(note); lines.push(from.slice(3)); }
+    else if (/^Solicitare de inspecție/.test(text)) { title = mine ? "Solicitare de inspecție" : "Solicitare trimisă"; if (mine && note) lines.push(note); lines.push(mine ? from.slice(3) : text); }
+    else if (/^Realocată/.test(text)) { title = mine ? "Inspecție nouă alocată" : "Inspecție realocată"; if (mine && note) lines.push(note); lines.push(mine ? from.slice(3) : text); }
+    else if ((m = text.match(/^Retrimisă pe telefon pentru completare: ([\s\S]*)/))) { title = "Inspecție întoarsă în lucru"; lines.push(m[1].replace(/ \((semnătura salvată rămâne|se semnează din nou)\)$/, "")); }
+    else if ((m = text.match(/^Fișa.* a fost ștearsă(?: \(cu fotografiile\))?(?:: ([\s\S]*))?$/))) { title = "Fișă de inspecție ștearsă"; if (m[1]) lines.push(m[1]); if (r.who) lines.push(`de ${r.who}`); }
+    else if ((m = text.match(/^Inspecția a fost ștearsă(?:: ([\s\S]*))?/))) { title = "Inspecție ștearsă"; if (m[1]) lines.push(m[1]); if (r.who) lines.push(`de ${r.who}`); }
+    else if ((m = text.match(/^Programată pentru (.*)/))) { title = "Inspecție programată"; lines.push(`Pe ${nice(m[1])}${from}`); }
+    else if (/^Modificată/.test(text)) { title = "Inspecție modificată"; if (mine && note) lines.push(note); lines.push(text + from); }
+    else if (/^A acceptat/.test(text)) { title = "Solicitare acceptată"; lines.push(`${r.who ?? "Colaboratorul"} a acceptat inspecția`); }
+    else if ((m = text.match(/^A refuzat solicitarea de inspecție(?:: ([\s\S]*))?/))) { title = "Solicitare refuzată"; lines.push(`${r.who ?? "Colaboratorul"} a refuzat${m[1] ? `: ${m[1]}` : ""}`); }
+    else if (/^Începută pe teren/.test(text)) { title = "Inspecție începută"; lines.push(`${r.who ?? "Inspectorul"} e la fața locului`); }
+    else if (/^(Completată|Finalizată)/.test(text)) { title = "Inspecție finalizată"; lines.push(text); }
+    else if (/^Marcată ca predată/.test(text)) { title = "Inspecție predată"; lines.push(from.slice(3)); }
+    else if ((m = text.match(/^Document adăugat: (.*)/))) { title = "Document adăugat"; lines.push(`${m[1]}${from}`); }
+    else { title = "Inspecție actualizată"; lines.push(`${r.who ?? "Cineva"}: ${nice(text)}`); }
+    // a new one from the firm's app shares its tag with the grouped notification (the next one replaces it)
+    await notifyUser(db, to, { title, body: lines.filter(Boolean).join("\n").slice(0, 400), url: `/?open=${id}`, tag: fresh && /aplicația firmei/.test(text) ? `insp-new-${to}` : `insp-${id}` });
   }
 }
 
@@ -516,7 +532,7 @@ export async function inspAction(db: D1Database, c: Ctx, b: Record<string, unkno
     await logIt(db, id, c.user.id, ask ? `Solicitare de inspecție trimisă lui ${name} (colaborator)` : `Realocată lui ${name}`);
     // the one who had it: told it is no longer theirs (it leaves their phone at the next refresh)
     if (prev && prev !== to && prev !== c.user.id) {
-      const p = notifyUser(db, prev, { title: "Inspecție realocată", body: `${r.address} · a fost dată altcuiva`, url: "/", tag: `insp-${id}` }).catch(() => {});
+      const p = notifyUser(db, prev, { title: "Inspecție realocată", body: `${[r.prop_type, r.address].filter(Boolean).join(" · ")}\nA fost dată altcuiva`, url: "/", tag: `insp-${id}` }).catch(() => {});
       try { (await getCloudflareContext({ async: true })).ctx.waitUntil(p); } catch { await p; }
     }
     return { ok: true, id };

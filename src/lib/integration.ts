@@ -215,7 +215,7 @@ export async function putInspection(db: D1Database, key: ApiKey, b: Record<strin
       await logIt(db, id, key.created_by, `Realocată lui ${who.name}`);
       const prev = old.assignee_id ? String(old.assignee_id) : null;
       if (prev) {
-        const p = notifyUser(db, prev, { title: "Inspecție realocată", body: `${old.address} · a fost dată altcuiva`, url: "/", tag: `insp-${id}` }).catch(() => {});
+        const p = notifyUser(db, prev, { title: "Inspecție realocată", body: `${[old.prop_type, old.address].filter(Boolean).join(" · ")}\nA fost dată altcuiva`, url: "/", tag: `insp-${id}` }).catch(() => {});
         try { (await getCloudflareContext({ async: true })).ctx.waitUntil(p); } catch { await p; }
       }
     } else await logIt(db, id, key.created_by, "Modificată din aplicația firmei");
