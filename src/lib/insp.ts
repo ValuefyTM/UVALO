@@ -289,7 +289,8 @@ export async function logIt(db: D1Database, id: string, userId: string | null, t
   // an inspection sent by the firm's software (integration API): its webhook hears every change
   const hook = import("./integration").then((m) => m.postHook(db, id, text)).catch(() => {});
   try { (await getCloudflareContext({ async: true })).ctx.waitUntil(hook); } catch { await hook; }
-  if (/^(Fotografie adăugat|Fișier șters|Link public)|simulare|a început să fie completată/i.test(text)) return; // not worth a phone notification
+  // not worth a phone notification (from the firm's app: its documents and updates come with the inspection, which is notified once)
+  if (/^(Fotografie adăugat|Fișier șters|Link public|Document adăugat|Modificată din aplicația firmei)|simulare|a început să fie completată/i.test(text)) return;
   // done on the web (not in the phone app): the person's own phone is told too (e.g. sent back to complete, rescheduled)
   let fromWeb = false;
   try {
@@ -302,10 +303,24 @@ export async function logIt(db: D1Database, id: string, userId: string | null, t
 
 /** What someone did on an inspection goes, as a phone notification, to the others involved (who prepared it, who does it). */
 async function notifyLog(db: D1Database, id: string, userId: string | null, text: string, fromWeb = false) {
-  const r = await db.prepare(`SELECT i.address, i.assignee_id, i.created_by, COALESCE(NULLIF(u.name, ''), u.email) AS who
+  const r = await db.prepare(`SELECT i.address, i.assignee_id, i.created_by, i.org_id, COALESCE(NULLIF(u.name, ''), u.email) AS who
     FROM inspections i LEFT JOIN users u ON u.id = ? WHERE i.id = ?`).bind(userId ?? "", id)
-    .first<{ address: string; assignee_id: string | null; created_by: string; who: string | null }>();
+    .first<{ address: string; assignee_id: string | null; created_by: string; org_id: string | null; who: string | null }>();
   if (!r) return;
+  // several inspections sent together by the firm's app (the assets of one report): one notification, replaced as they come
+  if (/^Creată din aplicația firmei/.test(text) && r.assignee_id && r.org_id) {
+    const since = new Date(Date.now() - 15 * 60_000).toISOString();
+    const { results } = await db.prepare(`SELECT address FROM inspections WHERE assignee_id = ? AND org_id = ? AND ext_ref IS NOT NULL AND deleted_at IS NULL
+        AND status = 'prog' AND created_at >= ? ORDER BY created_at`).bind(r.assignee_id, r.org_id, since).all<{ address: string }>();
+    if (results.length > 1) {
+      const where = [...new Set(results.map((x) => x.address))];
+      await notifyUser(db, r.assignee_id, {
+        title: `${results.length} inspecții noi pentru tine`, body: `${where.slice(0, 3).join(" · ")}${where.length > 3 ? ` și încă ${where.length - 3}` : ""}${r.who ? ` · de la ${r.who}` : ""}`,
+        url: "/", tag: `insp-new-${r.assignee_id}`,
+      });
+      return;
+    }
+  }
   const nice = text.replace(/(\d{4})-(\d{2})-(\d{2})[ T](\d{2}:\d{2})/, "$3.$2.$1, $4");
   for (const to of new Set([r.assignee_id, r.created_by].filter((x): x is string => !!x && (x !== userId || (fromWeb && x === r.assignee_id))))) {
     const fresh = /^Creată/.test(text) && to === r.assignee_id;
@@ -315,7 +330,8 @@ async function notifyLog(db: D1Database, id: string, userId: string | null, text
     await notifyUser(db, to, {
       title: ask ? "Solicitare de inspecție" : moved ? "Inspecție nouă pentru tine" : fresh ? "Inspecție nouă pentru tine" : redo ? `De completat · ${r.address}` : r.address,
       body: ask || fresh || moved ? `${r.address}${r.who ? ` · de la ${r.who}` : ""}` : redo ? redo[1] : `${r.who ?? "Cineva"}: ${nice}`,
-      url: `/?open=${id}`, tag: `insp-${id}`,
+      // a new one from the firm's app shares its tag with the grouped notification (the next one replaces it)
+      url: `/?open=${id}`, tag: fresh && /aplicația firmei/.test(text) ? `insp-new-${to}` : `insp-${id}`,
     });
   }
 }
