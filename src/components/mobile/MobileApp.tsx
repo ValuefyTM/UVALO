@@ -1262,6 +1262,13 @@ function Photos({ x, d, pending, onBack, onNext, onPhotos, onDelete, onMove }: {
   const [room, setRoom] = useState(cats[0]);
   const [busy, setBusy] = useState(false);
   const [drag, setDrag] = useState<DragPh | null>(null);
+  // the photos being prepared / sent (the upload bar's events)
+  const [up, setUp] = useState<UploadProgress | null>(null);
+  useEffect(() => {
+    const on = (e: Event) => setUp((e as CustomEvent<UploadProgress>).detail ?? null);
+    window.addEventListener("insp-upload", on);
+    return () => window.removeEventListener("insp-upload", on);
+  }, []);
   const cam = useRef<HTMLInputElement>(null), gal = useRef<HTMLInputElement>(null);
   const target = useRef(room); // the category the open picker adds to
   useEffect(() => { target.current = room; }, [room]);
@@ -1340,8 +1347,7 @@ function Photos({ x, d, pending, onBack, onNext, onPhotos, onDelete, onMove }: {
 
   return (
     <>
-      <header className="mbBar mbPhBar"><Back onClick={onBack} /><span><b>Fotografii · {sent.length + pending.length}</b><small>{drag ? "Lasă fotografia peste categoria dorită" : `${sent.length} trimise${pending.length ? ` · ${pending.length} pe telefon` : ""} · ține apăsat o poză ca s-o muți`}</small></span>
-        <button type="button" className="mbDone" disabled={busy} onClick={onBack}>Am terminat</button></header>
+      <header className="mbBar mbPhBar"><Back onClick={onBack} /><span><b>Fotografii · {sent.length + pending.length}</b><small>{drag ? "Lasă fotografia peste categoria dorită" : `${sent.length} trimise${pending.length ? ` · ${pending.length} pe telefon` : ""} · ține apăsat o poză ca s-o muți`}</small></span></header>
       <input ref={cam} type="file" accept="image/*" capture="environment" hidden onChange={(e) => take(e, false)} />
       <input ref={gal} type="file" accept="image/*" multiple hidden onChange={(e) => take(e, true)} />
       <div className={`mbBody${drag ? " mbDragging" : ""}`}>
@@ -1405,8 +1411,12 @@ function Photos({ x, d, pending, onBack, onNext, onPhotos, onDelete, onMove }: {
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2.5" /><circle cx="9" cy="10" r="2" /><path d="M21 16l-5-5-9 9" /></svg>Din galerie
           </button>
         </span>
-        {busy && <small className="mbCenterSmall">Se pregătesc fotografiile…</small>}
-        <button type="button" className="mbBtn big mbNextStep" disabled={busy} onClick={onNext}>Mai departe: Semnătură →</button>
+        {/* done only once the photos are prepared and sent (offline they wait on the phone and the buttons work) */}
+        {(busy || up) && <small className="mbCenterSmall">{busy || up?.phase === "prep" ? "Se pregătesc fotografiile…" : `Se încarcă fotografiile${up?.total ? ` · ${up.done}/${up.total}` : ""}…`}</small>}
+        <span className="mbGrid2 mbNextStep">
+          <button type="button" className="mbBtn big" disabled={busy || !!up} onClick={onBack}>Gata</button>
+          <button type="button" className="mbBtn big" disabled={busy || !!up} onClick={onNext}>Semnătură →</button>
+        </span>
       </footer>
     </>
   );
