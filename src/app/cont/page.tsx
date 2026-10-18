@@ -7,6 +7,8 @@ import { canManageOrg, officeActive } from "@/lib/access";
 import { pendingLeave } from "@/lib/office";
 import { myLinks } from "@/lib/links";
 import { MyLinks } from "@/components/OfficeLinks";
+import { ClaudeCard } from "@/components/ClaudeCard";
+import { origin } from "@/lib/site";
 
 export const metadata: Metadata = { title: "Contul meu | UVALO" };
 export const dynamic = "force-dynamic";
@@ -36,6 +38,7 @@ export default async function Account() {
           <MyLinks canRequest={c.office} rows={links.map((l) => ({ id: l.id, kind: l.kind, status: l.status, since: fmtDate(l.status === "active" || l.status === "ended" ? l.decided_at ?? l.created_at : l.created_at),
             ended: l.ended_at ? fmtDate(l.ended_at) : null, org_id: l.org_id, org_name: l.org_name, corp_no: l.corp_no, has_logo: !!l.has_logo }))} /></>}
         <div style={{ height: 18 }} />
+        {(c.super || c.modules.includes("localizare")) && <><ClaudeCard app={await origin()} /><div style={{ height: 18 }} /></>}
         <NewsletterCard on={!!(await db.prepare("SELECT newsletter FROM users WHERE id = ?").bind(u.id).first<{ newsletter: number }>())?.newsletter} />
         <div style={{ height: 18 }} />
         <CloseAccount email={u.email} reasons={CLOSE_REASONS} />

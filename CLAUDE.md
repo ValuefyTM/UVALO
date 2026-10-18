@@ -717,12 +717,21 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - Model Context Protocol, transport **Streamable HTTP fără sesiuni** (JSON-RPC pe POST; GET/DELETE → 405; notificările → 202), scris de mână în
   `src/app/api/mcp/[[...key]]/route.ts` (fără SDK): `initialize` (versiunile 2025-06-18 / 2025-03-26 / 2024-11-05, `instructions` cu numele firmei),
   `ping`, `tools/list`, `tools/call`, `resources/list` și `prompts/list` goale. Erorile instrumentelor (`ToolError`) = `isError: true` cu mesaj în română.
-- Autentificare = **cheia API a firmei** (aceeași din Firma mea → Integrare, `uvk_…`): `Authorization: Bearer uvk_…` sau, pentru clienții care nu trimit
-  antete (claude.ai → Conectori personalizați), în cale: `/api/mcp/uvk_…` (sau `?key=`); varianta cu cheia în adresă e cea recomandată peste tot
-  (`mcp-remote` din Claude Desktop pierde antetele cu spații). Modulele = planul firmei (minus instrumentele dezactivate): fără `localizare` →
-  fiecare apel refuză; `parcela_la_adresa` cere și `google_maps`. Fără mentenanță pe această rută. Folosirea → `events` (`module = localizare`,
-  `action = mcp_<instrument>`, pe contul care a creat cheia). Panoul „Integrare” apare acum și pentru firmele cu doar localizator (`IntegrationPanel`
-  cu `app` + `inspectii`; blocul `McpHelp` cu adresa, comenzile pentru Claude Code / Claude Desktop (`mcp-remote`) și lista instrumentelor).
+- **Conectarea simplă = OAuth 2.1** (migrația 0037, `src/lib/oauth.ts`): în claude.ai / Claude Desktop (Setări → Conectori → conector personalizat cu
+  `https://app.uvalo.ro/api/mcp`) sau Claude Code (`claude mcp add --transport http uvalo <url>` + `/mcp`) → clientul se înregistrează singur
+  (`POST /api/oauth/register`, RFC 7591, fără secret, redirect https sau localhost), deschide `/oauth/authorize` (pagina de consimțământ în stil
+  login, `src/app/oauth/authorize/page.tsx`; nelogat → `/login?next=…`; merge și în mentenanță) → „Permite” (`POST /api/oauth/authorize`) → cod de
+  10 min, o singură folosire, PKCE S256 → `POST /api/oauth/token` (form sau JSON; `authorization_code` / `refresh_token` rotit) → `uvt_…` 30 de zile +
+  `uvr_…` 180 de zile (sha256 în `oauth_tokens`). Discovery: `/.well-known/oauth-authorization-server` și `/.well-known/oauth-protected-resource[/api/mcp]`
+  (rute Next cu `[[...p]]`, CORS); 401-ul MCP-ului are `WWW-Authenticate: Bearer resource_metadata="…"`. Tokenul acționează **pentru persoană**:
+  `contextOf(db, user, session)` din `access.ts` (pseudo-sesiune `oauth:<id>`, fără UPDATE pe `sessions`), deci modulele ei; în mentenanță
+  non-super-adminii primesc „Platforma este în mentenanță”. **Contul meu → „UVALO în Claude”** (`ClaudeCard`, `#claude`, doar cu `localizare`): adresa
+  cu „Copiază”, pașii, aplicațiile conectate cu „Deconectează” (`/api/account/apps` GET / DELETE → `listApps` / `revokeApp`). `merge.ts` acoperă
+  `oauth_tokens` / `oauth_codes`. Eveniment `auth`/`oauth_allow` la consimțământ.
+- Alternativa fără OAuth = **cheia API a firmei** (Firma mea → Integrare, `uvk_…`): `Authorization: Bearer uvk_…`, în cale `/api/mcp/uvk_…` sau `?key=`;
+  modulele = planul firmei. Fără mentenanță pe cheie. Folosirea → `events` (`module = localizare`, `action = mcp_<instrument>`, `meta {key}` sau
+  `{oauth:1}`). Panoul „Integrare” apare și pentru firmele cu doar localizator (`IntegrationPanel` cu `app` + `inspectii`; blocul `McpHelp` trimite la
+  Contul meu și explică cheia).
 - Instrumentele (`src/lib/mcp-localizare.ts`, deocamdată doar Localizatorul): **`localitati`** (UAT-urile cu plan + satele → comună din `VILLAGES`),
   **`parcela`** (`nr` [+ `localitate`, `geojson`]: suprafața din plan, perimetrul, inventarul de coordonate X/Y + GPS + laturi, centrul, construcțiile
   cu suprafața la sol și POT, vecinii, nr. topo, observații (`shared`, `o`), cartier + zonă de impozitare în Timișoara, grila notarială 2026 cu toate

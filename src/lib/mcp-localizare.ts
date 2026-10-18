@@ -7,9 +7,8 @@ import { locatorAsset } from "./locator";
 import { cadastralRoot, centres, uatOfName, uats, VILLAGES, type Centre, type Uat } from "./cadastre";
 import { decodeRing, stereo70ToWgs84, wgs84ToStereo70 } from "./stereo70";
 import { geocode } from "./gmaps";
-import { origin } from "./site";
 
-export type McpCtx = { modules: string[]; app: string };
+export type McpCtx = { modules: string[]; app: string; block?: string | null };
 export class ToolError extends Error {}
 
 /* ---------- data ---------- */
@@ -273,12 +272,9 @@ export const TOOLS = [
 ] as const;
 export type ToolName = (typeof TOOLS)[number]["name"];
 
-export async function mcpContext(modules: string[]): Promise<McpCtx> {
-  return { modules, app: await origin() };
-}
-
 export async function callTool(req: Request, c: McpCtx, name: string, a: Record<string, unknown>): Promise<unknown> {
-  if (!c.modules.includes("localizare")) throw new ToolError("Localizatorul cadastral nu este în planul firmei (sau e dezactivat temporar).");
+  if (c.block) throw new ToolError(c.block);
+  if (!c.modules.includes("localizare")) throw new ToolError("Localizatorul cadastral nu este în planul tău (sau e dezactivat temporar).");
   switch (name as ToolName) {
     case "localitati": {
       const j = str(a.judet).toLowerCase();

@@ -58,15 +58,19 @@ export type Ctx = {
 export async function context(db: D1Database): Promise<Ctx | null> {
   const s = await currentSession(db);
   if (!s) return null;
-  const { user, session } = s;
+  return contextOf(db, s.user, s.session);
+}
+
+/** The context of a known person and session (the cookie session, or a pseudo-session `oauth:<token>` for the MCP tokens). */
+export async function contextOf(db: D1Database, user: User, session: Session): Promise<Ctx> {
   const { results: orgs } = await db
     .prepare(`SELECT m.org_id, o.name AS org_name, m.role, o.status AS org_status FROM memberships m JOIN orgs o ON o.id = m.org_id
       WHERE m.user_id = ? AND m.status = 'active' ORDER BY o.name`)
     .bind(user.id)
     .all<Membership>();
-  let orgId = session.org_id && orgs.some((o) => o.org_id === session.org_id) ? session.org_id : orgs[0]?.org_id ?? null;
+  const orgId = session.org_id && orgs.some((o) => o.org_id === session.org_id) ? session.org_id : orgs[0]?.org_id ?? null;
   if (orgId !== session.org_id) {
-    await db.prepare("UPDATE sessions SET org_id = ? WHERE id = ?").bind(orgId, session.id).run();
+    if (!session.id.startsWith("oauth:")) await db.prepare("UPDATE sessions SET org_id = ? WHERE id = ?").bind(orgId, session.id).run();
     session.org_id = orgId;
   }
   const org = orgId ? await db.prepare(`${ORG_SQL} WHERE o.id = ?`).bind(orgId).first<Org>() : null;

@@ -14,27 +14,21 @@ async function post(body: object) {
   return r?.ok ? d : { error: d?.error ?? "Nu am putut salva. Încearcă din nou." };
 }
 
-/** How to connect the UVALO MCP server (Claude and other assistants) with a firm key. */
+/** Claude (MCP): people connect from "Contul meu" (OAuth); the firm key is the fallback for clients without OAuth. */
 function McpHelp({ app }: { app: string }) {
   const [open, setOpen] = useState(false);
   const url = `${app}/api/mcp`;
   return (
     <div className="intMcp">
       <p className="hint">
-        <b>MCP pentru Claude.</b> Aceeași cheie deschide și serverul MCP al UVALO: Claude (Desktop, claude.ai, Claude Code) poate căuta imobile după nr. cadastral,
-        coordonate sau adresă, poate citi conturul, construcțiile, vecinii, zona de impozitare și grila notarială 2026 — deocamdată doar Localizatorul cadastral.{" "}
-        <button type="button" className="lnk" onClick={() => setOpen(!open)}>{open ? "Ascunde instrucțiunile" : "Cum se conectează"}</button>
+        <b>Claude (MCP).</b> Fiecare coleg își conectează singur contul din <a href="/cont#claude">Contul meu → UVALO în Claude</a> (adresa <code className="mono">{url}</code>,
+        autentificare în UVALO, fără chei). Cheia firmei de aici e doar pentru aplicații fără OAuth.{" "}
+        <button type="button" className="lnk" onClick={() => setOpen(!open)}>{open ? "Ascunde" : "Cum, cu cheia"}</button>
       </p>
       {open && (
         <div className="intMcpBody">
-          <p className="hint"><b>claude.ai</b> (Setări → Conectori → Adaugă conector personalizat): adresa cu cheia în ea, fără OAuth:</p>
-          <pre className="mono">{`${url}/uvk_…`}</pre>
-          <p className="hint"><b>Claude Code</b></p>
-          <pre className="mono">{`claude mcp add --transport http uvalo ${url}/uvk_…`}</pre>
-          <p className="hint"><b>Claude Desktop</b> (claude_desktop_config.json; cheia în adresă, nu în antet — antetele cu spații se pierd):</p>
-          <pre className="mono">{JSON.stringify({ mcpServers: { uvalo: { command: "npx", args: ["-y", "mcp-remote", `${url}/uvk_…`, "--transport", "http-only"] } } }, null, 2)}</pre>
-          <p className="hint">Pentru alte aplicații: <code className="mono">{url}</code> cu antetul <code className="mono">Authorization: Bearer uvk_…</code> (sau <code className="mono">?key=uvk_…</code>).</p>
-          <p className="hint">Instrumente: <code className="mono">localitati</code>, <code className="mono">parcela</code>, <code className="mono">parcela_la_coordonate</code>,{" "}
+          <p className="hint">Antetul <code className="mono">Authorization: Bearer uvk_…</code>, sau cheia în adresă: <code className="mono">{url}/uvk_…</code> (ori <code className="mono">?key=uvk_…</code>).
+            Instrumentele sunt cele ale Localizatorului: <code className="mono">localitati</code>, <code className="mono">parcela</code>, <code className="mono">parcela_la_coordonate</code>,{" "}
             <code className="mono">parcela_la_adresa</code>, <code className="mono">grila_notariala</code>, <code className="mono">conversie_coordonate</code>. Folosirea se vede în Activitate (acțiunile „mcp_…”).</p>
         </div>
       )}

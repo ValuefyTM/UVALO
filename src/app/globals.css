@@ -2942,10 +2942,24 @@ html:has(.mb) { -webkit-tap-highlight-color: transparent; -webkit-text-size-adju
 .intHooks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: 12px; }
 .intHooks li { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .intMcp { border: 1px solid var(--line); border-radius: 14px; padding: 10px 14px; display: flex; flex-direction: column; gap: 8px; }
-.intMcp .lnk { background: none; border: 0; padding: 0; color: var(--acc-text); font: inherit; cursor: pointer; text-decoration: underline; }
+.lnk { background: none; border: 0; padding: 0; color: var(--acc-text); font: inherit; cursor: pointer; text-decoration: underline; }
 .intMcpBody { display: flex; flex-direction: column; gap: 6px; }
 .intMcpBody pre { margin: 0; background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; font-size: 12px; white-space: pre-wrap; word-break: break-all; }
-.intMcpBody code { background: #fff; border: 1px solid var(--line); border-radius: 6px; padding: 1px 5px; }
+.intMcpBody code, .clMoreBody code { background: #fff; border: 1px solid var(--line); border-radius: 6px; padding: 1px 5px; }
+/* Contul meu → UVALO în Claude (OAuth) */
+.clUrl { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.clUrl code { flex: 1 1 240px; background: var(--acc-soft); border: 1px solid var(--acc-line); border-radius: 10px; padding: 9px 12px; font-size: 13px; word-break: break-all; }
+.clSteps { margin: 0; padding-left: 20px; font-size: 13.5px; line-height: 1.55; display: flex; flex-direction: column; gap: 4px; }
+.clMore { align-self: flex-start; font-size: 12.5px; }
+.clMoreBody { display: flex; flex-direction: column; gap: 6px; }
+.clApps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.clApps li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; border: 1px solid var(--line); border-radius: 12px; padding: 8px 12px; font-size: 13.5px; }
+/* /oauth/authorize (consent) */
+.oaScopes { margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.6; }
+.oaForm { display: flex; gap: 10px; flex-wrap: wrap; }
+.oaForm .btn { flex: 1 1 140px; }
+.authFine.dark { color: var(--muted) !important; }
+.authFine.dark a { color: var(--acc-text); }
 /* a question's photo: camera or gallery */
 .mbQPh { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 4px; }
 .mbQPhBtn { position: relative; width: 44px; height: 44px; border-radius: 12px; border: 1.5px dashed var(--acc, #f2a93b); background: var(--acc-soft, #fdf1dc); color: var(--acc-text, #9a5f00); display: grid; place-items: center; }
