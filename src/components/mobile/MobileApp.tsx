@@ -1105,12 +1105,10 @@ function Form({ x, d, sec, photos, pending, onBack, onSec, change, onPhoto, onRo
   const local = useMemo(() => pending.map((p) => ({ room: p.room, src: URL.createObjectURL(p.blob) })), [pending]);
   useEffect(() => () => local.forEach((p) => URL.revokeObjectURL(p.src)), [local]);
   const thumbsOf = (room: string) => [...x.files.filter((f) => f.kind === "photo" && f.room === room).map((f) => `/api/inspectii/file/${f.id}`), ...local.filter((p) => p.room === room).map((p) => p.src)];
-  // the template's own "Constatări" group (UVALO sheets) replaces the free-text findings step
-  const ownFind = groups.some((gr) => gr.id === "constatari");
-  const last = ownFind ? groups.length - 1 : groups.length;
+  // only the groups the sheet has (no "Constatări" step of its own: a sheet that wants findings has a group for them)
+  const last = groups.length - 1;
   const all = groups.flatMap((g) => g.qs).filter((q) => !isOptional(q));
   const done = all.filter((q) => answered(d.answers[q.id])).length;
-  const isFind = !ownFind && sec >= groups.length;
   const g = groups[sec];
   const roomsDone = d.rooms.filter(roomDone).length;
   // the next section opens only when this one's required questions (marked *) are answered; the others can stay empty
@@ -1133,21 +1131,14 @@ function Form({ x, d, sec, photos, pending, onBack, onSec, change, onPhoto, onRo
             const qs = gr.qs.filter((q) => !isOptional(q)), n = qs.filter((q) => answered(d.answers[q.id])).length, ok = n === qs.length && qs.length > 0;
             return <button key={gr.id} type="button" aria-current={i === sec ? "step" : undefined} className={ok ? "ok" : ""} onClick={() => onSec(i)}>{ok ? "✓ " : ""}{gr.name}{i === sec ? ` ${n}/${qs.length}` : ""}</button>;
           })}
-          {!ownFind && <button type="button" aria-current={isFind ? "step" : undefined} onClick={() => onSec(groups.length)}>Constatări</button>}
         </nav>
       </header>
       <div className="mbBody">
         {x.redo_note && <div className="mbRedo small"><b>De completat</b><span>{x.redo_note}</span></div>}
-        {!isFind && g && <>
+        {g && <>
           <h2 className="mbH2">{g.name}</h2>
           {g.qs.map((q) => <QInput key={q.id} q={q} v={d.answers[q.id]} onPhoto={onPhoto} answers={d.answers} thumbs={q.photo ? thumbsOf(q.t) : []}
             set={(v) => change((o) => { o.answers[q.id] = v; return o; })} setKey={(k, v) => change((o) => { o.answers[k] = v; return o; })} />)}
-        </>}
-        {isFind && <>
-          <h2 className="mbH2">Constatări</h2>
-          <label className="mbField">Diferențe față de acte<textarea className="mbIn" rows={2} value={d.findings.diff} onChange={(e) => change((o) => { o.findings.diff = e.target.value; return o; })} /></label>
-          <label className="mbField">Defecte vizibile<textarea className="mbIn" rows={2} value={d.findings.defects} onChange={(e) => change((o) => { o.findings.defects = e.target.value; return o; })} /></label>
-          <label className="mbField">Observații<textarea className="mbIn" rows={3} value={d.findings.notes} onChange={(e) => change((o) => { o.findings.notes = e.target.value; return o; })} /></label>
         </>}
       </div>
       <footer className="mbFoot">
@@ -1156,7 +1147,7 @@ function Form({ x, d, sec, photos, pending, onBack, onSec, change, onPhoto, onRo
           <button type="button" className="mbBtn big" onClick={() => { if (sec > 0) { onSec(sec - 1); window.scrollTo(0, 0); } else onBack(); }} aria-label="Înapoi">←</button>
           {sec < last
             ? <button type="button" className="mbBtn gold big" disabled={secLeft > 0} onClick={() => { onSec(sec + 1); window.scrollTo(0, 0); }}>
-                {secLeft ? `Mai ai ${secLeft} ${secLeft === 1 ? "întrebare obligatorie" : "întrebări obligatorii"}` : `Secțiunea următoare: ${sec + 1 < groups.length ? groups[sec + 1].name : "Constatări"} →`}
+                {secLeft ? `Mai ai ${secLeft} ${secLeft === 1 ? "întrebare obligatorie" : "întrebări obligatorii"}` : `Secțiunea următoare: ${groups[sec + 1].name} →`}
               </button>
             : <button type="button" className="mbBtn gold big" onClick={x.template.rooms ? onRooms : onPhotos}>{x.template.rooms ? "Mai departe: Finisaje încăperi →" : "Mai departe: Fotografii →"}</button>}
         </span>
