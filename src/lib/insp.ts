@@ -346,6 +346,8 @@ async function notifyLog(db: D1Database, id: string, userId: string | null, text
     else if (/^(Completată|Finalizată)/.test(text)) { title = "Inspecție finalizată"; lines.push(text); }
     else if (/^Marcată ca predată/.test(text)) { title = "Inspecție predată"; lines.push(from.slice(3)); }
     else if ((m = text.match(/^Document adăugat: (.*)/))) { title = "Document adăugat"; lines.push(`${m[1]}${from}`); }
+    else if ((m = text.match(/^Acte actualizate: ([\s\S]*)/))) { if (!mine) continue; title = "Acte actualizate"; lines.push(m[1]); }
+    else if ((m = text.match(/^Mesaj de la firmă: ([\s\S]*)/))) { if (!mine) continue; title = "Mesaj despre inspecție"; lines.push(m[1]); }
     else { title = "Inspecție actualizată"; lines.push(`${r.who ?? "Cineva"}: ${nice(text)}`); }
     // a new one from the firm's app shares its tag with the grouped notification (the next one replaces it)
     await notifyUser(db, to, { title, body: lines.filter(Boolean).join("\n").slice(0, 400), url: `/?open=${id}`, tag: fresh && /aplicația firmei/.test(text) ? `insp-new-${to}` : `insp-${id}` });

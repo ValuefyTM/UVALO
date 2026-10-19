@@ -268,6 +268,20 @@ export async function cancelInspection(db: D1Database, key: ApiKey, idOrRef: str
 }
 
 /** A document for the inspection (CF extract, floor plan, other): the valuer sees it on the phone. */
+/**
+ * A message from the firm's app to the valuer of an inspection that is not finished (e.g. its documents were updated):
+ * kept in the inspection's history and sent as a phone notification. `{ title?: "docs" | "info", text }`.
+ */
+export async function extNotify(db: D1Database, key: ApiKey, idOrRef: string, b: Record<string, unknown>) {
+  const r = await extRow(db, key, idOrRef);
+  if (!r) return { error: "Inspecția nu există.", status: 404 };
+  if (r.status === "gata" || r.status === "pred") return { error: "Inspecția e finalizată.", status: 409 };
+  const text = t(b.text, 300);
+  if (!text) return { error: "Lipsește textul notificării." };
+  await logIt(db, String(r.id), key.created_by, `${b.title === "docs" ? "Acte actualizate" : "Mesaj de la firmă"}: ${text}`);
+  return { ok: true as const };
+}
+
 export async function extAddFile(db: D1Database, key: ApiKey, idOrRef: string, f: File, kind: string, name: string) {
   const r = await extRow(db, key, idOrRef);
   if (!r) return { error: "Inspecția nu există.", status: 404 };
