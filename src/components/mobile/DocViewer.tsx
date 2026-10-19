@@ -48,7 +48,10 @@ export function DocViewer({ docs }: { docs: Doc[] }) {
     }).catch((e) => { if (!dead) setErr(navigator.onLine ? String(e.message || "Nu am putut descărca actul.") : "Fără semnal: actul se deschide când ai rețea."); });
     return () => { dead = true; };
   }, [open, cur, cache]);
-  useEffect(() => () => Object.values(cache).forEach((l) => URL.revokeObjectURL(l.url)), [cache]);
+  // the object URLs live as long as the viewer (revoking them on every change broke the documents already shown)
+  const cacheRef = useRef(cache);
+  cacheRef.current = cache;
+  useEffect(() => () => Object.values(cacheRef.current).forEach((l) => URL.revokeObjectURL(l.url)), []);
   if (!list.length) return null;
   const nextZoom = () => setZoom((z) => ZOOMS[(ZOOMS.indexOf(z) + 1) % ZOOMS.length] ?? 1);
   const loaded = cur ? cache[cur.id] : undefined;
@@ -76,7 +79,7 @@ export function DocViewer({ docs }: { docs: Doc[] }) {
           <div className="mbDocBody" onDoubleClick={nextZoom}>
             {err ? <p className="mbDocMsg">{err}</p>
               : !loaded ? <p className="mbDocMsg">Se încarcă {KIND[cur.kind]?.toLowerCase() ?? "actul"}…</p>
-              : loaded.pdf ? <PdfPages blob={loaded.blob} zoom={zoom} />
+              : loaded.pdf ? <PdfPages key={cur.id} blob={loaded.blob} zoom={zoom} />
               : <img src={loaded.url} alt={cur.name ?? KIND[cur.kind]} style={{ width: `${zoom * 100}%` }} />}
           </div>
           <small className="mbDocHint">{cur.name ?? KIND[cur.kind]} · atinge de două ori pentru zoom · <a href={`/api/inspectii/file/${cur.id}`} target="_blank" rel="noopener">deschide separat</a></small>
@@ -90,6 +93,7 @@ export function DocViewer({ docs }: { docs: Doc[] }) {
 function PdfPages({ blob, zoom }: { blob: Blob; zoom: number }) {
   const box = useRef<HTMLDivElement>(null);
   const [n, setN] = useState(0);
+  const [gen, setGen] = useState(0); // bumps when a document is ready, so the pages are drawn even if the count is unchanged
   const [fail, setFail] = useState("");
   const docRef = useRef<PdfDoc | null>(null);
   useEffect(() => {
@@ -101,7 +105,7 @@ function PdfPages({ blob, zoom }: { blob: Blob; zoom: number }) {
         const doc = await lib.getDocument({ data: new Uint8Array(await blob.arrayBuffer()), cMapUrl: `${base}cmaps/`, cMapPacked: true, standardFontDataUrl: `${base}standard_fonts/`, wasmUrl: `${base}wasm/` }).promise;
         if (dead) { doc.destroy(); return; }
         docRef.current = doc;
-        setN(doc.numPages);
+        setN(doc.numPages); setGen((g) => g + 1);
       } catch { if (!dead) setFail("PDF-ul nu a putut fi afișat aici. Deschide-l separat (linkul de jos)."); }
     })();
     return () => { dead = true; docRef.current?.destroy(); docRef.current = null; };
@@ -123,7 +127,7 @@ function PdfPages({ blob, zoom }: { blob: Blob; zoom: number }) {
       }
     })().catch(() => setFail("PDF-ul nu a putut fi desenat."));
     return () => { dead = true; };
-  }, [n, zoom]);
+  }, [n, gen, zoom]);
   if (fail) return <p className="mbDocMsg">{fail}</p>;
   return (
     <div ref={box} className="mbDocPages">
