@@ -242,6 +242,15 @@ export async function listInspections(db: D1Database, c: Ctx) {
   return results.map((r) => ({ ...r, who: who(r) }));
 }
 
+/** `{lat, lng, acc?, at?, src?}` from the phone → the stored location, or null when it is not a point in Romania. */
+function gpsOf(v: unknown) {
+  if (!v || typeof v !== "object") return null;
+  const o = v as Record<string, unknown>, lat = Number(o.lat), lng = Number(o.lng);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng) || lat < 43 || lat > 48.5 || lng < 20 || lng > 30) return null;
+  const acc = Number(o.acc);
+  return { lat: +lat.toFixed(6), lng: +lng.toFixed(6), acc: Number.isFinite(acc) && acc > 0 ? Math.round(acc) : null, at: s(o.at, 30) || now(), src: o.src === "manual" ? "manual" : "gps" };
+}
+
 export type Insp = InspRow & {
   cf_nr: string | null; uat: string | null; county: string | null; area_util: number | null; area_land: number | null; rooms: { n: string; a: number | null }[];
   template_id: string | null; template_name: string | null; template_version: number | null; template: Template; contact_phone: string | null; contact_role: string | null;
@@ -250,6 +259,8 @@ export type Insp = InspRow & {
   ext_client?: string | null; ext_user?: string | null;
   /** the valuer doing it: ANEVAR card and the signature from their account (PNG data URL), put on the finished sheet */
   assignee_legit?: string | null; assignee_sig?: string | null;
+  /** where the inspection was made (the phone's GPS, or the pin moved on the map before signing) */
+  gps_lat?: number | null; gps_lng?: number | null; gps_acc?: number | null; gps_at?: string | null; gps_src?: string | null;
   room_answers: { n: string; a: number | null; floor?: string; walls?: string; state?: string }[];
   findings: { diff?: string; defects?: string; notes?: string }; started_at: string | null; signed_name: string | null; signed_at: string | null; notes: string | null;
   created_at: string; org_id: string | null; files: { id: string; kind: string; name: string | null; room: string | null; taken_at: string | null }[];
@@ -501,7 +512,8 @@ export async function inspAction(db: D1Database, c: Ctx, b: Record<string, unkno
     if (!r.sheet_no && !Object.keys(ans).length && !r.started_at && !r.finished_at) return { error: "Fișa nu a fost începută: nu ai ce șterge." };
     const ts = now(), reason = t(b.reason, 500) || null;
     const snap = JSON.stringify({ status: r.status, answers: ans, room_answers: J(r.room_answers as string, []), findings: J(r.findings as string, {}),
-      started_at: r.started_at, finished_at: r.finished_at, signed_name: r.signed_name, signed_at: r.signed_at, redo_note: r.redo_note }).slice(0, 400000);
+      started_at: r.started_at, finished_at: r.finished_at, signed_name: r.signed_name, signed_at: r.signed_at, redo_note: r.redo_note,
+      gps: r.gps_lat != null ? { lat: r.gps_lat, lng: r.gps_lng, acc: r.gps_acc, at: r.gps_at, src: r.gps_src } : null }).slice(0, 400000);
     const files = photos ? (await db.prepare("SELECT id, r2_key FROM insp_files WHERE inspection_id = ? AND kind IN ('photo', 'signature')").bind(id).all<{ id: string; r2_key: string }>()).results
       : (await db.prepare("SELECT id, r2_key FROM insp_files WHERE inspection_id = ? AND kind = 'signature'").bind(id).all<{ id: string; r2_key: string }>()).results;
     await db.batch([
@@ -510,6 +522,7 @@ export async function inspAction(db: D1Database, c: Ctx, b: Record<string, unkno
           .bind(id, `FARA-NR-${uuid().slice(0, 8)}`, String(r.started_at ?? ts), r.assignee_id ?? null, ts, c.user.id, reason, snap),
       db.prepare(`UPDATE inspections SET answers = NULL, room_answers = NULL, findings = NULL, started_at = NULL, finished_at = NULL, signed_name = NULL, signed_at = NULL,
         redo_note = NULL, redo_at = NULL, redo_prev_at = NULL, redo_keep_sig = 0, sheet_no = NULL, sheet_at = NULL, sheet_rev = sheet_rev + 1,
+        gps_lat = NULL, gps_lng = NULL, gps_acc = NULL, gps_at = NULL, gps_src = NULL,
         cover_file_id = CASE WHEN ? THEN NULL ELSE cover_file_id END, status = CASE WHEN scheduled_at IS NOT NULL THEN 'plan' ELSE 'prog' END, updated_at = ? WHERE id = ?`)
         .bind(photos ? 1 : 0, ts, id),
       ...(files.length ? [db.prepare(`DELETE FROM insp_files WHERE id IN (${files.map(() => "?").join(", ")})`).bind(...files.map((f) => f.id))] : []),
@@ -631,6 +644,9 @@ export async function inspAction(db: D1Database, c: Ctx, b: Record<string, unkno
       .bind(JSON.stringify(answers).slice(0, 200000), JSON.stringify(rooms).slice(0, 100000), JSON.stringify(findings), fin ? "gata" : "lucru", s(b.started_at, 30) || ts,
         // the inspection's date stays the first finalization (a sheet sent back and completed keeps it)
         fin ? (r.redo_prev_at ? String(r.redo_prev_at) : ts) : null, fin ? signer : null, fin ? (keepSig && !b.new_sig ? r.signed_at : ts) : (r.signed_at ?? null), ts, id).run();
+    // where it was made: the phone's GPS fix or the pin moved on the map (kept as sent; an inspection without one keeps what it had)
+    const loc = gpsOf(b.loc);
+    if (loc) await db.prepare("UPDATE inspections SET gps_lat = ?, gps_lng = ?, gps_acc = ?, gps_at = ?, gps_src = ? WHERE id = ?").bind(loc.lat, loc.lng, loc.acc, loc.at, loc.src, id).run();
     await numberSheet(db, r, s(b.started_at, 30) || ts);
     if (r.status !== "lucru" && !fin) await logIt(db, id, c.user.id, `Începută pe teren${b.near ? ` (la ${Math.round(Number(b.near))} m de adresă)` : ""}`);
     if (fin) {
@@ -661,9 +677,10 @@ export async function inspAction(db: D1Database, c: Ctx, b: Record<string, unkno
       .map((x, i) => ({ ...x, floor: ["Gresie", "Parchet", "Gresie", "Parchet", "Gresie"][i % 5], walls: ["Vopsea lavabilă", "Vopsea lavabilă", "Faianță", "Vopsea lavabilă", "Faianță"][i % 5],
         ceiling: "Vopsea lavabilă", state: "Bună" }));
     const start = new Date(Date.now() - 58 * 60e3).toISOString(), end = now();
-    await db.prepare(`UPDATE inspections SET answers = ?, room_answers = ?, findings = ?, status = 'gata', started_at = ?, finished_at = ?, signed_name = ?, signed_at = ?, updated_at = ? WHERE id = ?`)
+    await db.prepare(`UPDATE inspections SET answers = ?, room_answers = ?, findings = ?, status = 'gata', started_at = ?, finished_at = ?, signed_name = ?, signed_at = ?, updated_at = ?,
+      gps_lat = ?, gps_lng = ?, gps_acc = ?, gps_at = ?, gps_src = ? WHERE id = ?`)
       .bind(JSON.stringify(answers), JSON.stringify(ra), JSON.stringify({ diff: "[diferențe față de acte]", defects: "[defecte vizibile]", notes: "[observații]" }), start, end,
-        r.contact_name ?? null, end, end, id).run();
+        r.contact_name ?? null, end, end, (r.lat as number | null) != null ? (r.lat as number) + 0.00012 : 45.7489, (r.lng as number | null) != null ? (r.lng as number) + 0.00018 : 21.2087, 14, start, "gps", id).run();
     await numberSheet(db, r, start);
     await logIt(db, id, c.user.id, "Începută pe teren (simulare în modul de test)");
     await logIt(db, id, c.user.id, "Finalizată și semnată (simulare în modul de test)");

@@ -10,6 +10,7 @@ import { AppShell } from "@/components/AppShell";
 import { InspDocActions } from "@/components/InspDocActions";
 import { InspFileDelete, InspFileUpload } from "@/components/InspFileUpload";
 import { InspCoverPick, InspShare } from "@/components/InspShare";
+import { InspLocMap } from "@/components/InspLocMap";
 
 export const metadata: Metadata = { title: "Fișa de inspecție | UVALO" };
 export const dynamic = "force-dynamic";
@@ -54,7 +55,8 @@ export default async function InspDoc({ params }: { params: Promise<{ id: string
     ...(ownFind ? [] : [["constatari", String(groups.length + 2).padStart(2, "0"), "Constatări"] as [string, string, string]]),
     ["fotografii", String(groups.length + 3 - (ownFind ? 1 : 0)).padStart(2, "0"), `Fotografii (${photos.length})`],
     ["acte", String(groups.length + 4 - (ownFind ? 1 : 0)).padStart(2, "0"), `Acte (${docs.length})`],
-    ["semnaturi", String(groups.length + 5 - (ownFind ? 1 : 0)).padStart(2, "0"), "Semnături"],
+    ["locatie", String(groups.length + 5 - (ownFind ? 1 : 0)).padStart(2, "0"), "Locația inspecției"],
+    ["semnaturi", String(groups.length + 6 - (ownFind ? 1 : 0)).padStart(2, "0"), "Semnături"],
     ["istoric", "·", "Istoric"],
   ];
   const sec = (no: string, title: string) => <h2 className="inH2"><span>{no}</span>{title}</h2>;
@@ -188,8 +190,29 @@ export default async function InspDoc({ params }: { params: Promise<{ id: string
             <span className="inUps"><InspFileUpload id={x.id} kind="cf" label="Adaugă extras CF" /><InspFileUpload id={x.id} kind="releveu" label="Adaugă releveu" /><InspFileUpload id={x.id} kind="doc" label="Alt document" /></span>
           </section>
 
+          <section id="locatie" className="inSec">
+            {sec(String(groups.length + 5 - (ownFind ? 1 : 0)).padStart(2, "0"), "Locația inspecției")}
+            {x.gps_lat != null && x.gps_lng != null ? (() => {
+              const la = x.gps_lat, ln = x.gps_lng;
+              const addr: [number, number] | null = x.lat != null && x.lng != null ? [x.lat, x.lng] : null;
+              const dAddr = addr ? Math.round(Math.hypot((la - addr[0]) * 111320, (ln - addr[1]) * 111320 * Math.cos((la * Math.PI) / 180))) : null;
+              return (
+                <div className="inLoc">
+                  <InspLocMap lat={la} lng={ln} acc={x.gps_acc ?? null} addr={addr} />
+                  <dl className="inLocFacts">
+                    <dt>Coordonate</dt><dd>{la.toFixed(6)}, {ln.toFixed(6)}</dd>
+                    <dt>Sursa</dt><dd>{x.gps_src === "manual" ? "pinul mutat manual pe hartă" : `GPS de pe telefon${x.gps_acc ? ` · precizie ±${Math.round(x.gps_acc)} m` : ""}`}</dd>
+                    {x.gps_at && <><dt>Înregistrat</dt><dd>{fmtDate(x.gps_at, true)}</dd></>}
+                    {dAddr != null && <><dt>Față de adresă</dt><dd>{dAddr < 15 ? "pe adresa din pregătire" : `la ${dAddr} m de adresa din pregătire`}</dd></>}
+                    <dt className="inNoPrint">Deschide</dt><dd className="inNoPrint"><a href={`https://www.google.com/maps/search/?api=1&query=${la},${ln}`} target="_blank" rel="noopener">Google Maps ↗</a> · <a href={`/amplasament?lat=${la}&lng=${ln}`} target="_blank" rel="noopener">Analiză amplasament ↗</a></dd>
+                  </dl>
+                </div>
+              );
+            })() : <p className="hint">Nu s-au înregistrat coordonate pe telefon. Poziția GPS se ia când se deschide fișa și se confirmă pe hartă înainte de semnătură.</p>}
+          </section>
+
           <section id="semnaturi" className="inSec inSigns">
-            <div><small>{String(groups.length + 5 - (ownFind ? 1 : 0)).padStart(2, "0")} · Persoana prezentă</small><b>{x.signed_name ?? "—"}</b><span className="inSignLine" /><em>{x.signed_at ? `Semnat pe telefon · ${fmtDate(x.signed_at, true)}` : "Semnătura se ia pe telefon"}</em></div>
+            <div><small>{String(groups.length + 6 - (ownFind ? 1 : 0)).padStart(2, "0")} · Persoana prezentă</small><b>{x.signed_name ?? "—"}</b><span className="inSignLine" /><em>{x.signed_at ? `Semnat pe telefon · ${fmtDate(x.signed_at, true)}` : "Semnătura se ia pe telefon"}</em></div>
             <div><small>Evaluator</small><b>{x.assignee_name ?? "—"}{x.assignee_legit ? <span className="inLegit"> · leg. {x.assignee_legit}</span> : null}</b>
               {x.finished_at && x.assignee_sig ? <img className="inSignImg" src={x.assignee_sig} alt={`Semnătura: ${x.assignee_name ?? "evaluator"}`} /> : <span className="inSignLine" />}
               <em>{x.finished_at && x.assignee_sig ? "Semnătura evaluatorului · din contul lui, aplicată la finalizare" : x.assignee_sig ? "Semnătura evaluatorului se aplică automat la finalizare" : "Semnătura evaluatorului"}</em></div>

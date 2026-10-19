@@ -248,6 +248,8 @@ export async function extInspection(db: D1Database, key: ApiKey, idOrRef: string
     // the valuer's signature (PNG data URL from their account) travels with the finished sheet only
     inspector: who ? { name: who.name, legit: who.anevar_no, signature: r.finished_at ? who.signature ?? null : null } : null,
     scheduled_at: r.scheduled_at, duration_min: r.duration_min, started_at: r.started_at, finished_at: r.finished_at,
+    // where it was actually made: the phone's GPS (source "gps", with accuracy in metres) or the pin moved by the valuer ("manual")
+    location: r.gps_lat != null && r.gps_lng != null ? { lat: r.gps_lat, lng: r.gps_lng, accuracy_m: r.gps_acc ?? null, at: r.gps_at ?? null, source: r.gps_src ?? "gps" } : null,
     sheet: { no: r.sheet_no, at: r.sheet_at, rev: r.sheet_rev, template: { id: r.template_id, name: r.template_name, version: r.template_version, ...cleanTemplate(J(r.template, {})) },
       facts: J(r.facts, []), answers: J(r.answers, {}), rooms: J(r.room_answers, []), findings: J(r.findings, {}), signed_name: r.signed_name, signed_at: r.signed_at,
       cover_file_id: r.cover_file_id, redo_note: r.redo_note },

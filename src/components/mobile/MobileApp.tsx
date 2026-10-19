@@ -6,6 +6,7 @@ import { allFiles, allFinish, delFile, flush, progress, putFile, putFinish, read
 import { InstallHint } from "./InstallHint";
 import { MobileCollab } from "./MobileCollab";
 import { DocViewer } from "./DocViewer";
+import { gpsFix, LocPick, type Loc } from "./LocPick";
 
 /** The first phone number of a field that may hold two ("0721 123 456 / 0256 …"), digits and + only, for tel: / sms: links. */
 const firstPhone = (s: string) => (s.split(/[\/,;]|\bsau\b/)[0] ?? s).replace(/[^\d+]/g, "");
@@ -30,6 +31,7 @@ type Notif = { id: number; insp: string; at: string; text: string; address: stri
 type Reminder = { key: string; insp: string; when: string; address: string; today: boolean };
 type Draft = { answers: Record<string, string | string[]>; rooms: Room[]; findings: { diff: string; defects: string; notes: string }; started_at: string;
   sig?: string | null; signer?: { who: "contact" | "other"; other: string }; // the signature stays on the phone until the inspection is sent
+  loc?: Loc | null; // where the inspection is made: the GPS fix taken when the sheet was opened, or the pin moved on the map before signing
   rev?: number }; // the sheet it belongs to (inspections.sheet_rev): a sheet deleted on the web makes the phone's draft obsolete
 type View = { v: "home" } | { v: "detail"; id: string } | { v: "form"; id: string; sec: number } | { v: "rooms"; id: string } | { v: "photos"; id: string } | { v: "sign"; id: string } | { v: "queue" } | { v: "collab" } | { v: "account" } | { v: "new" } | { v: "notifs" };
 
@@ -309,7 +311,7 @@ export function MobileApp() {
     syncT.current = setTimeout(() => {
       const near = pos.current && lat != null && lng != null ? distM(pos.current, [lat, lng]) : undefined;
       void fetch("/api/inspectii", { method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "progress", id, answers: d.answers, room_answers: d.rooms, findings: d.findings, started_at: d.started_at, rev: d.rev ?? 0, near }) }).catch(() => {});
+        body: JSON.stringify({ action: "progress", id, answers: d.answers, room_answers: d.rooms, findings: d.findings, started_at: d.started_at, rev: d.rev ?? 0, near, loc: d.loc ?? null }) }).catch(() => {});
     }, 4000);
   };
 
@@ -388,7 +390,7 @@ export function MobileApp() {
     if (sig) await putFile({ id: crypto.randomUUID(), insp: cur.id, kind: "signature", room: "", name: "semnatura.png", taken_at: new Date().toISOString(),
       lat: pos.current?.[0] ?? null, lng: pos.current?.[1] ?? null, blob: sig });
     await putFinish({ id: cur.id, insp: cur.id, body: { action: "finish", id: cur.id, answers: draft.answers, room_answers: draft.rooms, findings: draft.findings,
-      started_at: draft.started_at, signed_name: signed, new_sig: !!sig, rev: draft.rev ?? 0 } });
+      started_at: draft.started_at, signed_name: signed, new_sig: !!sig, rev: draft.rev ?? 0, loc: draft.loc ?? null } });
     try { localStorage.removeItem(`insp-draft-${cur.id}`); } catch {}
     setFinished((o) => new Set([...o, cur.id]));
     setItems((l) => l.map((i) => (i.id === cur.id ? { ...i, status: "gata" as const, finished_at: i.finished_at ?? new Date().toISOString() } : i)));
@@ -1117,6 +1119,12 @@ function Form({ x, d, sec, photos, pending, onBack, onSec, change, onPhoto, onRo
   // the photos of each question (sent ones from the server, the ones still on the phone from memory)
   const local = useMemo(() => pending.map((p) => ({ room: p.room, src: URL.createObjectURL(p.blob) })), [pending]);
   useEffect(() => () => local.forEach((p) => URL.revokeObjectURL(p.src)), [local]);
+  // where the inspection is made: one GPS fix when the sheet is opened (the valuer can move the pin before signing)
+  useEffect(() => {
+    if (d.loc) return;
+    void gpsFix().then((f) => { if (f) change((o) => { if (!o.loc) o.loc = f; return o; }); });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const thumbsOf = (room: string) => [...x.files.filter((f) => f.kind === "photo" && f.room === room).map((f) => `/api/inspectii/file/${f.id}`), ...local.filter((p) => p.room === room).map((p) => p.src)];
   // only the groups the sheet has (no "Constatări" step of its own: a sheet that wants findings has a group for them)
   const last = groups.length - 1;
@@ -1485,6 +1493,7 @@ function Sign({ x, d, photos, change, onBack, onFinish, onRooms, onPhotos }: {
           <button type="button" onClick={onPhotos}><span>Fotografii</span><b className={photos ? "ok" : "warn"}>{photos ? `✓ ${photos} încărcate` : "niciuna ›"}</b></button>
         </section>
         {missing.length > 0 && <p className="mbNote">Lipsesc: {missing.slice(0, 4).map((q) => q.t).join(", ")}{missing.length > 4 ? "…" : ""}. Poți trimite și așa.</p>}
+        <LocPick loc={d.loc ?? null} addr={x.lat != null && x.lng != null ? [x.lat, x.lng] : null} onChange={(l) => change((o) => { o.loc = l; return o; })} />
         {useKept && (
           <section className="mbCard mbKept">
             <b>✓ Semnătura salvată rămâne</b>

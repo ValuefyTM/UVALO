@@ -478,6 +478,16 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   Pe fișa web (`inspRow` dă `assignee_sig` + `assignee_legit`), la „Evaluator”, imaginea apare **doar când fișa e finalizată** (`finished_at`;
   retrimiterea îl golește, deci dispare până la noua finalizare), altfel linia goală + nota că se aplică automat; intră în PDF (print).
   API-ul de integrare: `inspector.signature` (același data URL) **doar la fișa finalizată**, altfel `null`. Fișa publică nu o arată.
+- **Locația inspecției (GPS de pe telefon)** (migrația 0040 `inspections.gps_lat/gps_lng/gps_acc/gps_at/gps_src`, separată de `lat/lng` =
+  adresa geocodată la pregătire): la deschiderea fișei pe telefon (`Form`) se ia o poziție GPS (`gpsFix` în `src/components/mobile/LocPick.tsx`,
+  `enableHighAccuracy`, 15 s) în ciorna `draft.loc` (`{lat, lng, acc, at, src: gps|manual}`); pe ultimul ecran, înainte de semnătură (`Sign`),
+  cardul „Locația inspecției” (`LocPick`): hartă Leaflet cu pinul auriu tras pe imobil (→ `src = manual`), cercul de precizie, punctul albastru =
+  telefonul acum, „Folosește / Ia din nou GPS-ul”, „Pune pinul pe adresă”, distanța față de adresa din pregătire. `loc` pleacă cu `progress` și
+  `finish` → `gpsOf()` în `insp.ts` (doar puncte din România, 6 zecimale) → coloanele `gps_*`; „Simulează” pune un punct lângă adresă;
+  „Șterge fișa” le golește (copie în `insp_sheets.snapshot.gps`). Fișa web: secțiunea „Locația inspecției” înainte de Semnături
+  (`InspLocMap` în `src/components/InspLocMap.tsx`, hartă mică neinteractivă `.inLocMap` cu pinul `.inLocPin`, cercul de precizie și punctul
+  adresei; `.inLocFacts`: coordonate, sursă ± precizie, ora, distanța față de adresă, linkuri Google Maps / Analiză amplasament; intră în PDF).
+  API-ul de integrare: `location: {lat, lng, accuracy_m, at, source}` sau `null`. Fișa publică nu o arată.
 - **Poza de profil a fișei** (migrația 0027 `inspections.cover_file_id`): `coverPhoto()` în `insp-shared.ts` = cea aleasă, altfel prima de la
   exterior, altfel prima; sus în rezumatul fișei web (`.inCover`); se alege din Fotografii cu „Alege ca profil” (`InspCoverPick`, acțiunea `cover`).
 - **Link public** (`InspShare` în bara fișei, doar cine a pregătit-o / super-admin; acțiunea `share` `{on}` → `share_token` aleator, `share_at`;
@@ -729,7 +739,8 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - **Evaluatorul se găsește după legitimația ANEVAR** (`inspectorByLegit`: `users.anevar_no` fără spații/puncte/cratime, cont `active`); primește
   inspecția **direct** (`assignee_kind = 'office'`, `assign_state` NULL, fără solicitare de acceptat), chiar dacă nu e membru / asociat al biroului;
   `created_by` = cine a creat cheia, `org_id` = firma cheii. `GET …/inspections/<id>` dă `inspector: {name, legit, signature}` (semnătura din
-  contul evaluatorului, PNG data URL, doar la fișa finalizată). Instrucțiunile și termenul (`due_on`) intră în `notes`. Fișa: a firmei (după ref / id),
+  contul evaluatorului, PNG data URL, doar la fișa finalizată) și `location: {lat, lng, accuracy_m, at, source: gps|manual}` (locul inspecției
+  de pe telefon, `null` până la primul răspuns trimis). Instrucțiunile și termenul (`due_on`) intră în `notes`. Fișa: a firmei (după ref / id),
   `uvalo:<key>`, altfel cea UVALO după `prop_type`; la actualizare fișa se păstrează după ce a început completarea.
 - Fișele trimise prin API (`ext_ref`) nu se modifică / publică / șterg din editorul UVALO (`tplAction` refuză: „se modifică în aplicația firmei”); se pot duplica.
 - **Webhook**: `logIt` (orice rând de istoric) → `postHook` (în `waitUntil`) pentru inspecțiile cu `ext_ref`, la toate cheile active ale firmei cu webhook:
