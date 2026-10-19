@@ -5,6 +5,7 @@ import { CONTACT_ROLES, fmtWhen, isOptional, photoCategories, PROP_TYPES, typesO
 import { allFiles, allFinish, delFile, flush, progress, putFile, putFinish, readExif, shrink, type QPhoto, type UploadProgress } from "./store";
 import { InstallHint } from "./InstallHint";
 import { MobileCollab } from "./MobileCollab";
+import { DocViewer } from "./DocViewer";
 
 /** The first phone number of a field that may hold two ("0721 123 456 / 0256 …"), digits and + only, for tel: / sms: links. */
 const firstPhone = (s: string) => (s.split(/[\/,;]|\bsau\b/)[0] ?? s).replace(/[^\d+]/g, "");
@@ -1141,6 +1142,7 @@ function Form({ x, d, sec, photos, pending, onBack, onSec, change, onPhoto, onRo
             set={(v) => change((o) => { o.answers[q.id] = v; return o; })} setKey={(k, v) => change((o) => { o.answers[k] = v; return o; })} />)}
         </>}
       </div>
+      <DocViewer docs={x.files.filter((f) => f.kind !== "photo" && f.kind !== "signature")} />
       <footer className="mbFoot">
         <Tiles d={d} photos={photos} kept={keptSig(x) ? x.signed_name! : null} rooms={!!x.template.rooms} onRooms={onRooms} onPhotos={onPhotos} onSign={onSign} />
         <span className="mbFootNav">
@@ -1237,6 +1239,7 @@ function Rooms({ x, d, change, onBack, onNext, onPhoto, onRlv }: {
         ))}
         <button type="button" className="mbBtn" onClick={() => { const n = prompt("Numele încăperii"); if (n?.trim()) change((o) => { o.rooms.push({ n: n.trim(), a: null }); return o; }); }}>+ Încăpere</button>
       </div>
+      <DocViewer docs={x.files.filter((f) => f.kind !== "photo" && f.kind !== "signature")} />
       <footer className="mbFoot"><button type="button" className="mbBtn gold big" onClick={onNext}>Mai departe: Fotografii →</button></footer>
       {sheet && (
         <div className="mbSheetBg" onClick={() => setSheet(false)}>

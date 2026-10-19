@@ -549,6 +549,12 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   Bara de progres `.mbUp` sus („Se pregătesc / Se trimit fotografiile · N din M”) din evenimentul `insp-upload` (`progress()` în `store.ts`);
   „×” pe fiecare poză (`deletePhoto`): cea de pe telefon iese din coadă, cea trimisă se șterge de pe server (`DELETE /api/inspectii/file/<id>`).
   `flush()` rulează o singură dată simultan (altfel o poză s-ar trimite de două ori), ce se adaugă între timp intră în rularea următoare.
+- **Actele în timpul fișei** (`src/components/mobile/DocViewer.tsx`, în `Form` și `Rooms`): buton rotund mic, flotant deasupra barei de jos
+  (`.mbDocFab`, cu numărul actelor; apare doar dacă inspecția are CF / releveu / documente), deschide actele **peste fișă** (`.mbDocView`, fără să
+  schimbe ecranul, fișa rămâne unde era): chip-uri pentru alegerea actului, zoom − / + (100–300%) sau atingere dublă, „×” sau același buton (acum
+  auriu, „Înapoi la fișă”) închide. Imaginile ca atare; PDF-urile desenate pagină cu pagină cu pdf.js-ul add-in-ului Word (`/word/lib/pdfjs/`,
+  importat ca modul cu URL absolut; `worker.ts` îl lasă să treacă pe `INSP_HOSTS`). Fiecare fișier e descărcat o dată (tipul din răspuns, nu din
+  nume) și ținut în memorie cât e deschisă fișa; fără rețea → mesaj. „Deschide separat” = fișierul într-o filă nouă.
 - **Detaliul inspecției** pe telefon (`Detail`): hartă mică (`MiniMap`, Leaflet fără interacțiune, atingerea deschide navigația), statut + tip,
   Google Maps / Waze, programarea, contactul (Sună / SMS), „Proprietatea” (doar câmpurile completate: tip, cad., CF, UAT, județ, suprafețe din
   acte, încăperi, cine a pregătit / cine face), încăperile din releveu, actele încărcate (doar dacă există), fotografiile trimise, notele, fișa.

@@ -22,7 +22,7 @@ const SITE_FILES = /^\/(_next\/|fonts\/|site\/|word\/prezentare\/|uvalo-[a-z-]+\
 
 /** The phone app's domain (inspectii.uvalo.ro): "/" is the app (/m), plus its service worker and manifest at the root. */
 const INSP_PATHS: Record<string, string> = { "/": "/m", "/sw.js": "/api/m/sw", "/manifest.webmanifest": "/api/m/manifest" };
-const INSP_FILES = /^\/(api\/|_next\/|fonts\/|loc-icon-[a-z0-9-]+\.png$|uvalo-[a-z-]+\.svg$|icon\.svg$|favicon\.ico$)/;
+const INSP_FILES = /^\/(api\/|_next\/|fonts\/|word\/lib\/pdfjs\/|loc-icon-[a-z0-9-]+\.png$|uvalo-[a-z-]+\.svg$|icon\.svg$|favicon\.ico$)/;
 
 function clean(req: Request) {
   const headers = new Headers(req.headers);
