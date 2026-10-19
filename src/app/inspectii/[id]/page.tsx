@@ -118,6 +118,8 @@ export default async function InspDoc({ params }: { params: Promise<{ id: string
               <span className="dark"><small>Făcută de</small><b>{x.assignee_name ?? "de ales"}</b><em>pentru {x.owner_name}</em></span>
             </div>
             <dl className="inMeta">
+              {x.ext_user && <div><dt>Utilizatorul raportului</dt><dd>{x.ext_user}</dd></div>}
+              {x.ext_client && <div><dt>Client</dt><dd>{x.ext_client}</dd></div>}
               <div><dt>Persoana de contact</dt><dd>{[x.contact_name, x.contact_role].filter(Boolean).join(", ") || "—"}</dd></div>
               <div><dt>Telefon</dt><dd>{x.contact_phone || "—"}</dd></div>
               <div><dt>Fișa</dt><dd>{x.template_name ?? "—"}{x.template_version ? ` · v${x.template_version}` : ""}</dd></div>

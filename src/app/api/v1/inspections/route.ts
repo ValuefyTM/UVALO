@@ -3,7 +3,8 @@ import { fail, keyApi, putInspection } from "@/lib/integration";
 /**
  * Sends an inspection to a valuer (by ANEVAR card), or updates the one with the same `ref` while it is not finished:
  * `{ ref, legit, address, cad_nr?, cf_nr?, county?, uat?, lat?, lng?, prop_type?, area_util?, area_land?, rooms?: [{n, a}],
- *    contact_name?, contact_phone?, contact_role?, instructions?, due_on?, template_ref? | template_id? }`.
+ *    contact_name?, contact_phone?, contact_role?, instructions?, due_on?, template_ref? | template_id?,
+ *    client? (clientul lucrării), report_user? (utilizatorul raportului, ex. banca) }`.
  */
 export async function POST(req: Request) {
   const a = await keyApi(req);

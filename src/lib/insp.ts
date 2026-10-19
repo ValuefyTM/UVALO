@@ -245,7 +245,10 @@ export async function listInspections(db: D1Database, c: Ctx) {
 export type Insp = InspRow & {
   cf_nr: string | null; uat: string | null; county: string | null; area_util: number | null; area_land: number | null; rooms: { n: string; a: number | null }[];
   template_id: string | null; template_name: string | null; template_version: number | null; template: Template; contact_phone: string | null; contact_role: string | null;
-  answers: Record<string, string | string[]>; facts?: { label: string; value: string }[]; room_answers: { n: string; a: number | null; floor?: string; walls?: string; state?: string }[];
+  answers: Record<string, string | string[]>; facts?: { label: string; value: string }[];
+  /** from the firm's software: the client of the work and the user of the report (e.g. the bank) */
+  ext_client?: string | null; ext_user?: string | null;
+  room_answers: { n: string; a: number | null; floor?: string; walls?: string; state?: string }[];
   findings: { diff?: string; defects?: string; notes?: string }; started_at: string | null; signed_name: string | null; signed_at: string | null; notes: string | null;
   created_at: string; org_id: string | null; files: { id: string; kind: string; name: string | null; room: string | null; taken_at: string | null }[];
   log: { at: string; text: string; name: string | null }[]; cover_file_id: string | null; share_token: string | null; share_at: string | null;

@@ -195,6 +195,8 @@ export async function putInspection(db: D1Database, key: ApiKey, b: Record<strin
   };
   if (v.lat == null) { const g = await geocode(address).catch(() => null); if (g?.[0]) { v.lat = g[0].lat; v.lng = g[0].lng; } }
   const facts = cleanFacts(b.facts);
+  // the client of the work and the user of the report (e.g. the bank): sent by the firm's software, shown to the valuer
+  const parties = { client: s(b.client, 160) || null, user: s(b.report_user, 160) || null };
   const ts = now();
   if (old) {
     const id = String(old.id), moved = old.assignee_id !== who.id;
@@ -209,7 +211,7 @@ export async function putInspection(db: D1Database, key: ApiKey, b: Record<strin
         v.contact_name, v.contact_phone, v.contact_role, notes, who.id,
         keepTpl ? 1 : 0, tpl.id, keepTpl ? 1 : 0, tpl.name, keepTpl ? 1 : 0, tpl.version, keepTpl ? 1 : 0, JSON.stringify(tpl.tpl),
         moved ? 1 : 0, moved ? 1 : 0, ts, id).run();
-    await db.prepare("UPDATE inspections SET facts = ? WHERE id = ?").bind(JSON.stringify(facts), id).run();
+    await db.prepare("UPDATE inspections SET facts = ?, ext_client = ?, ext_user = ? WHERE id = ?").bind(JSON.stringify(facts), parties.client, parties.user, id).run();
     if (!keepTpl && !old.started_at) await db.prepare("UPDATE inspections SET answers = ? WHERE id = ?").bind(JSON.stringify(prefill(tpl.tpl, facts)), id).run();
     if (moved) {
       await logIt(db, id, key.created_by, `Realocată lui ${who.name}`);
@@ -227,7 +229,7 @@ export async function putInspection(db: D1Database, key: ApiKey, b: Record<strin
     VALUES (?, ?, ?, ?, ?, 'office', NULL, 'prog', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?)`)
     .bind(id, code, key.created_by, key.org_id, who.id, v.address, v.cad_nr, v.cf_nr, v.uat, v.county, v.lat, v.lng, v.prop_type, v.area_util, v.area_land,
       JSON.stringify(rooms), tpl.id, tpl.name, tpl.version, JSON.stringify(tpl.tpl), v.contact_name, v.contact_phone, v.contact_role, notes, ref, ts, ts).run();
-  await db.prepare("UPDATE inspections SET facts = ?, answers = ? WHERE id = ?").bind(JSON.stringify(facts), JSON.stringify(prefill(tpl.tpl, facts)), id).run();
+  await db.prepare("UPDATE inspections SET facts = ?, answers = ?, ext_client = ?, ext_user = ? WHERE id = ?").bind(JSON.stringify(facts), JSON.stringify(prefill(tpl.tpl, facts)), parties.client, parties.user, id).run();
   await logIt(db, id, key.created_by, "Creată din aplicația firmei");
   return { ok: true, id, code, created: true };
 }
