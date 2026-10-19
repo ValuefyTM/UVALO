@@ -472,6 +472,12 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   copia fișei șterse (JSON) + motivul în `insp_sheets.snapshot`. În aceeași fereastră: rămâne la inspectorul de acum / Eu / cineva din birou
   (→ `reassign` cu `again`). Ciorna de pe telefon are `rev`: `progress` / `finish` cu alt `rev` sunt refuzate, iar aplicația aruncă ciorna veche
   la deschidere („Fișa a fost ștearsă de pe web: începi o fișă nouă.”). Fișa nouă primește alt număr.
+- **Semnătura evaluatorului** (migrația 0039 `users.signature`, PNG data URL ≤ 160 KB cu fundal transparent): în „Contul meu” cardul
+  „Semnătura ta” (`SignatureCard`, `#semnatura`, pentru evaluatori și super-admini): desenată pe canvas (mouse / deget, se decupează doar zona
+  desenată) sau încărcată dintr-o poză (`fromImage`: hârtia albă devine transparentă) → `PATCH /api/account/signature {signature | null}`.
+  Pe fișa web (`inspRow` dă `assignee_sig` + `assignee_legit`), la „Evaluator”, imaginea apare **doar când fișa e finalizată** (`finished_at`;
+  retrimiterea îl golește, deci dispare până la noua finalizare), altfel linia goală + nota că se aplică automat; intră în PDF (print).
+  API-ul de integrare: `inspector.signature` (același data URL) **doar la fișa finalizată**, altfel `null`. Fișa publică nu o arată.
 - **Poza de profil a fișei** (migrația 0027 `inspections.cover_file_id`): `coverPhoto()` în `insp-shared.ts` = cea aleasă, altfel prima de la
   exterior, altfel prima; sus în rezumatul fișei web (`.inCover`); se alege din Fotografii cu „Alege ca profil” (`InspCoverPick`, acțiunea `cover`).
 - **Link public** (`InspShare` în bara fișei, doar cine a pregătit-o / super-admin; acțiunea `share` `{on}` → `share_token` aleator, `share_at`;
@@ -722,7 +728,8 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   · `GET /api/v1/files/<id>`.
 - **Evaluatorul se găsește după legitimația ANEVAR** (`inspectorByLegit`: `users.anevar_no` fără spații/puncte/cratime, cont `active`); primește
   inspecția **direct** (`assignee_kind = 'office'`, `assign_state` NULL, fără solicitare de acceptat), chiar dacă nu e membru / asociat al biroului;
-  `created_by` = cine a creat cheia, `org_id` = firma cheii. Instrucțiunile și termenul (`due_on`) intră în `notes`. Fișa: a firmei (după ref / id),
+  `created_by` = cine a creat cheia, `org_id` = firma cheii. `GET …/inspections/<id>` dă `inspector: {name, legit, signature}` (semnătura din
+  contul evaluatorului, PNG data URL, doar la fișa finalizată). Instrucțiunile și termenul (`due_on`) intră în `notes`. Fișa: a firmei (după ref / id),
   `uvalo:<key>`, altfel cea UVALO după `prop_type`; la actualizare fișa se păstrează după ce a început completarea.
 - Fișele trimise prin API (`ext_ref`) nu se modifică / publică / șterg din editorul UVALO (`tplAction` refuză: „se modifică în aplicația firmei”); se pot duplica.
 - **Webhook**: `logIt` (orice rând de istoric) → `postHook` (în `waitUntil`) pentru inspecțiile cu `ext_ref`, la toate cheile active ale firmei cu webhook:

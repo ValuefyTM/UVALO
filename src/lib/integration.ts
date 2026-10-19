@@ -241,11 +241,12 @@ export async function extInspection(db: D1Database, key: ApiKey, idOrRef: string
   const [files, who] = await Promise.all([
     db.prepare("SELECT id, kind, name, room, taken_at, lat, lng, meta FROM insp_files WHERE inspection_id = ? ORDER BY taken_at, created_at").bind(r.id)
       .all<{ id: string; kind: string; name: string | null; room: string | null; taken_at: string | null; lat: number | null; lng: number | null; meta: string | null }>(),
-    r.assignee_id ? db.prepare("SELECT COALESCE(NULLIF(name, ''), email) AS name, anevar_no FROM users WHERE id = ?").bind(r.assignee_id).first<{ name: string; anevar_no: string | null }>() : null,
+    r.assignee_id ? db.prepare("SELECT COALESCE(NULLIF(name, ''), email) AS name, anevar_no, signature FROM users WHERE id = ?").bind(r.assignee_id).first<{ name: string; anevar_no: string | null; signature: string | null }>() : null,
   ]);
   return {
     id: r.id, ref: r.ext_ref, code: r.code, status: r.status, address: r.address, cad_nr: r.cad_nr, cf_nr: r.cf_nr, prop_type: r.prop_type, lat: r.lat, lng: r.lng,
-    inspector: who ? { name: who.name, legit: who.anevar_no } : null,
+    // the valuer's signature (PNG data URL from their account) travels with the finished sheet only
+    inspector: who ? { name: who.name, legit: who.anevar_no, signature: r.finished_at ? who.signature ?? null : null } : null,
     scheduled_at: r.scheduled_at, duration_min: r.duration_min, started_at: r.started_at, finished_at: r.finished_at,
     sheet: { no: r.sheet_no, at: r.sheet_at, rev: r.sheet_rev, template: { id: r.template_id, name: r.template_name, version: r.template_version, ...cleanTemplate(J(r.template, {})) },
       facts: J(r.facts, []), answers: J(r.answers, {}), rooms: J(r.room_answers, []), findings: J(r.findings, {}), signed_name: r.signed_name, signed_at: r.signed_at,

@@ -248,6 +248,8 @@ export type Insp = InspRow & {
   answers: Record<string, string | string[]>; facts?: { label: string; value: string }[];
   /** from the firm's software: the client of the work and the user of the report (e.g. the bank) */
   ext_client?: string | null; ext_user?: string | null;
+  /** the valuer doing it: ANEVAR card and the signature from their account (PNG data URL), put on the finished sheet */
+  assignee_legit?: string | null; assignee_sig?: string | null;
   room_answers: { n: string; a: number | null; floor?: string; walls?: string; state?: string }[];
   findings: { diff?: string; defects?: string; notes?: string }; started_at: string | null; signed_name: string | null; signed_at: string | null; notes: string | null;
   created_at: string; org_id: string | null; files: { id: string; kind: string; name: string | null; room: string | null; taken_at: string | null }[];
@@ -272,6 +274,7 @@ export async function sharedInspection(db: D1Database, token: string): Promise<I
 
 function inspRow(db: D1Database, where: string, v: string) {
   return db.prepare(`SELECT i.*, COALESCE(NULLIF(o.name, ''), o.email) AS owner_name, COALESCE(NULLIF(a.name, ''), a.email) AS assignee_name,
+    a.anevar_no AS assignee_legit, a.signature AS assignee_sig,
     (SELECT COUNT(*) FROM insp_files f WHERE f.inspection_id = i.id AND f.kind = 'photo') AS photos
     FROM inspections i JOIN users o ON o.id = i.created_by LEFT JOIN users a ON a.id = i.assignee_id WHERE ${where} AND i.deleted_at IS NULL`).bind(v).first<Record<string, unknown>>();
 }

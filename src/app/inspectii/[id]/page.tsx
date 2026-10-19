@@ -190,7 +190,9 @@ export default async function InspDoc({ params }: { params: Promise<{ id: string
 
           <section id="semnaturi" className="inSec inSigns">
             <div><small>{String(groups.length + 5 - (ownFind ? 1 : 0)).padStart(2, "0")} · Persoana prezentă</small><b>{x.signed_name ?? "—"}</b><span className="inSignLine" /><em>{x.signed_at ? `Semnat pe telefon · ${fmtDate(x.signed_at, true)}` : "Semnătura se ia pe telefon"}</em></div>
-            <div><small>Evaluator</small><b>{x.assignee_name ?? "—"}</b><span className="inSignLine" /><em>Semnătura evaluatorului</em></div>
+            <div><small>Evaluator</small><b>{x.assignee_name ?? "—"}{x.assignee_legit ? <span className="inLegit"> · leg. {x.assignee_legit}</span> : null}</b>
+              {x.finished_at && x.assignee_sig ? <img className="inSignImg" src={x.assignee_sig} alt={`Semnătura: ${x.assignee_name ?? "evaluator"}`} /> : <span className="inSignLine" />}
+              <em>{x.finished_at && x.assignee_sig ? "Semnătura evaluatorului · din contul lui, aplicată la finalizare" : x.assignee_sig ? "Semnătura evaluatorului se aplică automat la finalizare" : "Semnătura evaluatorului"}</em></div>
           </section>
 
           <section id="istoric" className="inSec inNoPrint">
