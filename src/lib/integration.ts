@@ -304,6 +304,23 @@ export async function extAddFile(db: D1Database, key: ApiKey, idOrRef: string, f
   return { ok: true as const, id };
 }
 
+/**
+ * Takes back a document the firm gave the valuer (CF, releveu, other document), when the firm no longer wants it on
+ * the inspection. Only documents (not the valuer's photos or signature) of the firm's own inspection.
+ */
+export async function extDeleteFile(db: D1Database, key: ApiKey, idOrRef: string, fileId: string) {
+  const r = await extRow(db, key, idOrRef);
+  if (!r) return { error: "Inspecția nu există.", status: 404 };
+  const f = await db.prepare("SELECT id, kind, name, r2_key FROM insp_files WHERE id = ? AND inspection_id = ?").bind(fileId, r.id).first<{ id: string; kind: string; name: string | null; r2_key: string | null }>();
+  if (!f) return { error: "Documentul nu există.", status: 404 };
+  if (!["cf", "releveu", "doc"].includes(f.kind)) return { error: "Se pot scoate doar documentele date de firmă, nu pozele sau semnătura." };
+  await db.prepare("DELETE FROM insp_files WHERE id = ?").bind(f.id).run();
+  const bucket = await getFiles();
+  if (bucket && f.r2_key) await bucket.delete(f.r2_key).catch(() => null);
+  await logIt(db, String(r.id), key.created_by, `Document scos: ${s(f.name ?? "", 80) || f.kind}`);
+  return { ok: true as const };
+}
+
 /** A file of one of the firm's inspections (photos, signature, documents), for download. */
 export async function extFile(db: D1Database, key: ApiKey, fileId: string) {
   return db.prepare(`SELECT f.id, f.name, f.r2_key, f.meta FROM insp_files f JOIN inspections i ON i.id = f.inspection_id WHERE f.id = ? AND i.org_id = ?`)
