@@ -254,7 +254,9 @@ export async function extInspection(db: D1Database, key: ApiKey, idOrRef: string
       facts: J(r.facts, []), answers: J(r.answers, {}), rooms: J(r.room_answers, []), findings: J(r.findings, {}), signed_name: r.signed_name, signed_at: r.signed_at,
       cover_file_id: r.cover_file_id, redo_note: r.redo_note },
     contact: { name: r.contact_name, phone: r.contact_phone, role: r.contact_role }, notes: r.notes,
-    files: files.results.map((f) => ({ id: f.id, kind: f.kind, name: f.name, room: f.room, taken_at: f.taken_at, lat: f.lat, lng: f.lng, type: J<{ type?: string }>(f.meta, {}).type ?? null })),
+    files: files.results.map((f) => ({ id: f.id, kind: f.kind, name: f.name, room: f.room, taken_at: f.taken_at, lat: f.lat, lng: f.lng, type: J<{ type?: string }>(f.meta, {}).type ?? null,
+      // "api": given by the firm through the integration; "app": added by the valuer
+      source: J<{ api?: string }>(f.meta, {}).api ? "api" : "app" })),
     updated_at: r.updated_at,
   };
 }
