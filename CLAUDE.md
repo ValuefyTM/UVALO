@@ -641,6 +641,11 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
 
 ## Instrumente în admin (`/admin/instrumente`)
 
+- **Localizări efectuate** (evenimentul `locate`, „Localizare efectuată”, în `track-js`): un imobil găsit efectiv — după nr. cadastral (`show()`
+  dintr-o căutare, nu click pe hartă, și numărul există în plan), topo, adresă / coordonate (`goToPoint`) sau Stereo 70 (`stereo_locate`);
+  meta `{uat, how: nr|topo|adresa|stereo, src: acasa|localizator}` — `src = acasa` pentru căutarea pornită din bara de pe Acasă (`?q=` / `?adr=`,
+  prima, automată, până la prima atingere a paginii). `toolUsage()` din `tools.ts` întoarce `locates {n, u, home}` → pe `/admin/instrumente` cardul
+  Localizatorului și pe pagina lui KPI-ul principal „Localizări · 30 zile” (`.kpiMain`: din bara de pe Acasă / din localizator / persoane).
 - Listă cu fiecare instrument (localizare, amplasament, comparabile, word, chrome, colaborari — acesta cu moduri, nu on/off) + pagină `/admin/instrumente/<cheie>`: comutator
   activ/dezactivat, statistici pe 30 de zile (evenimentele din `events` cu `module = <cheie>`), activitate recentă.
 - Setările: `app_settings` cheia `tools` = `{off: [...], limits: {ai_text, ai_plan, total_text_day, total_plan_day,

@@ -183,7 +183,7 @@ const since = (d: number) => new Date(Date.now() - d * 864e5).toISOString();
 
 export async function toolUsage(db: D1Database, module: string, days = 30, targetActions: string[] = ["analysis"]) {
   const from = since(days);
-  const [k, byDay, actions, people, targets] = await Promise.all([
+  const [k, byDay, actions, people, targets, loc] = await Promise.all([
     db.prepare(`SELECT COUNT(*) AS n, COUNT(DISTINCT user_id) AS users, COUNT(DISTINCT org_id) AS orgs,
         (SELECT COUNT(DISTINCT user_id) FROM events WHERE module = ?1 AND at > ?3) AS users7,
         (SELECT COUNT(DISTINCT user_id) FROM events WHERE module = ?1) AS usersAll
@@ -198,13 +198,17 @@ export async function toolUsage(db: D1Database, module: string, days = 30, targe
       .bind(module, from).all<{ id: string; name: string; email: string; anevar_no: string | null; org: string | null; n: number; last: string }>(),
     db.prepare(`SELECT target, COUNT(*) AS n, COUNT(DISTINCT user_id) AS u FROM events WHERE module = ? AND at > ? AND target IS NOT NULL
       AND action IN (${targetActions.map(() => "?").join(",") || "''"}) GROUP BY target ORDER BY n DESC LIMIT 15`).bind(module, from, ...targetActions).all<{ target: string; n: number; u: number }>(),
+    // "localizări efectuate" (the locator): properties found, split by where the search started (the home page bar / the page itself)
+    db.prepare(`SELECT COUNT(*) AS n, COUNT(DISTINCT user_id) AS u, COALESCE(SUM(meta LIKE '%"src":"acasa"%'), 0) AS home
+      FROM events WHERE module = ? AND action = 'locate' AND at > ?`).bind(module, from).first<{ n: number; u: number; home: number }>(),
   ]);
   const map = new Map(byDay.results.map((r) => [r.d, r]));
   const daysList = Array.from({ length: days }, (_, i) => {
     const d = new Date(Date.now() - (days - 1 - i) * 864e5).toISOString().slice(0, 10);
     return map.get(d) ?? { d, n: 0, u: 0 };
   });
-  return { k: k ?? { n: 0, users: 0, orgs: 0, users7: 0, usersAll: 0 }, days: daysList, actions: actions.results, people: people.results, targets: targets.results };
+  return { k: k ?? { n: 0, users: 0, orgs: 0, users7: 0, usersAll: 0 }, days: daysList, actions: actions.results, people: people.results, targets: targets.results,
+    locates: loc ?? { n: 0, u: 0, home: 0 } };
 }
 
 /** AI use of the site analysis: texts per variant, plans read, tokens (30 days). */

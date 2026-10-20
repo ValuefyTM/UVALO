@@ -280,7 +280,7 @@ export async function recentEvents(db: D1Database, f: { orgId?: string; userId?:
 }
 
 export const ACTION_LABEL: Record<string, string> = {
-  login: "Autentificare", page: "Pagină deschisă", uat_open: "Plan UAT încărcat", search: "Căutare nr. cadastral / topo", search_multi: "Căutare multiplă",
+  login: "Autentificare", page: "Pagină deschisă", uat_open: "Plan UAT încărcat", locate: "Localizare efectuată", search: "Căutare nr. cadastral / topo", search_multi: "Căutare multiplă",
   parcel: "Parcelă deschisă", building: "Construcție deschisă", address: "Căutare adresă / coordonate", gps_start: "Locația mea (GPS)", compass: "Busolă",
   export_pdf: "Export PDF", export_word: "Export Word", export_png: "Export PNG", export_kml: "Export KML", export: "Export", link: "Link copiat",
   analysis: "Analiză de amplasament", ai: "Text generat cu AI", ai_plan: "Plan de amplasament citit cu AI", copy: "Text copiat", notify: "„Anunță-mă” la un modul nou",

@@ -38,7 +38,7 @@ export default async function Instrument({ params }: { params: Promise<{ key: st
         actions={<a className="btn btnGhost btnSm" href="/admin/instrumente">← Instrumente</a>}>
         {switchCard}
         <h2 className="secTitle">Statistici</h2>
-        <ToolAnalytics u={u} events={events} />
+        <ToolAnalytics u={u} events={events} locates />
         <UatCountTable title="Localități deschise (30 de zile)" rows={uatsOpened.results} countyOf={countyOf} empty="—" />
         <CountTable title="Parcele căutate cel mai des (30 de zile)" rows={opened.map((t) => [t.target, t.n, t.u])} head={["Nr. cadastral", "De câte ori", "Persoane"]} empty="—" />
         <h2 className="secTitle" id="planuri">Planuri cadastrale</h2>

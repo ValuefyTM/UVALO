@@ -29,6 +29,7 @@ export default async function Instrumente() {
               </div>
               <p className="hint">{t.desc}</p>
               <div className="kpis">
+                {t.key === "localizare" && <div className="kpi"><small>Localizări · 30 zile</small><b>{u.locates.n.toLocaleString("ro-RO")}</b></div>}
                 <div className="kpi"><small>Utilizatori · 30 zile</small><b>{u.k.users}</b></div>
                 <div className="kpi"><small>Acțiuni · 30 zile</small><b>{u.k.n.toLocaleString("ro-RO")}</b></div>
               </div>

@@ -6,10 +6,15 @@ import { CountTable, DayBars, EventLog } from "./Charts";
 
 type Usage = Awaited<ReturnType<typeof toolUsage>>;
 
-export function ToolAnalytics({ u, events, targetLabel }: { u: Usage; events: EventRow[]; targetLabel?: string }) {
+/** `locates`: the locator — "localizări efectuate" (properties found) as the first number, split by where the search started. */
+export function ToolAnalytics({ u, events, targetLabel, locates }: { u: Usage; events: EventRow[]; targetLabel?: string; locates?: boolean }) {
   return (
     <>
       <div className="kpis">
+        {locates && (
+          <div className="kpi kpiMain"><small>Localizări · 30 zile</small><b>{u.locates.n.toLocaleString("ro-RO")}</b>
+            <em>{u.locates.home.toLocaleString("ro-RO")} din bara de pe Acasă · {(u.locates.n - u.locates.home).toLocaleString("ro-RO")} din localizator · {u.locates.u} {u.locates.u === 1 ? "persoană" : "persoane"}</em></div>
+        )}
         <div className="kpi"><small>Utilizatori · 7 zile</small><b>{u.k.users7}</b></div>
         <div className="kpi"><small>Utilizatori · 30 zile</small><b>{u.k.users}</b></div>
         <div className="kpi"><small>Firme · 30 zile</small><b>{u.k.orgs}</b></div>
