@@ -1,11 +1,13 @@
 // Server-only: firms, members, invitations and usage statistics.
 import { now, uuid } from "./db";
 import { audit, invite, revokeSessions, type User } from "./auth";
-import { ORG_SQL, seatsUsed, type Org, type Role } from "./access";
+import { MEMBER_TOOLS, ORG_SQL, orgTools, seatsUsed, type Org, type Role } from "./access";
 import { validEmail } from "./crypto";
 
 export type Member = {
   user_id: string; email: string; name: string; phone: string | null; status: string; role: Role; anevar_no: string | null; has_avatar?: number;
+  /** the tools this member may use (comma list), null = everything of the plan; ignored for owners / administrators */
+  modules: string | null;
   last_seen_at: string | null; last_login_at: string | null; activated_at: string | null; events_30: number; searches_30: number; exports_30: number;
 };
 export type Invite = { id: string; email: string; role: string; created_at: string; expires_at: string; invited_by_name: string | null };
@@ -14,7 +16,7 @@ const since = (days: number) => new Date(Date.now() - days * 864e5).toISOString(
 
 export async function members(db: D1Database, orgId: string) {
   const { results } = await db
-    .prepare(`SELECT u.id AS user_id, u.email, u.name, u.phone, u.status, m.role, u.anevar_no, u.avatar IS NOT NULL AS has_avatar, u.last_seen_at, u.last_login_at, u.activated_at,
+    .prepare(`SELECT u.id AS user_id, u.email, u.name, u.phone, u.status, m.role, m.modules, u.anevar_no, u.avatar IS NOT NULL AS has_avatar, u.last_seen_at, u.last_login_at, u.activated_at,
         (SELECT COUNT(*) FROM events e WHERE e.user_id = u.id AND e.org_id = m.org_id AND e.at > ?2) AS events_30,
         (SELECT COUNT(*) FROM events e WHERE e.user_id = u.id AND e.org_id = m.org_id AND e.at > ?2 AND e.action IN ('search', 'search_multi', 'address', 'gps_start')) AS searches_30,
         (SELECT COUNT(*) FROM events e WHERE e.user_id = u.id AND e.org_id = m.org_id AND e.at > ?2 AND e.action LIKE 'export%') AS exports_30
@@ -52,8 +54,39 @@ export async function inviteMember(db: D1Database, by: User, bySuper: boolean, b
     return { ok: false as const, error: `Toate cele ${org.seats} locuri ale abonamentului sunt ocupate. ${bySuper ? "Mărește numărul de locuri." : "Scrie-ne pentru locuri în plus."}` };
   }
   const r = await invite(db, by, orgId, email, role, typeof b.name === "string" ? b.name : undefined);
+  // the tools this member starts with (the invitation form's checkboxes); administrators get everything
+  const mods = role === "member" ? cleanModules(org, b.modules) : null;
+  if (mods !== undefined) await db.prepare("UPDATE memberships SET modules = ? WHERE org_id = ? AND user_id = ?").bind(mods, orgId, r.userId).run();
   return { ok: true as const, ...r };
 }
+
+/** `modules` from the UI (array of keys, or null = everything) → the stored list, limited to the firm's tools; undefined = not sent. */
+function cleanModules(org: Org, v: unknown): string | null | undefined {
+  if (v === undefined) return undefined;
+  if (v === null || v === "all") return null;
+  if (!Array.isArray(v)) return undefined;
+  const ok = orgTools(org).map((t) => t.key);
+  const keys = [...new Set(v.filter((k): k is string => typeof k === "string" && ok.includes(k)))];
+  return keys.join(",");
+}
+
+/** Firma mea → Utilizatori → „Acces”: which of the firm's tools a member may use (`null` = all of the plan). Only for members. */
+export async function setModules(db: D1Database, by: User, orgId: string, userId: string, v: unknown) {
+  const cur = await db.prepare("SELECT role FROM memberships WHERE org_id = ? AND user_id = ? AND status = 'active'").bind(orgId, userId).first<{ role: Role }>();
+  if (!cur) return "Persoana nu face parte din firmă.";
+  if (cur.role !== "member") return "Titularul și administratorii au acces la toate instrumentele firmei. Schimbă-i întâi rolul în Membru.";
+  if (userId === by.id) return "Nu îți poți restrânge singur accesul.";
+  const org = await getOrg(db, orgId);
+  if (!org) return "Firma nu există.";
+  const mods = cleanModules(org, v);
+  if (mods === undefined) return "Lista de instrumente nu este validă.";
+  await db.prepare("UPDATE memberships SET modules = ? WHERE org_id = ? AND user_id = ?").bind(mods, orgId, userId).run();
+  await audit(db, by.id, "member.modules", "org", orgId, `${userId} → ${mods === null ? "toate" : mods || "niciunul"}`);
+  return null;
+}
+
+/** The names of the tools in a stored list, for the audit log and the UI. */
+export const moduleNames = (keys: string[]) => keys.map((k) => MEMBER_TOOLS.find((t) => t.key === k)?.name ?? k);
 
 export async function setRole(db: D1Database, by: User, bySuper: boolean, byRole: Role | null, orgId: string, userId: string, role: Role) {
   if (!ROLES.includes(role)) return "Rol necunoscut.";
@@ -64,7 +97,8 @@ export async function setRole(db: D1Database, by: User, bySuper: boolean, byRole
     const owners = await db.prepare("SELECT COUNT(*) AS n FROM memberships WHERE org_id = ? AND role = 'owner' AND status = 'active'").bind(orgId).first<{ n: number }>();
     if ((owners?.n ?? 0) <= 1) return "Firma trebuie să aibă cel puțin un titular de cont.";
   }
-  await db.prepare("UPDATE memberships SET role = ? WHERE org_id = ? AND user_id = ?").bind(role, orgId, userId).run();
+  // an administrator / owner has everything: the per-member list is dropped when promoting
+  await db.prepare("UPDATE memberships SET role = ?, modules = CASE WHEN ? = 'member' THEN modules ELSE NULL END WHERE org_id = ? AND user_id = ?").bind(role, role, orgId, userId).run();
   await audit(db, by.id, "member.role", "org", orgId, `${userId} → ${role}`);
   return null;
 }

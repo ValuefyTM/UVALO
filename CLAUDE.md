@@ -319,6 +319,15 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   biroului: `c.linkAdmin` (în `context()`) → `firmOrgs(c)` în `insp.ts` (biroul propriu pentru administrator / operațional + birourile care l-au
   făcut administrator) → lista (fila „Ale firmei”), fișa, editarea, realocarea (`canPrepare`); `team(db, c, orgId)` listează oamenii biroului
   inspecției, nu ai firmei proprii.
+- **Acces per utilizator în birou** (migrația 0041 `memberships.modules`, listă de chei separate prin virgulă; NULL = tot planul): în „Firma mea” →
+  Utilizatori, pe fiecare **membru** (evaluator în birou sau operațional; nu pe titular / administratori, care au mereu tot planul) butonul
+  **„Acces: …”** (`AccessDialog` în `OfficeLinks.tsx`, `ToolsPick`: „Toate instrumentele biroului” / „Doar instrumentele bifate”; Colaborări apare
+  doar la evaluatori) → `PATCH /api/org/members {user, modules: string[] | null}` → `setModules` în `orgs.ts` (refuză pe titular / administratori
+  și pe propriul cont; audit `member.modules`). Lista posibilă = `orgTools(org)` din `access.ts` (`MEMBER_TOOLS`: modulele planului + Inspecții +
+  Colaborări). Fereastra „+ Invită” are același bloc pentru „Evaluator în birou” (fără bifa Administrator) și „Operațional” (`inviteMember` scrie
+  `modules` pe membership). Aplicarea: `contextOf()` ia `m.modules` din membership și, pentru `role = member`, păstrează în `c.modules` doar
+  cheile din listă (după ce s-au adăugat Colaborări / Inspecții după mod) → meniul, Acasă, Instrumente, paginile și API-urile (toate verifică
+  `c.modules`) ascund / refuză restul. Promovarea la administrator golește lista. Caz tipic: asistent fără legitimație doar cu Localizatorul.
 - **Operațional → evaluator**: în „Contul meu”, cei fără legitimație au cardul „Datele tale” (nume și telefon editabile — `PATCH /api/account`;
   poza și emailul ca toți) și butonul **„Am devenit evaluator”** (`POST /api/account/legit`); administratorul biroului are „Adaugă legitimația”
   la operaționali în „Firma mea” (`POST /api/org/legit`). Ambele → `claimLegit()` în `office.ts`: legitimația există în Tablou, nu e pe alt cont,

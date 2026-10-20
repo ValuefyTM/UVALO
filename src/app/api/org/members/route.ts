@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { api, err, json, str } from "@/lib/api";
 import { resendInvite } from "@/lib/auth";
 import { canManageOrg, type Role } from "@/lib/access";
-import { cancelInvite, inviteMember, removeMember, setRole } from "@/lib/orgs";
+import { cancelInvite, inviteMember, removeMember, setModules, setRole } from "@/lib/orgs";
 
 /** The firm being managed: the current one, or any firm for a UVALO super-admin (`org` in the body / query). */
 async function target(req: Request, body?: Record<string, unknown>) {
@@ -26,11 +26,12 @@ export async function POST(req: Request) {
   return NextResponse.json({ ok: true, sent: r.sent, active: r.active });
 }
 
-/** Changes a member's role: `{ user, role }`. */
+/** Changes a member's role: `{ user, role }`, or the tools they may use: `{ user, modules: string[] | null }` (null = everything of the plan). */
 export async function PATCH(req: Request) {
   const b = await json(req);
   const t = await target(req, b);
   if ("res" in t) return t.res;
+  if ("modules" in b) { const e = await setModules(t.db, t.c.user, t.orgId, str(b.user, 60), b.modules); return e ? err(e) : NextResponse.json({ ok: true }); }
   const e = await setRole(t.db, t.c.user, t.c.super, t.role, t.orgId, str(b.user, 60), str(b.role, 20) as Role);
   return e ? err(e) : NextResponse.json({ ok: true });
 }

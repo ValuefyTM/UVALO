@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { countyOfUats } from "@/lib/plans";
 import { fmtDate, orgAdminPage } from "@/lib/guard";
-import { officeActive, orgBlock, seatsUsed } from "@/lib/access";
+import { officeActive, orgBlock, orgTools, parseMemberModules, seatsUsed } from "@/lib/access";
 import { activityByDay, members, pendingInvites, recentEvents, topTargets } from "@/lib/orgs";
 import { AppShell } from "@/components/AppShell";
 import { MembersPanel } from "@/components/forms";
@@ -37,8 +37,8 @@ export default async function Firm({ searchParams }: { searchParams: Promise<{ n
         initial={{ name: org.name, corporate: !!org.corporate, corp_no: org.corp_no ?? "", description: org.description ?? "", logo }} />
       <LeaveRequests rows={leaves.map((l) => ({ id: l.id, name: l.name, email: l.email, legit: l.legit, tablou_name: l.tablou_name, created: fmtDate(l.created_at) }))} />
       {people ? (
-        <OfficePeople seats={org.seats} used={used} canOwner={c.super || c.role === "owner"} staffCreate={staff}
-          people={m.map((x) => ({ user_id: x.user_id, email: x.email, name: x.name, status: x.status, role: x.role, anevar: !!x.anevar_no, has_av: !!x.has_avatar, last_seen: x.last_seen_at ? fmtDate(x.last_seen_at, true) : "—", me: x.user_id === c.user.id }))}
+        <OfficePeople seats={org.seats} used={used} canOwner={c.super || c.role === "owner"} staffCreate={staff} tools={orgTools(org)}
+          people={m.map((x) => ({ user_id: x.user_id, email: x.email, name: x.name, status: x.status, role: x.role, anevar: !!x.anevar_no, has_av: !!x.has_avatar, last_seen: x.last_seen_at ? fmtDate(x.last_seen_at, true) : "—", me: x.user_id === c.user.id, modules: parseMemberModules(x.modules) }))}
           invites={inv.map((i) => ({ id: i.id, email: i.email, role: i.role, created: fmtDate(i.created_at), expires: fmtDate(i.expires_at), by: i.invited_by_name }))}
           links={links.map((l) => ({ id: l.id, kind: l.kind, status: l.status, since: fmtDate(l.status === "active" ? l.decided_at ?? l.created_at : l.created_at),
             user_id: l.user_id, name: l.name, email: l.email, anevar_no: l.anevar_no, county: l.county, has_av: !!l.has_avatar, admin: !!l.admin }))} />

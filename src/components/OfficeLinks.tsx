@@ -27,7 +27,73 @@ function KindPick({ value, onChange, name }: { value: Kind; onChange: (k: Kind) 
 }
 
 export type OfficeLinkRow = { id: string; kind: Kind; status: string; since: string; user_id: string; name: string | null; email: string; anevar_no: string | null; county: string | null; has_av?: boolean; admin?: boolean };
-export type PersonRow = { user_id: string; email: string; name: string; status: string; role: string; anevar: boolean; last_seen: string; me: boolean; has_av?: boolean };
+export type PersonRow = { user_id: string; email: string; name: string; status: string; role: string; anevar: boolean; last_seen: string; me: boolean; has_av?: boolean;
+  /** the tools this member may use; null = everything of the firm's plan (owners / administrators: always everything) */
+  modules?: string[] | null };
+/** A tool the firm can give or withhold per member (Firma mea → Utilizatori → „Acces”). */
+export type ToolOpt = { key: string; name: string };
+
+/** The checkboxes of a member's tools: all of the plan, or only the ticked ones. Colaborări only for valuers (the others never get it). */
+function ToolsPick({ tools, value, onChange, valuer }: { tools: ToolOpt[]; value: string[] | null; onChange: (v: string[] | null) => void; valuer: boolean }) {
+  const list = tools.filter((t) => valuer || t.key !== "colaborari");
+  const all = value === null;
+  const set = new Set(value ?? list.map((t) => t.key));
+  return (
+    <div className="opTools" role="group" aria-label="Instrumentele la care are acces">
+      <label className="check"><input type="radio" name="opToolsMode" checked={all} onChange={() => onChange(null)} /> Toate instrumentele biroului</label>
+      <label className="check"><input type="radio" name="opToolsMode" checked={!all} onChange={() => onChange(list.map((t) => t.key))} /> Doar instrumentele bifate</label>
+      <div className={`opToolsList${all ? " off" : ""}`}>
+        {list.map((t) => (
+          <label key={t.key} className="check">
+            <input type="checkbox" disabled={all} checked={set.has(t.key)}
+              onChange={(e) => { const n = new Set(set); if (e.target.checked) n.add(t.key); else n.delete(t.key); onChange(list.map((x) => x.key).filter((k) => n.has(k))); }} /> {t.name}
+          </label>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** What a member may use, in a few words. */
+function accessLabel(m: PersonRow, tools: ToolOpt[]) {
+  if (m.role !== "member" || m.modules == null) return "toate instrumentele";
+  const names = tools.filter((t) => m.modules!.includes(t.key)).map((t) => t.name);
+  if (!names.length) return "niciun instrument";
+  return names.length <= 2 ? names.join(", ") : `${names.slice(0, 2).join(", ")} +${names.length - 2}`;
+}
+
+/** „Acces”: the tools one member may use, saved with PATCH /api/org/members {user, modules}. */
+function AccessDialog({ m, tools, onClose }: { m: PersonRow; tools: ToolOpt[]; onClose: () => void }) {
+  const [v, setV] = useState<string[] | null>(m.modules ?? null);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState("");
+  const dlg = useRef<HTMLDialogElement>(null);
+  useEffect(() => { dlg.current?.showModal?.(); }, []);
+  const save = async (e: React.FormEvent) => {
+    e.preventDefault(); setBusy(true); setMsg("");
+    const er = await call("/api/org/members", "PATCH", { user: m.user_id, modules: v });
+    setBusy(false);
+    if (er) return setMsg(er);
+    location.reload();
+  };
+  return (
+    <dialog ref={dlg} className="modal opDlg" aria-labelledby="opAccT" onClose={onClose} onClick={(e) => { if (e.target === dlg.current) dlg.current?.close(); }}>
+      <div className="modalBox">
+        <button type="button" className="modalX" aria-label="Închide" onClick={() => dlg.current?.close()}>×</button>
+        <h2 id="opAccT">Acces pentru {m.name || m.email}</h2>
+        <form className="modalForm" onSubmit={save}>
+          <p className="hint" style={{ margin: 0 }}>{m.anevar ? "Evaluator în birou." : "Fără legitimație ANEVAR (operațional)."} Alege la ce instrumente ale biroului are acces; restul dispar din meniul lui. Schimbarea se aplică la următoarea pagină deschisă.</p>
+          <ToolsPick tools={tools} value={v} onChange={setV} valuer={m.anevar} />
+          {msg && <div role="alert" className="error">{msg}</div>}
+          <div className="modalActions">
+            <button type="button" className="btn btnGhost" onClick={() => dlg.current?.close()}>Renunță</button>
+            <button type="submit" className="btn btnNavy" disabled={busy}>{busy ? "Se salvează…" : "Salvează accesul"}</button>
+          </div>
+        </form>
+      </div>
+    </dialog>
+  );
+}
 export type MemberInvite = { id: string; email: string; role: string; created: string; expires: string; by: string | null };
 
 type InvType = "member" | "ops" | "angajat" | "colaborator";
@@ -46,9 +112,11 @@ async function call(url: string, method: string, body?: unknown) {
 }
 
 /** „Invită”: first the kind of person, then the matching short form (members by email, associates by email or ANEVAR card). */
-function InviteDialog({ onClose, full }: { onClose: () => void; full: boolean }) {
+function InviteDialog({ onClose, full, tools }: { onClose: () => void; full: boolean; tools: ToolOpt[] }) {
   const [type, setType] = useState<InvType | null>(null);
   const [f, setF] = useState({ email: "", name: "", admin: false, who: "" });
+  // the tools a new member starts with (null = everything of the plan); an administrator always has everything
+  const [mods, setMods] = useState<string[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; t: string } | null>(null);
   const dlg = useRef<HTMLDialogElement>(null);
@@ -58,7 +126,7 @@ function InviteDialog({ onClose, full }: { onClose: () => void; full: boolean })
     e.preventDefault(); if (!type) return;
     setBusy(true); setMsg(null);
     const er = type === "member" || type === "ops"
-      ? await call("/api/org/members", "POST", { email: f.email, name: f.name, role: f.admin && type === "member" ? "admin" : "member" })
+      ? await call("/api/org/members", "POST", { email: f.email, name: f.name, role: f.admin && type === "member" ? "admin" : "member", modules: f.admin && type === "member" ? null : mods })
       : await act({ action: "invite", who: f.who, kind: type });
     setBusy(false);
     if (er) return setMsg({ ok: false, t: er });
@@ -91,6 +159,10 @@ function InviteDialog({ onClose, full }: { onClose: () => void; full: boolean })
               {type === "member" && (
                 <label className="check"><input type="checkbox" checked={f.admin} onChange={(e) => setF({ ...f, admin: e.target.checked })} /> Administrator al biroului (invită și gestionează oamenii)</label>
               )}
+              {!(type === "member" && f.admin) && <>
+                <b className="opToolsT">Acces la instrumente</b>
+                <ToolsPick tools={tools} value={mods} onChange={setMods} valuer={type === "member"} />
+              </>}
             </> : (
               <label className="field">Emailul contului UVALO sau legitimația ANEVAR
                 <input className="input" value={f.who} onChange={(e) => setF({ ...f, who: e.target.value })} placeholder="ex. ana@exemplu.ro sau 15902" required autoFocus />
@@ -112,10 +184,11 @@ function InviteDialog({ onClose, full }: { onClose: () => void; full: boolean })
  * "Firma mea" → Oamenii biroului, într-un singur panou, grupați: administratori, evaluatori și operaționali (membri, ocupă locuri),
  * angajați și colaboratori asociați (cont propriu, fără loc), cererile de asociere și invitațiile. „Invită” deschide fereastra cu tipul.
  */
-export function OfficePeople({ people, invites, links, seats, used, canOwner, staffCreate }: {
-  people: PersonRow[]; invites: MemberInvite[]; links: OfficeLinkRow[]; seats: number; used: number; canOwner: boolean; staffCreate: boolean;
+export function OfficePeople({ people, invites, links, seats, used, canOwner, staffCreate, tools }: {
+  people: PersonRow[]; invites: MemberInvite[]; links: OfficeLinkRow[]; seats: number; used: number; canOwner: boolean; staffCreate: boolean; tools: ToolOpt[];
 }) {
   const [open, setOpen] = useState(false);
+  const [access, setAccess] = useState<PersonRow | null>(null);
   const [busy, setBusy] = useState("");
   const [err, setErr] = useState("");
   const run = async (key: string, fn: () => Promise<string | null>, ask?: string) => {
@@ -136,6 +209,10 @@ export function OfficePeople({ people, invites, links, seats, used, canOwner, st
       <UserAv id={m.user_id} name={m.name || m.email} has={m.has_av} size={34} /><span className="opWho"><b>{m.name || m.email}{m.me && <span className="muted"> (tu)</span>}</b>
         <small>{m.email} · activ {m.last_seen}{m.status !== "active" ? (m.status === "disabled" ? " · dezactivat" : m.status === "closed" ? " · a renunțat" : " · invitat") : ""}</small></span>
       <span className="opAct">
+        {m.role === "member" && !m.me && (
+          <button type="button" className={`linkBtn opAcc${m.modules != null ? " on" : ""}`} disabled={!!busy} title="Instrumentele la care are acces în birou" onClick={() => setAccess(m)}>
+            Acces: {accessLabel(m, tools)}</button>
+        )}
         {!m.anevar && (
           <button type="button" className="linkBtn" disabled={!!busy} title="Operaționalul a devenit evaluator: legitimația se verifică în Tabloul ANEVAR și datele se preiau de acolo"
             onClick={() => { const v = prompt(`Legitimația ANEVAR a lui ${m.name || m.email}:`); if (v?.trim()) void run(m.user_id, () => call("/api/org/legit", "POST", { user: m.user_id, legit: v.trim() })); }}>
@@ -160,7 +237,7 @@ export function OfficePeople({ people, invites, links, seats, used, canOwner, st
   const groups: { k: string; t: string; note: string; rows: React.ReactNode[] }[] = [
     { k: "admin", t: "Administratori", note: "ocupă locuri · gestionează biroul", rows: ppl.filter((m) => m.role !== "member").map(member) },
     { k: "eval", t: "Evaluatori", note: "membri · ocupă locuri · lucrează doar prin birou", rows: ppl.filter((m) => m.role === "member" && m.anevar).map(member) },
-    { k: "ops", t: "Operaționali", note: "fără legitimație · ocupă locuri · văd și introduc inspecțiile firmei", rows: ppl.filter((m) => m.role === "member" && !m.anevar).map(member) },
+    { k: "ops", t: "Operaționali", note: "fără legitimație · ocupă locuri · accesul la instrumente se alege pe fiecare („Acces”)", rows: ppl.filter((m) => m.role === "member" && !m.anevar).map(member) },
     ...(["angajat", "colaborator"] as Kind[]).map((k) => ({
       k, t: k === "angajat" ? "Angajați asociați" : "Colaboratori asociați", note: k === "angajat" ? "cont propriu · fără loc · primesc inspecțiile direct · văd doar inspecțiile lor; bifa „Administrator” = le văd pe toate ale biroului" : "cont propriu · fără loc · acceptă fiecare solicitare",
       rows: assoc(k).map((r) => (
@@ -234,7 +311,8 @@ export function OfficePeople({ people, invites, links, seats, used, canOwner, st
           </div>
         ))}
       </div>}
-      {open && <InviteDialog onClose={() => setOpen(false)} full={used >= seats} />}
+      {open && <InviteDialog onClose={() => setOpen(false)} full={used >= seats} tools={tools} />}
+      {access && <AccessDialog m={access} tools={tools} onClose={() => setAccess(null)} />}
     </section>
   );
 }

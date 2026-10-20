@@ -15,7 +15,7 @@ export type Org = {
   seats: number; valid_until: string | null; billing_email: string | null; notes: string | null; created_at: string;
   corporate: number; corp_no: string | null; description: string | null; has_logo: number; office_at: string | null;
 };
-export type Membership = { org_id: string; org_name: string; role: Role; org_status: string };
+export type Membership = { org_id: string; org_name: string; role: Role; org_status: string; modules: string | null };
 
 /** Modules of the platform; more come later (analize de piață…). */
 export const MODULES = [
@@ -25,6 +25,23 @@ export const MODULES = [
   { key: "chrome", name: "UVALO pentru Chrome", href: "/chrome", desc: "Capturi complete ale anunțurilor imobiliare, pe pagini A4, și dosarul Word/PDF cu comparabilele." },
   { key: "word", name: "UVALO pentru Word", href: "/word", desc: "Anexa foto și anexa cu documente PDF, direct în raportul Word, dintr-un tab UVALO." },
 ] as const;
+
+/** Everything a firm can give a member access to, tool by tool (Firma mea → Utilizatori → „Acces”): the plan's modules plus the two by mode. */
+export const MEMBER_TOOLS: { key: string; name: string }[] = [
+  ...MODULES.map((m) => ({ key: m.key, name: m.name })),
+  { key: "inspectii", name: "Inspecții" },
+  { key: "colaborari", name: "Colaborări" },
+];
+
+/** The tools a firm can grant or withhold per member: those of its plan, plus Inspecții and Colaborări (by their modes). */
+export const orgTools = (org: Pick<Org, "modules">) => {
+  const plan = org.modules.split(",").map((x) => x.trim());
+  return MEMBER_TOOLS.filter((t) => plan.includes(t.key) || t.key === "inspectii" || t.key === "colaborari");
+};
+
+/** `memberships.modules` → the keys, or null (= everything of the plan). */
+export const parseMemberModules = (s: string | null | undefined) =>
+  s == null ? null : s.split(",").map((x) => x.trim()).filter((k) => MEMBER_TOOLS.some((t) => t.key === k));
 
 export const ORG_SQL = `SELECT o.id, o.name, o.cui, o.city, o.status, o.plan_id, o.seats, o.valid_until, o.billing_email, o.notes, o.created_by, o.created_at, o.updated_at,
   o.corporate, o.corp_no, o.description, o.logo IS NOT NULL AS has_logo, o.office_at, p.name AS plan_name, p.modules FROM orgs o JOIN plans p ON p.id = o.plan_id`;
@@ -78,7 +95,7 @@ export async function context(db: D1Database): Promise<Ctx | null> {
 /** The context of a known person and session (the cookie session, or a pseudo-session `oauth:<token>` for the MCP tokens). */
 export async function contextOf(db: D1Database, user: User, session: Session): Promise<Ctx> {
   const { results: orgs } = await db
-    .prepare(`SELECT m.org_id, o.name AS org_name, m.role, o.status AS org_status FROM memberships m JOIN orgs o ON o.id = m.org_id
+    .prepare(`SELECT m.org_id, o.name AS org_name, m.role, o.status AS org_status, m.modules FROM memberships m JOIN orgs o ON o.id = m.org_id
       WHERE m.user_id = ? AND m.status = 'active' ORDER BY o.name`)
     .bind(user.id)
     .all<Membership>();
@@ -104,12 +121,16 @@ export async function contextOf(db: D1Database, user: User, session: Session): P
   const ii = modules.indexOf("inspectii");
   if (ii >= 0 && !insOk) modules.splice(ii, 1);
   if (ii < 0 && insOk) modules.push("inspectii");
+  // Per-member access (Firma mea → Utilizatori → „Acces”): a member may be limited to some of the firm's tools, e.g. an
+  // assistant without an ANEVAR card who only needs the locator. Owners, administrators and super-admins keep everything.
+  const limit = !sup && role === "member" ? parseMemberModules(orgs.find((o) => o.org_id === orgId)?.modules) : null;
+  const allowed = limit ? modules.filter((m) => limit.includes(m)) : modules;
   const linkAdmin = (await db.prepare("SELECT org_id FROM office_links WHERE user_id = ? AND status = 'active' AND admin = 1").bind(user.id).all<{ org_id: string }>()
     .catch(() => ({ results: [] as { org_id: string }[] }))).results.map((r) => r.org_id);
   const hn = await modeSettings(db, "acasa");
   // super-admins see it only from Test on (with Dezactivat nobody does, so the current home page stays checkable)
   const homeNew = hn.mode !== "off" && modeAllowed(hn, { super: sup, userId: user.id, hasAccess: !!org && !block });
-  return { user, session, super: sup, orgs, org, role, modules, block, off, collab: cs.mode, insp: ins.mode, office: sup || !!user.office_allowed, linkAdmin, homeNew };
+  return { user, session, super: sup, orgs, org, role, modules: allowed, block, off, collab: cs.mode, insp: ins.mode, office: sup || !!user.office_allowed, linkAdmin, homeNew };
 }
 
 /** "Birou de evaluare" (Firma mea: colleagues, seats): only for the accounts the administration turned it on for (in test). */
