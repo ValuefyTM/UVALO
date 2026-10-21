@@ -1563,6 +1563,27 @@ span.meOfficeLogo { background: #2a2a2a; color: var(--acc); }
 .ldNav.prev { left: 14px; } .ldNav.next { right: 14px; background: #F2A93B; }
 .ldModalFoot { padding: 14px 18px 18px; display: flex; flex-direction: column; gap: 12px; }
 .ldModalFoot p { margin: 0; font-size: 14px; line-height: 1.6; color: #D9D9D9; }
+/* uvalo.ro/aplicatie: the inspection app page */
+.ldChecks { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 10px; font-size: 16px; color: #D9D9D9; }
+.ldChecks li { display: flex; align-items: center; gap: 12px; }
+.ldChecks svg { color: #E0AD4F; flex: none; }
+.ldChecks b { color: #fff; }
+.ldStep { gap: 10px; }
+.ldStepTop { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.ldWhere { font-style: normal; font-size: 11.5px; font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase; color: #9A5F00; background: #F4EFE6; border-radius: 999px; padding: 5px 10px; }
+.ldBanner { width: 100%; height: auto; display: block; border-radius: 22px; border: 1px solid #2A2A2A; }
+.ldCardDark { background: #1F1F1F; border-color: #2A2A2A; color: #fff; }
+.ldCardDark p { color: #CFCFCF; }
+.ldLight { color: #D9D9D9 !important; }
+.ldSteps { margin: 0; padding: 0 0 0 22px; display: flex; flex-direction: column; gap: 10px; font-size: 15px; line-height: 1.55; color: #4A4A4A; }
+.ldSteps b { color: #141414; }
+.ldMore { color: #E0AD4F; font-weight: 700; text-decoration: none; font-size: 15px; }
+.ldMore:hover { text-decoration: underline; }
+.ldStoreRow { display: flex; gap: 12px; flex-wrap: wrap; }
+.ldStore { display: inline-flex; align-items: center; gap: 10px; height: 56px; padding: 0 18px 0 14px; border-radius: 14px; border: 1px solid #3A3A3A; background: #0B0B0B; color: #fff; opacity: .9; }
+.ldStore > span { display: flex; flex-direction: column; line-height: 1.1; }
+.ldStore small { font-size: 10.5px; color: #A8A8A8; letter-spacing: .3px; }
+.ldStore b { font-size: 17px; font-family: Sora, sans-serif; }
 .ldThumbs { display: flex; gap: 8px; overflow-x: auto; }
 .ldThumbs button { flex: none; padding: 0; border-radius: 10px; border: 2px solid transparent; background: none; cursor: pointer; overflow: hidden; }
 .ldThumbs button[aria-current] { border-color: #F2A93B; }

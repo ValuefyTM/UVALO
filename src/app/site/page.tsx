@@ -24,6 +24,9 @@ const LAND: [string, string, string, string][] = [
   ["Timișoara (reper)", "Teren autorizat industrial", "—", "35–60"],
 ];
 
+/** The inspection app's page (worker.ts: uvalo.ro/aplicatie → /site/inspectii). */
+const APP_PAGE = "https://uvalo.ro/aplicatie";
+
 export default async function Site() {
   // On uvalo.ro (site host) without APP_URL, origin() would be the site itself and "/" the landing again: go to the app.
   const o = await origin();
@@ -38,7 +41,7 @@ export default async function Site() {
         <div className="ldWrap ldTopIn">
           <a href="/" aria-label="UVALO"><img src="/uvalo-lockup.svg" alt="UVALO" className="ldLogo" /></a>
           <nav className="ldNavLinks" aria-label="Secțiuni">
-            <a href="#colaborari">Colaborări</a><a href="#analize">Analize de piață</a><a href="#instrumente">Instrumente</a><a href="#birouri">Pentru birouri</a>
+            <a href="#colaborari">Colaborări</a><a href={APP_PAGE}>Aplicația de inspecții</a><a href="#analize">Analize de piață</a><a href="#instrumente">Instrumente</a><a href="#birouri">Pentru birouri</a>
           </nav>
           <div className="ldTopActs">
             <a className="ldBtn ldGhostDark ldSm" href={login}>Autentificare</a>
@@ -233,6 +236,7 @@ export default async function Site() {
         <div className="ldWrap ldFootIn">
           <span className="ldFootBrand"><img src="/uvalo-lockup.svg" alt="UVALO" /><span>Platforma evaluatorilor autorizați din România</span></span>
           <span className="ldFootLinks">
+            <a href={APP_PAGE}>Aplicația de inspecții</a>
             <a href={`mailto:${COMPANY.email}`}>{COMPANY.email}</a>
             <a href={`${app}/confidentialitate`}>Confidențialitate</a>
             <a href={`${app}/termeni`}>Termeni</a>

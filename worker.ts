@@ -72,6 +72,8 @@ export default {
     if (ro) return ro;
     if (hosts(env.SITE_HOSTS ?? "uvalo.ro,www.uvalo.ro").includes(host)) {
       if (url.pathname === "/") return app.fetch(new Request(new URL(`/site${url.search}`, url), clean(req)), env, ctx);
+      // the inspection app's page: uvalo.ro/aplicatie
+      if (url.pathname === "/aplicatie") return app.fetch(new Request(new URL(`/site/inspectii${url.search}`, url), clean(req)), env, ctx);
       if (!SITE_FILES.test(url.pathname)) return Response.redirect(`${to}${url.pathname}${url.search}`, 302);
     }
     if (hosts(env.INSP_HOSTS ?? "inspectii.uvalo.ro").includes(host)) {
