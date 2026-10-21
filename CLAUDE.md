@@ -495,6 +495,15 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   Pe fișa web (`inspRow` dă `assignee_sig` + `assignee_legit`), la „Evaluator”, imaginea apare **doar când fișa e finalizată** (`finished_at`;
   retrimiterea îl golește, deci dispare până la noua finalizare), altfel linia goală + nota că se aplică automat; intră în PDF (print).
   API-ul de integrare: `inspector.signature` (același data URL) **doar la fișa finalizată**, altfel `null`. Fișa publică nu o arată.
+  **Pe telefon**: „Contul meu” → cardul „Semnătura mea” (`SigCard` în `src/components/mobile/SigCard.tsx`): desenată cu degetul (`.mbSig`,
+  decupată la zona desenată, fundal transparent) → același `PATCH /api/account/signature`; `GET /api/account/signature` dă imaginea la cerere,
+  `/api/m/state` dă doar `user.has_sig`. **Semnătura persoanei prezente** (fișierul `kind = signature` urcat de telefon la finalizare, ultimul
+  dacă s-a semnat din nou) apare pe fișa web la „Persoana prezentă” când `signed_at` e setat (`sigFile` în pagina fișei).
+- **Pagina inspecției pe web** (`/inspectii/<id>`): **fișa ca document apare doar la inspecțiile finalizate** (`gata` / `pred`). Până atunci pagina
+  arată **detaliile** (`.inDetails`, carduri): Proprietatea (tip, adresă, cad, CF, localitate, suprafețe din acte, încăperile din releveu, client /
+  utilizator, `facts`), Inspecția (stare, programare, cine o face + `assign_state`, pregătită de, fișa, nr. fișei, completarea pe telefon N din M
+  răspunsuri + poze la `lucru`, instrucțiunile), Contact, Acte (cu încărcare), Locația de pe telefon sau adresa pe hartă (`InspLocMap`),
+  Fotografiile trimise până atunci, Istoric. Bara de acțiuni (realocare, link public, ștergere fișă / inspecție, simulare) rămâne aceeași.
 - **Locația inspecției (GPS de pe telefon)** (migrația 0040 `inspections.gps_lat/gps_lng/gps_acc/gps_at/gps_src`, separată de `lat/lng` =
   adresa geocodată la pregătire): la deschiderea fișei pe telefon (`Form`) se ia o poziție GPS (`gpsFix` în `src/components/mobile/LocPick.tsx`,
   `enableHighAccuracy`, 15 s) în ciorna `draft.loc` (`{lat, lng, acc, at, src: gps|manual}`); pe ultimul ecran, înainte de semnătură (`Sign`),

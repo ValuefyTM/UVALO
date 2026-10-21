@@ -40,6 +40,7 @@ export default async function InspDoc({ params }: { params: Promise<{ id: string
   const firm = orgId ? await db.prepare("SELECT id, name, corp_no, logo IS NOT NULL AS has_logo FROM orgs WHERE id = ?").bind(orgId)
     .first<{ id: string; name: string; corp_no: string | null; has_logo: number }>() : null;
   const photos = x.files.filter((f) => f.kind === "photo"), docs = x.files.filter((f) => f.kind !== "photo" && f.kind !== "signature");
+  const sigFile = x.files.filter((f) => f.kind === "signature").at(-1) ?? null;
   const cover = coverPhoto(x.files, x.cover_file_id);
   const rooms = x.room_answers.length ? x.room_answers : x.rooms;
   const util = rooms.reduce((s, r) => s + (r.a ?? 0), 0);
@@ -83,8 +84,94 @@ export default async function InspDoc({ params }: { params: Promise<{ id: string
         const upd = (x as unknown as { updated_at?: string }).updated_at;
         return <div className="note inLive"><b>În lucru pe telefon{x.assignee_name ? ` · ${x.assignee_name}` : ""}.</b> {n} din {qs.length} răspunsuri, {photos.length} {photos.length === 1 ? "fotografie" : "fotografii"}{upd ? ` · actualizat ${fmtDate(upd, true)}` : ""}. Reîncarcă pagina ca să vezi ultimele date.</div>;
       })()}
-      {!done && x.status !== "lucru" && <div className="note">Inspecția nu a fost făcută încă{x.scheduled_at ? `: e programată pentru ${fmtWhen(x.scheduled_at)}` : ""}. Fișa se completează pe telefon; aici vezi ce s-a pregătit.</div>}
+      {!done && x.status !== "lucru" && <div className="note">Inspecția nu a fost făcută încă{x.scheduled_at ? `: e programată pentru ${fmtWhen(x.scheduled_at)}` : ""}. Fișa se completează pe telefon și apare aici după finalizare.</div>}
 
+      {!done ? (
+        // not finished yet: the property and the inspection, not the sheet (that comes with the finalization from the phone)
+        <div className="inDetails">
+          <section className="card inDet">
+            <span className="eyebrow">Proprietatea</span>
+            <h2 className="inH1">{x.prop_type ?? "Imobil"}</h2>
+            <p className="inLead">{[x.address, x.cad_nr && `nr. cad. ${x.cad_nr}`, x.cf_nr && `CF ${x.cf_nr}`].filter(Boolean).join(" · ")}</p>
+            <dl className="inMeta">
+              {(x.uat || x.county) && <div><dt>Localitate</dt><dd>{[x.uat, x.county].filter(Boolean).join(", ")}</dd></div>}
+              <div><dt>Suprafață utilă (acte)</dt><dd>{x.area_util ? `${nf(x.area_util)} mp` : "—"}</dd></div>
+              <div><dt>Teren (acte)</dt><dd>{x.area_land ? `${nf(x.area_land, 0)} mp` : "—"}</dd></div>
+              <div><dt>Încăperi din releveu</dt><dd>{x.rooms.length ? `${x.rooms.length} · ${nf(x.rooms.reduce((s, r) => s + (r.a ?? 0), 0))} mp` : "—"}</dd></div>
+              {x.ext_client && <div><dt>Client</dt><dd>{x.ext_client}</dd></div>}
+              {x.ext_user && <div><dt>Utilizatorul raportului</dt><dd>{x.ext_user}</dd></div>}
+              {(x.facts ?? []).map((f) => <div key={f.label}><dt>{f.label}</dt><dd>{f.value}</dd></div>)}
+            </dl>
+            {x.rooms.length > 0 && <ul className="inRoomList">{x.rooms.map((r, i) => <li key={i}><b>{r.n}</b><span>{r.a != null ? `${nf(r.a)} mp` : ""}</span></li>)}</ul>}
+          </section>
+
+          <section className="card inDet">
+            <span className="eyebrow">Inspecția</span>
+            <dl className="inMeta">
+              <div><dt>Stare</dt><dd><span className="inBadge" style={{ color: STATUS[x.status].fg, background: STATUS[x.status].bg }}>{STATUS[x.status].label}</span></dd></div>
+              <div><dt>Programare</dt><dd>{x.scheduled_at ? `${fmtWhen(x.scheduled_at)}${x.duration_min ? ` · ${x.duration_min} min` : ""}` : "de programat"}</dd></div>
+              <div><dt>Cine o face</dt><dd>{x.assignee_name ?? "de ales"}{x.assign_state === "pending" ? " · așteaptă acceptarea" : x.assign_state === "declined" ? " · a refuzat, alege altcineva" : ""}</dd></div>
+              <div><dt>Pregătită de</dt><dd>{x.owner_name}{x.org_name ? ` · ${x.org_name}` : ""}</dd></div>
+              <div><dt>Fișa</dt><dd>{x.template_name ?? "—"}{x.template_version ? ` · v${x.template_version}` : ""}</dd></div>
+              {sheetNo && <div><dt>Nr. și data fișei</dt><dd>{sheetNo} · {fmtDate(sheetAt ?? "", true)}</dd></div>}
+              {x.status === "lucru" && (() => {
+                const qs = groups.flatMap((g) => g.qs), n = qs.filter((q) => { const v = x.answers[q.id]; return Array.isArray(v) ? v.length > 0 : !!v; }).length;
+                return <div><dt>Completare pe telefon</dt><dd>{n} din {qs.length} răspunsuri · {photos.length} {photos.length === 1 ? "fotografie" : "fotografii"}{x.started_at ? ` · începută ${fmtDate(x.started_at, true)}` : ""}</dd></div>;
+              })()}
+              {x.notes && <div><dt>Instrucțiuni</dt><dd className="inPre">{x.notes}</dd></div>}
+            </dl>
+            <span className="eyebrow">Contact</span>
+            <dl className="inMeta">
+              <div><dt>Persoana</dt><dd>{[x.contact_name, x.contact_role].filter(Boolean).join(", ") || "—"}</dd></div>
+              <div><dt>Telefon</dt><dd>{x.contact_phone ? <a href={`tel:${x.contact_phone.replace(/[^\d+]/g, "")}`}>{x.contact_phone}</a> : "—"}</dd></div>
+            </dl>
+          </section>
+
+          <section className="card inDet">
+            <span className="eyebrow">Acte · {docs.length}</span>
+            {docs.length ? <ul className="inDocs">{docs.map((d) => (
+              <li key={d.id}><a href={`/api/inspectii/file/${d.id}`} target="_blank" rel="noopener"><span className="inDocIco">{d.kind === "cf" ? "CF" : d.kind === "releveu" ? "RLV" : "DOC"}</span>
+                <b title={d.name ?? d.kind}>{d.name ?? d.kind}</b><small>{d.kind === "cf" ? "Extras de carte funciară" : d.kind === "releveu" ? "Releveu" : "Document"}</small></a><InspFileDelete id={d.id} /></li>
+            ))}</ul>
+              : <p className="hint">Niciun act atașat. Extrasul CF și releveul se văd pe telefon, în timpul fișei.</p>}
+            <span className="inUps"><InspFileUpload id={x.id} kind="cf" label="Adaugă extras CF" /><InspFileUpload id={x.id} kind="releveu" label="Adaugă releveu" /><InspFileUpload id={x.id} kind="doc" label="Alt document" /></span>
+          </section>
+
+          {x.gps_lat != null && x.gps_lng != null ? (
+            <section className="card inDet">
+              <span className="eyebrow">Locația de pe telefon</span>
+              <InspLocMap lat={x.gps_lat} lng={x.gps_lng} acc={x.gps_acc ?? null} addr={x.lat != null && x.lng != null ? [x.lat, x.lng] : null} />
+              <small className="hint">{x.gps_lat.toFixed(6)}, {x.gps_lng.toFixed(6)} · {x.gps_src === "manual" ? "pinul mutat manual" : `GPS${x.gps_acc ? ` ±${Math.round(x.gps_acc)} m` : ""}`}{x.gps_at ? ` · ${fmtDate(x.gps_at, true)}` : ""}</small>
+            </section>
+          ) : x.lat != null && x.lng != null ? (
+            <section className="card inDet">
+              <span className="eyebrow">Adresa pe hartă</span>
+              <InspLocMap lat={x.lat} lng={x.lng} acc={null} addr={null} />
+              <small className="hint">Adresa geocodată la pregătire. Locația exactă se ia de pe telefon în timpul inspecției.</small>
+            </section>
+          ) : null}
+
+          {photos.length > 0 && (
+            <section className="card inDet inDetWide">
+              <span className="eyebrow">Fotografii · {photos.length}</span>
+              <div className="inPhotos">{photos.map((p, i) => (
+                <figure key={p.id}>
+                  <a className="inPhBox" href={`/api/inspectii/file/${p.id}`} target="_blank" rel="noopener">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={`/api/inspectii/file/${p.id}`} alt={p.room ?? p.name ?? "Fotografie"} loading="lazy" decoding="async" /><span className="inPhN">{i + 1}</span>
+                  </a>
+                  <figcaption><b>{p.room ?? p.name}</b><span>{p.taken_at ? fmtDate(p.taken_at, true) : ""}</span><InspFileDelete id={p.id} /></figcaption>
+                </figure>
+              ))}</div>
+            </section>
+          )}
+
+          <section className="card inDet inDetWide">
+            <span className="eyebrow">Istoric</span>
+            <ol className="inLog">{x.log.map((l, i) => <li key={i}><span>{fmtDate(l.at, true)}</span>{l.text}{l.name ? ` · ${l.name}` : ""}</li>)}</ol>
+          </section>
+        </div>
+      ) : (
       <div className="inDoc">
         <nav className="inToc" aria-label="Cuprins">
           <div className="card">
@@ -212,7 +299,10 @@ export default async function InspDoc({ params }: { params: Promise<{ id: string
           </section>
 
           <section id="semnaturi" className="inSec inSigns">
-            <div><small>{String(groups.length + 6 - (ownFind ? 1 : 0)).padStart(2, "0")} · Persoana prezentă</small><b>{x.signed_name ?? "—"}</b><span className="inSignLine" /><em>{x.signed_at ? `Semnat pe telefon · ${fmtDate(x.signed_at, true)}` : "Semnătura se ia pe telefon"}</em></div>
+            <div><small>{String(groups.length + 6 - (ownFind ? 1 : 0)).padStart(2, "0")} · Persoana prezentă</small><b>{x.signed_name ?? "—"}</b>
+              {/* the signature drawn on the phone (uploaded as a file of kind "signature"; the last one when it was taken again) */}
+              {x.signed_at && sigFile ? <img className="inSignImg" src={`/api/inspectii/file/${sigFile.id}`} alt={`Semnătura: ${x.signed_name ?? "persoana prezentă"}`} /> : <span className="inSignLine" />}
+              <em>{x.signed_at ? `Semnat pe telefon · ${fmtDate(x.signed_at, true)}` : "Semnătura se ia pe telefon"}</em></div>
             <div><small>Evaluator</small><b>{x.assignee_name ?? "—"}{x.assignee_legit ? <span className="inLegit"> · leg. {x.assignee_legit}</span> : null}</b>
               {x.finished_at && x.assignee_sig ? <img className="inSignImg" src={x.assignee_sig} alt={`Semnătura: ${x.assignee_name ?? "evaluator"}`} /> : <span className="inSignLine" />}
               <em>{x.finished_at && x.assignee_sig ? "Semnătura evaluatorului · din contul lui, aplicată la finalizare" : x.assignee_sig ? "Semnătura evaluatorului se aplică automat la finalizare" : "Semnătura evaluatorului"}</em></div>
@@ -224,6 +314,7 @@ export default async function InspDoc({ params }: { params: Promise<{ id: string
           </section>
         </article>
       </div>
+      )}
     </AppShell>
   );
 }

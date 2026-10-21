@@ -7,6 +7,7 @@ import { InstallHint } from "./InstallHint";
 import { MobileCollab } from "./MobileCollab";
 import { DocViewer } from "./DocViewer";
 import { gpsFix, LocPick, type Loc } from "./LocPick";
+import { SigCard } from "./SigCard";
 
 /** The first phone number of a field that may hold two ("0721 123 456 / 0256 …"), digits and + only, for tel: / sms: links. */
 const firstPhone = (s: string) => (s.split(/[\/,;]|\bsau\b/)[0] ?? s).replace(/[^\d+]/g, "");
@@ -23,7 +24,7 @@ type Insp = InspRow & {
   ext_client?: string | null; ext_user?: string | null;
 };
 type Room = { n: string; a: number | null; floor?: string; walls?: string; ceiling?: string; state?: string; std?: boolean };
-type Me = { id: string; name: string; email: string; avatar?: boolean; anevar_no?: string | null; county?: string | null; phone?: string | null;
+type Me = { id: string; name: string; email: string; avatar?: boolean; anevar_no?: string | null; county?: string | null; phone?: string | null; has_sig?: boolean;
   org?: { id: string; name: string; logo: boolean; role: string | null } | null };
 type Info = { stats: { total: number; month: number; last: string | null; avg_min: number | null; photos: number }; device: { name: string; platform: string; created_at: string; last_seen_at: string } | null };
 type Tpl = { id: string; name: string; prop_type: string | null };
@@ -1707,6 +1708,8 @@ function Account({ me, info, done, onOpen, queueN, online, onSend, say }: { me: 
           {me?.county && <span className="mbKv"><span>Județ</span><b>{me.county}</b></span>}
           {me?.org && <span className="mbKv mbOrg"><span>Birou</span><b>{me.org.logo && /* eslint-disable-next-line @next/next/no-img-element */ <img src={`/api/org/logo/${me.org.id}`} alt="" />}{me.org.name}</b></span>}
         </section>
+
+        {me && <SigCard key={me.id} hasSig={!!me.has_sig} say={say} />}
 
         <small className="mbCap">ACTIVITATE</small>
         <div className="mbStats flat">
