@@ -1563,7 +1563,7 @@ span.meOfficeLogo { background: #2a2a2a; color: var(--acc); }
 .ldNav.prev { left: 14px; } .ldNav.next { right: 14px; background: #F2A93B; }
 .ldModalFoot { padding: 14px 18px 18px; display: flex; flex-direction: column; gap: 12px; }
 .ldModalFoot p { margin: 0; font-size: 14px; line-height: 1.6; color: #D9D9D9; }
-/* uvalo.ro/aplicatie: the inspection app page */
+/* uvalo.ro/aplicatie-inspectie: the inspection app page */
 .ldChecks { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 10px; font-size: 16px; color: #D9D9D9; }
 .ldChecks li { display: flex; align-items: center; gap: 12px; }
 .ldChecks svg { color: #E0AD4F; flex: none; }

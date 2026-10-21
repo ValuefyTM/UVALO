@@ -25,7 +25,7 @@ const SLIDES: Slide[] = [
     key: "inspectii", label: "Inspecții", badge: "ÎN CURÂND ÎN APP STORE ȘI GOOGLE PLAY", soon: true, kicker: "Inspecții pe teren, din telefon",
     title: <>Gata cu <em>hârtiile.</em></>,
     lead: "Fișa de inspecție, pozele, actele și semnătura clientului — completate pe teren, din telefon, și gata pe web pentru raport. Pentru tine și pentru biroul tău.",
-    more: { href: "https://uvalo.ro/aplicatie", label: "Cum funcționează aplicația →" },
+    more: { href: "https://uvalo.ro/aplicatie-inspectie", label: "Cum funcționează aplicația →" },
     art: (
       <div className="ldDuo">
         <div className="ldBrowser">

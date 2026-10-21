@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { origin } from "@/lib/site";
 import { COMPANY } from "@/components/LegalPage";
 
-// The presentation page of the inspection app, on uvalo.ro/aplicatie (worker.ts rewrites it to /site/inspectii on the site
+// The presentation page of the inspection app, on uvalo.ro/aplicatie-inspectie (worker.ts rewrites it to /site/inspectii on the site
 // host). Public, works in maintenance too. How it works (web → phone → web) and the stores: today a web app you install
 // from the browser, soon in the App Store and Google Play.
 const OG = { url: "/site/inspectii-social.png", width: 1200, height: 628, alt: "Aplicația UVALO pentru inspecții: fișa pe telefon și lista pe web" };
@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   title: "Aplicația UVALO pentru inspecții · în curând în App Store și Google Play",
   description: "Fișa de inspecție, pozele, actele, locația GPS și semnătura clientului, completate pe teren din telefon și gata pe web pentru raport. Merge și fără semnal. În curând în App Store și Google Play.",
   robots: { index: true, follow: true },
-  alternates: { canonical: "https://uvalo.ro/aplicatie" },
+  alternates: { canonical: "https://uvalo.ro/aplicatie-inspectie" },
   openGraph: { type: "website", siteName: "UVALO", locale: "ro_RO", title: "Aplicația UVALO pentru inspecții", description: "Inspecția din telefon. Fișa, gata pe web. În curând în App Store și Google Play.", images: [OG] },
   twitter: { card: "summary_large_image", images: [OG.url] },
 };

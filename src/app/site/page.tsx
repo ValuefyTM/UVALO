@@ -24,8 +24,8 @@ const LAND: [string, string, string, string][] = [
   ["Timișoara (reper)", "Teren autorizat industrial", "—", "35–60"],
 ];
 
-/** The inspection app's page (worker.ts: uvalo.ro/aplicatie → /site/inspectii). */
-const APP_PAGE = "https://uvalo.ro/aplicatie";
+/** The inspection app's page (worker.ts: uvalo.ro/aplicatie-inspectie → /site/inspectii). */
+const APP_PAGE = "https://uvalo.ro/aplicatie-inspectie";
 
 export default async function Site() {
   // On uvalo.ro (site host) without APP_URL, origin() would be the site itself and "/" the landing again: go to the app.

@@ -211,8 +211,9 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   fereastră de browser + ramă de telefon din `public/site/inspectii-web.webp` / `inspectii-mob.webp`). Se schimbă doar textul și imaginea;
   butoanele și nota (`actions`) rămân fixe. Trece singur la 7 s (oprit la hover/atingere, `prefers-reduced-motion`), file + săgeți, swipe.
   Pe telefon textul slide-urilor inactive e ascuns (fără gol). Stiluri `.ldSlides`, `.ldDots`, `.ldDuo`, `.ldBrowser`, `.ldPhone`.
-- **Pagina aplicației de inspecții**: `uvalo.ro/aplicatie` (`worker.ts` o rescrie pe `SITE_HOSTS` la `/site/inspectii`; pe app host e la
-  `/site/inspectii`), `src/app/site/inspectii/page.tsx`, publică, canonical `https://uvalo.ro/aplicatie`, OG `public/site/inspectii-social.png`.
+- **Pagina aplicației de inspecții**: `uvalo.ro/aplicatie-inspectie` (`worker.ts` o rescrie pe `SITE_HOSTS` la `/site/inspectii`; `/aplicatie` → 301
+  spre ea; pe app host e la `/site/inspectii`), `src/app/site/inspectii/page.tsx`, publică, canonical `https://uvalo.ro/aplicatie-inspectie`,
+  OG `public/site/inspectii-social.png`.
   Hero cu rama browser + telefon (`.ldDuo`) și lista `.ldChecks`; „Cum funcționează” (web → telefon → web, `.ldStep` cu eticheta `.ldWhere`);
   panourile „Pe teren” / „Pe web”; „Ce face aplicația” (secțiune închisă, bannerul `.ldBanner` + carduri `.ldCardDark`); **„Disponibilă azi”**
   (instalare din browser, pașii `.ldSteps`) lângă **„În curând în App Store și Google Play”** (pastilele `.ldStore`, fără badge-urile oficiale;
