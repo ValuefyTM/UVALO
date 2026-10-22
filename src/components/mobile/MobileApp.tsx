@@ -35,7 +35,7 @@ type Draft = { answers: Record<string, string | string[]>; rooms: Room[]; findin
   sig?: string | null; signer?: { who: "contact" | "other"; other: string }; // the signature stays on the phone until the inspection is sent
   loc?: Loc | null; // where the inspection is made: the GPS fix taken when the sheet was opened, or the pin moved on the map before signing
   rev?: number }; // the sheet it belongs to (inspections.sheet_rev): a sheet deleted on the web makes the phone's draft obsolete
-type View = { v: "home" } | { v: "detail"; id: string } | { v: "form"; id: string; sec: number } | { v: "rooms"; id: string } | { v: "photos"; id: string } | { v: "sign"; id: string } | { v: "queue" } | { v: "collab" } | { v: "account" } | { v: "new" } | { v: "notifs" } | { v: "radar" };
+type View = { v: "home" } | { v: "detail"; id: string } | { v: "form"; id: string; sec: number } | { v: "rooms"; id: string } | { v: "photos"; id: string } | { v: "sign"; id: string } | { v: "queue" } | { v: "collab" } | { v: "account" } | { v: "new" } | { v: "notifs" } | { v: "radar"; id: string };
 
 const DAYS = ["DUM", "LUN", "MAR", "MIE", "JOI", "VIN", "SÂM"];
 const MONTHS = ["ianuarie", "februarie", "martie", "aprilie", "mai", "iunie", "iulie", "august", "septembrie", "octombrie", "noiembrie", "decembrie"];
@@ -438,9 +438,10 @@ export function MobileApp() {
       )}
       <div className="mbPage" style={pull || drag ? { transform: `translateY(${pull}px)`, transition: drag ? "none" : undefined } : undefined}>
       {!online && <div className="mbOffline">Fără semnal · lucrezi pe telefon, se trimite când revine rețeaua</div>}
-      {view.v === "home" && <Home me={me} items={items.filter((i) => !isDone(i) && !finished.has(i.id))} queueN={queueN} onQueue={() => go({ v: "queue" })} pos={pos} unread={unread} scope={scope} setScope={setScope} st={st} setSt={setSt} onBell={() => go({ v: "notifs" })} onMe={() => go({ v: "account" })} onSchedule={setSched} onNew={() => go({ v: "new" })} onOpen={(id) => open(id, { v: "detail", id })} onStart={(id) => open(id, { v: "form", id, sec: 0 })} onRadar={() => go({ v: "radar" })} />}
-      {view.v === "radar" && <Radar pos={pos} myName={me?.name ?? ""} onBack={() => history.back()} />}
+      {view.v === "home" && <Home me={me} items={items.filter((i) => !isDone(i) && !finished.has(i.id))} queueN={queueN} onQueue={() => go({ v: "queue" })} pos={pos} unread={unread} scope={scope} setScope={setScope} st={st} setSt={setSt} onBell={() => go({ v: "notifs" })} onMe={() => go({ v: "account" })} onSchedule={setSched} onNew={() => go({ v: "new" })} onOpen={(id) => open(id, { v: "detail", id })} onStart={(id) => open(id, { v: "form", id, sec: 0 })} />}
+      {view.v === "radar" && <Radar inspId={view.id} myName={me?.name ?? ""} onBack={() => history.back()} />}
       {view.v === "detail" && cur && <Detail x={cur} draft={draft} mine={!cur.ro && (!me || cur.assignee_id === me.id)} onSchedule={setSched}
+        onRadar={me?.super && me.id === cur.assignee_id ? () => go({ v: "radar", id: cur.id }) : undefined}
         onAnswer={async (ok) => {
           const r = await fetch("/api/inspectii", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: ok ? "accept" : "decline", id: cur.id }) }).catch(() => null);
           if (!r?.ok) { say(r ? String((await J(r)).error || "Nu a mers.") : "Fără semnal: încearcă din nou când ai rețea."); return; }
@@ -582,9 +583,9 @@ const whenOf = (i: InspRow): string | null => (isDone(i) && i.finished_at ? loca
   : i.redo_note && i.redo_prev_at ? localStamp(i.redo_prev_at) : i.scheduled_at);
 const canSchedule = (i: { status: string }) => i.status === "prog" || i.status === "plan";
 
-function Home({ me, items, queueN, onQueue, pos, unread, scope, setScope, st, setSt, onBell, onMe, onNew, onOpen, onStart, onSchedule, onRadar }: {
+function Home({ me, items, queueN, onQueue, pos, unread, scope, setScope, st, setSt, onBell, onMe, onNew, onOpen, onStart, onSchedule }: {
   me: Me | null; items: InspRow[]; queueN: number; onQueue: () => void; unread: number; scope: Scope; setScope: (s: Scope) => void; st: StatF; setSt: (s: StatF) => void; onBell: () => void; onMe: () => void; pos: React.RefObject<[number, number] | null>; onNew: () => void; onOpen: (id: string) => void;
-  onStart: (id: string) => void; onSchedule: (x: Sched) => void; onRadar: () => void;
+  onStart: (id: string) => void; onSchedule: (x: Sched) => void;
 }) {
   const [hv, setHv] = useState<HView>("list");
   // whose: mine (my account) or received from the firms I work with (angajat / colaborator); only shown when there are such
@@ -662,7 +663,6 @@ function Home({ me, items, queueN, onQueue, pos, unread, scope, setScope, st, se
         ) : <div className="mbNext mbNextNone"><span>Nicio inspecție programată</span></div>}
       </header>
       <InstallHint />
-      {me?.super && <RadarBanner onOpen={onRadar} />}
       <div className="mbTools">
         {hv === "cal" ? <b className="mbToolsT">Calendar</b> : (
           <label className="mbSel">
@@ -910,7 +910,7 @@ function MiniMap({ lat, lng, href }: { lat: number; lng: number; href: string })
 const DOC_KIND: Record<string, [string, string]> = { cf: ["CF", "Extras de carte funciară"], releveu: ["RLV", "Releveu"], doc: ["DOC", "Document"] };
 const nfm = (n: number | null | undefined, d = 2) => (n == null ? "" : n.toLocaleString("ro-RO", { maximumFractionDigits: d }));
 
-function Detail({ x, draft, mine, onBack, onStart, onSchedule, onAnswer }: { x: Insp; draft: Draft | null; mine: boolean; onBack: () => void; onStart: () => void; onSchedule: (s: Sched) => void; onAnswer: (ok: boolean) => Promise<void> }) {
+function Detail({ x, draft, mine, onBack, onStart, onSchedule, onAnswer, onRadar }: { x: Insp; draft: Draft | null; mine: boolean; onRadar?: () => void; onBack: () => void; onStart: () => void; onSchedule: (s: Sched) => void; onAnswer: (ok: boolean) => Promise<void> }) {
   const [answering, setAnswering] = useState(false);
   const ask = mine && x.assign_state === "pending";
   const done = x.status === "gata" || x.status === "pred";
@@ -977,6 +977,9 @@ function Detail({ x, draft, mine, onBack, onStart, onSchedule, onAnswer }: { x: 
             <button type="button" className="mbBtn" onClick={() => onSchedule({ id: x.id, address: x.address, scheduled_at: x.scheduled_at, duration_min: x.duration_min })}>{x.scheduled_at ? "Reprogramează" : "Programează"}</button>
           </section>
         )}
+
+        {/* Radar colegi (super-admins, test): the colleagues' inspections around this one, on its day */}
+        {onRadar && mine && !done && !ask && x.lat != null && <RadarBanner scheduled={!!x.scheduled_at} onOpen={onRadar} />}
 
         {(x.ext_client || x.ext_user) && (
           <section className="mbCard">
