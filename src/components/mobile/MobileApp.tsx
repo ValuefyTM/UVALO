@@ -8,6 +8,7 @@ import { MobileCollab } from "./MobileCollab";
 import { DocViewer } from "./DocViewer";
 import { gpsFix, LocPick, type Loc } from "./LocPick";
 import { SigCard } from "./SigCard";
+import { Radar, RadarBanner } from "./Radar";
 
 /** The first phone number of a field that may hold two ("0721 123 456 / 0256 …"), digits and + only, for tel: / sms: links. */
 const firstPhone = (s: string) => (s.split(/[\/,;]|\bsau\b/)[0] ?? s).replace(/[^\d+]/g, "");
@@ -24,7 +25,7 @@ type Insp = InspRow & {
   ext_client?: string | null; ext_user?: string | null;
 };
 type Room = { n: string; a: number | null; floor?: string; walls?: string; ceiling?: string; state?: string; std?: boolean };
-type Me = { id: string; name: string; email: string; avatar?: boolean; anevar_no?: string | null; county?: string | null; phone?: string | null; has_sig?: boolean;
+type Me = { id: string; name: string; email: string; avatar?: boolean; anevar_no?: string | null; county?: string | null; phone?: string | null; has_sig?: boolean; super?: boolean;
   org?: { id: string; name: string; logo: boolean; role: string | null } | null };
 type Info = { stats: { total: number; month: number; last: string | null; avg_min: number | null; photos: number }; device: { name: string; platform: string; created_at: string; last_seen_at: string } | null };
 type Tpl = { id: string; name: string; prop_type: string | null };
@@ -34,7 +35,7 @@ type Draft = { answers: Record<string, string | string[]>; rooms: Room[]; findin
   sig?: string | null; signer?: { who: "contact" | "other"; other: string }; // the signature stays on the phone until the inspection is sent
   loc?: Loc | null; // where the inspection is made: the GPS fix taken when the sheet was opened, or the pin moved on the map before signing
   rev?: number }; // the sheet it belongs to (inspections.sheet_rev): a sheet deleted on the web makes the phone's draft obsolete
-type View = { v: "home" } | { v: "detail"; id: string } | { v: "form"; id: string; sec: number } | { v: "rooms"; id: string } | { v: "photos"; id: string } | { v: "sign"; id: string } | { v: "queue" } | { v: "collab" } | { v: "account" } | { v: "new" } | { v: "notifs" };
+type View = { v: "home" } | { v: "detail"; id: string } | { v: "form"; id: string; sec: number } | { v: "rooms"; id: string } | { v: "photos"; id: string } | { v: "sign"; id: string } | { v: "queue" } | { v: "collab" } | { v: "account" } | { v: "new" } | { v: "notifs" } | { v: "radar" };
 
 const DAYS = ["DUM", "LUN", "MAR", "MIE", "JOI", "VIN", "SÂM"];
 const MONTHS = ["ianuarie", "februarie", "martie", "aprilie", "mai", "iunie", "iulie", "august", "septembrie", "octombrie", "noiembrie", "decembrie"];
@@ -437,7 +438,8 @@ export function MobileApp() {
       )}
       <div className="mbPage" style={pull || drag ? { transform: `translateY(${pull}px)`, transition: drag ? "none" : undefined } : undefined}>
       {!online && <div className="mbOffline">Fără semnal · lucrezi pe telefon, se trimite când revine rețeaua</div>}
-      {view.v === "home" && <Home me={me} items={items.filter((i) => !isDone(i) && !finished.has(i.id))} queueN={queueN} onQueue={() => go({ v: "queue" })} pos={pos} unread={unread} scope={scope} setScope={setScope} st={st} setSt={setSt} onBell={() => go({ v: "notifs" })} onMe={() => go({ v: "account" })} onSchedule={setSched} onNew={() => go({ v: "new" })} onOpen={(id) => open(id, { v: "detail", id })} onStart={(id) => open(id, { v: "form", id, sec: 0 })} />}
+      {view.v === "home" && <Home me={me} items={items.filter((i) => !isDone(i) && !finished.has(i.id))} queueN={queueN} onQueue={() => go({ v: "queue" })} pos={pos} unread={unread} scope={scope} setScope={setScope} st={st} setSt={setSt} onBell={() => go({ v: "notifs" })} onMe={() => go({ v: "account" })} onSchedule={setSched} onNew={() => go({ v: "new" })} onOpen={(id) => open(id, { v: "detail", id })} onStart={(id) => open(id, { v: "form", id, sec: 0 })} onRadar={() => go({ v: "radar" })} />}
+      {view.v === "radar" && <Radar pos={pos} myName={me?.name ?? ""} onBack={() => history.back()} />}
       {view.v === "detail" && cur && <Detail x={cur} draft={draft} mine={!cur.ro && (!me || cur.assignee_id === me.id)} onSchedule={setSched}
         onAnswer={async (ok) => {
           const r = await fetch("/api/inspectii", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: ok ? "accept" : "decline", id: cur.id }) }).catch(() => null);
@@ -580,9 +582,9 @@ const whenOf = (i: InspRow): string | null => (isDone(i) && i.finished_at ? loca
   : i.redo_note && i.redo_prev_at ? localStamp(i.redo_prev_at) : i.scheduled_at);
 const canSchedule = (i: { status: string }) => i.status === "prog" || i.status === "plan";
 
-function Home({ me, items, queueN, onQueue, pos, unread, scope, setScope, st, setSt, onBell, onMe, onNew, onOpen, onStart, onSchedule }: {
+function Home({ me, items, queueN, onQueue, pos, unread, scope, setScope, st, setSt, onBell, onMe, onNew, onOpen, onStart, onSchedule, onRadar }: {
   me: Me | null; items: InspRow[]; queueN: number; onQueue: () => void; unread: number; scope: Scope; setScope: (s: Scope) => void; st: StatF; setSt: (s: StatF) => void; onBell: () => void; onMe: () => void; pos: React.RefObject<[number, number] | null>; onNew: () => void; onOpen: (id: string) => void;
-  onStart: (id: string) => void; onSchedule: (x: Sched) => void;
+  onStart: (id: string) => void; onSchedule: (x: Sched) => void; onRadar: () => void;
 }) {
   const [hv, setHv] = useState<HView>("list");
   // whose: mine (my account) or received from the firms I work with (angajat / colaborator); only shown when there are such
@@ -660,6 +662,7 @@ function Home({ me, items, queueN, onQueue, pos, unread, scope, setScope, st, se
         ) : <div className="mbNext mbNextNone"><span>Nicio inspecție programată</span></div>}
       </header>
       <InstallHint />
+      {me?.super && <RadarBanner onOpen={onRadar} />}
       <div className="mbTools">
         {hv === "cal" ? <b className="mbToolsT">Calendar</b> : (
           <label className="mbSel">

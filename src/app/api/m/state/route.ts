@@ -17,6 +17,8 @@ export async function GET() {
   return Response.json({
     user: {
       id: u.id, name: u.name || u.email, email: u.email, avatar: !!u.has_avatar, anevar_no: u.anevar_no, county: u.county, phone: u.phone, has_sig: !!sig?.s,
+      // the radar of colleagues (first phase): super-admins only
+      super: c.super,
       org: o && (o.office_at || c.orgs.length > 1) ? { id: o.id, name: o.name, logo: !!o.has_logo, role: c.role } : null,
     },
     allowed, items, info, notifs, collab, firms,

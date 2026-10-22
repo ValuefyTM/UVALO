@@ -650,6 +650,19 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   starea „De programat”). Tipul bunului e obligatoriu și vine primul (doar tipurile cu fișă, `typesOf`); fișele apar abia după alegerea tipului,
   ca listă de carduri (`.mbTplPick`): ale tipului + cele pentru orice imobil, prima preselectată. `POST /api/m/new` → `saveInspection` cu `assignee_kind = me`,
   istoricul „Creată pe telefon”, eveniment `phone_new`. Cere rețea.
+- **Radar colegi** (prima fază: **doar super-adminii**, `user.super` din `/api/m/state`; design în canvasul „Radar colegi UVALO”): pe Acasă bannerul
+  `RadarBanner` („Radar colegi · TEST”, mini-radar animat, butonul „Scanează după colegi”) → ecranul `Radar` (`src/components/mobile/Radar.tsx`,
+  view `radar`, ecran întreg închis, stiluri `.mbRd*`): chip-uri 5 / 10 / 25 km și Azi / Mâine, discul cu inelele etichetate (km/3, 2km/3, km),
+  fasciculul auriu care se rotește la 3 s (`rdSweep`), punctul albastru = telefonul, punctele colegilor (`.blip`, poziție reală după
+  azimut + distanță față de telefon, scalate la raza aleasă; se aprind cu `rdBlip` când trece fasciculul — întârzierea = azimut/360 × 3 s),
+  rezumatul și foaia de jos cu cardurile (nume, tip · zonă · oră, distanța față de inspecția mea din acea zi sau față de mine). Atingerea unui
+  punct / card → ecranul colegului: „Inspecția lui” / „Inspecția ta” (cea mai apropiată a mea din ziua aceea, cu distanța), mesaj propus,
+  Sună (`tel:`), Trimite SMS (`sms:?body=`) sau email, WhatsApp (`wa.me`). Fără colegi: „Caută în 10 / 25 km”. Rescanează la fiecare
+  schimbare și la 60 s. `GET /api/m/radar?lat=&lng=&km=&day=` (403 pentru non-super-admini): inspecțiile `plan` / `lucru` ale **altor**
+  utilizatori activi din ziua aleasă (`scheduled_at LIKE 'YYYY-MM-DD%'`), cu coordonate, în caseta apoi în raza cerută (`found`: nume, telefon,
+  email, legitimație, birou, `prop_type`, `zone` = `uat` sau localitatea din adresă — **nu adresa**, `lat`/`lng` rotunjite la 3 zecimale ≈ 100 m,
+  `dist_m`) + `mine` (inspecțiile mele din acea zi cu coordonate). Eveniment `inspectii`/`radar` `{km, day, n}`. Urmează: deschiderea pentru
+  toți (cu opțiunea „apar pe radar”), notificare când apare un coleg, mesaj prin Colaborări în loc de SMS.
 - **Contul meu** pe telefon: poza contului (`/api/avatar/<id>`), legitimația, județul, biroul (cu logo, `user.org` din `/api/m/state`);
   activitatea (`phoneInfo`: luna asta, total, timp mediu, fotografii, ultima trimisă); telefonul acesta (instalată sau în browser, conectat din,
   permisiuni cameră / locație cu buton, spațiul folosit, „Golește memoria aplicației” = cache-ul detaliilor și al SW, nu ciornele și coada);
