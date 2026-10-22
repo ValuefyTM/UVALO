@@ -653,7 +653,9 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
 - **Radar colegi** (prima fază: **doar super-adminii**, `user.super` din `/api/m/state`; design în canvasul „Radar colegi UVALO”): pornește **din
   detaliul unei inspecții a mele neefectuate** (`Detail`: cardul `RadarBanner` „Radar colegi · TEST” + „Scanează după colegi”, doar dacă eu o fac,
   nu e finalizată / solicitare în așteptare și are coordonate; **nu mai e pe Acasă și nu folosește GPS-ul telefonului**) → ecranul `Radar`
-  (`src/components/mobile/Radar.tsx`, view `{v: radar, id}`, ecran întreg închis, stiluri `.mbRd*`): **centrul = inspecția mea** (punctul albastru
+  (`src/components/mobile/Radar.tsx`, view `{v: radar, id}`, ecran întreg închis, stiluri `.mbRd*`; `.mbRadar` e `position: fixed` peste tot ecranul
+  cu derulare doar verticală — pe iPhone `100svh` lăsa jos fundalul deschis — iar fasciculul rotit stă în cercul `.rot` cu `overflow: hidden`, altfel pătratul
+  lui rotit lățea pagina și se putea trage lateral): **centrul = inspecția mea** (punctul albastru
   cu eticheta „Tu · 15:00”), **ziua = ziua ei** (chip fix „Azi, 15:00”; neprogramată → Azi / Mâine), chip-uri 5 / 10 / 25 km, discul cu inelele
   etichetate (km/3, 2km/3, km), fasciculul auriu la 3 s (`rdSweep`), punctele colegilor (`.blip`, azimut + distanță față de inspecția mea, scalate
   la rază; se aprind cu `rdBlip` când trece fasciculul — întârzierea = azimut/360 × 3 s), rezumatul și foaia de jos cu cardurile (nume, tip ·

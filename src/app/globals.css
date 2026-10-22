@@ -2059,7 +2059,12 @@ textarea.mbIn { min-height: 0; resize: vertical; }
 @keyframes rdBlip { 0%, 58% { box-shadow: 0 0 0 0 rgba(224,173,79,0); opacity: .55; } 66% { box-shadow: 0 0 0 12px rgba(224,173,79,.35); opacity: 1; } 100% { box-shadow: 0 0 0 0 rgba(224,173,79,0); opacity: .8; } }
 @keyframes rdTag { 0%, 58% { opacity: .4; } 66%, 100% { opacity: 1; } }
 @keyframes rdDot { 0%, 100% { opacity: 1; } 50% { opacity: .15; } }
-.mbRadar { min-height: 100svh; background: #141414; color: #fff; display: flex; flex-direction: column; position: relative; }
+/* fixed over the whole screen (on iPhone 100svh stopped above the home indicator and the light app background showed below);
+   only vertical scrolling: the blips' tags near the edge must not make the page slide sideways */
+.mbRadar { position: fixed; inset: 0; z-index: 60; max-width: 560px; margin: 0 auto; background: #141414; color: #fff; display: flex; flex-direction: column;
+  overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; -webkit-overflow-scrolling: touch; }
+.mbRadar > * { flex-shrink: 0; }
+.mbRadar .mbRdSheet { flex-grow: 1; margin-top: 16px; }
 .mbRdTop { display: flex; align-items: center; gap: 12px; padding: calc(12px + env(safe-area-inset-top)) var(--mb-pad) 8px; }
 .mbRdTop > span { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
 .mbRdTop b { font-size: 18px; font-weight: 800; letter-spacing: -0.01em; }
@@ -2083,6 +2088,8 @@ textarea.mbIn { min-height: 0; resize: vertical; }
 .mbRdDisc .ax.v { left: 175px; top: 0; width: 1px; height: 350px; background: rgba(224,173,79,.12); }
 .mbRdDisc .ax.h { left: 0; top: 175px; width: 350px; height: 1px; background: rgba(224,173,79,.12); }
 .mbRdDisc > small { position: absolute; left: 182px; font-size: 10px; color: #8A8A8A; }
+.mbRdDisc .rot { position: absolute; left: 0; top: 0; width: 350px; height: 350px; border-radius: 50%; overflow: hidden; pointer-events: none; }
+.mbRdDisc .rot > i { position: absolute; display: block; }
 .mbRdDisc .sweep { left: 0; top: 0; width: 350px; height: 350px; border-radius: 50%; animation: rdSweep 3s linear infinite; background: conic-gradient(from 0deg, rgba(224,173,79,0) 0deg, rgba(224,173,79,0) 250deg, rgba(224,173,79,.42) 360deg);
   -webkit-mask-image: radial-gradient(circle, rgba(0,0,0,.35) 0, #000 55%, #000 100%); mask-image: radial-gradient(circle, rgba(0,0,0,.35) 0, #000 55%, #000 100%); }
 .mbRdDisc .beam { left: 175px; top: 0; width: 1px; height: 175px; transform-origin: 50% 100%; animation: rdSweep 3s linear infinite; background: linear-gradient(to top, rgba(224,173,79,.9), rgba(224,173,79,0)); }

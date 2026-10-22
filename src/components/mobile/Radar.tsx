@@ -130,7 +130,8 @@ export function Radar({ inspId, myName, onBack }: { inspId: string; myName: stri
         <small style={{ top: 110 }}>{(km / 3).toLocaleString("ro-RO", { maximumFractionDigits: 1 })} km</small>
         <small style={{ top: 50 }}>{((km * 2) / 3).toLocaleString("ro-RO", { maximumFractionDigits: 1 })} km</small>
         <small style={{ top: 4 }}>{km} km</small>
-        <i className="sweep" /><i className="beam" />
+        {/* the rotating beam in a round clip: its rotated square would widen the page */}
+        <span className="rot"><i className="sweep" /><i className="beam" /></span>
         <i className="ping" /><i className="me" /><em className="meTag">{myTime ? `Tu · ${myTime}` : "Inspecția ta"}</em>
         {found.map((f) => { const b = blip(f); return (
           <button key={f.id} type="button" className="blip" style={{ left: b.x, top: b.y }} onClick={() => setSel(f)} aria-label={`${f.name}, ${hhmm(f.when)}, la ${fmtKm(f.dist_m)} de inspecția ta`}>
