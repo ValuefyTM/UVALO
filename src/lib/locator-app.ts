@@ -28,7 +28,7 @@ html.uvApp .lyr,html.uvApp .lyr:not(.closed){top:calc(var(--uvt) + 12px)!importa
 html.uvApp .legend{bottom:calc(var(--uvb) + 8px)!important;left:12px!important}
 html.uvApp .gpsBar{bottom:calc(var(--uvb) + 4px)!important;right:78px!important}
 html.uvApp .leaflet-bottom{bottom:var(--uvb)!important}
-html.uvApp #toast{bottom:auto!important;top:calc(var(--uvt) + 12px)!important}
+html.uvApp #toast{bottom:auto!important;top:calc(var(--uvt) + 12px)!important;left:12px!important;right:12px!important;transform:none!important;max-width:none!important;white-space:normal!important;text-align:center;line-height:1.45;padding:12px 16px!important;border-radius:14px!important}
 /* the search: a floating magnifier at the bottom right (above the sheet when it is open); the form opens at the top, where the
    phone's keyboard does not cover it */
 .uvFind{position:fixed;z-index:1650;right:14px;bottom:calc(var(--uvb) + 12px);width:56px;height:56px;border:0;border-radius:50%;background:#141414;color:#fff;
@@ -121,6 +121,9 @@ grip.addEventListener("touchend",end);grip.addEventListener("touchcancel",end);
 /* a result in #out (a parcel, a list of parcels around an address, a message) opens the sheet and closes the search */
 var out=$("out");
 function check(){
+  // outside the plans: only a short notice, the sheet stays closed
+  var oa=out&&out.querySelector(".outArea");
+  if(oa){B.classList.remove("uvRes");state("off");try{toast(oa.textContent);clearTimeout(toast.t);toast.t=setTimeout(function(){$("toast").hidden=true},5000)}catch(e){}return}
   var res=!!out&&!out.querySelector(":scope > .empty")&&out.textContent.trim().length>0;
   B.classList.toggle("uvRes",res);
   if(res){search(false);var was=cur();if(was==="off")state("peek");body.scrollTop=0;

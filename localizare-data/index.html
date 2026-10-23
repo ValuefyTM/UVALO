@@ -813,6 +813,8 @@ const inArea=(la,lo)=>la>AREA.s&&la<AREA.n&&lo>AREA.w&&lo<AREA.e;
 const cache={}; let U=null, P=[], BL=[], TP=[], byId=new Map(), ids=[], cur=null, mode='s';
 // Counties: the UAT list shows the localities of the chosen one (a locality name can repeat in another county).
 const COUNTIES=[...new Set(UATS.map(u=>u.county||'Timiș'))].sort((a,b)=>a.localeCompare(b,'ro'));
+/* a point outside the plans: the counties covered, not every locality */
+const outAreaMsg=()=>'Locația e în afara zonei acoperite de localizator. Planurile cadastrale sunt disponibile deocamdată doar în '+(COUNTIES.length>1?'județele '+COUNTIES.slice(0,-1).join(', ')+' și '+COUNTIES[COUNTIES.length-1]:'județul '+COUNTIES[0])+'.';
 // Toate județele: cele cu planuri sus, celelalte (fără planșe ANCPI) într-un grup separat → fereastra de localizare după Stereo 70 / CF.
 const ALL_J=['Alba','Arad','Argeș','Bacău','Bihor','Bistrița-Năsăud','Botoșani','Brașov','Brăila','București','Buzău','Caraș-Severin','Călărași','Cluj','Constanța','Covasna','Dâmbovița','Dolj','Galați','Giurgiu','Gorj','Harghita','Hunedoara','Ialomița','Iași','Ilfov','Maramureș','Mehedinți','Mureș','Neamț','Olt','Prahova','Satu Mare','Sălaj','Sibiu','Suceava','Teleorman','Timiș','Tulcea','Vaslui','Vâlcea','Vrancea'];
 {const s=$('judSel'),g1=document.createElement('optgroup'),g2=document.createElement('optgroup');g1.label='Cu planuri cadastrale';g2.label='Fără planuri · localizare după Stereo 70 sau CF';
@@ -1001,7 +1003,7 @@ async function goToPoint(la,lo,label,alts){
   L.circle([la,lo],{radius:R,color:'#ffffff',weight:2,dashArray:'5 5',fill:false,interactive:false}).addTo(locLayer);
   L.circleMarker([la,lo],{radius:8,color:'#111111',weight:3,fillColor:'#f2a93b',fillOpacity:1,interactive:false}).addTo(locLayer);
   if(!u){lastNear=null;map.setView([la,lo],17,{animate:false});
-    $('out').innerHTML='<div class="loc"><b>'+esc(label)+'</b><small>'+la.toFixed(6)+', '+lo.toFixed(6)+'</small></div><div class="flag">Locația e în afara UAT-urilor disponibile ('+UATS.map(u=>u.name).join(', ')+').</div>';return}
+    $('out').innerHTML='<div class="loc"><b>'+esc(label)+'</b><small>'+la.toFixed(6)+', '+lo.toFixed(6)+'</small></div><div class="flag outArea">'+outAreaMsg()+'</div>';return}
   await loadUat(u.key);
   const dm=R/90000, near=[];
   P.forEach(p=>{if(!inBB(p.bb,la,lo,dm))return;const d=distM(p,la,lo);if(d<=R)near.push({p,d})});
@@ -1285,7 +1287,8 @@ function gpsBar(){
   let h='';
   const inUat=U&&P.length&&UATS.some(u=>u.key===U.key&&inBB(u.bb,g.la,g.lo,0.002));
   let sub='';
-  if(!inUat){h='<span class="gIco no"></span><span class="no">Nu ești într-o localitate încărcată pe hartă.</span>'}
+  if(!inUat){h=UATS.some(u=>inBB(u.bb,g.la,g.lo,0.002))?'<span class="gIco no"></span><span class="no">Nu ești într-o localitate încărcată pe hartă.</span>'
+    :'<span class="gIco no"></span><span class="no">În afara zonei acoperite de localizator</span> <span>(doar '+(COUNTIES.length>1?'județele '+COUNTIES.join(', '):'județul '+COUNTIES[0])+').</span>'}
   else{
     const cand=P.filter(p=>inBB(p.bb,g.la,g.lo,0.0015));
     const here=cand.filter(p=>distM(p,g.la,g.lo)===0);
