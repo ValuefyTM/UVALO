@@ -45,6 +45,11 @@ html.uvApp .find{position:fixed!important;z-index:2000;left:0;right:0;top:auto!i
   padding:6px 16px calc(16px + var(--uvbs))!important;border-radius:22px 22px 0 0;box-shadow:0 -18px 50px -12px rgba(0,0,0,.5);
   transform:translateY(105%);transition:transform .28s cubic-bezier(.2,.8,.2,1),bottom .2s;visibility:hidden}
 html.uvApp body.uvSearch .find{transform:none;visibility:visible}
+/* top to bottom: the grip, the title, the kind of search, the suggestions and errors, then the fields with the input last and the button
+   under it — at the thumb */
+html.uvApp .find>.uvFindGrip{order:0}html.uvApp .find>.uvFindTop{order:1}html.uvApp .find>.tabs{order:2}
+html.uvApp .find>#sugg{order:3}html.uvApp .find>#err{order:4}html.uvApp .find>#modeCad,html.uvApp .find>#modeAdr{order:5}html.uvApp .find>.go{order:6}
+html.uvApp #sugg:empty,html.uvApp #err:empty{display:none}
 .uvFindGrip{display:flex;justify-content:center;padding:4px 0 8px;touch-action:none}
 .uvFindGrip i{display:block;width:44px;height:5px;border-radius:999px;background:#cfc7b8}
 .uvFindTop{display:flex;align-items:center;justify-content:space-between}

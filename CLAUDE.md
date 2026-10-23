@@ -666,7 +666,8 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   locul PWA-ului propriu, `presence.js` și `feedback.js`; 401 / mentenanță → mesaj în cadru, fără redirecționare. Modul aplicație: harta pe tot
   ecranul (sub meniul plutitor), **lupa plutitoare** în dreapta jos (`.uvFind`, deasupra fișei când e pe jumătate, ascunsă cu fișa pe tot
   ecranul) care deschide formularul localizatorului (`#f`: nr. cadastral / topo cu UAT, adresă / coordonate / Stereo 70) ca **panou de jos**
-  (`body.uvSearch`, liniuța `.uvFindGrip`: tragere în jos = închide; deasupra tastaturii: aplicația măsoară tastatura cu `visualViewport` și o
+  (`body.uvSearch`, liniuța `.uvFindGrip`: tragere în jos = închide; ordinea de sus în jos: titlul, felul căutării, sugestiile / erorile, câmpurile cu inputul ultimul și
+  „Caută” dedesubt, la îndemâna degetului; deasupra tastaturii: aplicația măsoară tastatura cu `visualViewport` și o
   trimite cadrului — `postMessage({uvLoc: "kb", px})` → `--uvkb`), butoanele hărții și **Straturi** sus; bara GPS jos lasă loc lupei, iar pastila „Vezi fișa ↑”
   urcă deasupra ei (`--gpsh`); **fișa parcelei** (`#out` + nota + descărcările, mutate în `.uvSheet`) urcă de jos când `#out` primește un rezultat
   (MutationObserver): jumătate de ecran (`uvPeek`), tot ecranul (`uvFull`) sau închisă, trasă de liniuța `.uvGrip` (atingerea comută); închisă cu
