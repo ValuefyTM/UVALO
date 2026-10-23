@@ -20,6 +20,8 @@ html.uvApp .app{display:block!important;height:100%!important;min-height:0!impor
 html.uvApp .panel{display:contents!important}
 html.uvApp .phead,html.uvApp .split,html.uvApp #full,html.uvApp .find .heads,html.uvApp #hint,html.uvApp .uvfb-btn,html.uvApp .uvfb-tip{display:none!important}
 html.uvApp body .mapwrap .fullOut{display:none!important}
+/* no site analysis in the app: its buttons in the parcel sheet and in the card of a county without plans */
+html.uvApp .ampBtn,html.uvApp #npAmp{display:none!important}
 html.uvApp .mapwrap{position:fixed!important;inset:0!important;height:auto!important;min-height:0!important;z-index:1!important}
 html.uvApp .mctl{top:calc(var(--uvt) + 12px)!important;left:12px!important}
 html.uvApp .lyr,html.uvApp .lyr:not(.closed){top:calc(var(--uvt) + 12px)!important;right:12px!important;bottom:auto!important;max-height:calc(100% - var(--uvt) - var(--uvb) - 100px);overflow:auto}

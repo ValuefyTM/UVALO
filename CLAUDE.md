@@ -670,8 +670,8 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   `min-*: 100%` (iPhone mărește altfel cadrul după conținut și harta / fișa ies din ecran), iar nimic din fișă nu e mai lat decât ecranul; la deschidere parcela se reîncadrează în zona liberă (`fitFree`, stratul `sel`). **La deschidere pornește singur „Locația mea”** (`gpsStart()` fără busolă — pe iPhone ea cere o atingere,
   butonul de pe hartă o pornește): punctul GPS cu cercul de precizie, planul localității încărcat, harta pe loc, parcelele din rază evidențiate și
   lista lor în fișă (parcela pe care stai prima), bara GPS „Ești pe parcela …”; nu și cu un link spre o parcelă (`#uat-nr`). Căutarea oprește
-  urmărirea GPS (`gpsFollow = false`), ca harta să nu fie trasă înapoi la tine. Linkurile spre
-  restul platformei (ex. analiza amplasamentului) se deschid pe `APP_URL`, în browser. Eveniment `localizare`/`page` cu `{app:1}`. Service
+  urmărirea GPS (`gpsFollow = false`), ca harta să nu fie trasă înapoi la tine. **Fără analiza amplasamentului în aplicație** (`.ampBtn`, `#npAmp` ascunse). Alte linkuri spre
+  restul platformei se deschid pe `APP_URL`, în browser. Eveniment `localizare`/`page` cu `{app:1}`. Service
   worker-ul aplicației (`uvalo-insp-v6`) servește din memorie doar navigarea spre `/`, nu și pe cea din iframe. Cheia Google Maps trebuie să
   accepte și referrer-ul `inspectii.uvalo.ro/*` pentru hărțile Google din localizator.
 - **Radar colegi** (prima fază: **doar super-adminii**, `user.super` din `/api/m/state`; design în canvasul „Radar colegi UVALO”): pornește **din
