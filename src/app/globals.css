@@ -1875,7 +1875,7 @@ span.meOfficeLogo { background: #2a2a2a; color: var(--acc); }
 /* ---------- UVALO Inspecții: the phone app (PWA, inspectii.uvalo.ro → /m) ---------- */
 .mb { --mb-pad: 14px; min-height: 100svh; display: flex; flex-direction: column; max-width: 560px; margin: 0 auto; background: #F4EFE6; color: var(--ink); font-size: 14px;
   position: relative; }
-.mb.withNav { padding-bottom: calc(86px + env(safe-area-inset-bottom)); }
+.mb.withNav { padding-bottom: calc(70px + max(6px, env(safe-area-inset-bottom) - 14px)); }
 .mb button { cursor: pointer; }
 .mb small { font-size: 11.5px; color: var(--muted-2); }
 .mbBoot, .mbCenter { background: #141414; color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; padding: 32px 24px; text-align: center; }
@@ -2376,18 +2376,19 @@ button.mbMiniBtn.loc.up { right: auto; left: 10px; bottom: 40px; }
 /* toast, offline, bottom menu */
 .mbToast { position: fixed; left: 50%; bottom: calc(90px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 30; background: #141414; color: #fff; padding: 12px 16px; border-radius: 12px; font-size: 14px; max-width: calc(100% - 32px); box-shadow: 0 8px 24px rgba(0,0,0,0.3); animation: vfIn 0.3s var(--ease); }
 .mbOffline { position: sticky; top: 0; z-index: 10; background: var(--acc); color: #141414; font-size: 12px; font-weight: 700; text-align: center; padding: calc(6px + env(safe-area-inset-top)) 12px 6px; }
-/* the menu: a floating dark bar, Inspecții · the locator (only the orange sign, raised in the middle) · Colaborări;
-   the account opens from the avatar at the top of the screens */
-.mbNav { position: fixed; left: 12px; right: 12px; bottom: calc(10px + env(safe-area-inset-bottom)); z-index: 15; max-width: 536px; margin: 0 auto; height: 62px;
-  display: grid; grid-template-columns: 1fr 84px 1fr; align-items: center; padding: 0 6px; border-radius: 22px;
-  background: rgba(20,20,20,.92); -webkit-backdrop-filter: blur(14px) saturate(1.4); backdrop-filter: blur(14px) saturate(1.4);
-  box-shadow: 0 14px 34px -10px rgba(0,0,0,.55), inset 0 0 0 1px rgba(255,255,255,.06); }
+/* the menu: a dark bar fixed at the bottom, slightly rounded at the top — Inspecții · the locator (only the orange sign, raised in the
+   middle) · Colaborări; the account opens from the avatar at the top of the screens. As low as possible: under the items only what the
+   phone's home bar needs (part of the safe area), so the labels never touch it or leave the bar */
+.mbNav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 15; max-width: 560px; margin: 0 auto;
+  height: calc(56px + max(6px, env(safe-area-inset-bottom) - 14px)); padding: 0 6px max(6px, calc(env(safe-area-inset-bottom) - 14px));
+  display: grid; grid-template-columns: 1fr 84px 1fr; align-items: center; box-sizing: border-box; border-radius: 18px 18px 0 0;
+  background: #141414; box-shadow: 0 -8px 24px -12px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.06); }
 .mbNav button { position: relative; height: 100%; background: none; border: 0; color: #8f8f8f; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; padding: 0; font: 700 11px var(--font); letter-spacing: .01em; }
-.mbNav button[aria-current="page"] { color: #fff; }
-.mbNav button[aria-current="page"]:not(.mbNavLoc)::after { content: ""; position: absolute; bottom: 6px; width: 18px; height: 3px; border-radius: 999px; background: var(--acc); }
-.mbNav button[aria-current="page"] svg { color: var(--acc); }
+/* the active item: orange icon and label, no line under it */
+.mbNav button[aria-current="page"] { color: #F29A2E; }
+.mbNav button[aria-current="page"] svg { color: #F29A2E; }
 .mbNav button i { position: absolute; top: 6px; left: calc(50% + 6px); background: var(--err); color: #fff; font-style: normal; font-size: 10px; min-width: 18px; height: 18px; border-radius: 9px; display: flex; align-items: center; justify-content: center; padding: 0 4px; }
-.mbNav .mbNavLoc > span { width: 62px; height: 62px; margin-top: -30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff;
+.mbNav .mbNavLoc > span { width: 60px; height: 60px; margin-top: -26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff;
   background: linear-gradient(150deg, #F7B547, #EE8A1F); border: 4px solid #F4EFE6; box-sizing: border-box; box-shadow: 0 10px 22px -6px rgba(238,138,31,.7); transition: transform .18s var(--ease); }
 .mbNav .mbNavLoc[aria-current="page"] > span { transform: translateY(-2px); box-shadow: 0 0 0 4px rgba(238,138,31,.22), 0 12px 26px -6px rgba(238,138,31,.8); }
 .mbNav .mbNavLoc:active > span { transform: scale(.94); }

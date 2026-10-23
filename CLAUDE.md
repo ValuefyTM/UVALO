@@ -630,7 +630,8 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   altfel programarea; folosită în listă („Făcută …”), în cardurile Azi / Săpt. asta și în calendar. Detaliul arată „Data inspecției” în
   Proprietatea și „Inspecție făcută pe … la …”; încăperile NU mai apar în detaliu (doar în fișă).
   La o inspecție întoarsă și trimisă din nou, `finished_at` rămâne **data primei finalizări** (`redo_prev_at`).
-- **Navigarea pe telefon**: meniul de jos (`.mbNav`, bară închisă plutitoare, rotunjită, cu blur) = **Inspecții** (ecranul de start, intern `home`) /
+- **Navigarea pe telefon**: meniul de jos (`.mbNav`, bară închisă **fixată jos**, pe toată lățimea, colțurile de sus rotunjite; sub butoane doar
+  `max(6px, safe-area − 14px)`, ca etichetele să nu atingă bara iPhone-ului; activul = iconiță + text portocalii `#F29A2E`, fără linie) = **Inspecții** (ecranul de start, intern `home`) /
   **Localizator** în mijloc (doar semnul de locație, cerc portocaliu ridicat, `.mbNavLoc`) / **Colaborări**. **Contul meu nu mai e în meniu**: se
   deschide din avatarul de sus (Acasă și antetul Colaborărilor, `.mbHeadMe`), ca ecran cu „‹ Înapoi”. Acasă arată doar inspecțiile nefinalizate (filtrul: „Toate” +
   Completări / În lucru / De făcut / De programat, fără Finalizate); finalizatele (ultimele 90 de zile, `myAssigned`) sunt în Contul meu,

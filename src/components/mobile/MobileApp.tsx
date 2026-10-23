@@ -955,7 +955,8 @@ function LocTab({ on, shown, target }: { on: boolean; shown: boolean; target: { 
     document.body.appendChild(d);
     const cs = getComputedStyle(d), t = Math.round(parseFloat(cs.paddingTop) || 0), b = Math.round(parseFloat(cs.paddingBottom) || 0);
     d.remove();
-    return `/localizare?app=1&t=${t}&b=${b + 82}&s=${b}${target ? `#${target.key}-${target.nr}` : ""}`;
+    // b = the menu's height (56 px + what it keeps of the bottom safe area, as in .mbNav) and a small gap
+    return `/localizare?app=1&t=${t}&b=${56 + Math.max(6, b - 14) + 6}&s=${b}${target ? `#${target.key}-${target.nr}` : ""}`;
   });
   if (!on) return shown ? (
     <div className="mbLoc off"><div className="mbSoon"><b>Localizatorul cadastral</b><small>Nu este în planul contului tău. Scrie-ne la office@uvalo.ro ca să-l activăm.</small></div></div>
