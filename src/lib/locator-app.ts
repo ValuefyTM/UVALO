@@ -23,7 +23,12 @@ html.uvApp body .mapwrap .fullOut{display:none!important}
 /* no site analysis in the app: its buttons in the parcel sheet and in the card of a county without plans */
 html.uvApp .ampBtn,html.uvApp #npAmp{display:none!important}
 html.uvApp .mapwrap{position:fixed!important;inset:0!important;height:auto!important;min-height:0!important;z-index:1!important}
-html.uvApp .mctl{top:calc(var(--uvt) + 12px)!important;left:12px!important}
+/* the map buttons (zoom, frame the parcel, my location) in a column right above the magnifier, at the thumb; they follow it above
+   the half-open sheet and hide with the sheet on the whole screen or the search open */
+html.uvApp .mctl,html.uvApp body.mapFull .mctl{top:auto!important;left:auto!important;right:22px!important;bottom:calc(var(--uvb) + 80px)!important;z-index:1640!important;
+  transition:bottom .28s cubic-bezier(.2,.8,.2,1),opacity .2s}
+html.uvApp body.uvPeek .mctl{bottom:calc(52% + 80px)!important}
+html.uvApp body.uvFull .mctl,html.uvApp body.uvSearch .mctl{opacity:0;pointer-events:none}
 html.uvApp .lyr,html.uvApp .lyr:not(.closed){top:calc(var(--uvt) + 12px)!important;right:12px!important;bottom:auto!important;max-height:calc(100% - var(--uvt) - var(--uvb) - 100px);overflow:auto}
 html.uvApp .legend{bottom:calc(var(--uvb) + 8px)!important;left:12px!important}
 html.uvApp .gpsBar{bottom:calc(var(--uvb) + 4px)!important;right:78px!important}

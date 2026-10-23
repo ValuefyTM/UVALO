@@ -668,7 +668,8 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   ecranul) care deschide formularul localizatorului (`#f`: nr. cadastral / topo cu UAT, adresă / coordonate / Stereo 70) ca **panou de jos**
   (`body.uvSearch`, liniuța `.uvFindGrip`: tragere în jos = închide; ordinea de sus în jos: titlul, felul căutării, sugestiile / erorile, câmpurile cu inputul ultimul și
   „Caută” dedesubt, la îndemâna degetului; deasupra tastaturii: aplicația măsoară tastatura cu `visualViewport` și o
-  trimite cadrului — `postMessage({uvLoc: "kb", px})` → `--uvkb`), butoanele hărții și **Straturi** sus; bara GPS jos lasă loc lupei, iar pastila „Vezi fișa ↑”
+  trimite cadrului — `postMessage({uvLoc: "kb", px})` → `--uvkb`), butoanele hărții (zoom, încadrare, locația mea, `.mctl`) **într-o coloană deasupra lupei**, în dreapta jos (o urmează deasupra
+  fișei pe jumătate, ascunse cu fișa pe tot ecranul / căutarea), **Straturi** sus în dreapta; bara GPS jos lasă loc lupei, iar pastila „Vezi fișa ↑”
   urcă deasupra ei (`--gpsh`); **fișa parcelei** (`#out` + nota + descărcările, mutate în `.uvSheet`) urcă de jos când `#out` primește un rezultat
   (MutationObserver): jumătate de ecran (`uvPeek`), tot ecranul (`uvFull`) sau închisă, trasă de liniuța `.uvGrip` (atingerea comută); închisă cu
   rezultat → pastila „Vezi fișa ↑” (`.uvOpen`); **cât e deschis orice panou peste hartă — fișa, căutarea sau o fereastră a localizatorului (`dialog[open]`: grila, fără plan) — meniul
