@@ -405,6 +405,9 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   (profilul și zonele rămân pe web). Stiluri `.mc*`.
   Distanța față de telefon: `collabState` dă și `lat`/`lng` ale anunțului (localitatea geocodată); tab-ul cere locația la deschidere și arată
   pe fiecare card „N km de tine” (`.mcDist`, în linie dreaptă; + „km de baza ta” din profil), cu butonul „Cele mai apropiate” (sortare).
+- **Colaborările nu se „activează”**: modulul e pornit implicit (după mod); la prima deschidere a filei se cer setările ca până acum (`Setup`: disponibilitate,
+  profil, zonă), titlul „PRIMA DESCHIDERE”, butonul „Salvează și continuă”; pe Acasă bannerul spune „Deschide Colaborările”, „N colegi îl folosesc deja”;
+  pe telefon „Setează-ți profilul de Colaborări”. Nicăieri textul „Activează Colaborările”.
 - „În curând: Colaborări” (card pe Acasă, meniu) doar pentru evaluatori fără acces cât timp modul ≠ `on`; niciodată pentru nonevaluatori.
 
 ## Colaborări (`/colaborari`, modulul `colaborari`)

@@ -98,7 +98,7 @@ export default async function Site() {
               <li>Primești anunțurile noi în aplicație și pe email, cu un link care te duce direct la anunț.</li>
               <li>„Doar mă uit”: vezi anunțurile fără notificări, până te decizi.</li>
             </ul>
-            <a className="ldBtn ldInk ldSelf" href={signup}>Activează Colaborările</a>
+            <a className="ldBtn ldInk ldSelf" href={signup}>Începe cu Colaborările</a>
           </div>
         </div>
       </section>

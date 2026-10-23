@@ -246,7 +246,7 @@ export async function collabState(db: D1Database, me: { id: string }) {
 
 export type CollabState = Awaited<ReturnType<typeof collabState>>;
 
-/** "X colegi l-au activat deja": the active accounts with a Colaborări profile, shown as at least 20. */
+/** "X colegi îl folosesc deja": the active accounts with a Colaborări profile, shown as at least 20. */
 export async function activatedCount(db: D1Database) {
   const r = await db.prepare("SELECT COUNT(*) AS n FROM collab_profiles p JOIN users u ON u.id = p.user_id WHERE u.status = 'active'").first<{ n: number }>().catch(() => null);
   return Math.max(20, r?.n ?? 0);
@@ -540,7 +540,7 @@ export async function sendLaunchEmails(db: D1Database) {
     mails.push({
       to: u.email,
       subject: "Colaborările sunt aici: găsește un coleg pentru inspecție în câteva minute",
-      text: `${hi}\nAi cerut să te anunțăm: Colaborările s-au lansat în UVALO.\nPublici o inspecție sau un raport + inspecție, colegii din zonă primesc notificare și îți cer detalii; alegi pe cine vrei și vorbiți în chat. Sau preiei tu lucrări din zonele în care lucrezi.\n${n} colegi l-au activat deja.\n\nActivează Colaborările: ${link}\n(Linkul te autentifică direct și este valabil 7 zile.)`,
+      text: `${hi}\nAi cerut să te anunțăm: Colaborările s-au lansat în UVALO.\nPublici o inspecție sau un raport + inspecție, colegii din zonă primesc notificare și îți cer detalii; alegi pe cine vrei și vorbiți în chat. Sau preiei tu lucrări din zonele în care lucrezi.\n${n} colegi îl folosesc deja.\n\nDeschide Colaborările: ${link}\n(Linkul te autentifică direct și este valabil 7 zile.)`,
       html: launchHtml({ hi, n, link, img: `${base}/email/colaborari-lansare.png` }),
     });
   }
@@ -567,8 +567,8 @@ ${feat("Lucrări din zona ta", "Alegi raza în jurul adresei sau județe întreg
 ${feat("Profil verificat", "Specializările vin direct din Tabloul ANEVAR.")}
 ${feat("Discuți în aplicație", "Datele de contact apar doar după ce începe conversația.")}
 </table>
-<p style="margin:10px 0 26px"><a href="${esc(link)}" style="display:inline-block;background:#F2A93B;color:#111111;font-weight:bold;text-decoration:none;padding:15px 26px;border-radius:12px;font-size:15px">Activează Colaborările →</a>
-<span style="display:inline-block;margin-left:12px;font-size:13px;color:#6B6B6B"><b style="color:#141414">${n}</b> colegi l-au activat deja</span></p>
+<p style="margin:10px 0 26px"><a href="${esc(link)}" style="display:inline-block;background:#F2A93B;color:#111111;font-weight:bold;text-decoration:none;padding:15px 26px;border-radius:12px;font-size:15px">Deschide Colaborările →</a>
+<span style="display:inline-block;margin-left:12px;font-size:13px;color:#6B6B6B"><b style="color:#141414">${n}</b> colegi îl folosesc deja</span></p>
 </td></tr>
 <tr><td style="background:#FBF8F2;padding:16px 32px;font-size:12px;line-height:1.6;color:#6B6B6B">Primești acest email pentru că ai apăsat „Anunță-mă la lansare” în UVALO. Butonul te autentifică direct și este valabil 7 zile.</td></tr>
 </table></td></tr></table></body></html>`;

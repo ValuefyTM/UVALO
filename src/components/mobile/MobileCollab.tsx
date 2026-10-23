@@ -114,7 +114,7 @@ export function MobileCollab({ on, app, online, say, pos, onMe, me }: { on: bool
 
         {st && tab === "feed" && <>
           {!st.profile && (
-            <section className="mbCard mcInfo"><b>Activează-ți profilul de Colaborări</b>
+            <section className="mbCard mcInfo"><b>Setează-ți profilul de Colaborări</b>
               <small>Alegi zonele în care lucrezi și primești anunțurile de acolo (și pe email). Se face o singură dată, pe web.</small>
               <a className="mbBtn" href={`${app}/colaborari`} target="_blank" rel="noopener">Deschide pe web ↗</a></section>
           )}

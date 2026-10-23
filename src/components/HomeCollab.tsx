@@ -137,11 +137,11 @@ export function CollabHome({ s }: { s: CollabState }) {
 
 export type Launch = { count: number; activated: number; county: string | null; latest: { kind: Kind; title: string; city: string; county: string; budget: number | null; created_at: string } | null };
 
-/** For those who may use Colaborări and have not activated it yet: the launch banner. */
+/** For those who may use Colaborări and have not opened it yet (the first-time settings not done): the launch banner. */
 export function CollabLaunch({ l }: { l: Launch }) {
   return (
     <section className="hcLaunch" aria-labelledby="hcLT">
-      <span className="hcActivated"><b>{l.activated}</b> colegi l-au activat deja</span>
+      <span className="hcActivated"><b>{l.activated}</b> colegi îl folosesc deja</span>
       <div className="hcLaunchText">
         <span className="hcLaunchTop"><span className="hcBadge">NOU ÎN UVALO</span><small>Colaborări între evaluatori</small></span>
         <h2 id="hcLT">Colaborări între evaluatori. <span>Găsești un coleg pentru inspecție în câteva minute.</span></h2>
@@ -152,7 +152,7 @@ export function CollabLaunch({ l }: { l: Launch }) {
           <li><span>3</span>Alegi colegul potrivit și vă înțelegeți direct în chat</li>
         </ol>
         <span className="hcLaunchActs">
-          <a className="btn btnGold hcBig" href="/colaborari">Activează Colaborările</a>
+          <a className="btn btnGold hcBig" href="/colaborari">Deschide Colaborările</a>
         </span>
       </div>
       <div className="hcArt">

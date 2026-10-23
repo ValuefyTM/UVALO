@@ -388,7 +388,7 @@ function AvailModal({ s, onClose, onDone }: { s: State; onClose: () => void; onD
       <div className="cbModalBox" style={{ maxWidth: 620 }}>
         <div className="cbModalHead"><span className="cbWho"><b id="cbAvailT">Activează-ți disponibilitatea</b><small>Ca să ceri detalii la un anunț, trebuie să fii disponibil pentru colaborări și să ai o zonă de lucru.</small></span><button type="button" className="cbX" aria-label="Închide" onClick={onClose}>×</button></div>
         <div className="cbModalBody">
-          <p className="cbNote">La activare ai ales „Deocamdată doar mă uit”. Setează-ți zona: de aici se calculează distanțele, iar notificările pentru lucrările noi din zonă le primești în aplicație.</p>
+          <p className="cbNote">La prima deschidere ai ales „Deocamdată doar mă uit”. Setează-ți zona: de aici se calculează distanțele, iar notificările pentru lucrările noi din zonă le primești în aplicație.</p>
           <div className="cbGrid3">
             <label className="field">Adresă de bază <small>(opțional)</small><input className="input" value={f.address} maxLength={160} onChange={(e) => setF({ ...f, address: e.target.value })} placeholder="ex. Str. Paris 12" /></label>
             <label className="field">Localitate<input className="input" value={f.city} maxLength={80} onChange={(e) => setF({ ...f, city: e.target.value })} placeholder="ex. Timișoara" /></label>
@@ -900,7 +900,7 @@ function ProfileModal({ s, onClose, onSaved }: { s: State; onClose: () => void; 
   );
 }
 
-/* ---------- activation ---------- */
+/* ---------- first opening: the settings (the module is on by default, nothing to activate) ---------- */
 
 function Setup({ s, onDone }: { s: State; onDone: (m: string) => Promise<void> }) {
   const [f, setF] = useZoneForm(s);
@@ -913,12 +913,12 @@ function Setup({ s, onDone }: { s: State; onDone: (m: string) => Promise<void> }
     const r = await call({ action: "profile", ...f, years });
     setBusy(false);
     if (r.error) return setError(r.error);
-    await onDone(f.available ? "Colaborările sunt active. Primești notificări pentru lucrările din zona ta." : "Colaborările sunt active, fără notificări. Îți poți seta zona din „Zone de acoperire”.");
+    await onDone(f.available ? "Gata. Primești notificări pentru lucrările din zona ta." : "Gata. Nu primești notificări; îți poți seta zona din „Zone de acoperire”.");
   };
   return (
     <div className="cbSetup">
-      <div className="cbSetupHead"><span className="cbActivated" title="Evaluatori care au activat Colaborările"><b>{s.activated}</b> colegi l-au activat deja</span><small className="cbStep">ACTIVARE MODUL</small><h2>Bun venit la Colaborări</h2>
-        <p>Anunțurile le văd doar evaluatorii înregistrați în UVALO. Înainte de prima folosire, spune-ne dacă vrei să colaborezi, completează-ți profilul și alege zona din care primești solicitări. Le poți schimba oricând.</p></div>
+      <div className="cbSetupHead"><span className="cbActivated" title="Evaluatori care folosesc Colaborările"><b>{s.activated}</b> colegi îl folosesc deja</span><small className="cbStep">PRIMA DESCHIDERE</small><h2>Bun venit la Colaborări</h2>
+        <p>Anunțurile le văd doar evaluatorii înregistrați în UVALO. Înainte să începi, spune-ne dacă vrei să colaborezi, completează-ți profilul și alege zona din care primești solicitări. Le poți schimba oricând.</p></div>
       <section className="cbCard">
         <small className="cbStep">1 · DISPONIBILITATE</small><b className="cbCardTitle">Vrei să preiei lucrări de la colegi?</b>
         {([[true, "Da, sunt disponibil pentru colaborări", "Primesc în aplicație notificări pentru lucrările din zona mea."], [false, "Deocamdată doar mă uit", "Văd toate anunțurile, dar nu primesc notificări. Îmi pot seta zona oricând."]] as const).map(([v, l, sub]) => (
@@ -932,7 +932,7 @@ function Setup({ s, onDone }: { s: State; onDone: (m: string) => Promise<void> }
           <label className="field">Experiență în evaluare<select className="select" value={years} onChange={(e) => setYears(e.target.value)}><option value="">Alege…</option>{YEARS.map((y) => <option key={y}>{y}</option>)}</select></label>
         </div>
         <Specs s={s} />
-        <small className="cbMuted">Experiența profesională, competențele și celelalte detalii le completezi după activare, din „Profilul meu”.</small>
+        <small className="cbMuted">Experiența profesională, competențele și celelalte detalii le completezi oricând, din „Profilul meu”.</small>
       </section>
       <section className="cbCard">
         <small className="cbStep">3 · ZONA</small><b className="cbCardTitle">De unde primești solicitări</b>
@@ -950,7 +950,7 @@ function Setup({ s, onDone }: { s: State; onDone: (m: string) => Promise<void> }
       </section>
       <div className="cbSetupFoot">
         <span className={error ? "error" : ""}>{error || (f.available ? "Primești notificări în aplicație și pe email pentru anunțurile din zona aleasă. Setările le schimbi oricând." : "Nu primești notificări până nu îți setezi zona.")}</span>
-        <button type="button" className="btn btnGold" disabled={busy} onClick={finish}>{busy ? "Se activează…" : "Activează Colaborările"}</button>
+        <button type="button" className="btn btnGold" disabled={busy} onClick={finish}>{busy ? "Se salvează…" : "Salvează și continuă"}</button>
       </div>
     </div>
   );
@@ -980,7 +980,7 @@ function RecommendSplash({ activated }: { activated: number }) {
       <div className="cbModalBox">
         <div className="cbSplashArt">
           <CollabArt />
-          <span className="cbSplashTag">{activated} COLEGI L-AU ACTIVAT</span>
+          <span className="cbSplashTag">{activated} COLEGI ÎL FOLOSESC</span>
           <button type="button" className="cbSplashX" aria-label="Închide" onClick={() => setOpen(false)}>×</button>
         </div>
         <div className="cbSplashBody">
