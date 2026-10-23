@@ -2262,7 +2262,11 @@ textarea.mbIn { min-height: 0; resize: vertical; }
 .mbMiniBase button[aria-pressed="true"] { background: var(--acc); color: #141414; }
 .mbMiniBtn { position: absolute; left: 10px; bottom: 10px; z-index: 500; border: 0; background: rgba(20,20,20,.86); color: #fff; font: 700 12px var(--font); padding: 7px 12px; border-radius: 999px; pointer-events: none; }
 button.mbMiniBtn { pointer-events: auto; }
-.mbMiniBtn.re { left: auto; right: 10px; }
+.mbMiniBtn.re { left: auto; right: 10px; bottom: 40px; }
+/* the grip at the bottom of the opened map: swipe up (or tap) to close it */
+.mbMiniGrip { position: absolute; left: 0; right: 0; bottom: 0; z-index: 501; height: 30px; border: 0; padding: 0; background: linear-gradient(to top, rgba(255,255,255,.95), rgba(255,255,255,.75));
+  display: flex; align-items: center; justify-content: center; touch-action: none; cursor: grab; }
+.mbMiniGrip i { display: block; width: 44px; height: 5px; border-radius: 999px; background: #8A8A8A; }
 .mbMiniMap { position: absolute; inset: 0; }
 .mbMini.none { display: flex; align-items: center; justify-content: center; height: 70px; color: var(--muted-2); font-size: 12px; }
 /* Locația inspecției, înainte de semnătură */

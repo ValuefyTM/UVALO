@@ -936,15 +936,29 @@ function MiniMap({ lat, lng }: { lat: number; lng: number }) {
     const t = setTimeout(() => { m.invalidateSize(); if (!big) m.setView([lat, lng], 16); }, 300);
     return () => clearTimeout(t);
   }, [big, lat, lng]);
+  // the grip at the bottom of the opened map: the map follows the finger, a swipe up (> 60 px) or a tap closes it
+  const box = useRef<HTMLDivElement>(null), drag = useRef<{ y: number; h: number; dy: number } | null>(null);
+  const gripStart = (e: React.TouchEvent) => { e.stopPropagation(); drag.current = { y: e.touches[0].clientY, h: box.current?.offsetHeight ?? 0, dy: 0 }; if (box.current) box.current.style.transition = "none"; };
+  const gripMove = (e: React.TouchEvent) => {
+    const d = drag.current; if (!d || !box.current) return;
+    d.dy = Math.min(0, e.touches[0].clientY - d.y);
+    box.current.style.height = `${Math.max(150, d.h + d.dy)}px`;
+  };
+  const gripEnd = () => {
+    const d = drag.current; drag.current = null;
+    if (box.current) { box.current.style.transition = ""; box.current.style.height = ""; }
+    if (d && d.dy < -60) setBig(false);
+  };
   return (
-    <div className={`mbMini${big ? " big" : ""}`} onClick={big ? undefined : () => setBig(true)} role={big ? undefined : "button"} aria-label={big ? undefined : "Mărește harta"}>
+    <div ref={box} className={`mbMini${big ? " big" : ""}`} onClick={big ? undefined : () => setBig(true)} role={big ? undefined : "button"} aria-label={big ? undefined : "Mărește harta"}>
       <div ref={el} className="mbMiniMap" />
       <span className="mbMiniBase" onClick={(e) => e.stopPropagation()}>
         <button type="button" aria-pressed={base === "map"} onClick={() => setBase("map")}>Hartă</button>
         <button type="button" aria-pressed={base === "sat"} onClick={() => setBase("sat")}>Satelit</button>
       </span>
-      {big ? <button type="button" className="mbMiniBtn" onClick={(e) => { e.stopPropagation(); setBig(false); }}>Restrânge</button>
-        : <span className="mbMiniBtn" aria-hidden="true">⤢ Mărește</span>}
+      {!big && <span className="mbMiniBtn" aria-hidden="true">⤢ Mărește</span>}
+      {big && <button type="button" className="mbMiniGrip" aria-label="Restrânge harta (trage în sus)" onClick={(e) => { e.stopPropagation(); setBig(false); }}
+        onTouchStart={gripStart} onTouchMove={gripMove} onTouchEnd={gripEnd} onTouchCancel={gripEnd}><i /></button>}
       {big && <button type="button" className="mbMiniBtn re" onClick={(e) => { e.stopPropagation(); map.current?.setView([lat, lng], 17); }}>Centrează</button>}
     </div>
   );

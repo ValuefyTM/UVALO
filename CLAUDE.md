@@ -598,7 +598,8 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   importat ca modul cu URL absolut; `worker.ts` îl lasă să treacă pe `INSP_HOSTS`). Fiecare fișier e descărcat o dată (tipul din răspuns, nu din
   nume) și ținut în memorie cât e deschisă fișa; fără rețea → mesaj. „Deschide separat” = fișierul într-o filă nouă.
 - **Detaliul inspecției** pe telefon (`Detail`): hartă mică (`MiniMap`, Leaflet fără interacțiune; **atingerea o mărește** la 70svh (`.mbMini.big`),
-  mobilă și cu zoom, cu „Restrânge” / „Centrează” și comutatorul **Hartă / Satelit** (`.mbMiniBase`, Esri World Imagery + străzi și localități,
+  mobilă și cu zoom, cu „Centrează”, bara de prindere `.mbMiniGrip` jos (liniuța; harta urmează degetul, tragere în sus > 60 px sau atingere
+  = restrânge) și comutatorul **Hartă / Satelit** (`.mbMiniBase`, Esri World Imagery + străzi și localități,
   alegerea în `localStorage` `insp-base`); harta mărită nu declanșează tragerea-în-jos; navigația = butoanele Google Maps / Waze), statut + tip,
   Google Maps / Waze, programarea, contactul (Sună / SMS), „Proprietatea” (doar câmpurile completate: tip, cad., CF, UAT, județ, suprafețe din
   acte, încăperi, cine a pregătit / cine face), încăperile din releveu, actele încărcate (doar dacă există), fotografiile trimise, notele, fișa.
