@@ -665,12 +665,13 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   (harta își păstrează locul). Ruta (`src/app/localizare/route.ts`, `inApp`) pune `APP_HEAD` + `appScript(origin())` din `src/lib/locator-app.ts` în
   locul PWA-ului propriu, `presence.js` și `feedback.js`; 401 / mentenanță → mesaj în cadru, fără redirecționare. Modul aplicație: harta pe tot
   ecranul (sub meniul plutitor), **lupa plutitoare** în dreapta jos (`.uvFind`, deasupra fișei când e pe jumătate, ascunsă cu fișa pe tot
-  ecranul) care deschide formularul localizatorului (`#f`: nr. cadastral / topo cu UAT, adresă / coordonate / Stereo 70) ca panou **de sus**
-  (`body.uvSearch`; jos l-ar acoperi tastatura), butoanele hărții și **Straturi** sus; bara GPS jos lasă loc lupei, iar pastila „Vezi fișa ↑”
+  ecranul) care deschide formularul localizatorului (`#f`: nr. cadastral / topo cu UAT, adresă / coordonate / Stereo 70) ca **panou de jos**
+  (`body.uvSearch`, liniuța `.uvFindGrip`: tragere în jos = închide; deasupra tastaturii: aplicația măsoară tastatura cu `visualViewport` și o
+  trimite cadrului — `postMessage({uvLoc: "kb", px})` → `--uvkb`), butoanele hărții și **Straturi** sus; bara GPS jos lasă loc lupei, iar pastila „Vezi fișa ↑”
   urcă deasupra ei (`--gpsh`); **fișa parcelei** (`#out` + nota + descărcările, mutate în `.uvSheet`) urcă de jos când `#out` primește un rezultat
   (MutationObserver): jumătate de ecran (`uvPeek`), tot ecranul (`uvFull`) sau închisă, trasă de liniuța `.uvGrip` (atingerea comută); închisă cu
-  rezultat → pastila „Vezi fișa ↑” (`.uvOpen`); **cât e fișa deschisă, meniul aplicației se ascunde** (iframe → `postMessage({uvLoc: "sheet", state})`
-  → `locSheet` în `MobileApp`; în cadru `--uvb` trece de la `b` la `s` = doar zona de jos a telefonului); iframe-ul are `width/height: 1px` +
+  rezultat → pastila „Vezi fișa ↑” (`.uvOpen`); **cât e deschis orice panou peste hartă — fișa, căutarea sau o fereastră a localizatorului (`dialog[open]`: grila, fără plan) — meniul
+  aplicației se ascunde** (`sync()` în cadru → `postMessage({uvLoc: "sheet", state: on|off})` → `locSheet` în `MobileApp`; în cadru `--uvb` trece de la `b` la `s` = doar zona de jos a telefonului); iframe-ul are `width/height: 1px` +
   `min-*: 100%` (iPhone mărește altfel cadrul după conținut și harta / fișa ies din ecran), iar nimic din fișă nu e mai lat decât ecranul; la deschidere parcela se reîncadrează în zona liberă (`fitFree`, stratul `sel`). **La deschidere pornește singur „Locația mea”** (`gpsStart()` fără busolă — pe iPhone ea cere o atingere,
   butonul de pe hartă o pornește): punctul GPS cu cercul de precizie, planul localității încărcat, harta pe loc, parcelele din rază evidențiate și
   lista lor în fișă (parcela pe care stai prima), bara GPS „Ești pe parcela …”; nu și cu un link spre o parcelă (`#uat-nr`). Căutarea oprește

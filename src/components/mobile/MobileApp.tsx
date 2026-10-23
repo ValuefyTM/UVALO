@@ -923,6 +923,14 @@ function LocTab({ on, shown, target }: { on: boolean; shown: boolean; target: { 
     if (!target || target.seq === first.current || !ready.current) return;
     frame.current?.contentWindow?.postMessage({ uvLoc: "show", key: target.key, nr: target.nr }, location.origin);
   }, [target]);
+  // the phone's keyboard, which the frame does not see: its height goes to the locator, so the search panel stays above it
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const f = () => frame.current?.contentWindow?.postMessage({ uvLoc: "kb", px: Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop)) }, location.origin);
+    vv.addEventListener("resize", f); vv.addEventListener("scroll", f);
+    return () => { vv.removeEventListener("resize", f); vv.removeEventListener("scroll", f); };
+  }, []);
   // the phone's top safe area and the space of the floating menu, measured here (an iframe does not know them): the map goes under both
   const [src] = useState(() => {
     const d = document.createElement("div");

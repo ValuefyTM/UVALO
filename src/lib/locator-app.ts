@@ -38,10 +38,15 @@ html.uvApp #toast{bottom:auto!important;top:calc(var(--uvt) + 12px)!important}
 .uvFind svg{width:24px;height:24px}
 body.uvPeek .uvFind{bottom:calc(52% + 12px)}
 body.uvFull .uvFind,body.uvSearch .uvFind{opacity:0;pointer-events:none}
-html.uvApp .find{position:fixed!important;z-index:2000;left:0;right:0;top:0;margin:0!important;max-height:100%;overflow:auto;background:#fff;
-  padding:calc(var(--uvt) + 12px) 16px 18px!important;border-radius:0 0 22px 22px;box-shadow:0 24px 60px -12px rgba(0,0,0,.5);
-  transform:translateY(-105%);transition:transform .26s cubic-bezier(.2,.8,.2,1);visibility:hidden}
+/* the search form: a panel from the bottom, like the sheet (the app hides its menu meanwhile); --uvkb = the phone's keyboard, sent by the
+   app, so the field stays above it */
+html.uvApp .find{position:fixed!important;z-index:2000;left:0;right:0;top:auto!important;bottom:var(--uvkb,0px);margin:0!important;
+  max-height:calc(100% - var(--uvt) - 12px - var(--uvkb,0px));overflow:auto;overscroll-behavior:contain;background:#fff;
+  padding:6px 16px calc(16px + var(--uvbs))!important;border-radius:22px 22px 0 0;box-shadow:0 -18px 50px -12px rgba(0,0,0,.5);
+  transform:translateY(105%);transition:transform .28s cubic-bezier(.2,.8,.2,1),bottom .2s;visibility:hidden}
 html.uvApp body.uvSearch .find{transform:none;visibility:visible}
+.uvFindGrip{display:flex;justify-content:center;padding:4px 0 8px;touch-action:none}
+.uvFindGrip i{display:block;width:44px;height:5px;border-radius:999px;background:#cfc7b8}
 .uvFindTop{display:flex;align-items:center;justify-content:space-between}
 .uvFindTop b{font-size:18px;letter-spacing:-.01em}
 .uvFindX{width:36px;height:36px;border-radius:50%;border:0;background:#f1ece2;color:#111;font-size:22px;line-height:1;cursor:pointer}
@@ -74,7 +79,16 @@ var bar=document.createElement("button");bar.type="button";bar.className="uvFind
 var shade=document.createElement("div");shade.className="uvShade";
 var form=$("f"),top=document.createElement("div");top.className="uvFindTop";top.innerHTML='<b>Caută un imobil</b><button type="button" class="uvFindX" aria-label="Închide căutarea">×</button>';
 form.insertBefore(top,form.firstChild);
-function search(on){if(on){try{gpsFollow=false}catch(e){}}B.classList.toggle("uvSearch",on);if(on){var adr=!$("modeAdr").hidden;setTimeout(function(){try{(adr?$("addr"):$("q")).focus()}catch(e){}},260)}else{try{document.activeElement.blur()}catch(e){}}}
+var fg=document.createElement("div");fg.className="uvFindGrip";fg.innerHTML="<i></i>";form.insertBefore(fg,form.firstChild);
+/* a swipe down on the panel's grip closes it */
+var fy=null;fg.addEventListener("touchstart",function(e){fy=e.touches[0].clientY},{passive:true});
+fg.addEventListener("touchend",function(e){if(fy!=null&&e.changedTouches[0].clientY-fy>50)search(false);fy=null});
+/* whatever opens over the map (the sheet, the search, a dialog of the locator) hides the app's menu: the panel goes down to the bottom */
+function sync(){var o=B.classList.contains("uvPeek")||B.classList.contains("uvFull")||B.classList.contains("uvSearch")||!!document.querySelector("dialog[open]");
+  document.documentElement.style.setProperty("--uvb",o?"var(--uvbs)":"var(--uvbn)");
+  try{parent.postMessage({uvLoc:"sheet",state:o?"on":"off"},location.origin)}catch(e){}}
+document.querySelectorAll("dialog").forEach(function(dl){new MutationObserver(sync).observe(dl,{attributes:true,attributeFilter:["open"]})});
+function search(on){if(on){try{gpsFollow=false}catch(e){}}B.classList.toggle("uvSearch",on);sync();if(on){var adr=!$("modeAdr").hidden;setTimeout(function(){try{(adr?$("addr"):$("q")).focus({preventScroll:true})}catch(e){}},300)}else{try{document.activeElement.blur()}catch(e){}}}
 bar.onclick=function(){search(true)};shade.onclick=function(){search(false)};top.querySelector("button").onclick=function(){search(false)};
 B.appendChild(shade);B.appendChild(bar);
 /* the sheet: #out (the parcel sheet), the note and the downloads */
@@ -88,10 +102,7 @@ var open=document.createElement("button");open.type="button";open.className="uvO
 function fitFree(){try{var ls=sel.getLayers();if(!ls.length)throw 0;var T=parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--uvt"))||0;
   map.fitBounds(L.featureGroup(ls).getBounds(),{paddingTopLeft:[24,T+76],paddingBottomRight:[24,sh.offsetHeight+24],maxZoom:Math.max(map.getZoom(),17),animate:true})}
   catch(e){try{map.panBy([0,Math.round(sh.offsetHeight/2)],{animate:true})}catch(_){}}}
-function state(s){B.classList.toggle("uvPeek",s==="peek");B.classList.toggle("uvFull",s==="full");
-  // the app hides its menu while the sheet is open: the sheet then goes down to the bottom of the screen
-  document.documentElement.style.setProperty("--uvb",s==="off"?"var(--uvbn)":"var(--uvbs)");
-  try{parent.postMessage({uvLoc:"sheet",state:s},location.origin)}catch(e){}}
+function state(s){B.classList.toggle("uvPeek",s==="peek");B.classList.toggle("uvFull",s==="full");sync()}
 function cur(){return B.classList.contains("uvFull")?"full":B.classList.contains("uvPeek")?"peek":"off"}
 open.onclick=function(){state("peek")};
 grip.onclick=function(){state(cur()==="full"?"peek":"full")};
@@ -121,6 +132,8 @@ document.addEventListener("click",function(e){var a=e.target.closest&&e.target.c
 var gb=$("gpsBar");function gh(){document.documentElement.style.setProperty("--gpsh",(gb&&!gb.hidden&&gb.offsetHeight?gb.offsetHeight+8:0)+"px")}
 if(gb){try{new ResizeObserver(gh).observe(gb)}catch(e){}new MutationObserver(gh).observe(gb,{attributes:true,attributeFilter:["hidden"]});gh()}
 /* a parcel sent by the app (an inspection's „Vezi în localizator”): its plan, the parcel and its sheet; the GPS no longer moves the map */
+/* the keyboard of the phone (measured by the app, a frame does not see it): the search panel stays above it */
+addEventListener("message",function(e){if(e.origin===location.origin&&e.data&&e.data.uvLoc==="kb")document.documentElement.style.setProperty("--uvkb",Math.max(0,+e.data.px||0)+"px")});
 addEventListener("message",function(e){if(e.origin!==location.origin||!e.data||e.data.uvLoc!=="show")return;var k=String(e.data.key),n=String(e.data.nr);
   try{gpsFollow=false;gpsFirst=false}catch(_){}search(false);
   (async function(){try{if(!U||U.key!==k)await loadUat(k);$("q").value=n;show(n)}catch(_){}})()});
