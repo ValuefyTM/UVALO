@@ -25,10 +25,10 @@ export default async function InspNou({ searchParams }: { searchParams: Promise<
     prop_type: old.prop_type ?? "", area_util: fmt(old.area_util), area_land: fmt(old.area_land), rooms: old.rooms.map((r) => ({ n: r.n, a: fmt(r.a) })),
     template_id: old.template_id ?? tpls[0]?.id ?? "", contact_name: old.contact_name ?? "", contact_phone: old.contact_phone ?? "", contact_role: old.contact_role ?? "",
     date: old.scheduled_at?.slice(0, 10) ?? "", time: old.scheduled_at?.slice(11, 16) ?? "10:00", duration_min: old.duration_min, assignee_kind: old.assignee_kind,
-    assignee_id: old.assignee_kind === "office" ? old.assignee_id ?? "" : "", notes: old.notes ?? "",
+    assignee_id: old.assignee_kind === "office" ? old.assignee_id ?? "" : "", notes: old.notes ?? "", radar: old.radar ?? "yes",
   } : {
     address: "", cad_nr: "", cf_nr: "", uat: "", county: "", lat: null, lng: null, prop_type: "", area_util: "", area_land: "", rooms: [],
-    template_id: tpls[0]?.id ?? "", contact_name: "", contact_phone: "", contact_role: "", date: "", time: "10:00", duration_min: 60, assignee_kind: ops ? (cols.length ? "office" : "collab") : "me", assignee_id: "", notes: "",
+    template_id: tpls[0]?.id ?? "", contact_name: "", contact_phone: "", contact_role: "", date: "", time: "10:00", duration_min: 60, assignee_kind: ops ? (cols.length ? "office" : "collab") : "me", assignee_id: "", notes: "", radar: "yes",
   };
   const owner = (o: string) => (o === "uvalo" ? "UVALO" : o === "org" ? "Biroul" : "A mea");
   return (

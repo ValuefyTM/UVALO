@@ -23,6 +23,8 @@ type Insp = InspRow & {
   facts?: { label: string; value: string }[];
   /** from the firm's software: the client of the work and the user of the report (e.g. the bank) */
   ext_client?: string | null; ext_user?: string | null;
+  /** on the colleagues' radar: yes / no / collab (only collaborators) */
+  radar?: "yes" | "no" | "collab"; template_id?: string | null;
 };
 type Room = { n: string; a: number | null; floor?: string; walls?: string; ceiling?: string; state?: string; std?: boolean };
 type Me = { id: string; name: string; email: string; avatar?: boolean; anevar_no?: string | null; county?: string | null; phone?: string | null; has_sig?: boolean; super?: boolean;
@@ -35,7 +37,7 @@ type Draft = { answers: Record<string, string | string[]>; rooms: Room[]; findin
   sig?: string | null; signer?: { who: "contact" | "other"; other: string }; // the signature stays on the phone until the inspection is sent
   loc?: Loc | null; // where the inspection is made: the GPS fix taken when the sheet was opened, or the pin moved on the map before signing
   rev?: number }; // the sheet it belongs to (inspections.sheet_rev): a sheet deleted on the web makes the phone's draft obsolete
-type View = { v: "home" } | { v: "detail"; id: string } | { v: "form"; id: string; sec: number } | { v: "rooms"; id: string } | { v: "photos"; id: string } | { v: "sign"; id: string } | { v: "queue" } | { v: "collab" } | { v: "account" } | { v: "new" } | { v: "notifs" } | { v: "radar"; id: string } | { v: "loc" };
+type View = { v: "home" } | { v: "detail"; id: string } | { v: "form"; id: string; sec: number } | { v: "rooms"; id: string } | { v: "photos"; id: string } | { v: "sign"; id: string } | { v: "queue" } | { v: "collab" } | { v: "account" } | { v: "new" } | { v: "notifs" } | { v: "radar"; id: string } | { v: "loc" } | { v: "edit"; id: string };
 
 const DAYS = ["DUM", "LUN", "MAR", "MIE", "JOI", "VIN", "SÂM"];
 const MONTHS = ["ianuarie", "februarie", "martie", "aprilie", "mai", "iunie", "iulie", "august", "septembrie", "octombrie", "noiembrie", "decembrie"];
@@ -457,6 +459,15 @@ export function MobileApp() {
       {view.v === "detail" && cur && <Detail x={cur} draft={draft} mine={!cur.ro && (!me || cur.assignee_id === me.id)} onSchedule={setSched}
         onRadar={me?.super && me.id === cur.assignee_id ? () => go({ v: "radar", id: cur.id }) : undefined}
         onLocator={locOn ? (t) => { setLocTarget({ ...t, seq: Date.now() }); setLocFrom(cur.id); go({ v: "loc" }); } : undefined}
+        editable={!!me && cur.created_by === me.id && !cur.ro} onEdit={() => go({ v: "edit", id: cur.id })}
+        onDelete={async () => {
+          const done = cur.status === "gata" || cur.status === "pred";
+          if (!confirm(done ? `Ștergi inspecția ${cur.code}? E finalizată: fișa, pozele și actele nu se mai văd nicăieri.` : `Ștergi inspecția ${cur.code} (${cur.address})?`)) return;
+          const r = await fetch("/api/inspectii", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "delete", id: cur.id }) }).catch(() => null);
+          if (!r?.ok) { say(r ? String((await J(r)).error || "Nu a mers.") : "Fără semnal: încearcă din nou când ai rețea."); return; }
+          try { localStorage.removeItem(`insp-${cur.id}`); } catch {}
+          await load(); history.replaceState({ mbv: { v: "home" } }, ""); setViewState({ v: "home" }); say("Inspecția a fost ștearsă.");
+        }}
         onAnswer={async (ok) => {
           const r = await fetch("/api/inspectii", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: ok ? "accept" : "decline", id: cur.id }) }).catch(() => null);
           if (!r?.ok) { say(r ? String((await J(r)).error || "Nu a mers.") : "Fără semnal: încearcă din nou când ai rețea."); return; }
@@ -480,6 +491,12 @@ export function MobileApp() {
       {view.v === "notifs" && <Notifs notifs={notifs} reminders={reminders} seenAt={seen.at} onBack={() => { markSeen(); history.back(); }}
         onOpen={(id) => { markSeen(); void open(id, { v: "detail", id }); }} />}
       {view.v === "account" && <Account onBack={() => history.back()} me={me} info={info} done={items.filter(isDone)} onOpen={(id) => open(id, { v: "detail", id })} queueN={queueN} online={online} onSend={async () => { const n = await sendAll(); say(n ? "Mai sunt elemente de trimis." : "Totul a fost trimis."); }} say={say} />}
+      {view.v === "edit" && cur && <NewInsp edit={cur} tpls={tpls} firms={[]} online={online} pos={pos} onBack={() => history.back()} onDone={async () => {
+        await load();
+        try { localStorage.removeItem(`insp-${cur.id}`); } catch {}
+        const x = await fetchInsp(cur.id); if (x) setCur(x);
+        history.back(); say("Modificările au fost salvate.");
+      }} />}
       {view.v === "new" && <NewInsp tpls={tpls} firms={firms} online={online} pos={pos} onBack={() => history.back()} onDone={async (id, now) => {
         await load();
         // the "new inspection" screen is replaced in the history: Back from the sheet goes home, not to an empty form
@@ -1030,7 +1047,8 @@ const DOC_KIND: Record<string, [string, string]> = { cf: ["CF", "Extras de carte
 const nfm = (n: number | null | undefined, d = 2) => (n == null ? "" : n.toLocaleString("ro-RO", { maximumFractionDigits: d }));
 
 const inPlan = new Map<string, { key: string; nr: string } | null>(); // inspection → its parcel in the locator's plans (asked once)
-function Detail({ x, draft, mine, onBack, onStart, onSchedule, onAnswer, onRadar, onLocator }: { x: Insp; draft: Draft | null; mine: boolean; onRadar?: () => void; onLocator?: (t: { key: string; nr: string }) => void; onBack: () => void; onStart: () => void; onSchedule: (s: Sched) => void; onAnswer: (ok: boolean) => Promise<void> }) {
+function Detail({ x, draft, mine, onBack, onStart, onSchedule, onAnswer, onRadar, onLocator, editable, onEdit, onDelete }: { x: Insp; draft: Draft | null; mine: boolean; onRadar?: () => void; onLocator?: (t: { key: string; nr: string }) => void;
+  editable: boolean; onEdit: () => void; onDelete: () => Promise<void>; onBack: () => void; onStart: () => void; onSchedule: (s: Sched) => void; onAnswer: (ok: boolean) => Promise<void> }) {
   const [answering, setAnswering] = useState(false);
   // „Vezi în localizator”: only with a cadastral number found in a plan of the locator
   const [plan, setPlan] = useState(() => inPlan.get(`${x.id}:${x.cad_nr}`) ?? null);
@@ -1173,6 +1191,15 @@ function Detail({ x, draft, mine, onBack, onStart, onSchedule, onAnswer, onRadar
               : <small>Numărul și data fișei se dau când începi completarea.</small>}
           </span>
         </section>
+        {/* the inspections I added myself (not the ones received from a firm): edit while not finished, delete */}
+        {editable && (
+          <div className="mbOwnActs">
+            {!done && <button type="button" className="mbBtn" onClick={onEdit}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4zM13.5 6.5l4 4" /></svg>Editează</button>}
+            <button type="button" className="mbBtn danger" onClick={() => void onDelete()}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13" /></svg>Șterge</button>
+          </div>
+        )}
       </div>
       {!!x.ro && <p className="mbNote">Asocierea cu {x.firm ?? "firma"} s-a încheiat: inspecția se poate doar citi.</p>}
       {ask && (
@@ -1695,13 +1722,20 @@ const mb = (n: number) => (n < 1048576 ? `${Math.max(1, Math.round(n / 1024))} K
 
 /* ---------- new inspection, from the phone ---------- */
 
-function NewInsp({ tpls, firms, online, pos, onBack, onDone }: { tpls: Tpl[]; firms: { id: string; name: string }[]; online: boolean; pos: React.RefObject<[number, number] | null>; onBack: () => void; onDone: (id: string, now: boolean) => Promise<void> }) {
-  const [f, setF] = useState({ address: "", prop_type: "", template_id: "", cad_nr: "", cf_nr: "", contact_name: "", contact_phone: "", contact_role: "", notes: "" });
+/** „+ Inspecție nouă”, and the same form for „Editează” on an inspection I added myself (`edit`): who does it stays, the sheet changes only
+ *  while it is not started. */
+function NewInsp({ tpls, firms, online, pos, onBack, onDone, edit }: { tpls: Tpl[]; firms: { id: string; name: string }[]; online: boolean; pos: React.RefObject<[number, number] | null>; onBack: () => void; onDone: (id: string, now: boolean) => Promise<void>; edit?: Insp }) {
+  const [f, setF] = useState(() => ({ address: edit?.address ?? "", prop_type: edit?.prop_type ?? "", template_id: edit?.template_id ?? "", cad_nr: edit?.cad_nr ?? "", cf_nr: edit?.cf_nr ?? "",
+    contact_name: edit?.contact_name ?? "", contact_phone: edit?.contact_phone ?? "", contact_role: edit?.contact_role ?? "", notes: edit?.notes ?? "" }));
   const [ll, setLl] = useState<[number, number] | null>(null);
   // now = I am there (opens the sheet); later = a date and time now; unsched = scheduled afterwards (status „De programat”)
-  const [when, setWhen] = useState<"now" | "later" | "unsched">("now");
+  const [when, setWhen] = useState<"now" | "later" | "unsched">(edit ? (edit.scheduled_at ? "later" : "unsched") : "now");
   const [forOrg, setForOrg] = useState(""); // "" = my own account; otherwise an office I work for as angajat
-  const [at, setAt] = useState("");
+  const [at, setAt] = useState(edit?.scheduled_at?.slice(0, 16) ?? "");
+  // on the colleagues' radar: Da / Nu / Doar colaboratori
+  const [radar, setRadar] = useState<"yes" | "no" | "collab">(edit?.radar ?? "yes");
+  // the sheet cannot change once someone started filling it in (it keeps the answers)
+  const tplLocked = !!edit && (!!edit.sheet_no || !!edit.started_at || edit.status === "lucru");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
   const set = (k: keyof typeof f, v: string) => setF((o) => ({ ...o, [k]: v }));
@@ -1727,8 +1761,8 @@ function NewInsp({ tpls, firms, online, pos, onBack, onDone }: { tpls: Tpl[]; fi
     const d = new Date(), pad = (n: number) => String(n).padStart(2, "0");
     const scheduled_at = when === "now" ? `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}` : when === "later" ? at : "";
     try {
-      const r = await fetch("/api/m/new", { method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...f, scheduled_at, for_org: forOrg, lat: ll?.[0] ?? null, lng: ll?.[1] ?? null }) });
+      const r = await fetch(edit ? "/api/m/edit" : "/api/m/new", { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...f, ...(edit ? { id: edit.id } : {}), scheduled_at, radar, for_org: forOrg, lat: ll?.[0] ?? null, lng: ll?.[1] ?? null }) });
       const j = await J(r);
       if (!r.ok) throw new Error(String(j.error || "Nu a mers."));
       await onDone(String(j.id), when === "now");
@@ -1736,10 +1770,10 @@ function NewInsp({ tpls, firms, online, pos, onBack, onDone }: { tpls: Tpl[]; fi
   }
   return (
     <>
-      <header className="mbBar"><Back onClick={onBack} /><span><b>Inspecție nouă</b><small>O faci tu; restul se completează și pe web</small></span></header>
+      <header className="mbBar"><Back onClick={onBack} /><span><b>{edit ? `Editează ${edit.code}` : "Inspecție nouă"}</b><small>{edit ? "Cine o face rămâne același" : "O faci tu; restul se completează și pe web"}</small></span></header>
       <div className="mbBody">
         {!online && <p className="mbNote">Fără semnal nu se poate crea o inspecție nouă. Încearcă din nou când ai rețea.</p>}
-        {firms.length > 0 && <>
+        {!edit && firms.length > 0 && <>
           <small className="mbCap">PENTRU</small>
           <span className="mbOpts">
             <button type="button" aria-pressed={!forOrg} onClick={() => setForOrg("")}>Contul meu</button>
@@ -1750,19 +1784,20 @@ function NewInsp({ tpls, firms, online, pos, onBack, onDone }: { tpls: Tpl[]; fi
         <button type="button" className="mbStart" onClick={here}><b>📍 Sunt la proprietate</b><small>{ll ? `locație preluată · ${ll[0].toFixed(5)}, ${ll[1].toFixed(5)}` : "preia adresa după locația telefonului"}</small></button>
         <label className="mbField">Adresa bunului<textarea className="mbIn" rows={2} value={f.address} onChange={(e) => { set("address", e.target.value); setLl(null); }} placeholder="Str., nr., localitate, județ" /></label>
         <small className="mbCap">TIPUL BUNULUI</small>
-        <span className="mbOpts">{types.map((t) => <button key={t} type="button" aria-pressed={f.prop_type === t} onClick={() => pickType(t)}>{t}</button>)}</span>
+        <span className="mbOpts">{types.map((t) => <button key={t} type="button" aria-pressed={f.prop_type === t} disabled={tplLocked && f.prop_type !== t} onClick={() => pickType(t)}>{t}</button>)}</span>
         <small className="mbCap">FIȘA DE INSPECȚIE</small>
         {!f.prop_type ? <p className="mbTplHint">Alege tipul bunului ca să vezi fișele lui.</p> : (
           <span className="mbTplPick" role="radiogroup" aria-label="Fișa de inspecție">
             {shownTpls.map((t) => (
-              <button key={t.id} type="button" role="radio" aria-checked={f.template_id === t.id} onClick={() => set("template_id", t.id)}>
+              <button key={t.id} type="button" role="radio" aria-checked={f.template_id === t.id} disabled={tplLocked && f.template_id !== t.id} onClick={() => set("template_id", t.id)}>
                 <i aria-hidden="true" /><span><b>{t.name}</b><small>{t.prop_type ? t.prop_type : "pentru orice imobil"}</small></span>
               </button>
             ))}
           </span>
         )}
+        {tplLocked && <small className="mbCenterSmall" style={{ textAlign: "left" }}>Fișa a început să fie completată: tipul bunului și fișa nu se mai schimbă.</small>}
         <span className="mbGrid2">
-          <label className="mbField">Nr. cadastral<input className="mbIn" inputMode="text" autoCapitalize="characters" autoCorrect="off" spellCheck={false} value={f.cad_nr} onChange={(e) => set("cad_nr", e.target.value)} /></label>
+          <label className="mbField"><span>Nr. cadastral <small className="mbFieldHint">(util pentru localizatorul cadastral)</small></span><input className="mbIn" inputMode="text" autoCapitalize="characters" autoCorrect="off" spellCheck={false} value={f.cad_nr} onChange={(e) => set("cad_nr", e.target.value)} /></label>
           <label className="mbField">Carte funciară<input className="mbIn" autoCapitalize="characters" autoCorrect="off" spellCheck={false} value={f.cf_nr} onChange={(e) => set("cf_nr", e.target.value)} /></label>
         </span>
         <small className="mbCap">PERSOANA DE CONTACT</small>
@@ -1771,18 +1806,25 @@ function NewInsp({ tpls, firms, online, pos, onBack, onDone }: { tpls: Tpl[]; fi
         <span className="mbOpts">{CONTACT_ROLES.map((t) => <button key={t} type="button" aria-pressed={f.contact_role === t} onClick={() => set("contact_role", f.contact_role === t ? "" : t)}>{t}</button>)}</span>
         <small className="mbCap">CÂND</small>
         <span className="mbOpts">
-          <button type="button" aria-pressed={when === "now"} onClick={() => setWhen("now")}>Acum, sunt acolo</button>
+          {!edit && <button type="button" aria-pressed={when === "now"} onClick={() => setWhen("now")}>Acum, sunt acolo</button>}
           <button type="button" aria-pressed={when === "later"} onClick={() => setWhen("later")}>O programez acum</button>
           <button type="button" aria-pressed={when === "unsched"} onClick={() => setWhen("unsched")}>Programez ulterior</button>
         </span>
         {when === "later" && <input className="mbIn" type="datetime-local" value={at} onChange={(e) => setAt(e.target.value)} />}
         {when === "unsched" && <small className="mbCenterSmall" style={{ textAlign: "left" }}>Se adaugă cu starea „De programat”; alegi ziua și ora mai târziu, din detaliul inspecției sau din calendar.</small>}
         <label className="mbField">Note<textarea className="mbIn" rows={2} value={f.notes} onChange={(e) => set("notes", e.target.value)} /></label>
+        <small className="mbCap">VIZIBIL ÎN RADAR</small>
+        <span className="mbOpts" role="radiogroup" aria-label="Vizibil în radarul colegilor">
+          <button type="button" role="radio" aria-checked={radar === "no"} aria-pressed={radar === "no"} onClick={() => setRadar("no")}>Nu</button>
+          <button type="button" role="radio" aria-checked={radar === "yes"} aria-pressed={radar === "yes"} onClick={() => setRadar("yes")}>Da</button>
+          <button type="button" role="radio" aria-checked={radar === "collab"} aria-pressed={radar === "collab"} onClick={() => setRadar("collab")}>Doar colaboratori</button>
+        </span>
+        <small className="mbCenterSmall" style={{ textAlign: "left" }}>{radar === "no" ? "Colegii nu văd inspecția pe radar." : radar === "collab" ? "Doar colaboratorii tăi o văd pe radar (ora și zona, nu adresa)." : "Colegii din jur văd pe radar ora și zona inspecției, nu adresa."}</small>
         {msg && <p className="mbErr" role="alert">{msg}</p>}
       </div>
       <footer className="mbFoot">
         <button type="button" className="mbBtn gold big" disabled={busy || !online || f.address.trim().length < 5 || !f.prop_type || !f.template_id || (when === "later" && !at)} onClick={save}>
-          {when === "now" ? "Creează și începe fișa" : when === "unsched" ? "Adaugă (de programat)" : "Adaugă inspecția"}
+          {edit ? "Salvează modificările" : when === "now" ? "Creează și începe fișa" : when === "unsched" ? "Adaugă (de programat)" : "Adaugă inspecția"}
         </button>
         <small className="mbCenterSmall">{f.address.trim().length < 5 ? "Scrie adresa sau apasă „Sunt la proprietate”." : !f.prop_type ? "Alege tipul bunului și fișa." : "Actele (CF, releveu) le poți adăuga apoi pe web."}</small>
       </footer>

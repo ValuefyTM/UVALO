@@ -10,6 +10,8 @@ export type FormInit = {
   id?: string; address: string; cad_nr: string; cf_nr: string; uat: string; county: string; lat: number | null; lng: number | null; prop_type: string;
   area_util: string; area_land: string; rooms: { n: string; a: string }[]; template_id: string; contact_name: string; contact_phone: string; contact_role: string;
   date: string; time: string; duration_min: number; assignee_kind: AssignKind; assignee_id: string; notes: string;
+  /** on the colleagues' radar (phone app): yes / no / collab = only collaborators */
+  radar: "yes" | "no" | "collab";
 };
 
 /** Inspecție nouă / editare: the property (with a CF read automatically), the template, contact and schedule, who does it. */
@@ -136,7 +138,7 @@ export function InspForm({ init, tpls, team, canRead, ops }: { init: FormInit; t
           )}
           <div className="grid2">
             <label className="field span2">Adresa<input className="input" value={v.address} onChange={(e) => set("address", e.target.value)} placeholder="Str. Florilor nr. 7, Giroc, jud. Timiș" /></label>
-            <label className="field">Nr. cadastral<input className="input" value={v.cad_nr} onChange={(e) => set("cad_nr", e.target.value)} /></label>
+            <label className="field"><span>Nr. cadastral <small className="hint" style={{ fontWeight: 500 }}>(util pentru localizatorul cadastral)</small></span><input className="input" value={v.cad_nr} onChange={(e) => set("cad_nr", e.target.value)} /></label>
             <label className="field">Carte funciară<input className="input" value={v.cf_nr} onChange={(e) => set("cf_nr", e.target.value)} /></label>
             <label className="field">Tipul imobilului<select className="select" value={v.prop_type} onChange={(e) => pickType(e.target.value)}>
               <option value="">Alege…</option>{types.map((p) => <option key={p}>{p}</option>)}</select></label>
@@ -205,6 +207,15 @@ export function InspForm({ init, tpls, team, canRead, ops }: { init: FormInit; t
           )}
           {v.assignee_kind === "collab" && <p className="note">Inspecția așteaptă un coleg din Colaborări. Publică un anunț cu bunul; colegul ales o primește pe telefon, iar fișa, pozele și actele vin înapoi la tine. <a className="rowLink" href="/colaborari?compose=1">Pregătește anunțul →</a></p>}
           {!team.length && <p className="hint">„Din birou” apare când biroul are evaluatori: membri sau evaluatori asociați (Firma mea → Utilizatori).</p>}
+          <div className="field inRadarPick">
+            <span>Vizibil în radar</span>
+            <div className="inWhoPick" role="radiogroup" aria-label="Vizibil în radarul colegilor">
+              {([["no", "Nu"], ["yes", "Da"], ["collab", "Doar colaboratori"]] as const).map(([k, l]) => (
+                <button key={k} type="button" role="radio" aria-checked={v.radar === k} onClick={() => set("radar", k)}>{l}</button>
+              ))}
+            </div>
+            <p className="hint" style={{ margin: 0 }}>{v.radar === "no" ? "Colegii nu văd inspecția pe radarul din aplicația de telefon." : v.radar === "collab" ? "Doar colaboratorii văd pe radar ora și zona inspecției, nu adresa." : "Colegii din jur văd pe radarul din aplicație ora și zona inspecției, nu adresa."}</p>
+          </div>
         </section>
       </div>
 

@@ -43,6 +43,8 @@ export async function GET(req: Request) {
       COALESCE(NULLIF(a.name, ''), a.email) AS name, a.email, a.phone, a.anevar_no, a.avatar IS NOT NULL AS has_avatar, og.name AS org_name
     FROM inspections i JOIN users a ON a.id = i.assignee_id LEFT JOIN orgs og ON og.id = i.org_id
     WHERE i.deleted_at IS NULL AND i.status IN ('plan', 'lucru') AND i.scheduled_at LIKE ? AND i.assignee_id <> ? AND a.status = 'active'
+      -- visible on the radar: „Da”; „Doar colaboratori” stays hidden until collaborators are defined, „Nu” never shows
+      AND COALESCE(i.radar, 'yes') = 'yes'
       AND i.lat BETWEEN ? AND ? AND i.lng BETWEEN ? AND ? ORDER BY i.scheduled_at LIMIT 300`)
     .bind(`${day}%`, c.user.id, lat - dLat, lat + dLat, lng - dLng, lng + dLng).all<Row>();
   const here: [number, number] = [lat, lng];

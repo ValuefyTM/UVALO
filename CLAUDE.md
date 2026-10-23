@@ -662,7 +662,14 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   contact, „Acum, sunt acolo” (programată la ora curentă, deschide fișa), „O programez acum” (zi și oră) sau **„Programez ulterior”** (fără dată →
   starea „De programat”). Tipul bunului e obligatoriu și vine primul (doar tipurile cu fișă, `typesOf`); fișele apar abia după alegerea tipului,
   ca listă de carduri (`.mbTplPick`): ale tipului + cele pentru orice imobil, prima preselectată. `POST /api/m/new` → `saveInspection` cu `assignee_kind = me`,
-  istoricul „Creată pe telefon”, eveniment `phone_new`. Cere rețea.
+  istoricul „Creată pe telefon”, eveniment `phone_new`. Cere rețea. „Nr. cadastral (util pentru localizatorul cadastral)” (și pe web). **Jos: „Vizibil în
+  radar” Nu / Da / Doar colaboratori** (migrația 0043 `inspections.radar` = `no|yes|collab`, implicit `yes`; și în formularul web, secțiunea 4;
+  `readInput` / `saveInspection` îl scriu doar când e trimis). Radarul arată doar `yes`; `collab` rămâne ascuns până definim colaboratorii.
+- **Editează / Șterge pe telefon** (detaliul, sub cardul fișei, `.mbOwnActs`): doar la inspecțiile **adăugate de mine** (`created_by = eu`, nu în
+  doar citire); cele primite de la o firmă / colaborare nu au butoanele. „Editează” (doar nefinalizate) = același formular `NewInsp` cu `edit`
+  (view `{v: edit, id}`) → `POST /api/m/edit` → `phoneEdit` în `insp.ts` (adresa, tipul și fișa — doar cât nu e începută, nr. cad., CF, contactul,
+  programarea, notele, radarul; cine o face rămâne; jurnal „Modificată pe telefon”, eveniment `phone_edit`). „Șterge” = acțiunea `delete` din
+  `/api/inspectii` (confirmare, mai apăsată la cele finalizate).
 - **Localizatorul în aplicație** (tab-ul din mijloc, `LocTab` în `MobileApp.tsx`; `/api/m/state` dă `locOn` = modulul `localizare`, altfel
   „Nu este în planul contului tău”): un iframe pe **aceeași pagină ca pe web**, `/localizare?app=1&t=<safe-area sus>&b=<spațiul meniului>`
   (`worker.ts` lasă `/localizare` pe `INSP_HOSTS`; sesiunea e a telefonului), montat la prima deschidere și doar ascuns la schimbarea tab-ului

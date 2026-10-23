@@ -282,6 +282,8 @@ export type Insp = InspRow & {
   findings: { diff?: string; defects?: string; notes?: string }; started_at: string | null; signed_name: string | null; signed_at: string | null; notes: string | null;
   created_at: string; org_id: string | null; files: { id: string; kind: string; name: string | null; room: string | null; taken_at: string | null }[];
   log: { at: string; text: string; name: string | null }[]; cover_file_id: string | null; share_token: string | null; share_at: string | null;
+  /** on the colleagues' radar: yes / no / collab (only collaborators) — migration 0043 */
+  radar?: Radar;
 };
 
 export async function getInspection(db: D1Database, c: Ctx, id: string): Promise<Insp | null> {
@@ -446,6 +448,9 @@ export async function team(db: D1Database, c: Ctx, orgId?: string | null): Promi
     busy: busy.filter((b) => b.assignee_id === p.id).map((b) => ({ id: b.id, at: b.scheduled_at, min: b.duration_min ?? 60 })) }));
 }
 
+export type Radar = "yes" | "no" | "collab";
+const radarOf = (v: unknown): Radar | null => (v === "yes" || v === "no" || v === "collab" ? v : null);
+
 function readInput(b: Record<string, unknown>) {
   const rooms = (Array.isArray(b.rooms) ? b.rooms : []).slice(0, 60).map((x: { n?: unknown; a?: unknown }) => ({ n: s(x?.n, 60), a: num(x?.a) })).filter((x) => x.n);
   const when = s(b.scheduled_at, 16);
@@ -455,7 +460,7 @@ function readInput(b: Record<string, unknown>) {
     contact_name: s(b.contact_name, 120) || null, contact_phone: s(b.contact_phone, 40) || null, contact_role: s(b.contact_role, 60) || null,
     scheduled_at: /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(when) ? when : null, duration_min: Math.max(15, Math.min(480, Math.round(num(b.duration_min) ?? 60))),
     assignee_kind: (["me", "office", "collab"].includes(String(b.assignee_kind)) ? b.assignee_kind : "me") as AssignKind, assignee_id: s(b.assignee_id, 64) || null,
-    template_id: s(b.template_id, 80), notes: t(b.notes, 2000) || null,
+    template_id: s(b.template_id, 80), notes: t(b.notes, 2000) || null, radar: radarOf(b.radar),
   };
 }
 
@@ -497,6 +502,7 @@ export async function saveInspection(db: D1Database, c: Ctx, b: Record<string, u
     const st = same ? old.assign_state : ask ? "pending" : null;
     await db.prepare("UPDATE inspections SET assign_state = ? WHERE id = ?").bind(st, id).run();
     if (!same && ask) await logIt(db, id, c.user.id, `Solicitare de inspecție trimisă lui ${ask.name} (colaborator)`);
+    if (v.radar) await db.prepare("UPDATE inspections SET radar = ? WHERE id = ?").bind(v.radar, id).run();
     return { ok: true, id };
   }
   const nid = uuid();
@@ -504,10 +510,44 @@ export async function saveInspection(db: D1Database, c: Ctx, b: Record<string, u
     template, contact_name, contact_phone, contact_role, scheduled_at, duration_min, assignee_id, assignee_kind, notes, status, id, code, created_by, org_id, test)
     VALUES (${Array(29).fill("?").join(", ")})`).bind(...cols, nid, await nextCode(db), c.user.id, opts.orgId ?? c.org?.id ?? null, 1).run();
   if (ask) await db.prepare("UPDATE inspections SET assign_state = 'pending' WHERE id = ?").bind(nid).run();
+  if (v.radar) await db.prepare("UPDATE inspections SET radar = ? WHERE id = ?").bind(v.radar, nid).run();
   await logIt(db, nid, c.user.id, `Creată ${b.from_phone ? "pe telefon" : "pe web"}${b.from_doc ? " din documentele încărcate" : ""}`);
   if (ask) await logIt(db, nid, c.user.id, `Solicitare de inspecție trimisă lui ${ask.name} (colaborator)`);
   if (v.scheduled_at) await logIt(db, nid, c.user.id, `Programată pentru ${v.scheduled_at.replace("T", " ")}`);
   return { ok: true, id: nid };
+}
+
+/**
+ * Phone app → „Editează” on an inspection the person added herself (created_by = me; not one received from a firm), not finished, not
+ * read-only: the property, the sheet (only while it is not started), the contact, the schedule, the notes, the radar. Who does it stays.
+ */
+export async function phoneEdit(db: D1Database, c: Ctx, b: Record<string, unknown>): Promise<{ ok: true; id: string } | { error: string }> {
+  const id = s(b.id, 64);
+  const r = await db.prepare("SELECT id, created_by, org_id, status, assignee_id, template_id, sheet_no, started_at, lat, lng, address FROM inspections WHERE id = ? AND deleted_at IS NULL").bind(id)
+    .first<{ id: string; created_by: string; org_id: string | null; status: Status; assignee_id: string | null; template_id: string | null; sheet_no: string | null; started_at: string | null; lat: number | null; lng: number | null; address: string }>();
+  if (!r || r.created_by !== c.user.id) return { error: "Poți modifica doar inspecțiile adăugate de tine." };
+  if (!c.super && lockedFor(await relations(db, c.user.id), c.user.id, r)) return { error: "Asocierea cu firma s-a încheiat: inspecția se poate doar citi." };
+  if (r.status === "gata" || r.status === "pred") return { error: "Inspecția e finalizată și nu se mai modifică." };
+  const v = readInput(b);
+  if (v.address.length < 5) return { error: "Scrie adresa bunului." };
+  // the sheet changes only while nobody started filling it in
+  let tpl: { id: string; name: string; version: number; snap: string; prop: string | null } | null = null;
+  if (v.template_id && v.template_id !== r.template_id) {
+    if (r.sheet_no || r.started_at || r.status === "lucru") return { error: "Fișa a început să fie completată: nu se mai poate schimba." };
+    const x = (await usableTemplates(db, c)).find((t) => t.id === v.template_id);
+    if (!x) return { error: "Alege fișa de inspecție." };
+    tpl = { id: x.id, name: x.name, version: x.version, snap: JSON.stringify(x.published ?? x.draft), prop: x.prop_type };
+  }
+  // a new address without a position from the phone: geocoded again
+  if (v.lat == null && v.address !== r.address) { const g = await geocode(v.address).catch(() => null); if (g?.[0]) { v.lat = g[0].lat; v.lng = g[0].lng; } }
+  const lat = v.lat ?? (v.address === r.address ? r.lat : null), lng = v.lng ?? (v.address === r.address ? r.lng : null);
+  const status: Status = r.status === "lucru" ? "lucru" : v.scheduled_at ? "plan" : "prog";
+  await db.prepare(`UPDATE inspections SET address = ?, cad_nr = ?, cf_nr = ?, lat = ?, lng = ?, prop_type = COALESCE(?, prop_type), contact_name = ?, contact_phone = ?,
+    contact_role = ?, scheduled_at = ?, notes = ?, status = ?, radar = COALESCE(?, radar), updated_at = ? WHERE id = ?`)
+    .bind(v.address, v.cad_nr, v.cf_nr, lat, lng, v.prop_type || tpl?.prop || null, v.contact_name, v.contact_phone, v.contact_role, v.scheduled_at, v.notes, status, v.radar, now(), id).run();
+  if (tpl) await db.prepare("UPDATE inspections SET template_id = ?, template_name = ?, template_version = ?, template = ? WHERE id = ?").bind(tpl.id, tpl.name, tpl.version, tpl.snap, id).run();
+  await logIt(db, id, c.user.id, "Modificată pe telefon");
+  return { ok: true, id };
 }
 
 export async function inspAction(db: D1Database, c: Ctx, b: Record<string, unknown>): Promise<{ ok: true; id?: string; token?: string } | { error: string }> {
