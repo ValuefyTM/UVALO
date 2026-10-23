@@ -1,5 +1,5 @@
 import { api, err } from "@/lib/api";
-import { getInspection } from "@/lib/insp";
+import { firmOrgs, getInspection } from "@/lib/insp";
 import { photoCategories } from "@/lib/insp-shared";
 import { track } from "@/lib/track";
 import { sheetHtml, sheetReady } from "@/lib/word-insp";
@@ -14,7 +14,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const { db, c } = a;
   if (!c.modules.includes("word") || !c.modules.includes("inspectii")) return err("Nu ai acces la inspecții din Word.", 403);
   const x = await getInspection(db, c, (await params).id);
-  if (!x) return err("Inspecția nu există sau nu ai acces la ea.", 404);
+  // as in the list: the firm's administrators see all its inspections, a valuer only the ones they did
+  if (!x || !(c.super || x.assignee_id === c.user.id || (!!x.org_id && firmOrgs(c).includes(String(x.org_id))))) return err("Inspecția nu există sau nu ai acces la ea.", 404);
   const photos = x.files.filter((f) => f.kind === "photo").map((f) => ({ id: f.id, room: f.room, name: f.name, taken_at: f.taken_at }));
   const title = `${x.prop_type ?? "Imobil"} · ${x.address}`;
   // the photo categories in the sheet's order (Exterior first…), so the annex starts in the usual order

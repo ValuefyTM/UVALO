@@ -177,7 +177,8 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
 - Anexele păstrează lucrul la închiderea panoului: fișierele și lista (ordine, bife, descrieri, titluri) în IndexedDB
   `uvalo-anexe` (per mod, 12 ore); „Golește” șterge tot.
 - **Anexă foto → „Din inspecții”** (`public/word/src/insp-pick.js`, butonul `#btnInsp`, fereastra `#inspDlg`; doar cu modulele `word` + `inspectii`):
-  `GET /api/word/inspectii` = inspecțiile mele / ale firmei (`listInspections`) cu fotografii sau cu fișa începută (lucru / gata / pred), căutare locală.
+  `GET /api/word/inspectii` = **administratorii biroului** (și operaționalii, asociații făcuți administratori — `firmOrgs`) văd toate inspecțiile firmei,
+  **un evaluator doar pe cele făcute de el** (`assignee_id` = el; nu și cele pregătite pentru alții; aceeași regulă în `/api/word/inspectii/<id>`), cu fotografii sau cu fișa începută (lucru / gata / pred), căutare locală.
   „Adaugă pozele (N)” → `GET /api/word/inspectii/<id>` (`photos` + `cats` = ordinea categoriilor din `photoCategories`) → fiecare poză descărcată din
   `/api/inspectii/file/<id>` (4 deodată) ca `File` numit „001 Categorie (cod).jpg” (ordinea: categoriile fișei, apoi celelalte, „Altele” la urmă; în fiecare,
   după oră), cu `_desc` = categoria (legenda) și `_taken` = ora de pe telefon → `AnexaApp.addFiles` (apoi aranjare / inserare ca de obicei).
