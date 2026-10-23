@@ -2142,7 +2142,7 @@ textarea.mbIn { min-height: 0; resize: vertical; }
 .mbRdActs .mbBtn[aria-disabled="true"] { opacity: .45; }
 .mbRdWa { text-align: center; color: var(--acc); text-decoration: none; }
 /* the banner on the home screen */
-.mbRdBanner { margin: 12px var(--mb-pad) 0; background: #141414; color: #fff; border: 0; border-radius: 14px; padding: 8px 12px 8px 8px; display: flex; align-items: center; gap: 10px; width: calc(100% - 2 * var(--mb-pad)); text-align: left; font: inherit; cursor: pointer; }
+.mbRdBanner { margin: 0; background: #141414; color: #fff; border: 0; border-radius: 14px; padding: 10px 12px; display: flex; align-items: center; gap: 10px; width: 100%; box-sizing: border-box; text-align: left; font: inherit; cursor: pointer; }
 .mbRdBanner:active { transform: scale(.99); }
 .mbRdMini { position: relative; width: 40px; height: 40px; flex: none; border-radius: 50%; border: 1px solid rgba(224,173,79,.35); overflow: hidden; }
 .mbRdMini > i { position: absolute; display: block; }
