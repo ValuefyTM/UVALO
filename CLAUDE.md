@@ -255,6 +255,17 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   (migrația 0018) și `users.last_seen_at`. Panoul: „Online acum” = sesiuni cu semnal în ultimele 3 minute, grupate pe
   persoană, cu pagina (UAT și nr. cadastral în localizator), dispozitivul și orașul; plus ultimele 15 minute și azi.
 
+## UVALO Admin pe telefon (PWA, `/admin`)
+
+- Zona de admin se instalează ca aplicație separată, **„UVALO Admin”**: `src/app/admin/layout.tsx` (manifest `/api/admin/manifest`, public; `id` `/admin`,
+  `start_url` `/admin?app=1`, `scope` `/` ca autentificarea să rămână în aplicație; `appleWebApp`, `viewportFit: cover`). Fără service worker.
+- Pe Panou cardul `AdminInstall` (`src/components/AdminInstall.tsx`, `detect()` din `InstallHint`): calculator → QR spre `/admin`; iPhone → Partajează →
+  „Adaugă pe ecranul principal” (doar Safari); Android → butonul „Instalează” sau meniul ⋮. Ascuns în aplicația instalată și 30 de zile la „×”
+  (`localStorage` `adm-install-off`).
+- Pe telefon (≤ 979 px): meniul de jos `.admNav` cu iconițe — Panou / Conturi / Activitate / Solicitări (contor auriu) + Meniu (restul paginilor);
+  pe Panou întâi cifrele (2 pe rând, `.admKpis`), mentenanța fără explicație; formularele de filtre (`.tabFilters`: Utilizatori, Tablou) arată doar
+  căutarea + „Mai multe filtre” / „Filtre (N)” (`FilterFold` în `ClientBits`, după hidratare); antetul ține cont de bara de stare (`safe-area-inset-top`).
+
 ## Admin → Activitate (`/admin/activitate`)
 
 - Fără filtru: „Cei mai activi utilizatori” (top 5 pe 30 de zile, `topUsers`, fără modulul `admin`, cu instrumentul preferat) și

@@ -7,7 +7,7 @@ type BIPEvent = Event & { prompt: () => Promise<void>; userChoice: Promise<{ out
 type Kind = "standalone" | "ios-safari" | "ios-other" | "android-prompt" | "android" | "android-inapp" | "desktop";
 
 /** Which browser / device: decides the install help (or none when the app is already installed). */
-function detect(): Kind {
+export function detect(): Kind {
   const ua = navigator.userAgent;
   const standalone = matchMedia("(display-mode: standalone)").matches || (navigator as unknown as { standalone?: boolean }).standalone === true;
   if (standalone) return "standalone";

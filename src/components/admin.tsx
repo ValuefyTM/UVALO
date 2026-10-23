@@ -77,7 +77,7 @@ export function MaintenanceCard({ on: on0, message: m0, placeholder }: { on: boo
     setMsg(next ? "Mentenanța e pornită." : "Mentenanța e oprită: platforma e din nou deschisă tuturor.");
   };
   return (
-    <section className="card" style={{ borderColor: on ? "#e8b25c" : undefined, background: on ? "#fdf6ea" : undefined }}>
+    <section className="card mntCard" style={{ borderColor: on ? "#e8b25c" : undefined, background: on ? "#fdf6ea" : undefined }}>
       <div className="cardHead">
         <h2>Mod mentenanță</h2>
         <span className={`pill ${on ? "pillWarn" : "pillOk"}`}><i />{on ? "Pornit · utilizatorii văd pagina de mentenanță" : "Oprit · platforma e deschisă"}</span>

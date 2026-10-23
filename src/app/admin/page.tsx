@@ -3,6 +3,7 @@ import { countyOfUats } from "@/lib/plans";
 import { fmtDate, superPage } from "@/lib/guard";
 import { activityByDay, topTargets } from "@/lib/orgs";
 import { AdminShell } from "@/components/AdminShell";
+import { AdminInstall } from "@/components/AdminInstall";
 import { DayBars, UatCountTable } from "@/components/Charts";
 import { MaintenanceCard } from "@/components/admin";
 import { DEFAULT_MESSAGE, maintenance } from "@/lib/maintenance";
@@ -68,7 +69,16 @@ export default async function AdminHome() {
   const mnt = await maintenance(db);
   return (
     <AdminShell c={c} active="panou" pending={pending} title="Panou" subtitle={k?.tablou ? `Tablou ANEVAR la ${fmtDate(k.tablou)}` : undefined}>
+      <AdminInstall />
       <MaintenanceCard on={mnt.on} message={mnt.message} placeholder={DEFAULT_MESSAGE} />
+      <div className="kpis admKpis">
+        <div className="kpi"><small>Online acum</small><b>{online.length}</b></div>
+        <div className="kpi"><small>Membri în tablou</small><b>{(k?.members ?? 0).toLocaleString("ro-RO")}</b></div>
+        <div className="kpi"><small>Cu cont activ</small><b>{k?.with_account ?? 0} <span className="muted" style={{ fontSize: 13 }}>· {pct}%</span></b></div>
+        <div className="kpi"><small>Solicitări în așteptare</small><b>{pending}</b></div>
+        <div className="kpi"><small>Autentificați · 7 zile</small><b>{k?.login7 ?? 0}</b></div>
+        <div className="kpi"><small>Activi · 30 zile</small><b>{k?.active30 ?? 0}</b></div>
+      </div>
       <section className="card">
         <div className="cardHead">
           <h2>Online acum</h2>
@@ -86,14 +96,6 @@ export default async function AdminHome() {
           </ul>
         )}
       </section>
-      <div className="kpis">
-        <div className="kpi"><small>Online acum</small><b>{online.length}</b></div>
-        <div className="kpi"><small>Membri în tablou</small><b>{(k?.members ?? 0).toLocaleString("ro-RO")}</b></div>
-        <div className="kpi"><small>Cu cont activ</small><b>{k?.with_account ?? 0} <span className="muted" style={{ fontSize: 13 }}>· {pct}%</span></b></div>
-        <div className="kpi"><small>Solicitări în așteptare</small><b>{pending}</b></div>
-        <div className="kpi"><small>Autentificați · 7 zile</small><b>{k?.login7 ?? 0}</b></div>
-        <div className="kpi"><small>Activi · 30 zile</small><b>{k?.active30 ?? 0}</b></div>
-      </div>
       {reqs.length > 0 && (
         <section className="card">
           <div className="cardHead"><h2>Solicitări în așteptare</h2><a className="btn btnNavy btnSm" href="/admin/solicitari">Aprobă / respinge →</a></div>
