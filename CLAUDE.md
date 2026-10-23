@@ -660,7 +660,7 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   etichetate (km/3, 2km/3, km), fasciculul auriu la 3 s (`rdSweep`), punctele colegilor (`.blip`, azimut + distanță față de inspecția mea, scalate
   la rază; se aprind cu `rdBlip` când trece fasciculul — întârzierea = azimut/360 × 3 s), rezumatul și foaia de jos cu cardurile (nume, tip ·
   zonă · oră, „N km de inspecția ta de la HH:MM”). Atingerea unui punct / card → ecranul colegului: „Inspecția lui” / „Inspecția ta” (adresa mea,
-  distanța), mesaj propus (numele cu `given()`: fără primul cuvânt, numele de familie din Tablou — „Stan Claudiu Bogdan” → „Claudiu Bogdan”; programată: „am și eu o inspecție azi la …, la N km de a ta”; neprogramată: „o pot face pe a mea tot atunci”), Sună
+  distanța), mesaj propus (numele cu `given()`: primul prenume + numele de familie, din numele scris ca în Tablou — „Stan Claudiu Bogdan” → „Claudiu Stan”, majusculele → „Claudiu”; programată: „am și eu o inspecție azi la …, la N km de a ta”; neprogramată: „o pot face pe a mea tot atunci”), Sună
   (`tel:`), Trimite SMS (`sms:?body=`) sau email, WhatsApp (`wa.me`). Fără colegi: „Caută în 10 / 25 km”. Rescanează la fiecare schimbare și la
   60 s. `GET /api/m/radar?insp=<id>&km=&day=` (403 pentru non-super-admini; 404 dacă inspecția nu e a mea de făcut sau e finalizată; fără
   coordonate → eroare): centrul și ziua din inspecție (`day` doar pentru cea neprogramată), inspecțiile `plan` / `lucru` ale **altor** utilizatori

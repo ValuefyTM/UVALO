@@ -19,8 +19,14 @@ const ymdLocal = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).pad
 /** "azi" / "mâine" / "joi, 24 oct." for a YYYY-MM-DD day */
 const dayWord = (day: string) => day === ymdLocal(new Date()) ? "azi" : day === ymdLocal(new Date(Date.now() + 864e5)) ? "mâine"
   : new Date(`${day}T12:00`).toLocaleDateString("ro-RO", { weekday: "long", day: "numeric", month: "short" });
-/** the given names out of a name written surname first, as in the ANEVAR register: "Stan Claudiu Bogdan" → "Claudiu Bogdan" */
-const given = (n: string) => { const w = n.trim().split(/\s+/).filter(Boolean); return w.length > 1 ? w.slice(1).join(" ") : w[0] ?? ""; };
+/** first given name + surname out of a name written surname first, as in the ANEVAR register: "Stan Claudiu Bogdan" → "Claudiu Stan",
+ *  "Lung Anca Iuliana" → "Anca Lung"; names in capitals (Tablou) become "Claudiu Stan" */
+const given = (n: string) => {
+  let t = n.trim().replace(/\s+/g, " ");
+  if (t && t === t.toLocaleUpperCase("ro")) t = t.toLocaleLowerCase("ro").replace(/(^|[\s-])(\p{L})/gu, (_, a: string, b: string) => a + b.toLocaleUpperCase("ro"));
+  const w = t.split(" ").filter(Boolean);
+  return w.length > 1 ? `${w[1]} ${w[0]}` : w[0] ?? "";
+};
 const cap = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
 /** the street part of an address, short enough for a card */
 const shortAddr = (a: string) => a.split(",").slice(0, 2).join(",").trim();
