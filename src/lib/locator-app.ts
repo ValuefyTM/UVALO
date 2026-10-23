@@ -120,6 +120,10 @@ document.addEventListener("click",function(e){var a=e.target.closest&&e.target.c
 /* the GPS bar at the bottom: its height lifts the „Vezi fișa” pill above it */
 var gb=$("gpsBar");function gh(){document.documentElement.style.setProperty("--gpsh",(gb&&!gb.hidden&&gb.offsetHeight?gb.offsetHeight+8:0)+"px")}
 if(gb){try{new ResizeObserver(gh).observe(gb)}catch(e){}new MutationObserver(gh).observe(gb,{attributes:true,attributeFilter:["hidden"]});gh()}
+/* a parcel sent by the app (an inspection's „Vezi în localizator”): its plan, the parcel and its sheet; the GPS no longer moves the map */
+addEventListener("message",function(e){if(e.origin!==location.origin||!e.data||e.data.uvLoc!=="show")return;var k=String(e.data.key),n=String(e.data.nr);
+  try{gpsFollow=false;gpsFirst=false}catch(_){}search(false);
+  (async function(){try{if(!U||U.key!==k)await loadUat(k);$("q").value=n;show(n)}catch(_){}})()});
 relayout();
 /* at opening: my location — the dot and the accuracy circle, the plan of the locality loaded, the map on the spot, the parcels around
    highlighted and listed in the sheet (the locator's own „Locația mea”), without the compass (it needs a tap on iPhone; the button on

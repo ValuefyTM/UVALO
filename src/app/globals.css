@@ -2263,6 +2263,13 @@ textarea.mbIn { min-height: 0; resize: vertical; }
 .mbMiniBtn { position: absolute; left: 10px; bottom: 10px; z-index: 500; border: 0; background: rgba(20,20,20,.86); color: #fff; font: 700 12px var(--font); padding: 7px 12px; border-radius: 999px; pointer-events: none; }
 button.mbMiniBtn { pointer-events: auto; }
 .mbMiniBtn.re { left: auto; right: 10px; bottom: 40px; }
+/* „Vezi în localizator” on the map of the detail (only with a cadastral number found in a plan) */
+button.mbMiniBtn.loc { left: auto; right: 10px; display: inline-flex; align-items: center; gap: 5px; background: linear-gradient(150deg, #F7B547, #EE8A1F); color: #fff; }
+button.mbMiniBtn.loc.up { right: auto; left: 10px; bottom: 40px; }
+/* over the locator opened from an inspection: back to its sheet */
+.mbLocBack { position: fixed; z-index: 16; left: 50%; transform: translateX(-50%); top: calc(12px + env(safe-area-inset-top)); display: inline-flex; align-items: center; gap: 6px;
+  border: 0; border-radius: 999px; background: #141414; color: #fff; font: 700 13px var(--font); padding: 11px 16px 11px 12px; box-shadow: 0 10px 26px -8px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.08); }
+.mbLocBack:active { transform: translateX(-50%) scale(.96); }
 /* the grip at the bottom of the opened map: swipe up (or tap) to close it */
 .mbMiniGrip { position: absolute; left: 0; right: 0; bottom: 0; z-index: 501; height: 30px; border: 0; padding: 0; background: linear-gradient(to top, rgba(255,255,255,.95), rgba(255,255,255,.75));
   display: flex; align-items: center; justify-content: center; touch-action: none; cursor: grab; }

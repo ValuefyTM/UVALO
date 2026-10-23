@@ -600,7 +600,11 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
 - **Detaliul inspecției** pe telefon (`Detail`): hartă mică (`MiniMap`, Leaflet fără interacțiune; **atingerea o mărește** la 70svh (`.mbMini.big`),
   mobilă și cu zoom, cu „Centrează”, bara de prindere `.mbMiniGrip` jos (liniuța; harta urmează degetul, tragere în sus > 60 px sau atingere
   = restrânge) și comutatorul **Hartă / Satelit** (`.mbMiniBase`, Esri World Imagery + străzi și localități,
-  alegerea în `localStorage` `insp-base`); harta mărită nu declanșează tragerea-în-jos; navigația = butoanele Google Maps / Waze), statut + tip,
+  alegerea în `localStorage` `insp-base`); harta mărită nu declanșează tragerea-în-jos; **„Vezi în localizator”** (pastila portocalie pe hartă,
+  `.mbMiniBtn.loc`) doar când numărul cadastral e găsit în planul localizatorului (`GET /api/m/inplan?nr=&uat=&lat=&lng=` → `{found: {key, nr}}`:
+  UAT-ul după nume, apoi planurile care cuprind poziția; ținut în memorie per inspecție) → tab-ul Localizator pe parcelă (prima deschidere
+  `#key-nr` în adresa cadrului, altfel `postMessage({uvLoc: "show"})` → `loadUat` + `show`, fără ca GPS-ul să mai mute harta) și pastila
+  **„‹ Înapoi la fișă”** sus (`.mbLocBack`, `locFrom`; dispare la ieșirea din tab); navigația = butoanele Google Maps / Waze), statut + tip,
   Google Maps / Waze, programarea, contactul (Sună / SMS), „Proprietatea” (doar câmpurile completate: tip, cad., CF, UAT, județ, suprafețe din
   acte, încăperi, cine a pregătit / cine face), încăperile din releveu, actele încărcate (doar dacă există), fotografiile trimise, notele, fișa.
 - **Notificări** (clopoțelul de lângă avatar, pe Acasă; avatarul → Contul meu): „De făcut” = inspecțiile mele de azi și mâine neîncepute

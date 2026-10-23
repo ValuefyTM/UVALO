@@ -85,6 +85,9 @@ export function MobileApp() {
   const [locOn, setLocOn] = useState(true); // the cadastral locator is in the account's modules
   const locSeen = useRef(false); // the locator tab, once opened, stays loaded (the map keeps its place between tabs)
   const [locSheet, setLocSheet] = useState(false); // the parcel sheet is open in the locator: the menu steps aside
+  // a parcel to show in the locator (from an inspection's detail) and the inspection to go back to („Înapoi la fișă”)
+  const [locTarget, setLocTarget] = useState<{ key: string; nr: string; seq: number } | null>(null);
+  const [locFrom, setLocFrom] = useState<string | null>(null);
   useEffect(() => {
     const on = (e: MessageEvent) => { if (e.origin === location.origin && (e.data as { uvLoc?: string })?.uvLoc === "sheet") setLocSheet((e.data as { state: string }).state !== "off"); };
     window.addEventListener("message", on);
@@ -95,6 +98,8 @@ export function MobileApp() {
   const [cur, setCur] = useState<Insp | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [view, setViewState] = useState<View>({ v: "home" });
+  // „Înapoi la fișă” only while the locator was opened from an inspection; leaving it forgets that
+  useEffect(() => { if (view.v !== "loc") setLocFrom(null); }, [view.v]);
   const [pending, setPending] = useState<QPhoto[]>([]);
   const [finishQ, setFinishQ] = useState(0);
   const [online, setOnline] = useState(true);
@@ -451,6 +456,7 @@ export function MobileApp() {
       {view.v === "radar" && <Radar inspId={view.id} myName={me?.name ?? ""} onBack={() => history.back()} />}
       {view.v === "detail" && cur && <Detail x={cur} draft={draft} mine={!cur.ro && (!me || cur.assignee_id === me.id)} onSchedule={setSched}
         onRadar={me?.super && me.id === cur.assignee_id ? () => go({ v: "radar", id: cur.id }) : undefined}
+        onLocator={locOn ? (t) => { setLocTarget({ ...t, seq: Date.now() }); setLocFrom(cur.id); go({ v: "loc" }); } : undefined}
         onAnswer={async (ok) => {
           const r = await fetch("/api/inspectii", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: ok ? "accept" : "decline", id: cur.id }) }).catch(() => null);
           if (!r?.ok) { say(r ? String((await J(r)).error || "Nu a mers.") : "Fără semnal: încearcă din nou când ai rețea."); return; }
@@ -506,7 +512,12 @@ export function MobileApp() {
           <i><s style={{ width: `${Math.round((up.done / up.total) * 100)}%` }} /></i>
         </div>
       )}
-      {locSeen.current && <LocTab on={locOn} shown={view.v === "loc"} />}
+      {locSeen.current && <LocTab on={locOn} shown={view.v === "loc"} target={locTarget} />}
+      {view.v === "loc" && locFrom && (
+        <button type="button" className="mbLocBack" onClick={() => { setLocFrom(null); history.back(); }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6" /></svg>Înapoi la fișă
+        </button>
+      )}
       {toast && <div className="mbToast" role="status">{toast}</div>}
     </div>
   );
@@ -905,7 +916,13 @@ function ScheduleSheet({ x, online, onClose, onSave }: { x: Sched; online: boole
 /** A small map of the property (Leaflet + OSM), not interactive: a tap opens the navigation. */
 /** The cadastral locator in the app: the locator page itself (/localizare?app=1: the map on the whole screen, the search on top,
  *  the parcel sheet sliding up from the bottom), kept loaded once opened and only hidden when another tab is shown. */
-function LocTab({ on, shown }: { on: boolean; shown: boolean }) {
+function LocTab({ on, shown, target }: { on: boolean; shown: boolean; target: { key: string; nr: string; seq: number } | null }) {
+  const frame = useRef<HTMLIFrameElement>(null), ready = useRef(false), first = useRef(target?.seq ?? 0);
+  // a parcel asked for later (from an inspection): the loaded locator shows it; at the first opening it goes in the address (#uat-nr)
+  useEffect(() => {
+    if (!target || target.seq === first.current || !ready.current) return;
+    frame.current?.contentWindow?.postMessage({ uvLoc: "show", key: target.key, nr: target.nr }, location.origin);
+  }, [target]);
   // the phone's top safe area and the space of the floating menu, measured here (an iframe does not know them): the map goes under both
   const [src] = useState(() => {
     const d = document.createElement("div");
@@ -913,14 +930,14 @@ function LocTab({ on, shown }: { on: boolean; shown: boolean }) {
     document.body.appendChild(d);
     const cs = getComputedStyle(d), t = Math.round(parseFloat(cs.paddingTop) || 0), b = Math.round(parseFloat(cs.paddingBottom) || 0);
     d.remove();
-    return `/localizare?app=1&t=${t}&b=${b + 82}&s=${b}`;
+    return `/localizare?app=1&t=${t}&b=${b + 82}&s=${b}${target ? `#${target.key}-${target.nr}` : ""}`;
   });
   if (!on) return shown ? (
     <div className="mbLoc off"><div className="mbSoon"><b>Localizatorul cadastral</b><small>Nu este în planul contului tău. Scrie-ne la office@uvalo.ro ca să-l activăm.</small></div></div>
   ) : null;
   return (
     <div className="mbLoc" hidden={!shown} aria-hidden={!shown}>
-      <iframe src={src} title="Localizator cadastral" allow="geolocation; clipboard-write" />
+      <iframe ref={frame} src={src} title="Localizator cadastral" allow="geolocation; clipboard-write" onLoad={() => { ready.current = true; }} />
     </div>
   );
 }
@@ -930,7 +947,7 @@ const ESRI_LABELS = "https://server.arcgisonline.com/ArcGIS/rest/services/Refere
 const ESRI_ROADS = "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}";
 /** The map at the top of the detail: small and still; a tap opens it to ~70% of the screen, movable and zoomable, with Hartă / Satelit
  *  (remembered in localStorage `insp-base`); „Restrânge” closes it. */
-function MiniMap({ lat, lng }: { lat: number; lng: number }) {
+function MiniMap({ lat, lng, onLocator }: { lat: number; lng: number; onLocator?: () => void }) {
   const el = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const map = useRef<any>(null), layers = useRef<{ osm: any; sat: any } | null>(null);
@@ -992,6 +1009,8 @@ function MiniMap({ lat, lng }: { lat: number; lng: number }) {
         <button type="button" aria-pressed={base === "sat"} onClick={() => setBase("sat")}>Satelit</button>
       </span>
       {!big && <span className="mbMiniBtn" aria-hidden="true">⤢ Mărește</span>}
+      {onLocator && <button type="button" className={`mbMiniBtn loc${big ? " up" : ""}`} onClick={(e) => { e.stopPropagation(); onLocator(); }}>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 21.5s-6.5-6.1-6.5-11.2a6.5 6.5 0 0 1 13 0c0 5.1-6.5 11.2-6.5 11.2z" /><circle cx="12" cy="10.2" r="2.4" /></svg>Vezi în localizator</button>}
       {big && <button type="button" className="mbMiniGrip" aria-label="Restrânge harta (trage în sus)" onClick={(e) => { e.stopPropagation(); setBig(false); }}
         onTouchStart={gripStart} onTouchMove={gripMove} onTouchEnd={gripEnd} onTouchCancel={gripEnd}><i /></button>}
       {big && <button type="button" className="mbMiniBtn re" onClick={(e) => { e.stopPropagation(); map.current?.setView([lat, lng], 17); }}>Centrează</button>}
@@ -1002,8 +1021,19 @@ function MiniMap({ lat, lng }: { lat: number; lng: number }) {
 const DOC_KIND: Record<string, [string, string]> = { cf: ["CF", "Extras de carte funciară"], releveu: ["RLV", "Releveu"], doc: ["DOC", "Document"] };
 const nfm = (n: number | null | undefined, d = 2) => (n == null ? "" : n.toLocaleString("ro-RO", { maximumFractionDigits: d }));
 
-function Detail({ x, draft, mine, onBack, onStart, onSchedule, onAnswer, onRadar }: { x: Insp; draft: Draft | null; mine: boolean; onRadar?: () => void; onBack: () => void; onStart: () => void; onSchedule: (s: Sched) => void; onAnswer: (ok: boolean) => Promise<void> }) {
+const inPlan = new Map<string, { key: string; nr: string } | null>(); // inspection → its parcel in the locator's plans (asked once)
+function Detail({ x, draft, mine, onBack, onStart, onSchedule, onAnswer, onRadar, onLocator }: { x: Insp; draft: Draft | null; mine: boolean; onRadar?: () => void; onLocator?: (t: { key: string; nr: string }) => void; onBack: () => void; onStart: () => void; onSchedule: (s: Sched) => void; onAnswer: (ok: boolean) => Promise<void> }) {
   const [answering, setAnswering] = useState(false);
+  // „Vezi în localizator”: only with a cadastral number found in a plan of the locator
+  const [plan, setPlan] = useState(() => inPlan.get(`${x.id}:${x.cad_nr}`) ?? null);
+  useEffect(() => {
+    const k = `${x.id}:${x.cad_nr}`;
+    if (!onLocator || !x.cad_nr || inPlan.has(k)) return;
+    const q = new URLSearchParams({ nr: x.cad_nr, uat: x.uat ?? "", ...(x.lat != null && x.lng != null ? { lat: String(x.lat), lng: String(x.lng) } : {}) });
+    fetch(`/api/m/inplan?${q}`).then((r) => (r.ok ? (r.json() as Promise<{ found?: { key: string; nr: string } | null }>) : null)).then((j) => {
+      if (!j) return; inPlan.set(k, j.found ?? null); setPlan(j.found ?? null);
+    }).catch(() => {});
+  }, [x.id, x.cad_nr, x.uat, x.lat, x.lng, onLocator]);
   const ask = mine && x.assign_state === "pending";
   const done = x.status === "gata" || x.status === "pred";
   const dest = x.lat != null ? `${x.lat},${x.lng}` : encodeURIComponent(x.address);
@@ -1035,7 +1065,7 @@ function Detail({ x, draft, mine, onBack, onStart, onSchedule, onAnswer, onRadar
       <header className="mbBar"><Back onClick={onBack} /><span><b>{x.code}</b><small>{x.template_name ?? "Fișa de inspecție"}{x.template_version ? ` · v${x.template_version}` : ""}</small></span></header>
       <div className="mbBody">
         <section className="mbHero">
-          {x.lat != null && x.lng != null ? <MiniMap lat={x.lat} lng={x.lng} />
+          {x.lat != null && x.lng != null ? <MiniMap lat={x.lat} lng={x.lng} onLocator={plan && onLocator ? () => onLocator(plan) : undefined} />
             : <div className="mbMini none"><span>Poziția nu a fost găsită pe hartă</span></div>}
           <div className="mbHeroBody">
             <span className="mbHeroTags">
