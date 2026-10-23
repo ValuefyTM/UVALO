@@ -173,6 +173,14 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   + tabel Word, WordApi 1.3).
 - Anexele păstrează lucrul la închiderea panoului: fișierele și lista (ordine, bife, descrieri, titluri) în IndexedDB
   `uvalo-anexe` (per mod, 12 ore); „Golește” șterge tot.
+- **Anexă foto → „Din inspecții”** (`public/word/src/insp-pick.js`, butonul `#btnInsp`, fereastra `#inspDlg`; doar cu modulele `word` + `inspectii`):
+  `GET /api/word/inspectii` = inspecțiile mele / ale firmei (`listInspections`) cu fotografii sau cu fișa începută (lucru / gata / pred), căutare locală.
+  „Adaugă pozele (N)” → `GET /api/word/inspectii/<id>` (`photos` + `cats` = ordinea categoriilor din `photoCategories`) → fiecare poză descărcată din
+  `/api/inspectii/file/<id>` (4 deodată) ca `File` numit „001 Categorie (cod).jpg” (ordinea: categoriile fișei, apoi celelalte, „Altele” la urmă; în fiecare,
+  după oră), cu `_desc` = categoria (legenda) și `_taken` = ora de pe telefon → `AnexaApp.addFiles` (apoi aranjare / inserare ca de obicei).
+  „Inserează fișa” → `?sheet=1` → `sheetHtml()` din `src/lib/word-insp.ts` (imobilul, grupele cu răspunsuri fără cele `pdf: false`, încăperile cu
+  finisaje, constatările, locația GPS; tabele cu chenar subțire, fără font, ca să ia fontul documentului) → `insertHtml(…, "After")` la cursor.
+  Evenimente `word`: `insp_photos`, `insert_sheet`.
 - Anexă documente: „Restrânge paginile / Arată paginile” și ▸/▾ pe fiecare document (`doc.folded`, păstrat în sesiune);
   documentele se mută trăgându-le de mânerul ⠿.
 - Pagina `/word`: prezentare (hero + cele două unelte cu capturi din `public/word/prezentare/*.webp`), tab-uri

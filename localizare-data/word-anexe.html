@@ -33,6 +33,10 @@
           <span id="lblFiles">+ Fișiere</span>
           <input id="inFiles" type="file" accept="image/*,.jpg,.jpeg,.png,.webp,.bmp,.gif" multiple hidden />
         </label>
+        <button id="btnInsp" class="btn photo-only" type="button" title="Pozele și fișa unei inspecții din UVALO">
+          <svg viewBox="0 0 20 20"><path d="M4 2.5h8.5L16 6v11.5H4zM12 3v3.5h3.5M6.5 9.5h7M6.5 12h7M6.5 14.5h4.5"/></svg>
+          Din inspecții
+        </button>
         <button id="btnClear" class="btn ghost" title="Golește lista" hidden>Golește</button>
       </div>
       <div id="srcInfo" class="muted small"></div>
@@ -217,11 +221,23 @@
     </div>
   </div>
 
+  <!-- „Din inspecții”: the photos of an inspection into the annex, its sheet into the document (public/word/src/insp-pick.js) -->
+  <div id="inspDlg" class="ipk" hidden role="dialog" aria-label="Din inspecții">
+    <div class="ipk-top">
+      <b>Din inspecțiile tale</b>
+      <button id="ipkClose" class="icon" type="button" title="Închide (Esc)">✕</button>
+    </div>
+    <div class="ipk-search"><input id="ipkQ" type="search" placeholder="Caută: adresă, nr. cadastral, cod, nr. fișă" /></div>
+    <div id="ipkInfo" class="muted small ipk-info"></div>
+    <div id="ipkList" class="ipk-list"></div>
+  </div>
+
   <div id="toast" class="toast" hidden></div>
 
   <script src="src/layout.js"></script>
   <script src="src/exif.js"></script>
   <script src="src/app.js"></script>
+  <script src="src/insp-pick.js"></script>
   <script type="module">
     import * as pdfjsLib from "./lib/pdfjs/pdf.min.mjs";
     pdfjsLib.GlobalWorkerOptions.workerSrc = new URL("./lib/pdfjs/pdf.worker.min.mjs", location.href).href;

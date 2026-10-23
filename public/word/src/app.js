@@ -210,7 +210,7 @@
 
   function newItem(f, extra) {
     return Object.assign({ id: ++uid, kind: "img", file: f, doc: null, page: 1, name: f.name, path: f.webkitRelativePath || f.name,
-      size: f.size, modified: f.lastModified, taken: null, w: 0, h: 0, thumb0: "", thumb: "", rot: 0, sel: true, desc: "", bad: false }, extra || {});
+      size: f.size, modified: f.lastModified, taken: f._taken || null, w: 0, h: 0, thumb0: "", thumb: "", rot: 0, sel: true, desc: f._desc || "", bad: false }, extra || {});
   }
 
   async function addFiles(fileList, replace, label) {
@@ -273,7 +273,7 @@
           it.w = r.img.naturalWidth; it.h = r.img.naturalHeight;
           it.thumb0 = it.thumb = makeThumb(r.img, 360);
           URL.revokeObjectURL(r.url);
-          it.taken = await window.readExifDate(it.file);
+          it.taken = it.taken || await window.readExifDate(it.file); // the photos from an inspection carry their time from the phone
         } catch (e) { it.bad = true; it.sel = false; }
         tick(it);
       }
@@ -1234,7 +1234,8 @@
   window.AnexaApp = {
     get items() { return items; }, get settings() { return S; }, get mode() { return mode; }, switchMode: switchMode,
     set: function (o) { S = merge(S, o); saveSettings(); syncForm(); render(); },
-    addFiles: addFiles, generate: generate, renderPreview: renderPreview
+    addFiles: addFiles, generate: generate, renderPreview: renderPreview,
+    get inWord() { return inWord; }, get busy() { return busy; }, toast: toast, track: track
   };
 
   document.addEventListener("DOMContentLoaded", function () {
