@@ -5,11 +5,12 @@ import { qrSvg } from "./mobile/InstallHint";
 
 /**
  * Inspecții without a connected phone: the module needs the UVALO Inspecții app (a PWA on inspectii.uvalo.ro, installed on
- * the phone). The phone signs in with the account's email or by scanning the QR below (a 6-digit code, 10 minutes); the
+ * the phone). The phone signs in with the account's email or by scanning the QR below (a long one-time token in the QR, an 8-digit code to type; 10 minutes); the
  * module starts once a phone has signed in (the page checks every 3 s). In test mode the super-admin can go on without a phone.
  */
 export function InspActivate({ testMode, appUrl }: { testMode: boolean; appUrl: string }) {
   const [code, setCode] = useState<string | null>(null);
+  const [token, setToken] = useState<string | null>(null); // in the QR: a long token that cannot be guessed
   const [left, setLeft] = useState(0);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
@@ -35,7 +36,7 @@ export function InspActivate({ testMode, appUrl }: { testMode: boolean; appUrl: 
       const r = await fetch("/api/inspectii", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action }) });
       const j = (await r.json().catch(() => ({}))) as any;
       if (!r.ok) throw new Error(j.error || "Nu a mers.");
-      if (action === "pair_code") { setCode(j.code); setLeft(600); } else location.reload();
+      if (action === "pair_code") { setCode(j.code); setToken(j.token ?? j.code); setLeft(600); } else location.reload();
     } catch (e) { setMsg((e as Error).message); } finally { setBusy(false); }
   }
   const live = code && left > 0;
@@ -51,7 +52,7 @@ export function InspActivate({ testMode, appUrl }: { testMode: boolean; appUrl: 
           <b>Scanează cu telefonul</b>
           {live ? (
             <>
-              <span className="inActQr" dangerouslySetInnerHTML={{ __html: qrSvg(`${appUrl}/?pair=${code}`, 4) }} />
+              <span className="inActQr" dangerouslySetInnerHTML={{ __html: qrSvg(`${appUrl}/?pair=${encodeURIComponent(token ?? code ?? "")}`, 4) }} />
               <p>Deschide camera telefonului și îndreaptă-o spre cod. Aplicația se deschide conectată la contul tău.</p>
             </>
           ) : (
@@ -73,7 +74,7 @@ export function InspActivate({ testMode, appUrl }: { testMode: boolean; appUrl: 
           <div className="inActCode">
             {live ? (
               <>
-                <span><small>Cod de conectare · mai e valabil {Math.floor(left / 60)}:{String(left % 60).padStart(2, "0")}</small><b>{code.slice(0, 3)} {code.slice(3)}</b></span>
+                <span><small>Cod de conectare · mai e valabil {Math.floor(left / 60)}:{String(left % 60).padStart(2, "0")}</small><b>{code.slice(0, 4)} {code.slice(4)}</b></span>
                 <span className="inActWait"><i />Aștept telefonul…</span>
               </>
             ) : (

@@ -52,7 +52,10 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   (firme, utilizatori, solicitări, recomandări, activitate, tablou ANEVAR, planuri), `mentenanta`, `localizare`.
 - `src/app/api/` — `auth`, `account`, `org`, `admin/*`, `localizare/*` (data, geocode, centroid, manifest, sw, track-js…),
   `request`, `invite`, `referral`, `track`, `avatar`.
-- `src/lib/` — `auth.ts` (coduri pe email, sesiuni cookie `vf_tools` host-only), `guard.ts` (acces pagini/API +
+- `src/lib/` — `auth.ts` (coduri pe email, sesiuni cookie `vf_tools` host-only; **limite de încercări** — migrația 0042 `auth_fails`, `failCount` /
+  `addFail`: codul din email are 5 încercări pe cod, dar și **max. 10 coduri greșite pe zi pentru un cont** (peste toate codurile cerute) și 30 pe oră de la o
+  adresă IP → 429 cu `TOO_MANY`; butonul „Intră în cont” din emailul cu codul rămâne valabil, ca nimeni să nu poată bloca proprietarul; un cod
+  expirat / epuizat nu se numără), `guard.ts` (acces pagini/API +
   mentenanță), `access.ts`/`orgs.ts` (firme, locuri, planuri), `plans.ts` (pipeline planuri), `maintenance.ts`,
   `email.ts` (Resend), `gmaps.ts`, `site.ts`, `track.ts`, `crypto.ts` (inclusiv `cleanPhone`).
 - `localizare-data/` — Localizatorul: HTML static (`index.html`, cu lista `UATS` inline: key/name/county/v/n/nb/bb/
@@ -432,8 +435,9 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   `endpoint` / `name` / `counts={null}`): `off` = doar super-adminii, `test` = super-adminii + grupul de test (orice cont activ, indiferent de
   abonament și de legitimație), `on` = toți cei cu acces la platformă. `context()` pune `inspectii` în `c.modules` după mod (comutatorul
   „dezactivat” din `off` îl scoate pentru non-super-admini), `c.insp` = modul; meniul arată eticheta TEST cât timp modul ≠ `on`.
-- Fără telefon conectat (`insp_devices`) → pagina de activare (`InspActivate`: cod QR spre `<INSP_URL>/?pair=<cod>` + codul de 6 cifre din
-  `insp_pair_codes`, 10 min; pagina întreabă `device_status` la 3 s și se deschide singură după conectare). Modulul pornește doar după o
+- Fără telefon conectat (`insp_devices`) → pagina de activare (`InspActivate`: cod QR spre `<INSP_URL>/?pair=<token>` (token lung, aleator, negăbil) + **codul de 8 cifre** de
+  scris de mână, ambele în `insp_pair_codes` (hash `t:` / `m:`), 10 min, o singură folosire (`pairCode` / `usePairCode` în `insp.ts`); codurile scrise
+  greșit: max. 10 / 15 min de la o adresă IP, iar peste 200 pe zi pe toată platforma codurile scrise se opresc până a doua zi (QR-ul merge); pagina întreabă `device_status` la 3 s și se deschide singură după conectare). Modulul pornește doar după o
   autentificare din aplicație (telefon sau aplicația instalată; browserul unui calculator nu se numără — `registerDevice`); în test, „Continuă fără telefon (test)” creează un dispozitiv `platform = 'test'`.
 - **„Previzualizează aplicația”** (`InspPreview`, pe `/inspectii` și pe pagina de activare): aplicația de telefon reală într-o ramă de telefon
   (iframe spre `inspUrl()`), conectată singură cu un cod de conectare (`pair_code` → `/?pair=`); dacă rama are deja sesiune, codul nu se mai

@@ -567,9 +567,9 @@ function Login({ onDone }: { onDone: () => void }) {
         )}
         {step === "pair" && (
           <form onSubmit={async (e) => { e.preventDefault(); if (await post("/api/m/pair", { code, standalone })) onDone(); }}>
-            <p className="mbNote">Pe calculator, în UVALO → <b>Inspecții</b>, apasă „Arată codul de conectare”. Scanează codul QR cu camera telefonului sau scrie aici cele 6 cifre.</p>
-            <label className="mbField">Codul de conectare<input inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))} required /></label>
-            <button className="mbBtn gold big" disabled={busy || code.length < 6}>Conectează telefonul</button>
+            <p className="mbNote">Pe calculator, în UVALO → <b>Inspecții</b>, apasă „Arată codul de conectare”. Scanează codul QR cu camera telefonului sau scrie aici cele 8 cifre.</p>
+            <label className="mbField">Codul de conectare<input inputMode="numeric" autoComplete="one-time-code" maxLength={8} value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))} required /></label>
+            <button className="mbBtn gold big" disabled={busy || code.length < 8}>Conectează telefonul</button>
           </form>
         )}
         {msg && <p className="mbErr" role="alert">{msg}</p>}

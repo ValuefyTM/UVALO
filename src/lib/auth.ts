@@ -51,7 +51,21 @@ async function accountFor(db: D1Database, email: string) {
 /** Active accounts sign in; invited ones first accept the invitation (link in their email). */
 const canSignIn = (u: User) => u.status === "active";
 
-async function clientIp() {
+/* ---------- failed attempts (migration 0042): a limit across codes, accounts and addresses ---------- */
+/** Failed attempts for a key in the last `minutes`. */
+export async function failCount(db: D1Database, key: string, minutes: number) {
+  return (await db.prepare("SELECT COUNT(*) AS n FROM auth_fails WHERE key = ? AND at > ?").bind(key, inMinutes(-minutes)).first<{ n: number }>())?.n ?? 0;
+}
+/** Records a failed attempt under each key; now and then drops the ones older than two days. */
+export async function addFail(db: D1Database, ...keys: string[]) {
+  const t = now();
+  await db.batch([
+    ...keys.map((k) => db.prepare("INSERT INTO auth_fails (key, at) VALUES (?, ?)").bind(k, t)),
+    ...(Math.random() < 0.05 ? [db.prepare("DELETE FROM auth_fails WHERE at < ?").bind(inMinutes(-2 * 24 * 60))] : []),
+  ]);
+}
+
+export async function clientIp() {
   const h = await headers();
   return h.get("cf-connecting-ip") ?? h.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null;
 }
@@ -93,15 +107,23 @@ export async function requestSignIn(db: D1Database, rawEmail: string) {
   });
 }
 
-export async function verifyCode(db: D1Database, rawEmail: string, code: string) {
-  const email = normEmail(rawEmail);
+/** Wrong email codes: at most 10 a day for an account (across all the codes asked for) and 30 an hour from one address. */
+const CODE_FAILS_DAY = 10, CODE_FAILS_IP_HOUR = 30;
+// the button „Intră în cont” of the email still works (a 256-bit link cannot be guessed): someone who types wrong codes on purpose cannot lock the owner out
+export const TOO_MANY = "Prea multe coduri greșite pentru acest cont: codul nu mai e acceptat până mâine. Intră cu butonul „Intră în cont” din emailul primit (merge în continuare) sau scrie-ne la office@uvalo.ro.";
+
+export async function verifyCode(db: D1Database, rawEmail: string, code: string): Promise<User | { error: string } | null> {
+  const email = normEmail(rawEmail), ip = (await clientIp()) ?? "-";
+  if ((await failCount(db, `code:${email}`, 24 * 60)) >= CODE_FAILS_DAY) return { error: TOO_MANY };
+  if ((await failCount(db, `codeip:${ip}`, 60)) >= CODE_FAILS_IP_HOUR) return { error: "Prea multe coduri greșite de la această conexiune. Încearcă din nou peste o oră." };
   const row = await db
     .prepare("SELECT id, code_hash, attempts FROM auth_codes WHERE email = ? AND used_at IS NULL AND expires_at > ? ORDER BY created_at DESC LIMIT 1")
     .bind(email, now())
     .first<{ id: string; code_hash: string; attempts: number }>();
-  if (!row || row.attempts >= MAX_ATTEMPTS) return null;
+  if (!row || row.attempts >= MAX_ATTEMPTS) return null; // nothing to guess: not counted
   if (!safeEqual(row.code_hash, await sha256(`${email}:${code.replace(/\D/g, "")}`))) {
     await db.prepare("UPDATE auth_codes SET attempts = attempts + 1 WHERE id = ?").bind(row.id).run();
+    await addFail(db, `code:${email}`, `codeip:${ip}`);
     return null;
   }
   await db.prepare("UPDATE auth_codes SET used_at = ? WHERE id = ?").bind(now(), row.id).run();

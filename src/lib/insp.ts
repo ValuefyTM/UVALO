@@ -2,7 +2,8 @@
 // In test: only super-admins have the module (context() in access.ts); everything written now has test = 1.
 import { canManageOrg, type Ctx } from "./access";
 import { getFiles, now, uuid } from "./db";
-import { randomCode, sha256 } from "./crypto";
+import { randomCode, randomToken, sha256 } from "./crypto";
+import { addFail, clientIp, failCount } from "./auth";
 import { geocode } from "./gmaps";
 import { notifyUser } from "./webpush";
 import { headers } from "next/headers";
@@ -24,25 +25,41 @@ export async function devices(db: D1Database, userId: string) {
     .bind(userId).all<Device>()).results;
 }
 
-/** A 6-digit code (shown on the web, also as a QR to inspectii.uvalo.ro/?pair=…), valid 10 minutes: the phone signs in with it. */
+/**
+ * Connecting the phone from the web (10 minutes, one use): a long random token in the QR (inspectii.uvalo.ro/?pair=<token>, cannot be guessed)
+ * and an 8-digit code to type by hand. Stored as hashes; a new one replaces the person's previous one.
+ */
 export async function pairCode(db: D1Database, userId: string) {
-  const code = randomCode();
+  const code = randomCode(8), token = randomToken(), exp = new Date(Date.now() + 10 * 60e3).toISOString();
   await db.batch([
     db.prepare("DELETE FROM insp_pair_codes WHERE user_id = ? OR expires_at < ?").bind(userId, now()),
-    db.prepare("INSERT INTO insp_pair_codes (code_hash, user_id, expires_at) VALUES (?, ?, ?)").bind(await sha256(code), userId, new Date(Date.now() + 10 * 60e3).toISOString()),
+    db.prepare("INSERT INTO insp_pair_codes (code_hash, user_id, expires_at) VALUES (?, ?, ?)").bind(await sha256(`m:${code}`), userId, exp),
+    db.prepare("INSERT INTO insp_pair_codes (code_hash, user_id, expires_at) VALUES (?, ?, ?)").bind(await sha256(`t:${token}`), userId, exp),
   ]);
-  return code;
+  return { code, token };
 }
 
 /** Where the phone app lives (PWA on its own domain, the same worker). */
 export const inspUrl = () => (process.env.INSP_URL || "https://inspectii.uvalo.ro").replace(/\/$/, "");
 
-/** QR code / link from the web: the phone opens it and is signed in as the person who showed the code. */
-export async function usePairCode(db: D1Database, code: string) {
-  const h = await sha256(code.replace(/\D/g, ""));
+/** Wrong pairing codes: 10 per 15 minutes from one address; over 200 a day on the whole platform, the typed codes stop until the next day
+ *  (the QR keeps working). With 8 digits that leaves no real chance of guessing someone's code. */
+const PAIR_FAILS_IP = 10, PAIR_FAILS_DAY = 200;
+/** QR token or typed code → the person who asked for it on the web (the code is used up), or why not. */
+export async function usePairCode(db: D1Database, raw: string): Promise<{ userId: string } | { error: string }> {
+  const ip = (await clientIp()) ?? "-", v = raw.trim(), digits = v.replace(/[\s-]/g, "");
+  const typed = /^\d+$/.test(digits);
+  if (typed && (await failCount(db, `pair:${ip}`, 15)) >= PAIR_FAILS_IP) return { error: "Prea multe coduri greșite de la această conexiune. Așteaptă 15 minute sau scanează codul QR." };
+  if (typed && digits.length !== 8) return { error: "Codul are 8 cifre. Cere un cod nou din UVALO, pe calculator, dacă cel de acum e mai vechi." };
+  if (typed && (await failCount(db, "pair:*", 24 * 60)) >= PAIR_FAILS_DAY) return { error: "Din motive de siguranță, codurile scrise de mână sunt oprite azi. Scanează codul QR cu camera telefonului." };
+  const h = await sha256(typed ? `m:${digits}` : `t:${v}`);
   const r = await db.prepare("SELECT user_id FROM insp_pair_codes WHERE code_hash = ? AND expires_at > ?").bind(h, now()).first<{ user_id: string }>();
-  if (r) await db.prepare("DELETE FROM insp_pair_codes WHERE code_hash = ?").bind(h).run();
-  return r?.user_id ?? null;
+  if (!r) {
+    await addFail(db, `pair:${ip}`, ...(typed ? ["pair:*"] : []));
+    return { error: "Codul nu este corect sau a expirat. Cere unul nou din UVALO, pe calculator." };
+  }
+  await db.prepare("DELETE FROM insp_pair_codes WHERE user_id = ?").bind(r.user_id).run();
+  return { userId: r.user_id };
 }
 
 /** The phone app signed in (QR or email code): the device is recorded once per session — this is what turns the module on. */
