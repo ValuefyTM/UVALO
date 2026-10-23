@@ -660,9 +660,10 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   (`worker.ts` lasă `/localizare` pe `INSP_HOSTS`; sesiunea e a telefonului), montat la prima deschidere și doar ascuns la schimbarea tab-ului
   (harta își păstrează locul). Ruta (`src/app/localizare/route.ts`, `inApp`) pune `APP_HEAD` + `appScript(origin())` din `src/lib/locator-app.ts` în
   locul PWA-ului propriu, `presence.js` și `feedback.js`; 401 / mentenanță → mesaj în cadru, fără redirecționare. Modul aplicație: harta pe tot
-  ecranul (sub meniul plutitor), **bara de căutare** sus (`.uvFind`, „Caută adresă, coordonate sau nr. cadastral”) care deschide formularul
-  localizatorului (`#f`: nr. cadastral / topo cu UAT, adresă / coordonate / Stereo 70) ca panou de sus (`body.uvSearch`), butoanele hărții și
-  **Straturi** sub bară; **fișa parcelei** (`#out` + nota + descărcările, mutate în `.uvSheet`) urcă de jos când `#out` primește un rezultat
+  ecranul (sub meniul plutitor), **lupa plutitoare** în dreapta jos (`.uvFind`, deasupra fișei când e pe jumătate, ascunsă cu fișa pe tot
+  ecranul) care deschide formularul localizatorului (`#f`: nr. cadastral / topo cu UAT, adresă / coordonate / Stereo 70) ca panou **de sus**
+  (`body.uvSearch`; jos l-ar acoperi tastatura), butoanele hărții și **Straturi** sus; bara GPS jos lasă loc lupei, iar pastila „Vezi fișa ↑”
+  urcă deasupra ei (`--gpsh`); **fișa parcelei** (`#out` + nota + descărcările, mutate în `.uvSheet`) urcă de jos când `#out` primește un rezultat
   (MutationObserver): jumătate de ecran (`uvPeek`), tot ecranul (`uvFull`) sau închisă, trasă de liniuța `.uvGrip` (atingerea comută); închisă cu
   rezultat → pastila „Vezi fișa ↑” (`.uvOpen`); la deschidere parcela se reîncadrează în zona liberă (`fitFree`, stratul `sel`). **La deschidere pornește singur „Locația mea”** (`gpsStart()` fără busolă — pe iPhone ea cere o atingere,
   butonul de pe hartă o pornește): punctul GPS cu cercul de precizie, planul localității încărcat, harta pe loc, parcelele din rază evidențiate și

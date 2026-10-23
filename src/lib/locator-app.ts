@@ -15,17 +15,21 @@ html.uvApp .panel{display:contents!important}
 html.uvApp .phead,html.uvApp .split,html.uvApp #full,html.uvApp .find .heads,html.uvApp #hint,html.uvApp .uvfb-btn,html.uvApp .uvfb-tip{display:none!important}
 html.uvApp body .mapwrap .fullOut{display:none!important}
 html.uvApp .mapwrap{position:fixed!important;inset:0!important;height:auto!important;min-height:0!important;z-index:1!important}
-html.uvApp .mctl{top:calc(var(--uvt) + 70px)!important;left:12px!important}
-html.uvApp .lyr,html.uvApp .lyr:not(.closed){top:calc(var(--uvt) + 70px)!important;right:12px!important;bottom:auto!important;max-height:calc(100% - var(--uvt) - var(--uvb) - 90px);overflow:auto}
+html.uvApp .mctl{top:calc(var(--uvt) + 12px)!important;left:12px!important}
+html.uvApp .lyr,html.uvApp .lyr:not(.closed){top:calc(var(--uvt) + 12px)!important;right:12px!important;bottom:auto!important;max-height:calc(100% - var(--uvt) - var(--uvb) - 100px);overflow:auto}
 html.uvApp .legend{bottom:calc(var(--uvb) + 8px)!important;left:12px!important}
-html.uvApp .gpsBar{bottom:calc(var(--uvb) + 4px)!important}
+html.uvApp .gpsBar{bottom:calc(var(--uvb) + 4px)!important;right:78px!important}
 html.uvApp .leaflet-bottom{bottom:var(--uvb)!important}
-html.uvApp #toast{bottom:auto!important;top:calc(var(--uvt) + 70px)!important}
-/* the search bar on the map and the search form over it */
-.uvFind{position:fixed;z-index:1550;left:12px;right:12px;top:calc(var(--uvt) + 12px);height:48px;border:0;border-radius:16px;background:#fff;color:#6b6b6b;
-  display:flex;align-items:center;gap:10px;padding:0 14px;font:600 14px 'Plus Jakarta Sans',system-ui,sans-serif;text-align:left;box-shadow:0 10px 26px -10px rgba(0,0,0,.45),0 0 0 1px rgba(0,0,0,.04);cursor:pointer}
-.uvFind svg{flex:none;color:#111}
-.uvFind span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+html.uvApp #toast{bottom:auto!important;top:calc(var(--uvt) + 12px)!important}
+/* the search: a floating magnifier at the bottom right (above the sheet when it is open); the form opens at the top, where the
+   phone's keyboard does not cover it */
+.uvFind{position:fixed;z-index:1650;right:14px;bottom:calc(var(--uvb) + 12px);width:56px;height:56px;border:0;border-radius:50%;background:#141414;color:#fff;
+  display:flex;align-items:center;justify-content:center;padding:0;box-shadow:0 12px 26px -8px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.08);cursor:pointer;
+  transition:bottom .28s cubic-bezier(.2,.8,.2,1),transform .15s,opacity .2s}
+.uvFind:active{transform:scale(.94)}
+.uvFind svg{width:24px;height:24px}
+body.uvPeek .uvFind{bottom:calc(52% + 12px)}
+body.uvFull .uvFind,body.uvSearch .uvFind{opacity:0;pointer-events:none}
 html.uvApp .find{position:fixed!important;z-index:2000;left:0;right:0;top:0;margin:0!important;max-height:100%;overflow:auto;background:#fff;
   padding:calc(var(--uvt) + 12px) 16px 18px!important;border-radius:0 0 22px 22px;box-shadow:0 24px 60px -12px rgba(0,0,0,.5);
   transform:translateY(-105%);transition:transform .26s cubic-bezier(.2,.8,.2,1);visibility:hidden}
@@ -46,7 +50,7 @@ body.uvFull .uvSheet{height:calc(100% - var(--uvt) - 12px)}
 html.uvApp .uvBody main#out{padding:2px 16px 12px!important}
 html.uvApp .uvBody .note{padding:0 16px 12px!important}
 html.uvApp .uvBody .pfoot{padding:0 16px 12px!important;position:static!important}
-.uvOpen{position:fixed;z-index:1550;left:50%;transform:translateX(-50%);bottom:calc(var(--uvb) + 10px);border:0;border-radius:999px;background:#141414;color:#fff;
+.uvOpen{position:fixed;z-index:1550;left:50%;transform:translateX(-50%);bottom:calc(var(--uvb) + 10px + var(--gpsh,0px));border:0;border-radius:999px;background:#141414;color:#fff;
   font:700 13px 'Plus Jakarta Sans',system-ui,sans-serif;padding:11px 18px;box-shadow:0 10px 24px -8px rgba(0,0,0,.6);display:none;cursor:pointer;max-width:calc(100% - 24px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 body.uvRes:not(.uvPeek):not(.uvFull) .uvOpen{display:block}
 </style>`;
@@ -58,7 +62,7 @@ var APP=${JSON.stringify(appUrl.replace(/\/$/, ""))},$=function(i){return docume
 var SEARCH='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>';
 function relayout(){try{map.invalidateSize({pan:false})}catch(e){}}
 /* the search bar → the search form over the map */
-var bar=document.createElement("button");bar.type="button";bar.className="uvFind";bar.innerHTML=SEARCH+"<span>Caută adresă, coordonate sau nr. cadastral</span>";
+var bar=document.createElement("button");bar.type="button";bar.className="uvFind";bar.innerHTML=SEARCH;bar.setAttribute("aria-label","Caută adresă, coordonate sau nr. cadastral");bar.title="Caută";
 var shade=document.createElement("div");shade.className="uvShade";
 var form=$("f"),top=document.createElement("div");top.className="uvFindTop";top.innerHTML='<b>Caută un imobil</b><button type="button" class="uvFindX" aria-label="Închide căutarea">×</button>';
 form.insertBefore(top,form.firstChild);
@@ -102,6 +106,9 @@ check();
 /* the rest of the platform opens on the app's domain, in the browser */
 document.addEventListener("click",function(e){var a=e.target.closest&&e.target.closest("a[href]");if(!a)return;var h=a.getAttribute("href");
   if(h&&h.charAt(0)==="/"&&h.indexOf("/api/")!==0&&h.indexOf("/localizare")!==0&&h.indexOf("//")!==0){e.preventDefault();window.open(APP+h,"_blank","noopener")}},true);
+/* the GPS bar at the bottom: its height lifts the „Vezi fișa” pill above it */
+var gb=$("gpsBar");function gh(){document.documentElement.style.setProperty("--gpsh",(gb&&!gb.hidden&&gb.offsetHeight?gb.offsetHeight+8:0)+"px")}
+if(gb){try{new ResizeObserver(gh).observe(gb)}catch(e){}new MutationObserver(gh).observe(gb,{attributes:true,attributeFilter:["hidden"]});gh()}
 relayout();
 /* at opening: my location — the dot and the accuracy circle, the plan of the locality loaded, the map on the spot, the parcels around
    highlighted and listed in the sheet (the locator's own „Locația mea”), without the compass (it needs a tap on iPhone; the button on
