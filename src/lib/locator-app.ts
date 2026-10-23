@@ -7,9 +7,15 @@
 
 /** In <head>: the class and the insets before the first paint, and the layout. */
 export const APP_HEAD = `<script>(function(){var q=new URLSearchParams(location.search),r=document.documentElement;r.classList.add("uvApp");
-r.style.setProperty("--uvt",(Math.max(0,+q.get("t")||0))+"px");r.style.setProperty("--uvb",(Math.max(0,+q.get("b")||0))+"px")})()</script>
+r.style.setProperty("--uvt",(Math.max(0,+q.get("t")||0))+"px");r.style.setProperty("--uvb",(Math.max(0,+q.get("b")||0))+"px");
+r.style.setProperty("--uvbn",(Math.max(0,+q.get("b")||0))+"px");r.style.setProperty("--uvbs",(Math.max(0,+q.get("s")||0))+"px")})()</script>
 <style>
-html.uvApp,html.uvApp body{height:100%;overflow:hidden;overscroll-behavior:none}
+html.uvApp,html.uvApp body{height:100%;width:100%;max-width:100vw;overflow:hidden;overscroll-behavior:none;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+/* nothing in the sheet may be wider than the phone (iPhone widens a frame to its widest content) */
+html.uvApp .uvSheet,html.uvApp .uvBody{width:100%;max-width:100vw;overflow-x:hidden}
+html.uvApp .uvBody *{max-width:100%;box-sizing:border-box}
+html.uvApp .uvBody table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}
+html.uvApp .uvBody pre,html.uvApp .uvBody code,html.uvApp .uvBody b,html.uvApp .uvBody span{overflow-wrap:anywhere}
 html.uvApp .app{display:block!important;height:100%!important;min-height:0!important}
 html.uvApp .panel{display:contents!important}
 html.uvApp .phead,html.uvApp .split,html.uvApp #full,html.uvApp .find .heads,html.uvApp #hint,html.uvApp .uvfb-btn,html.uvApp .uvfb-tip{display:none!important}
@@ -80,7 +86,10 @@ var open=document.createElement("button");open.type="button";open.className="uvO
 function fitFree(){try{var ls=sel.getLayers();if(!ls.length)throw 0;var T=parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--uvt"))||0;
   map.fitBounds(L.featureGroup(ls).getBounds(),{paddingTopLeft:[24,T+76],paddingBottomRight:[24,sh.offsetHeight+24],maxZoom:Math.max(map.getZoom(),17),animate:true})}
   catch(e){try{map.panBy([0,Math.round(sh.offsetHeight/2)],{animate:true})}catch(_){}}}
-function state(s){B.classList.toggle("uvPeek",s==="peek");B.classList.toggle("uvFull",s==="full")}
+function state(s){B.classList.toggle("uvPeek",s==="peek");B.classList.toggle("uvFull",s==="full");
+  // the app hides its menu while the sheet is open: the sheet then goes down to the bottom of the screen
+  document.documentElement.style.setProperty("--uvb",s==="off"?"var(--uvbn)":"var(--uvbs)");
+  try{parent.postMessage({uvLoc:"sheet",state:s},location.origin)}catch(e){}}
 function cur(){return B.classList.contains("uvFull")?"full":B.classList.contains("uvPeek")?"peek":"off"}
 open.onclick=function(){state("peek")};
 grip.onclick=function(){state(cur()==="full"?"peek":"full")};

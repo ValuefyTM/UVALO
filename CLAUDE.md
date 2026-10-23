@@ -665,7 +665,9 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   (`body.uvSearch`; jos l-ar acoperi tastatura), butoanele hărții și **Straturi** sus; bara GPS jos lasă loc lupei, iar pastila „Vezi fișa ↑”
   urcă deasupra ei (`--gpsh`); **fișa parcelei** (`#out` + nota + descărcările, mutate în `.uvSheet`) urcă de jos când `#out` primește un rezultat
   (MutationObserver): jumătate de ecran (`uvPeek`), tot ecranul (`uvFull`) sau închisă, trasă de liniuța `.uvGrip` (atingerea comută); închisă cu
-  rezultat → pastila „Vezi fișa ↑” (`.uvOpen`); la deschidere parcela se reîncadrează în zona liberă (`fitFree`, stratul `sel`). **La deschidere pornește singur „Locația mea”** (`gpsStart()` fără busolă — pe iPhone ea cere o atingere,
+  rezultat → pastila „Vezi fișa ↑” (`.uvOpen`); **cât e fișa deschisă, meniul aplicației se ascunde** (iframe → `postMessage({uvLoc: "sheet", state})`
+  → `locSheet` în `MobileApp`; în cadru `--uvb` trece de la `b` la `s` = doar zona de jos a telefonului); iframe-ul are `width/height: 1px` +
+  `min-*: 100%` (iPhone mărește altfel cadrul după conținut și harta / fișa ies din ecran), iar nimic din fișă nu e mai lat decât ecranul; la deschidere parcela se reîncadrează în zona liberă (`fitFree`, stratul `sel`). **La deschidere pornește singur „Locația mea”** (`gpsStart()` fără busolă — pe iPhone ea cere o atingere,
   butonul de pe hartă o pornește): punctul GPS cu cercul de precizie, planul localității încărcat, harta pe loc, parcelele din rază evidențiate și
   lista lor în fișă (parcela pe care stai prima), bara GPS „Ești pe parcela …”; nu și cu un link spre o parcelă (`#uat-nr`). Căutarea oprește
   urmărirea GPS (`gpsFollow = false`), ca harta să nu fie trasă înapoi la tine. Linkurile spre

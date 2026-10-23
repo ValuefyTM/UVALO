@@ -84,6 +84,12 @@ export function MobileApp() {
   const [collabOn, setCollabOn] = useState(false); // Colaborări open for this account (same mode as on the web)
   const [locOn, setLocOn] = useState(true); // the cadastral locator is in the account's modules
   const locSeen = useRef(false); // the locator tab, once opened, stays loaded (the map keeps its place between tabs)
+  const [locSheet, setLocSheet] = useState(false); // the parcel sheet is open in the locator: the menu steps aside
+  useEffect(() => {
+    const on = (e: MessageEvent) => { if (e.origin === location.origin && (e.data as { uvLoc?: string })?.uvLoc === "sheet") setLocSheet((e.data as { state: string }).state !== "off"); };
+    window.addEventListener("message", on);
+    return () => window.removeEventListener("message", on);
+  }, []);
   const [appUrl, setAppUrl] = useState("");
   const [firms, setFirms] = useState<{ id: string; name: string }[]>([]); // offices I may create inspections for (angajat, allowed)
   const [cur, setCur] = useState<Insp | null>(null);
@@ -475,7 +481,7 @@ export function MobileApp() {
         if (now) await open(id, { v: "form", id, sec: 0 }); else { setViewState({ v: "home" }); say("Inspecția a fost adăugată."); }
       }} />}
       </div>
-      {nav && (
+      {nav && !(view.v === "loc" && locSheet) && (
         <nav className="mbNav" aria-label="Meniu">
           <button type="button" aria-current={view.v === "home" ? "page" : undefined} onClick={() => go({ v: "home" })}><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="4" width="14" height="17" rx="2.5" /><path d="M9 4V3h6v1M9 10h6M9 14h6M9 18h4" /></svg><span>Inspecții</span></button>
           {/* the locator: only the sign, in orange, raised in the middle */}
@@ -907,7 +913,7 @@ function LocTab({ on, shown }: { on: boolean; shown: boolean }) {
     document.body.appendChild(d);
     const cs = getComputedStyle(d), t = Math.round(parseFloat(cs.paddingTop) || 0), b = Math.round(parseFloat(cs.paddingBottom) || 0);
     d.remove();
-    return `/localizare?app=1&t=${t}&b=${b + 82}`;
+    return `/localizare?app=1&t=${t}&b=${b + 82}&s=${b}`;
   });
   if (!on) return shown ? (
     <div className="mbLoc off"><div className="mbSoon"><b>Localizatorul cadastral</b><small>Nu este în planul contului tău. Scrie-ne la office@uvalo.ro ca să-l activăm.</small></div></div>
