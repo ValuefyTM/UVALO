@@ -465,6 +465,10 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   scris de mână, ambele în `insp_pair_codes` (hash `t:` / `m:`), 10 min, o singură folosire (`pairCode` / `usePairCode` în `insp.ts`); codurile scrise
   greșit: max. 10 / 15 min de la o adresă IP, iar peste 200 pe zi pe toată platforma codurile scrise se opresc până a doua zi (QR-ul merge); pagina întreabă `device_status` la 3 s și se deschide singură după conectare). Modulul pornește doar după o
   autentificare din aplicație (telefon sau aplicația instalată; browserul unui calculator nu se numără — `registerDevice`); în test, „Continuă fără telefon (test)” creează un dispozitiv `platform = 'test'`.
+- **Aplicația în cifre (admin)**: `appStats()` în `insp.ts` → Admin → Instrumente → Inspecții, secțiunea „Aplicația de telefon” (`#aplicatia`): au aplicația
+  instalată (dispozitive `insp_devices` nerevocate, fără `test`, cu numele „· aplicație” = deschisă instalată) din cei cu telefon conectat, o folosesc azi / 7 / 30 de
+  zile (`last_seen_at`, actualizat la fiecare pornire), au finalizat fișe în 30 de zile, iPhone / Android, notificări pornite (`insp_push`) + tabelul „Cine are
+  aplicația”; pe Panou cardul „Aplicația Inspecții” (instalată · o folosesc 7 zile) duce acolo.
 - **„Previzualizează aplicația”** (`InspPreview`, pe `/inspectii` și pe pagina de activare): aplicația de telefon reală într-o ramă de telefon
   (iframe spre `inspUrl()`), conectată singură cu un cod de conectare (`pair_code` → `/?pair=`); dacă rama are deja sesiune, codul nu se mai
   folosește (fără sesiuni noi) — doar dacă e același cont: `pair_code` întoarce și `uid`, rama primește `&u=` și, dacă sesiunea ei e a altcuiva

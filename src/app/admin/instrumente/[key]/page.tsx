@@ -9,6 +9,7 @@ import { AdminShell } from "@/components/AdminShell";
 import { AiLimits, CollabAdmin, LaunchMail, FeatureSwitches, PromptEditor, ToolSwitch, UserLimits } from "@/components/admin";
 import { collabCounts, collabSettings, launchSubscribers, testUsers } from "@/lib/collab";
 import { modeSettings } from "@/lib/modmode";
+import { appStats } from "@/lib/insp";
 import { CountTable, UatCountTable } from "@/components/Charts";
 import { PlanList, PlanUploader } from "@/components/plans";
 import { ToolAnalytics } from "@/components/ToolAnalytics";
@@ -113,14 +114,15 @@ export default async function Instrument({ params }: { params: Promise<{ key: st
 
   if (key === "inspectii") {
     const ms = await modeSettings(db, "inspectii");
-    const [users, all, n] = await Promise.all([testUsers(db, ms.users),
+    const [users, all, n, app] = await Promise.all([testUsers(db, ms.users),
       db.prepare(`SELECT u.id, COALESCE(NULLIF(u.name, ''), u.email) AS name, u.email, u.anevar_no AS anevar, u.is_superadmin AS sup,
           (SELECT o.name FROM memberships m JOIN orgs o ON o.id = m.org_id WHERE m.user_id = u.id AND m.status = 'active' ORDER BY o.name LIMIT 1) AS org
         FROM users u WHERE u.status = 'active' ORDER BY name COLLATE NOCASE LIMIT 3000`)
         .all<{ id: string; name: string; email: string; anevar: string | null; sup: number; org: string | null }>(),
       db.prepare(`SELECT COUNT(*) AS total, SUM(status IN ('gata', 'pred')) AS done, COUNT(DISTINCT created_by) AS people,
           (SELECT COUNT(*) FROM insp_devices) AS phones, (SELECT COUNT(*) FROM insp_files WHERE kind = 'photo') AS photos
-        FROM inspections WHERE deleted_at IS NULL`).first<{ total: number; done: number | null; people: number; phones: number; photos: number }>()]);
+        FROM inspections WHERE deleted_at IS NULL`).first<{ total: number; done: number | null; people: number; phones: number; photos: number }>(), appStats(db)]);
+    const a = app.k;
     return (
       <AdminShell c={c} active="instrumente" pending={pending} title={tool.name} subtitle="Mod de lucru, grupul de test și statistici" actions={<a className="btn btnGhost btnSm" href="/admin/instrumente">← Instrumente</a>}>
         <CollabAdmin mode={ms.mode} users={users} counts={null} accounts={all.results} endpoint="/api/admin/inspectii" name="Inspecțiile"
@@ -133,6 +135,35 @@ export default async function Instrument({ params }: { params: Promise<{ key: st
           <div className="kpi"><small>Telefoane conectate</small><b>{n?.phones ?? 0}</b></div>
           <div className="kpi"><small>Fotografii</small><b>{n?.photos ?? 0}</b></div>
         </div>
+        <h2 className="secTitle" id="aplicatia">Aplicația de telefon</h2>
+        <div className="kpis">
+          <div className="kpi"><small>Au aplicația instalată</small><b>{a?.installed ?? 0}</b><span className="muted" style={{ fontSize: 12 }}>din {a?.users ?? 0} cu telefon conectat · ceilalți în browser</span></div>
+          <div className="kpi"><small>O folosesc · 7 zile</small><b>{a?.day7 ?? 0}</b><span className="muted" style={{ fontSize: 12 }}>azi {a?.day1 ?? 0} · 30 de zile {a?.day30 ?? 0}</span></div>
+          <div className="kpi"><small>Au finalizat fișe · 30 zile</small><b>{a?.finishers ?? 0}</b><span className="muted" style={{ fontSize: 12 }}>{a?.done30 ?? 0} fișe finalizate</span></div>
+          <div className="kpi"><small>iPhone / Android</small><b>{a?.ios ?? 0} / {a?.android ?? 0}</b><span className="muted" style={{ fontSize: 12 }}>notificări pornite: {a?.push ?? 0}</span></div>
+        </div>
+        <section className="card flush">
+          <div className="cardHead" style={{ padding: "16px 18px 0" }}><h2>Cine are aplicația</h2><span className="muted" style={{ fontSize: 12.5 }}>telefoanele conectate acum, după ultima folosire</span></div>
+          <div className="tableWrap">
+            <table className="table">
+              <thead><tr><th>Persoană</th><th>Telefon</th><th>Instalată</th><th>Conectat din</th><th>Ultima folosire</th><th className="r">Fișe · 30 zile</th><th>Notificări</th></tr></thead>
+              <tbody>
+                {app.people.length === 0 && <tr><td colSpan={7} className="muted">Nimeni nu și-a conectat încă telefonul.</td></tr>}
+                {app.people.map((p) => (
+                  <tr key={p.id}>
+                    <td><a className="rowLink" href={`/admin/activitate?user=${p.id}`}><b>{p.name}</b></a><br /><span className="muted" style={{ fontSize: 12 }}>{[p.email, p.org].filter(Boolean).join(" · ")}</span></td>
+                    <td>{(p.phones ?? "").split(",").map((x) => x.replace(" · aplicație", "")).filter((x, i, l) => l.indexOf(x) === i).join(", ")}</td>
+                    <td>{p.installed ? <span className="pill pillOk"><i />Da</span> : <span className="pill"><i />În browser</span>}</td>
+                    <td>{fmtDate(p.since)}</td>
+                    <td>{p.last ? fmtDate(p.last, true) : "—"}</td>
+                    <td className="r">{p.done30}</td>
+                    <td>{p.push ? "Pornite" : "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
         <ToolAnalytics u={u} events={events} />
       </AdminShell>
     );

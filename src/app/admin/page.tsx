@@ -9,6 +9,7 @@ import { MaintenanceCard } from "@/components/admin";
 import { DEFAULT_MESSAGE, maintenance } from "@/lib/maintenance";
 import { device } from "@/lib/ua";
 import { uats as uatList } from "@/lib/cadastre";
+import { appStats } from "@/lib/insp";
 
 /** Midnight in Romania (summer or winter time), as an ISO instant. */
 function dayStartRo() {
@@ -67,6 +68,7 @@ export default async function AdminHome() {
   const pct = k && k.members ? Math.round((k.with_account / k.members) * 1000) / 10 : 0;
   const countyOf = await countyOfUats();
   const mnt = await maintenance(db);
+  const app = (await appStats(db).catch(() => null))?.k;
   return (
     <AdminShell c={c} active="panou" pending={pending} title="Panou" subtitle={k?.tablou ? `Tablou ANEVAR la ${fmtDate(k.tablou)}` : undefined}>
       <AdminInstall />
@@ -78,6 +80,7 @@ export default async function AdminHome() {
         <div className="kpi"><small>Solicitări în așteptare</small><b>{pending}</b></div>
         <div className="kpi"><small>Autentificați · 7 zile</small><b>{k?.login7 ?? 0}</b></div>
         <div className="kpi"><small>Activi · 30 zile</small><b>{k?.active30 ?? 0}</b></div>
+        <a className="kpi" href="/admin/instrumente/inspectii#aplicatia" style={{ color: "inherit", textDecoration: "none" }}><small>Aplicația Inspecții</small><b>{app?.installed ?? 0}</b><span className="muted" style={{ fontSize: 12 }}>au instalat-o · {app?.day7 ?? 0} o folosesc (7 zile)</span></a>
       </div>
       <section className="card">
         <div className="cardHead">

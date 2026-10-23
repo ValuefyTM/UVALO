@@ -802,3 +802,38 @@ export async function removeFile(db: D1Database, bucket: R2Bucket | null, c: Ctx
   await logIt(db, f.inspection_id, c.user.id, `Fișier șters: ${f.name ?? ""}`);
   return { ok: true, id: f.inspection_id };
 }
+
+/* ---------- admin: the phone app in numbers (Admin → Instrumente → Inspecții, and the Panou) ---------- */
+
+export type AppPerson = { id: string; name: string; email: string; org: string | null; phones: string; installed: number; since: string; last: string | null; done30: number; push: number };
+/**
+ * Who has the inspection app: the phones connected now (`insp_devices`, not revoked; the web's "test" device does not count).
+ * Installed = opened as an installed app (the device name carries "· aplicație", set by registerDevice from display-mode: standalone),
+ * otherwise in the phone's browser. Used = the app opened (each start updates `last_seen_at`) in the last 1 / 7 / 30 days.
+ */
+export async function appStats(db: D1Database) {
+  const ago = (d: number) => new Date(Date.now() - d * 864e5).toISOString();
+  const real = "d.revoked_at IS NULL AND COALESCE(d.platform, '') <> 'test'";
+  const [k, { results: people }] = await Promise.all([
+    db.prepare(`SELECT COUNT(DISTINCT d.user_id) AS users,
+        COUNT(DISTINCT CASE WHEN d.name LIKE '%· aplicație%' THEN d.user_id END) AS installed,
+        COUNT(DISTINCT CASE WHEN d.platform = 'ios' THEN d.user_id END) AS ios,
+        COUNT(DISTINCT CASE WHEN d.platform = 'android' THEN d.user_id END) AS android,
+        COUNT(DISTINCT CASE WHEN d.last_seen_at > ?1 THEN d.user_id END) AS day1,
+        COUNT(DISTINCT CASE WHEN d.last_seen_at > ?2 THEN d.user_id END) AS day7,
+        COUNT(DISTINCT CASE WHEN d.last_seen_at > ?3 THEN d.user_id END) AS day30,
+        (SELECT COUNT(DISTINCT user_id) FROM insp_push) AS push,
+        (SELECT COUNT(DISTINCT assignee_id) FROM inspections WHERE deleted_at IS NULL AND finished_at > ?3) AS finishers,
+        (SELECT COUNT(*) FROM inspections WHERE deleted_at IS NULL AND finished_at > ?3) AS done30
+      FROM insp_devices d WHERE ${real}`).bind(ago(1), ago(7), ago(30))
+      .first<{ users: number; installed: number; ios: number; android: number; day1: number; day7: number; day30: number; push: number; finishers: number; done30: number }>(),
+    db.prepare(`SELECT u.id, COALESCE(NULLIF(u.name, ''), u.email) AS name, u.email,
+        (SELECT o.name FROM memberships m JOIN orgs o ON o.id = m.org_id WHERE m.user_id = u.id AND m.status = 'active' ORDER BY o.name LIMIT 1) AS org,
+        GROUP_CONCAT(DISTINCT d.name) AS phones, MAX(d.name LIKE '%· aplicație%') AS installed, MIN(d.created_at) AS since, MAX(d.last_seen_at) AS last,
+        (SELECT COUNT(*) FROM inspections i WHERE i.assignee_id = u.id AND i.deleted_at IS NULL AND i.finished_at > ?1) AS done30,
+        EXISTS (SELECT 1 FROM insp_push p WHERE p.user_id = u.id) AS push
+      FROM insp_devices d JOIN users u ON u.id = d.user_id WHERE ${real}
+      GROUP BY u.id ORDER BY MAX(d.last_seen_at) DESC LIMIT 300`).bind(ago(30)).all<AppPerson>(),
+  ]);
+  return { k, people };
+}
