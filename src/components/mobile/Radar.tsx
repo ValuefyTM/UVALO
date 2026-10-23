@@ -1,19 +1,21 @@
 "use client";
 // Phone app → "Radar colegi" (first phase: super-admins only), started from the detail of one of MY unfinished inspections: a
 // full-screen radar centered on that inspection, on its day (an inspection not scheduled yet → Azi / Mâine). The gold beam sweeps,
-// the colleagues' inspections scheduled that day within the chosen radius light up as it passes over them (real bearing and
+// the colleagues' inspections still ahead that day (or not scheduled yet) within the chosen radius light up as it passes over them (real bearing and
 // distance from my inspection), the list of them in the sheet below, and a colleague's screen with the two inspections side by
 // side, a proposed message, Sună / Mesaj. The API gives the zone and a position rounded to ~100 m, never the exact address.
 import { useCallback, useEffect, useRef, useState } from "react";
 
 type Found = { id: string; user_id: string; name: string; email: string; phone: string | null; legit: string | null; avatar: boolean; org: string | null;
-  prop_type: string | null; zone: string; when: string; duration_min: number; lat: number; lng: number; dist_m: number };
+  prop_type: string | null; zone: string; when: string | null; duration_min: number; lat: number; lng: number; dist_m: number };
 type Anchor = { id: string; code: string; address: string; prop_type: string | null; scheduled_at: string | null; lat: number; lng: number };
 type Res = { day: string; km: number; found: Found[]; anchor: Anchor };
 
 const KMS = [5, 10, 25] as const;
 const initials = (n: string) => n.trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
 const hhmm = (w: string) => w.slice(11, 16);
+/** a colleague's time, or "neprogramată" (not scheduled yet) */
+const at = (w: string | null) => (w ? hhmm(w) : "neprogramată");
 const fmtKm = (m: number) => (m < 950 ? `${Math.round(m / 50) * 50} m` : `${(m / 1000).toLocaleString("ro-RO", { maximumFractionDigits: 1 })} km`);
 const ymdLocal = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 /** "azi" / "mâine" / "joi, 24 oct." for a YYYY-MM-DD day */
@@ -82,7 +84,9 @@ export function Radar({ inspId, myName, onBack }: { inspId: string; myName: stri
 
   if (sel && an) {
     const first = given(sel.name), me1 = given(myName);
-    const msg = myTime
+    const msg = !sel.when
+      ? `Salut, ${first}! Sunt ${me1}, de pe UVALO. Am o inspecție ${myTime ? `${dayLabel} la ${myTime}` : "încă neprogramată"}, la ${fmtKm(sel.dist_m)} de una de-a ta pe care încă nu ai programat-o. Dacă vrei, o poți face tot atunci și ne ajutăm reciproc.`
+      : myTime
       ? `Salut, ${first}! Sunt ${me1}, de pe UVALO. Am și eu o inspecție ${dayLabel} la ${myTime}, la ${fmtKm(sel.dist_m)} de a ta de la ${hhmm(sel.when)}. Dacă vrei, ne ajutăm reciproc sau mergem împreună.`
       : `Salut, ${first}! Sunt ${me1}, de pe UVALO. Am de făcut o inspecție la ${fmtKm(sel.dist_m)} de a ta de ${dayLabel} de la ${hhmm(sel.when)} și încă nu am programat-o. Dacă vrei, o pot face pe a mea tot atunci și ne ajutăm reciproc.`;
     const tel = digits(sel.phone), D = cap(dayLabel);
@@ -98,7 +102,7 @@ export function Radar({ inspId, myName, onBack }: { inspId: string; myName: stri
             <span className="mbRdWhoT"><b>{sel.name}</b><small>{[sel.legit && `leg. ANEVAR ${sel.legit}`, sel.org].filter(Boolean).join(" · ") || "Evaluator"}</small></span>
           </div>
           <div className="mbRdTwo">
-            <div><small className="gold">INSPECȚIA LUI</small><b>{D}, {hhmm(sel.when)}</b><small>{[sel.prop_type, sel.zone].filter(Boolean).join(" · ")}</small><small className="dim">zona, nu adresa exactă</small></div>
+            <div><small className="gold">INSPECȚIA LUI</small><b>{sel.when ? `${D}, ${hhmm(sel.when)}` : "Neprogramată"}</b><small>{[sel.prop_type, sel.zone].filter(Boolean).join(" · ")}</small><small className="dim">zona, nu adresa exactă</small></div>
             <div><small className="blue">INSPECȚIA TA</small><b>{myTime ? `${D}, ${myTime}` : "Neprogramată"}</b><small>{shortAddr(an.address)}</small><small className="dim">la {fmtKm(sel.dist_m)} de a lui</small></div>
           </div>
           <div className="mbRdMsg">
@@ -142,14 +146,14 @@ export function Radar({ inspId, myName, onBack }: { inspId: string; myName: stri
         <span className="rot"><i className="sweep" /><i className="beam" /></span>
         <i className="ping" /><i className="me" /><em className="meTag">{myTime ? `Tu · ${myTime}` : "Inspecția ta"}</em>
         {found.map((f) => { const b = blip(f); return (
-          <button key={f.id} type="button" className="blip" style={{ left: b.x, top: b.y }} onClick={() => setSel(f)} aria-label={`${f.name}, ${hhmm(f.when)}, la ${fmtKm(f.dist_m)} de inspecția ta`}>
-            <i style={{ animationDelay: `${b.delay ?? 0}s` }} /><span style={{ animationDelay: `${b.delay ?? 0}s` }}>{initials(f.name)} · {hhmm(f.when)}</span>
+          <button key={f.id} type="button" className="blip" style={{ left: b.x, top: b.y }} onClick={() => setSel(f)} aria-label={`${f.name}, ${at(f.when)}, la ${fmtKm(f.dist_m)} de inspecția ta`}>
+            <i style={{ animationDelay: `${b.delay ?? 0}s` }} /><span style={{ animationDelay: `${b.delay ?? 0}s` }}>{initials(f.name)} · {f.when ? hhmm(f.when) : "—"}</span>
           </button>
         ); })}
       </div>
 
       <p className="mbRdSum">{err ? <span className="warn">{err}</span> : !res ? "Caut inspecțiile colegilor din jur…"
-        : found.length ? <><b>{found.length} {found.length === 1 ? "coleg are" : "colegi au"}</b> inspecții {dayLabel} în {km} km de inspecția ta</> : <>Niciun coleg cu inspecție {dayLabel} în {km} km de inspecția ta</>}</p>
+        : found.length ? <><b>{found.length} {found.length === 1 ? "coleg are" : "colegi au"}</b> inspecții {dayLabel} sau neprogramate în {km} km de inspecția ta</> : <>Niciun coleg cu inspecție {dayLabel} sau neprogramată în {km} km de inspecția ta</>}</p>
 
       <div className="mbRdSheet">
         <span className="mbRdHandle" />
@@ -162,7 +166,7 @@ export function Radar({ inspId, myName, onBack }: { inspId: string; myName: stri
                   {f.avatar ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={`/api/avatar/${f.user_id}`} alt="" /> : <span className="mbRdIni">{initials(f.name)}</span>}
                   <span className="mbRdCardT">
                     <b>{f.name}</b>
-                    <small>{[f.prop_type, f.zone].filter(Boolean).join(" · ")} · {dayLabel} {hhmm(f.when)}</small>
+                    <small>{[f.prop_type, f.zone].filter(Boolean).join(" · ")} · {f.when ? `${dayLabel} ${hhmm(f.when)}` : "neprogramată"}</small>
                     <small className="gold">{fmtKm(f.dist_m)} de inspecția ta{myTime ? ` de la ${myTime}` : ""}</small>
                   </span>
                   <span className="mbRdGo">{PHONE}</span>

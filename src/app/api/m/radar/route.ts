@@ -7,7 +7,7 @@ import { track } from "@/lib/track";
  * does it (name, phone, card), when, the kind of property and the zone (the locality, never the exact address), the position
  * rounded to ~100 m (for the blip on the radar) and the distance to my inspection.
  */
-type Row = { id: string; address: string; prop_type: string | null; uat: string | null; scheduled_at: string; duration_min: number | null; lat: number; lng: number;
+type Row = { id: string; address: string; prop_type: string | null; uat: string | null; scheduled_at: string | null; duration_min: number | null; lat: number; lng: number;
   assignee_id: string; name: string; email: string; phone: string | null; anevar_no: string | null; has_avatar: number; org_name: string | null };
 
 const distM = (a: [number, number], b: [number, number]) => Math.hypot((a[0] - b[0]) * 111320, (a[1] - b[1]) * 111320 * Math.cos((a[0] * Math.PI) / 180));
@@ -18,6 +18,15 @@ function zoneOf(address: string, uat: string | null) {
   const loc = parts.find((p) => !/\d/.test(p) && !/^(str|strada|calea|bd|b-dul|bulevardul|aleea|piata|piața|intr|drum|sos|șos)/i.test(p));
   return loc ?? parts[parts.length - 1] ?? address;
 }
+
+/** Now in Romania, written like `scheduled_at` ("YYYY-MM-DDTHH:MM", local time). */
+function nowRo() {
+  const p = Object.fromEntries(new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Bucharest", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" })
+    .formatToParts(new Date()).map((x) => [x.type, x.value]));
+  return `${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}`;
+}
+/** A local "YYYY-MM-DDTHH:MM" plus some minutes, in the same form (computed as if UTC, so no time-zone shift). */
+const addMin = (t: string, m: number) => new Date(Date.parse(`${t}:00Z`) + m * 60_000).toISOString().slice(0, 16);
 
 export async function GET(req: Request) {
   const a = await api();
@@ -42,13 +51,18 @@ export async function GET(req: Request) {
   const { results } = await db.prepare(`SELECT i.id, i.address, i.prop_type, i.uat, i.scheduled_at, i.duration_min, i.lat, i.lng, i.assignee_id,
       COALESCE(NULLIF(a.name, ''), a.email) AS name, a.email, a.phone, a.anevar_no, a.avatar IS NOT NULL AS has_avatar, og.name AS org_name
     FROM inspections i JOIN users a ON a.id = i.assignee_id LEFT JOIN orgs og ON og.id = i.org_id
-    WHERE i.deleted_at IS NULL AND i.status IN ('plan', 'lucru') AND i.scheduled_at LIKE ? AND i.assignee_id <> ? AND a.status = 'active'
+    WHERE i.deleted_at IS NULL AND i.assignee_id <> ? AND a.status = 'active'
+      -- scheduled that day (the ones already over are dropped below), or not scheduled yet ("De programat")
+      AND ((i.status IN ('plan', 'lucru') AND i.scheduled_at LIKE ?) OR (i.status = 'prog' AND i.scheduled_at IS NULL))
       -- visible on the radar: „Da”; „Doar colaboratori” stays hidden until collaborators are defined, „Nu” never shows
       AND COALESCE(i.radar, 'yes') = 'yes'
       AND i.lat BETWEEN ? AND ? AND i.lng BETWEEN ? AND ? ORDER BY i.scheduled_at LIMIT 300`)
-    .bind(`${day}%`, c.user.id, lat - dLat, lat + dLat, lng - dLng, lng + dLng).all<Row>();
+    .bind(c.user.id, `${day}%`, lat - dLat, lat + dLat, lng - dLng, lng + dLng).all<Row>();
   const here: [number, number] = [lat, lng];
-  const found = results.map((r) => ({ r, d: distM(here, [r.lat, r.lng]) })).filter((x) => x.d <= km * 1000).sort((x, y) => x.d - y.d)
+  // only what is still ahead: an inspection whose time is over (left open, the sheet never finished) is not shown
+  const now = nowRo();
+  const ahead = (r: Row) => !r.scheduled_at || addMin(r.scheduled_at.slice(0, 16), r.duration_min ?? 60) > now;
+  const found = results.filter(ahead).map((r) => ({ r, d: distM(here, [r.lat, r.lng]) })).filter((x) => x.d <= km * 1000).sort((x, y) => x.d - y.d)
     .map(({ r, d }) => ({
       id: r.id, user_id: r.assignee_id, name: r.name, email: r.email, phone: r.phone, legit: r.anevar_no, avatar: !!r.has_avatar, org: r.org_name,
       prop_type: r.prop_type, zone: zoneOf(r.address, r.uat), when: r.scheduled_at, duration_min: r.duration_min ?? 60,

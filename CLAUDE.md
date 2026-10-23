@@ -719,7 +719,8 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   (`tel:`), Trimite SMS (`sms:?body=`) sau email, WhatsApp (`wa.me`). Fără colegi: „Caută în 10 / 25 km”. Rescanează la fiecare schimbare și la
   60 s. `GET /api/m/radar?insp=<id>&km=&day=` (403 pentru non-super-admini; 404 dacă inspecția nu e a mea de făcut sau e finalizată; fără
   coordonate → eroare): centrul și ziua din inspecție (`day` doar pentru cea neprogramată), inspecțiile `plan` / `lucru` ale **altor** utilizatori
-  activi din acea zi (`scheduled_at LIKE 'YYYY-MM-DD%'`), în caseta apoi în raza cerută (`found`: nume, telefon, email, legitimație, birou,
+  activi din acea zi (`scheduled_at LIKE 'YYYY-MM-DD%'`) **care nu s-au terminat încă** (început + durată > acum, ora României — cele trecute și
+  neînchise nu apar) + cele **neprogramate** (`prog`, fără dată: pe radar „—”, în listă „neprogramată”, mesaj propus potrivit), în caseta apoi în raza cerută (`found`: nume, telefon, email, legitimație, birou,
   `prop_type`, `zone` = `uat` sau localitatea din adresă — **nu adresa**, `lat`/`lng` rotunjite la 3 zecimale ≈ 100 m, `dist_m` față de inspecția
   mea) + `anchor` (inspecția mea). Eveniment `inspectii`/`radar` (țintă = inspecția) `{km, day, n}`. Urmează: deschiderea pentru toți (cu opțiunea
   „apar pe radar”), notificare când apare un coleg, mesaj prin Colaborări în loc de SMS.
