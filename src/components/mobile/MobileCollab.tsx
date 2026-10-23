@@ -43,7 +43,9 @@ function Av({ p, size = 32 }: { p: Person; size?: number }) {
     : <span className="mcAv" style={{ width: size, height: size }} aria-hidden="true">{p.init}</span>;
 }
 
-export function MobileCollab({ on, app, online, say, pos }: { on: boolean; app: string; online: boolean; say: (m: string) => void; pos: React.RefObject<[number, number] | null> }) {
+export function MobileCollab({ on, app, online, say, pos, onMe, me }: { on: boolean; app: string; online: boolean; say: (m: string) => void; pos: React.RefObject<[number, number] | null>; onMe?: () => void; me?: React.ReactNode }) {
+  // the account opens from the avatar at the top (it is no longer in the menu)
+  const meBtn = onMe ? <button type="button" className="mbAv mbHeadMe" onClick={onMe} aria-label="Contul meu">{me}</button> : null;
   const [st, setSt] = useState<St | null>(null);
   const [err, setErr] = useState("");
   const [tab, setTab] = useState<Tab>("feed");
@@ -84,7 +86,7 @@ export function MobileCollab({ on, app, online, say, pos }: { on: boolean; app: 
 
   if (!on) return (
     <>
-      <header className="mbHead small"><b>Colaborări</b><small>Lucrări între evaluatori, în zona ta</small></header>
+      <header className="mbHead small">{meBtn}<b>Colaborări</b><small>Lucrări între evaluatori, în zona ta</small></header>
       <div className="mbBody"><div className="mbSoon"><b>În curând</b><small>Colaborările nu sunt încă deschise pentru contul tău.</small></div></div>
     </>
   );
@@ -99,7 +101,7 @@ export function MobileCollab({ on, app, online, say, pos }: { on: boolean; app: 
   if (near && here) feed.sort((a, b) => (a.here ?? 1e9) - (b.here ?? 1e9));
   return (
     <>
-      <header className="mbHead small"><b>Colaborări</b><small>Lucrări între evaluatori, în zona ta</small></header>
+      <header className="mbHead small">{meBtn}<b>Colaborări</b><small>Lucrări între evaluatori, în zona ta</small></header>
       <div className="mbBody">
         <div className="mcTabs" role="tablist" aria-label="Colaborări">
           <button type="button" role="tab" aria-selected={tab === "feed"} onClick={() => setTab("feed")}>Anunțuri</button>

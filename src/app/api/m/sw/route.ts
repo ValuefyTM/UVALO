@@ -1,7 +1,7 @@
 // Service worker of the phone app (served at /sw.js on inspectii.uvalo.ro, scope "/"): the app opens at once and without signal
 // (the page from memory, refreshed in the background; the scripts are kept), the data always goes to the network (answers and photos are queued by the page);
 // it shows the push notifications (/api/m/push, webpush.ts) and opens the inspection when one is tapped.
-const SW = `const C = "uvalo-insp-v5";
+const SW = `const C = "uvalo-insp-v6";
 self.addEventListener("install", (e) => { self.skipWaiting(); e.waitUntil(caches.open(C).then((c) => c.addAll(["/"]).catch(() => {}))); });
 self.addEventListener("activate", (e) => { e.waitUntil(caches.keys().then((k) => Promise.all(k.filter((x) => x !== C).map((x) => caches.delete(x)))).then(() => self.clients.claim())); });
 self.addEventListener("fetch", (e) => {
@@ -11,7 +11,8 @@ self.addEventListener("fetch", (e) => {
     e.respondWith(caches.match(e.request).then((r) => r || fetch(e.request).then((res) => { const cp = res.clone(); caches.open(C).then((c) => c.put(e.request, cp)); return res; })));
     return;
   }
-  if (e.request.mode === "navigate") {
+  // only the app's own page: the locator opened in the app (/localizare, an iframe) is a navigation too and must go to the network
+  if (e.request.mode === "navigate" && u.pathname === "/") {
     // the app opens at once from memory (stale-while-revalidate): the page is refreshed in the background for the next start
     // a new page is kept only with its scripts and styles, so the next start (after a deploy) has everything it needs
     const net = fetch(e.request).then((res) => {

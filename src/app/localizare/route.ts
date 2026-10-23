@@ -1,6 +1,8 @@
 import { locatorAccess, locatorAsset } from "@/lib/locator";
 import { track } from "@/lib/track";
 import { gmapsConfig, hasGoogle } from "@/lib/gmaps";
+import { APP_HEAD, appScript } from "@/lib/locator-app";
+import { origin } from "@/lib/site";
 
 // /localizare — cadastral locator (cadastral plans, Timiș), for people whose firm has the module.
 export const dynamic = "force-dynamic";
@@ -30,33 +32,43 @@ document.addEventListener("keydown",function(e){if(e.key==="Escape"&&document.ge
 b.onclick=function(){b.disabled=true;b.textContent="Se salvează…";fetch("/api/localizare/ack",{method:"POST"}).catch(function(){}).finally(function(){d.remove();document.documentElement.style.overflow=""})}})()</script>`;
 
 export async function GET(req: Request) {
+  // ?app=1: inside the phone app (an iframe on inspectii.uvalo.ro) — see locator-app.ts; no redirects out of the frame
+  const inApp = new URL(req.url).searchParams.get("app") === "1";
   const a = await locatorAccess();
+  if ("status" in a && inApp && (a.status === 401 || ("maintenance" in a && a.maintenance))) {
+    const why = a.status === 401 ? "Autentifică-te din nou în aplicație (Contul meu → Ieși din cont, apoi intră din nou)." : "Platforma este în mentenanță. Revenim în curând.";
+    return new Response(blocked(why, inApp), { status: a.status, headers: { "Content-Type": "text/html; charset=utf-8", ...PRIVATE } });
+  }
   if ("status" in a) {
     if (a.status === 401) return Response.redirect(new URL("/login", req.url), 303);
     if ("maintenance" in a && a.maintenance) return Response.redirect(new URL("/mentenanta", req.url), 303);
     const why = a.c?.off.includes("localizare") ? "Instrumentul este dezactivat temporar de administratorii UVALO. Revine în curând." : a.c?.block ?? "Abonamentul firmei tale nu include localizarea cadastrală.";
-    return new Response(blocked(why), { status: a.status, headers: { "Content-Type": "text/html; charset=utf-8", ...PRIVATE } });
+    return new Response(blocked(why, inApp), { status: a.status, headers: { "Content-Type": "text/html; charset=utf-8", ...PRIVATE } });
   }
   const page = await locatorAsset("index.html", req);
   if (!page) return new Response("Pagina nu este disponibilă momentan.", { status: 503, headers: PRIVATE });
   const [gm, ack] = await Promise.all([
     hasGoogle(a.c) ? gmapsConfig() : null,
     a.db.prepare("SELECT loc_ack_at FROM users WHERE id = ?").bind(a.c.user.id).first<{ loc_ack_at: string | null }>(),
-    track(a.db, a.c, "localizare", "page"),
+    track(a.db, a.c, "localizare", "page", null, inApp ? { app: 1 } : undefined),
   ]);
   // Google maps only for paid plans with the key set in Cloudflare; otherwise the free maps.
   const GM = gm ? `<script>window.VF_GMAPS=${JSON.stringify(gm).replace(/</g, "\\u003c")}</script>` : "";
   // counties without plans: reading a CF / site plan with AI needs the site analysis module (same API)
   const DOC = `<script>window.UVALO_DOC=${JSON.stringify({ ai: a.c.super || a.c.modules.includes("amplasament") })}</script>`;
-  const html = (await page.text())
-    .replace("</head>", `${PWA_HEAD}${GM}${DOC}</head>`)
-    .replace("</body>", `${ack?.loc_ack_at ? "" : NOTICE}<script src="/api/localizare/script" defer></script><script src="/api/localizare/track-js" defer></script>${PWA_SCRIPT}<script src="/presence.js" defer></script><script src="/feedback.js" defer data-bottom="44" data-bottom-mobile="84"></script></body>`);
+  const notice = ack?.loc_ack_at ? "" : NOTICE, scripts = `<script src="/api/localizare/script" defer></script><script src="/api/localizare/track-js" defer></script>`;
+  const html = inApp
+    // in the app: the app's layout, no own install / service worker / feedback button (the app has its own)
+    ? (await page.text()).replace("</head>", `${APP_HEAD}${GM}${DOC}</head>`).replace("</body>", `${notice}${appScript(await origin())}${scripts}</body>`)
+    : (await page.text())
+      .replace("</head>", `${PWA_HEAD}${GM}${DOC}</head>`)
+      .replace("</body>", `${notice}${scripts}${PWA_SCRIPT}<script src="/presence.js" defer></script><script src="/feedback.js" defer data-bottom="44" data-bottom-mobile="84"></script></body>`);
   return new Response(html, { headers: { "Content-Type": "text/html; charset=utf-8", ...PRIVATE } });
 }
 
-function blocked(why: string) {
+function blocked(why: string, inApp = false) {
   return `<!DOCTYPE html><html lang="ro"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Localizator cadastral · UVALO</title>
 <style>@font-face{font-family:"Plus Jakarta Sans";font-display:swap;font-weight:200 800;src:url(/fonts/plus-jakarta-sans-latin-ext.woff2) format("woff2");unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+1E00-1E9F,U+20A0-20C0,U+2C60-2C7F,U+A720-A7FF}@font-face{font-family:"Plus Jakarta Sans";font-display:swap;font-weight:200 800;src:url(/fonts/plus-jakarta-sans-latin.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+20AC,U+2122,U+2212}body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:#F2ECE0;color:#111111;font-family:'Plus Jakarta Sans',system-ui,-apple-system,'Segoe UI',sans-serif}
 .box{width:min(440px,100%);background:#fff;border:1px solid #E2D8C4;border-radius:22px;padding:30px 26px;display:flex;flex-direction:column;gap:14px}h1{margin:0;font-size:21px}p{margin:0;font-size:14px;line-height:1.6;color:#4A4A4A}a{color:#9A5F00;font-weight:700}</style></head>
-<body><div class="box"><h1>Localizatorul cadastral nu este disponibil</h1><p>${why.replace(/[<>&]/g, "")}</p><p>Scrie-ne la <a href="mailto:office@uvalo.ro">office@uvalo.ro</a> ca să activăm accesul.</p><p><a href="/">← Înapoi la UVALO</a></p></div></body></html>`;
+<body><div class="box"><h1>Localizatorul cadastral nu este disponibil</h1><p>${why.replace(/[<>&]/g, "")}</p><p>Scrie-ne la <a href="mailto:office@uvalo.ro">office@uvalo.ro</a> ca să activăm accesul.</p>${inApp ? "" : `<p><a href="/">← Înapoi la UVALO</a></p>`}</div></body></html>`;
 }

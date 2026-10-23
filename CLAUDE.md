@@ -622,7 +622,9 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   altfel programarea; folosită în listă („Făcută …”), în cardurile Azi / Săpt. asta și în calendar. Detaliul arată „Data inspecției” în
   Proprietatea și „Inspecție făcută pe … la …”; încăperile NU mai apar în detaliu (doar în fișă).
   La o inspecție întoarsă și trimisă din nou, `finished_at` rămâne **data primei finalizări** (`redo_prev_at`).
-- **Navigarea pe telefon**: meniul de jos = **Inspecții** (ecranul de start, intern `home`; iconiță de fișă) / **Colaborări** / Contul meu. Acasă arată doar inspecțiile nefinalizate (filtrul: „Toate” +
+- **Navigarea pe telefon**: meniul de jos (`.mbNav`, bară închisă plutitoare, rotunjită, cu blur) = **Inspecții** (ecranul de start, intern `home`) /
+  **Localizator** în mijloc (doar semnul de locație, cerc portocaliu ridicat, `.mbNavLoc`) / **Colaborări**. **Contul meu nu mai e în meniu**: se
+  deschide din avatarul de sus (Acasă și antetul Colaborărilor, `.mbHeadMe`), ca ecran cu „‹ Înapoi”. Acasă arată doar inspecțiile nefinalizate (filtrul: „Toate” +
   Completări / În lucru / De făcut / De programat, fără Finalizate); finalizatele (ultimele 90 de zile, `myAssigned`) sunt în Contul meu,
   „Inspecții finalizate”. „De trimis” nu mai e în meniu: iconița cu săgeată și numărul apare lângă clopoțel doar când există fișe / poze
   netrimise (`.mbQueueBtn` → ecranul coadă). Tab-ul Colaborări (`Collab`) arată deocamdată „În curând”; `phoneCollab()`
@@ -653,6 +655,19 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   starea „De programat”). Tipul bunului e obligatoriu și vine primul (doar tipurile cu fișă, `typesOf`); fișele apar abia după alegerea tipului,
   ca listă de carduri (`.mbTplPick`): ale tipului + cele pentru orice imobil, prima preselectată. `POST /api/m/new` → `saveInspection` cu `assignee_kind = me`,
   istoricul „Creată pe telefon”, eveniment `phone_new`. Cere rețea.
+- **Localizatorul în aplicație** (tab-ul din mijloc, `LocTab` în `MobileApp.tsx`; `/api/m/state` dă `locOn` = modulul `localizare`, altfel
+  „Nu este în planul contului tău”): un iframe pe **aceeași pagină ca pe web**, `/localizare?app=1&t=<safe-area sus>&b=<spațiul meniului>`
+  (`worker.ts` lasă `/localizare` pe `INSP_HOSTS`; sesiunea e a telefonului), montat la prima deschidere și doar ascuns la schimbarea tab-ului
+  (harta își păstrează locul). Ruta (`src/app/localizare/route.ts`, `inApp`) pune `APP_HEAD` + `appScript(origin())` din `src/lib/locator-app.ts` în
+  locul PWA-ului propriu, `presence.js` și `feedback.js`; 401 / mentenanță → mesaj în cadru, fără redirecționare. Modul aplicație: harta pe tot
+  ecranul (sub meniul plutitor), **bara de căutare** sus (`.uvFind`, „Caută adresă, coordonate sau nr. cadastral”) care deschide formularul
+  localizatorului (`#f`: nr. cadastral / topo cu UAT, adresă / coordonate / Stereo 70) ca panou de sus (`body.uvSearch`), butoanele hărții și
+  **Straturi** sub bară; **fișa parcelei** (`#out` + nota + descărcările, mutate în `.uvSheet`) urcă de jos când `#out` primește un rezultat
+  (MutationObserver): jumătate de ecran (`uvPeek`), tot ecranul (`uvFull`) sau închisă, trasă de liniuța `.uvGrip` (atingerea comută); închisă cu
+  rezultat → pastila „Vezi fișa ↑” (`.uvOpen`); la deschidere parcela se reîncadrează în zona liberă (`fitFree`, stratul `sel`). Linkurile spre
+  restul platformei (ex. analiza amplasamentului) se deschid pe `APP_URL`, în browser. Eveniment `localizare`/`page` cu `{app:1}`. Service
+  worker-ul aplicației (`uvalo-insp-v6`) servește din memorie doar navigarea spre `/`, nu și pe cea din iframe. Cheia Google Maps trebuie să
+  accepte și referrer-ul `inspectii.uvalo.ro/*` pentru hărțile Google din localizator.
 - **Radar colegi** (prima fază: **doar super-adminii**, `user.super` din `/api/m/state`; design în canvasul „Radar colegi UVALO”): pornește **din
   detaliul unei inspecții a mele neefectuate** (`Detail`: cardul compact `RadarBanner` — un buton întreg, înalt cât mini-radarul de 40 px, „Scanează după colegi · TEST” + „›”, doar dacă eu o fac,
   nu e finalizată / solicitare în așteptare și are coordonate; **nu mai e pe Acasă și nu folosește GPS-ul telefonului**) → ecranul `Radar`

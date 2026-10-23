@@ -1037,7 +1037,8 @@ function copyText(txt,btn,on,off){const ok=()=>{if(btn)flash(btn,on,off)};
   const fb=()=>{const t=document.createElement('textarea');t.value=txt;t.setAttribute('readonly','');t.style.position='fixed';t.style.opacity='0';document.body.append(t);t.select();try{document.execCommand('copy');ok()}catch(e){toast('Copierea nu e permisă în acest browser')}t.remove()};
   if(navigator.clipboard)navigator.clipboard.writeText(txt).then(ok).catch(fb);else fb()}
 function centerCard(o){
-  const ll=o.c||centroidW(o), st=stCenter(o);
+  // a building's .c is its label (C1, C2…); its centre is .cc
+  const ll=o.id!==undefined?(o.c||centroidW(o)):(o.cc||centroidW(o)), st=stCenter(o);
   const a=ll[0].toFixed(6)+', '+ll[1].toFixed(6), b=st[0].toFixed(3)+', '+st[1].toFixed(3);
   return '<div class="sec"><span class="h2">Centrul '+(o.id!==undefined?'parcelei':'construcției')+'</span><div class="card">'+
     '<div class="crow"><div><small>WGS84 · LAT, LON</small><b>'+a+'</b></div><button type="button" class="cp" data-copy="'+a+'">Copiază</button></div>'+

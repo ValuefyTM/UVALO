@@ -35,7 +35,7 @@ type Draft = { answers: Record<string, string | string[]>; rooms: Room[]; findin
   sig?: string | null; signer?: { who: "contact" | "other"; other: string }; // the signature stays on the phone until the inspection is sent
   loc?: Loc | null; // where the inspection is made: the GPS fix taken when the sheet was opened, or the pin moved on the map before signing
   rev?: number }; // the sheet it belongs to (inspections.sheet_rev): a sheet deleted on the web makes the phone's draft obsolete
-type View = { v: "home" } | { v: "detail"; id: string } | { v: "form"; id: string; sec: number } | { v: "rooms"; id: string } | { v: "photos"; id: string } | { v: "sign"; id: string } | { v: "queue" } | { v: "collab" } | { v: "account" } | { v: "new" } | { v: "notifs" } | { v: "radar"; id: string };
+type View = { v: "home" } | { v: "detail"; id: string } | { v: "form"; id: string; sec: number } | { v: "rooms"; id: string } | { v: "photos"; id: string } | { v: "sign"; id: string } | { v: "queue" } | { v: "collab" } | { v: "account" } | { v: "new" } | { v: "notifs" } | { v: "radar"; id: string } | { v: "loc" };
 
 const DAYS = ["DUM", "LUN", "MAR", "MIE", "JOI", "VIN", "SÂM"];
 const MONTHS = ["ianuarie", "februarie", "martie", "aprilie", "mai", "iunie", "iulie", "august", "septembrie", "octombrie", "noiembrie", "decembrie"];
@@ -82,6 +82,8 @@ export function MobileApp() {
   const [state, setState] = useState<"boot" | "login" | "noaccess" | "app">("boot");
   const [items, setItems] = useState<InspRow[]>([]);
   const [collabOn, setCollabOn] = useState(false); // Colaborări open for this account (same mode as on the web)
+  const [locOn, setLocOn] = useState(true); // the cadastral locator is in the account's modules
+  const locSeen = useRef(false); // the locator tab, once opened, stays loaded (the map keeps its place between tabs)
   const [appUrl, setAppUrl] = useState("");
   const [firms, setFirms] = useState<{ id: string; name: string }[]>([]); // offices I may create inspections for (angajat, allowed)
   const [cur, setCur] = useState<Insp | null>(null);
@@ -128,7 +130,7 @@ export function MobileApp() {
     setMe(j.user as Me);
     setItems((j.items as InspRow[]) ?? []);
     setFirms((j.firms as { id: string; name: string }[]) ?? []);
-    setCollabOn(!!j.collabOn); setAppUrl(String(j.app ?? ""));
+    setCollabOn(!!j.collabOn); setLocOn(j.locOn !== false); setAppUrl(String(j.app ?? ""));
     setInfo((j.info as Info) ?? null);
     setTpls((j.templates as Tpl[]) ?? []);
     setNotifs((j.notifs as Notif[]) ?? []);
@@ -415,7 +417,8 @@ export function MobileApp() {
   );
 
   const queueN = pending.length + finishQ;
-  const nav = view.v === "home" || view.v === "queue" || view.v === "collab" || view.v === "account";
+  const nav = view.v === "home" || view.v === "queue" || view.v === "collab" || view.v === "account" || view.v === "loc";
+  if (view.v === "loc" && !locSeen.current) locSeen.current = true;
   // the bell: today's / tomorrow's inspections not started yet, and what others did on my inspections
   const tday = ymd(new Date()), tmrw = ymd(new Date(Date.now() + 864e5));
   const reminders: Reminder[] = items.filter((i) => (i.status === "plan" || i.status === "prog") && i.scheduled_at && [tday, tmrw].includes(i.scheduled_at.slice(0, 10)))
@@ -461,10 +464,10 @@ export function MobileApp() {
       {view.v === "sign" && cur && draft && <Sign x={cur} d={draft} photos={pending.filter((p) => p.insp === cur.id && p.kind === "photo").length + cur.files.filter((f) => f.kind === "photo").length} change={change} onBack={() => history.back()} onFinish={finish}
         onRooms={() => go({ v: "rooms", id: cur.id })} onPhotos={() => go({ v: "photos", id: cur.id })} />}
       {view.v === "queue" && <Queue pending={pending} finishN={finishQ} items={items} online={online} onSend={async () => { const n = await sendAll(); say(n ? "Mai sunt elemente de trimis." : "Totul a fost trimis."); }} />}
-      {view.v === "collab" && <MobileCollab on={collabOn} app={appUrl} online={online} say={say} pos={pos} />}
+      {view.v === "collab" && <MobileCollab on={collabOn} app={appUrl} online={online} say={say} pos={pos} onMe={() => go({ v: "account" })} me={me && <Avatar me={me} />} />}
       {view.v === "notifs" && <Notifs notifs={notifs} reminders={reminders} seenAt={seen.at} onBack={() => { markSeen(); history.back(); }}
         onOpen={(id) => { markSeen(); void open(id, { v: "detail", id }); }} />}
-      {view.v === "account" && <Account me={me} info={info} done={items.filter(isDone)} onOpen={(id) => open(id, { v: "detail", id })} queueN={queueN} online={online} onSend={async () => { const n = await sendAll(); say(n ? "Mai sunt elemente de trimis." : "Totul a fost trimis."); }} say={say} />}
+      {view.v === "account" && <Account onBack={() => history.back()} me={me} info={info} done={items.filter(isDone)} onOpen={(id) => open(id, { v: "detail", id })} queueN={queueN} online={online} onSend={async () => { const n = await sendAll(); say(n ? "Mai sunt elemente de trimis." : "Totul a fost trimis."); }} say={say} />}
       {view.v === "new" && <NewInsp tpls={tpls} firms={firms} online={online} pos={pos} onBack={() => history.back()} onDone={async (id, now) => {
         await load();
         // the "new inspection" screen is replaced in the history: Back from the sheet goes home, not to an empty form
@@ -474,9 +477,12 @@ export function MobileApp() {
       </div>
       {nav && (
         <nav className="mbNav" aria-label="Meniu">
-          <button type="button" aria-current={view.v === "home" ? "page" : undefined} onClick={() => go({ v: "home" })}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="4" width="14" height="17" rx="2" /><path d="M9 4V3h6v1M9 10h6M9 14h6M9 18h4" /></svg>Inspecții</button>
-          <button type="button" aria-current={view.v === "collab" ? "page" : undefined} onClick={() => go({ v: "collab" })}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="8" cy="8" r="3.2" /><circle cx="17" cy="9" r="2.6" /><path d="M2.5 20c.8-3.4 3-5.4 5.5-5.4s4.7 2 5.5 5.4M14 15c2.6-.6 5.6.6 7 4.6" /></svg>Colaborări</button>
-          <button type="button" aria-current={view.v === "account" ? "page" : undefined} onClick={() => go({ v: "account" })}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="8" r="4" /><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6" /></svg>Contul meu</button>
+          <button type="button" aria-current={view.v === "home" ? "page" : undefined} onClick={() => go({ v: "home" })}><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="4" width="14" height="17" rx="2.5" /><path d="M9 4V3h6v1M9 10h6M9 14h6M9 18h4" /></svg><span>Inspecții</span></button>
+          {/* the locator: only the sign, in orange, raised in the middle */}
+          <button type="button" className="mbNavLoc" aria-label="Localizator cadastral" aria-current={view.v === "loc" ? "page" : undefined} onClick={() => go({ v: "loc" })}>
+            <span><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round"><path d="M12 21.5s-6.5-6.1-6.5-11.2a6.5 6.5 0 0 1 13 0c0 5.1-6.5 11.2-6.5 11.2z" /><circle cx="12" cy="10.2" r="2.4" /></svg></span>
+          </button>
+          <button type="button" aria-current={view.v === "collab" ? "page" : undefined} onClick={() => go({ v: "collab" })}><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="8" cy="8" r="3.2" /><circle cx="17" cy="9" r="2.6" /><path d="M2.5 20c.8-3.4 3-5.4 5.5-5.4s4.7 2 5.5 5.4M14 15c2.6-.6 5.6.6 7 4.6" /></svg><span>Colaborări</span></button>
         </nav>
       )}
       {sched && <ScheduleSheet x={sched} online={online} onClose={() => setSched(null)} onSave={async (when, dur) => {
@@ -494,6 +500,7 @@ export function MobileApp() {
           <i><s style={{ width: `${Math.round((up.done / up.total) * 100)}%` }} /></i>
         </div>
       )}
+      {locSeen.current && <LocTab on={locOn} shown={view.v === "loc"} />}
       {toast && <div className="mbToast" role="status">{toast}</div>}
     </div>
   );
@@ -890,6 +897,28 @@ function ScheduleSheet({ x, online, onClose, onSave }: { x: Sched; online: boole
 /* ---------- inspection detail ---------- */
 
 /** A small map of the property (Leaflet + OSM), not interactive: a tap opens the navigation. */
+/** The cadastral locator in the app: the locator page itself (/localizare?app=1: the map on the whole screen, the search on top,
+ *  the parcel sheet sliding up from the bottom), kept loaded once opened and only hidden when another tab is shown. */
+function LocTab({ on, shown }: { on: boolean; shown: boolean }) {
+  // the phone's top safe area and the space of the floating menu, measured here (an iframe does not know them): the map goes under both
+  const [src] = useState(() => {
+    const d = document.createElement("div");
+    d.style.cssText = "position:fixed;visibility:hidden;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)";
+    document.body.appendChild(d);
+    const cs = getComputedStyle(d), t = Math.round(parseFloat(cs.paddingTop) || 0), b = Math.round(parseFloat(cs.paddingBottom) || 0);
+    d.remove();
+    return `/localizare?app=1&t=${t}&b=${b + 82}`;
+  });
+  if (!on) return shown ? (
+    <div className="mbLoc off"><div className="mbSoon"><b>Localizatorul cadastral</b><small>Nu este în planul contului tău. Scrie-ne la office@uvalo.ro ca să-l activăm.</small></div></div>
+  ) : null;
+  return (
+    <div className="mbLoc" hidden={!shown} aria-hidden={!shown}>
+      <iframe src={src} title="Localizator cadastral" allow="geolocation; clipboard-write" />
+    </div>
+  );
+}
+
 const ESRI_SAT = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
 const ESRI_LABELS = "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}";
 const ESRI_ROADS = "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}";
@@ -1721,7 +1750,7 @@ function NewInsp({ tpls, firms, online, pos, onBack, onDone }: { tpls: Tpl[]; fi
 
 type Perm = "granted" | "denied" | "prompt" | "unknown";
 
-function Account({ me, info, done, onOpen, queueN, online, onSend, say }: { me: Me | null; info: Info | null; done: InspRow[]; onOpen: (id: string) => void; queueN: number; online: boolean; onSend: () => Promise<void>; say: (m: string) => void }) {
+function Account({ onBack, me, info, done, onOpen, queueN, online, onSend, say }: { onBack: () => void; me: Me | null; info: Info | null; done: InspRow[]; onOpen: (id: string) => void; queueN: number; online: boolean; onSend: () => Promise<void>; say: (m: string) => void }) {
   const [perm, setPerm] = useState<{ cam: Perm; loc: Perm }>({ cam: "unknown", loc: "unknown" });
   const [used, setUsed] = useState<number | null>(null);
   const [synced, setSynced] = useState<string | null>(null);
@@ -1763,7 +1792,7 @@ function Account({ me, info, done, onOpen, queueN, online, onSend, say }: { me: 
   const s = info?.stats;
   return (
     <>
-      <header className="mbHead small"><b>Contul meu</b><small>UVALO Inspecții</small></header>
+      <header className="mbBar"><Back onClick={onBack} /><span><b>Contul meu</b><small>Profilul, telefonul acesta, sincronizarea</small></span></header>
       <div className="mbBody">
         <section className="mbCard">
           <span className="mbMe"><Avatar me={me} big /><span><b>{me?.name}</b><small>{me?.email}</small></span></span>

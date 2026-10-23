@@ -23,7 +23,7 @@ export async function GET() {
     },
     allowed, items, info, notifs, collab, firms,
     // Colaborări in the phone tab (same module and mode as on the web) and the web address for what stays on the web (profile, zones)
-    collabOn: c.modules.includes("colaborari"), app: await origin(),
+    collabOn: c.modules.includes("colaborari"), locOn: c.modules.includes("localizare"), app: await origin(),
     templates: tpls.map((t) => ({ id: t.id, name: t.name, prop_type: t.prop_type })),
   }, { headers: { "Cache-Control": "no-store" } });
 }
