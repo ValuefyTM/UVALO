@@ -664,7 +664,10 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   localizatorului (`#f`: nr. cadastral / topo cu UAT, adresă / coordonate / Stereo 70) ca panou de sus (`body.uvSearch`), butoanele hărții și
   **Straturi** sub bară; **fișa parcelei** (`#out` + nota + descărcările, mutate în `.uvSheet`) urcă de jos când `#out` primește un rezultat
   (MutationObserver): jumătate de ecran (`uvPeek`), tot ecranul (`uvFull`) sau închisă, trasă de liniuța `.uvGrip` (atingerea comută); închisă cu
-  rezultat → pastila „Vezi fișa ↑” (`.uvOpen`); la deschidere parcela se reîncadrează în zona liberă (`fitFree`, stratul `sel`). Linkurile spre
+  rezultat → pastila „Vezi fișa ↑” (`.uvOpen`); la deschidere parcela se reîncadrează în zona liberă (`fitFree`, stratul `sel`). **La deschidere pornește singur „Locația mea”** (`gpsStart()` fără busolă — pe iPhone ea cere o atingere,
+  butonul de pe hartă o pornește): punctul GPS cu cercul de precizie, planul localității încărcat, harta pe loc, parcelele din rază evidențiate și
+  lista lor în fișă (parcela pe care stai prima), bara GPS „Ești pe parcela …”; nu și cu un link spre o parcelă (`#uat-nr`). Căutarea oprește
+  urmărirea GPS (`gpsFollow = false`), ca harta să nu fie trasă înapoi la tine. Linkurile spre
   restul platformei (ex. analiza amplasamentului) se deschid pe `APP_URL`, în browser. Eveniment `localizare`/`page` cu `{app:1}`. Service
   worker-ul aplicației (`uvalo-insp-v6`) servește din memorie doar navigarea spre `/`, nu și pe cea din iframe. Cheia Google Maps trebuie să
   accepte și referrer-ul `inspectii.uvalo.ro/*` pentru hărțile Google din localizator.

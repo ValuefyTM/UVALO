@@ -62,7 +62,7 @@ var bar=document.createElement("button");bar.type="button";bar.className="uvFind
 var shade=document.createElement("div");shade.className="uvShade";
 var form=$("f"),top=document.createElement("div");top.className="uvFindTop";top.innerHTML='<b>Caută un imobil</b><button type="button" class="uvFindX" aria-label="Închide căutarea">×</button>';
 form.insertBefore(top,form.firstChild);
-function search(on){B.classList.toggle("uvSearch",on);if(on){var adr=!$("modeAdr").hidden;setTimeout(function(){try{(adr?$("addr"):$("q")).focus()}catch(e){}},260)}else{try{document.activeElement.blur()}catch(e){}}}
+function search(on){if(on){try{gpsFollow=false}catch(e){}}B.classList.toggle("uvSearch",on);if(on){var adr=!$("modeAdr").hidden;setTimeout(function(){try{(adr?$("addr"):$("q")).focus()}catch(e){}},260)}else{try{document.activeElement.blur()}catch(e){}}}
 bar.onclick=function(){search(true)};shade.onclick=function(){search(false)};top.querySelector("button").onclick=function(){search(false)};
 B.appendChild(shade);B.appendChild(bar);
 /* the sheet: #out (the parcel sheet), the note and the downloads */
@@ -103,5 +103,9 @@ check();
 document.addEventListener("click",function(e){var a=e.target.closest&&e.target.closest("a[href]");if(!a)return;var h=a.getAttribute("href");
   if(h&&h.charAt(0)==="/"&&h.indexOf("/api/")!==0&&h.indexOf("/localizare")!==0&&h.indexOf("//")!==0){e.preventDefault();window.open(APP+h,"_blank","noopener")}},true);
 relayout();
+/* at opening: my location — the dot and the accuracy circle, the plan of the locality loaded, the map on the spot, the parcels around
+   highlighted and listed in the sheet (the locator's own „Locația mea”), without the compass (it needs a tap on iPhone; the button on
+   the map still starts it). A link to a parcel (#uat-nr) opens that parcel instead. */
+if(!/^#[a-z-]+-/.test(location.hash)&&navigator.geolocation)setTimeout(function(){try{var cs=compassStart;compassStart=function(){return Promise.resolve(false)};gpsStart();compassStart=cs}catch(e){}},250);
 })()</script>`;
 }
