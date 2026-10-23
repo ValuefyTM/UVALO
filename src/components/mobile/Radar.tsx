@@ -19,6 +19,8 @@ const ymdLocal = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).pad
 /** "azi" / "mâine" / "joi, 24 oct." for a YYYY-MM-DD day */
 const dayWord = (day: string) => day === ymdLocal(new Date()) ? "azi" : day === ymdLocal(new Date(Date.now() + 864e5)) ? "mâine"
   : new Date(`${day}T12:00`).toLocaleDateString("ro-RO", { weekday: "long", day: "numeric", month: "short" });
+/** the given names out of a name written surname first, as in the ANEVAR register: "Stan Claudiu Bogdan" → "Claudiu Bogdan" */
+const given = (n: string) => { const w = n.trim().split(/\s+/).filter(Boolean); return w.length > 1 ? w.slice(1).join(" ") : w[0] ?? ""; };
 const cap = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
 /** the street part of an address, short enough for a card */
 const shortAddr = (a: string) => a.split(",").slice(0, 2).join(",").trim();
@@ -73,7 +75,7 @@ export function Radar({ inspId, myName, onBack }: { inspId: string; myName: stri
   };
 
   if (sel && an) {
-    const first = sel.name.split(/\s+/)[0], me1 = myName.split(/\s+/)[0];
+    const first = given(sel.name), me1 = given(myName);
     const msg = myTime
       ? `Salut, ${first}! Sunt ${me1}, de pe UVALO. Am și eu o inspecție ${dayLabel} la ${myTime}, la ${fmtKm(sel.dist_m)} de a ta de la ${hhmm(sel.when)}. Dacă vrei, ne ajutăm reciproc sau mergem împreună.`
       : `Salut, ${first}! Sunt ${me1}, de pe UVALO. Am de făcut o inspecție la ${fmtKm(sel.dist_m)} de a ta de ${dayLabel} de la ${hhmm(sel.when)} și încă nu am programat-o. Dacă vrei, o pot face pe a mea tot atunci și ne ajutăm reciproc.`;
@@ -174,13 +176,13 @@ export function Radar({ inspId, myName, onBack }: { inspId: string; myName: stri
   );
 }
 
-/** The card in the detail of one of my unfinished inspections that opens the radar around it. */
+/** The compact card in the detail of one of my unfinished inspections: the whole card opens the radar around it. */
 export function RadarBanner({ scheduled, onOpen }: { scheduled: boolean; onOpen: () => void }) {
   return (
-    <section className="mbRdBanner">
+    <button type="button" className="mbRdBanner" onClick={onOpen}>
       <span className="mbRdMini" aria-hidden="true"><i className="ring" /><i className="sweep" /><i className="dot" /></span>
-      <span className="mbRdBannerT"><b>Radar colegi <em>TEST</em></b><small>{scheduled ? "Cine mai are inspecții în ziua asta în jurul acestei inspecții." : "Cine are inspecții azi sau mâine în jurul acestei inspecții: o poți programa tot atunci."}</small></span>
-      <button type="button" className="mbBtn gold" onClick={onOpen}>Scanează după colegi</button>
-    </section>
+      <span className="mbRdBannerT"><b>Scanează după colegi <em>TEST</em></b><small>{scheduled ? "Cine mai are inspecții în ziua asta în jur" : "Cine are inspecții azi sau mâine în jur"}</small></span>
+      <span className="mbRdBannerGo" aria-hidden="true">›</span>
+    </button>
   );
 }

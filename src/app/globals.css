@@ -2142,17 +2142,18 @@ textarea.mbIn { min-height: 0; resize: vertical; }
 .mbRdActs .mbBtn[aria-disabled="true"] { opacity: .45; }
 .mbRdWa { text-align: center; color: var(--acc); text-decoration: none; }
 /* the banner on the home screen */
-.mbRdBanner { margin: 12px var(--mb-pad) 0; background: #141414; color: #fff; border-radius: 16px; padding: 12px; display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 4px 12px; align-items: center; }
-.mbRdMini { position: relative; width: 56px; height: 56px; border-radius: 50%; border: 1px solid rgba(224,173,79,.35); grid-row: span 2; overflow: hidden; }
+.mbRdBanner { margin: 12px var(--mb-pad) 0; background: #141414; color: #fff; border: 0; border-radius: 14px; padding: 8px 12px 8px 8px; display: flex; align-items: center; gap: 10px; width: calc(100% - 2 * var(--mb-pad)); text-align: left; font: inherit; cursor: pointer; }
+.mbRdBanner:active { transform: scale(.99); }
+.mbRdMini { position: relative; width: 40px; height: 40px; flex: none; border-radius: 50%; border: 1px solid rgba(224,173,79,.35); overflow: hidden; }
 .mbRdMini > i { position: absolute; display: block; }
-.mbRdMini .ring { left: 14px; top: 14px; width: 26px; height: 26px; border-radius: 50%; border: 1px solid rgba(224,173,79,.3); box-sizing: border-box; }
-.mbRdMini .sweep { left: 0; top: 0; width: 56px; height: 56px; border-radius: 50%; animation: rdSweep 3s linear infinite; background: conic-gradient(from 0deg, rgba(224,173,79,0) 0deg, rgba(224,173,79,0) 250deg, rgba(224,173,79,.55) 360deg); }
-.mbRdMini .dot { left: 24px; top: 24px; width: 8px; height: 8px; border-radius: 50%; background: #2563EB; border: 2px solid #fff; box-sizing: border-box; }
-.mbRdBannerT { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.mbRdBannerT b { font-size: 15px; }
+.mbRdMini .ring { left: 9px; top: 9px; width: 20px; height: 20px; border-radius: 50%; border: 1px solid rgba(224,173,79,.3); box-sizing: border-box; }
+.mbRdMini .sweep { left: 0; top: 0; width: 40px; height: 40px; border-radius: 50%; animation: rdSweep 3s linear infinite; background: conic-gradient(from 0deg, rgba(224,173,79,0) 0deg, rgba(224,173,79,0) 250deg, rgba(224,173,79,.55) 360deg); }
+.mbRdMini .dot { left: 15px; top: 15px; width: 8px; height: 8px; border-radius: 50%; background: #2563EB; border: 2px solid #fff; box-sizing: border-box; }
+.mbRdBannerT { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1; }
+.mbRdBannerT b { font-size: 14px; }
 .mbRdBannerT b em { font-style: normal; font-size: 10px; font-weight: 800; letter-spacing: .08em; color: var(--acc); border: 1px solid rgba(224,173,79,.5); border-radius: 999px; padding: 1px 6px; margin-left: 6px; vertical-align: 2px; }
-.mbRdBannerT small { color: #CFCFCF; line-height: 1.4; }
-.mbRdBanner .mbBtn { justify-self: start; }
+.mbRdBannerT small { color: #CFCFCF; font-size: 12px; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mbRdBannerGo { flex: none; font-size: 22px; line-height: 1; color: var(--acc); padding-right: 2px; }
 /* Contul meu → Semnătura mea */
 .mbSigCard { gap: 10px; }
 .mbSigCard > small { font-size: 13px; line-height: 1.5; color: var(--muted); }
