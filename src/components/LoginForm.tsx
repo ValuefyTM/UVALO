@@ -15,7 +15,7 @@ export function LoginForm({ expired, next = "/" }: { expired: boolean; next?: st
   const post = (url: string, body: object) =>
     fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }).then(async (r) => ({
       ok: r.ok,
-      data: (await r.json().catch(() => ({}))) as { error?: string },
+      data: (await r.json().catch(() => ({}))) as { error?: string; go?: string },
     }));
 
   const sendCode = async (e?: React.FormEvent) => {
@@ -32,9 +32,10 @@ export function LoginForm({ expired, next = "/" }: { expired: boolean; next?: st
     e.preventDefault();
     if (code.replace(/\D/g, "").length !== 6) return setMsg("Codul are 6 cifre.");
     setBusy(true); setMsg("");
-    const r = await post("/api/auth/verify", { email, code });
+    const r = await post("/api/auth/verify", { email, code, next });
     if (!r.ok) { setBusy(false); return setMsg(r.data.error || "Codul nu este corect."); }
-    location.href = next;
+    // through the one-time link: the session cookie is set by a page load too (some phones drop the one from the request)
+    location.href = r.data.go || next;
   };
 
   if (step === "code") {

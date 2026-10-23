@@ -131,6 +131,17 @@ export async function verifyCode(db: D1Database, rawEmail: string, code: string)
   return u && canSignIn(u) ? u : null;
 }
 
+/**
+ * After a correct code: a sign-in link valid 2 minutes, which the page opens right away. The session cookie is set again by that page load,
+ * like the button from the email: some phones (installed apps, strict browsers) do not keep a cookie set by a background request.
+ */
+export async function handoffLink(db: D1Database, email: string, next: string) {
+  const token = randomToken();
+  await db.prepare("INSERT INTO auth_codes (id, email, code_hash, token_hash, expires_at, ip) VALUES (?, ?, ?, ?, ?, 'notify')")
+    .bind(uuid(), normEmail(email), await sha256(randomToken()), await sha256(token), inMinutes(2)).run();
+  return `/login/link?token=${encodeURIComponent(token)}&next=${encodeURIComponent(next)}`;
+}
+
 export async function consumeLink(db: D1Database, token: string) {
   const row = await db.prepare("SELECT id, email FROM auth_codes WHERE token_hash = ? AND used_at IS NULL AND expires_at > ?").bind(await sha256(token), now()).first<{ id: string; email: string }>();
   if (!row) return null;

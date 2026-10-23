@@ -181,7 +181,9 @@ export function MobileApp() {
         try { localStorage.removeItem("insp-state"); } catch {}
         history.replaceState(null, "", location.pathname);
         const r = await fetch("/api/m/pair", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code, standalone }) });
-        if (!r.ok) say(String((await J(r)).error || "Codul nu a mers."));
+        const j = await J(r);
+        if (!r.ok) say(String(j.error || "Codul nu a mers."));
+        else if (typeof j.go === "string") { location.replace(j.go); return; } // the session again through a page load
       }
       await load();
       // the details of the active inspections are kept on the phone in the background: they open at once, also without signal
@@ -548,13 +550,13 @@ function Login({ onDone }: { onDone: () => void }) {
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
-  const post = async (url: string, body: unknown) => {
+  const post = async (url: string, body: unknown): Promise<false | Record<string, unknown>> => {
     setBusy(true); setMsg("");
     try {
       const r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       const j = await J(r);
       if (!r.ok) throw new Error(String(j.error || "Nu a mers."));
-      return true;
+      return j as Record<string, unknown>;
     } catch (e) { setMsg((e as Error).message); return false; } finally { setBusy(false); }
   };
   const standalone = typeof window !== "undefined" && (matchMedia("(display-mode: standalone)").matches || (navigator as unknown as { standalone?: boolean }).standalone === true);
@@ -575,7 +577,11 @@ function Login({ onDone }: { onDone: () => void }) {
           </form>
         )}
         {step === "code" && (
-          <form onSubmit={async (e) => { e.preventDefault(); if (await post("/api/auth/verify", { email, code })) { await fetch("/api/m/device", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ standalone }) }); onDone(); } }}>
+          <form onSubmit={async (e) => { e.preventDefault(); const v = await post("/api/auth/verify", { email, code }); if (v) {
+            await fetch("/api/m/device", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ standalone }) }).catch(() => {});
+            // the one-time link sets the session again through a page load (the installed app on iPhone may drop the cookie of the request)
+            if (typeof v.go === "string") { setBusy(true); location.replace(v.go); } else onDone();
+          } }}>
             <p className="mbNote">Ți-am trimis un cod de 6 cifre pe <b>{email}</b>.</p>
             <label className="mbField">Codul din email<input inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))} required /></label>
             <button className="mbBtn gold big" disabled={busy || code.length < 6}>Intră</button>
@@ -583,7 +589,7 @@ function Login({ onDone }: { onDone: () => void }) {
           </form>
         )}
         {step === "pair" && (
-          <form onSubmit={async (e) => { e.preventDefault(); if (await post("/api/m/pair", { code, standalone })) onDone(); }}>
+          <form onSubmit={async (e) => { e.preventDefault(); const v = await post("/api/m/pair", { code, standalone }); if (v) { if (typeof v.go === "string") { setBusy(true); location.replace(v.go); } else onDone(); } }}>
             <p className="mbNote">Pe calculator, în UVALO → <b>Inspecții</b>, apasă „Arată codul de conectare”. Scanează codul QR cu camera telefonului sau scrie aici cele 8 cifre.</p>
             <label className="mbField">Codul de conectare<input inputMode="numeric" autoComplete="one-time-code" maxLength={8} value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))} required /></label>
             <button className="mbBtn gold big" disabled={busy || code.length < 8}>Conectează telefonul</button>

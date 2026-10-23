@@ -55,7 +55,10 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
 - `src/lib/` — `auth.ts` (coduri pe email, sesiuni cookie `vf_tools` host-only; **limite de încercări** — migrația 0042 `auth_fails`, `failCount` /
   `addFail`: codul din email are 5 încercări pe cod, dar și **max. 10 coduri greșite pe zi pentru un cont** (peste toate codurile cerute) și 30 pe oră de la o
   adresă IP → 429 cu `TOO_MANY`; butonul „Intră în cont” din emailul cu codul rămâne valabil, ca nimeni să nu poată bloca proprietarul; un cod
-  expirat / epuizat nu se numără), `guard.ts` (acces pagini/API +
+  expirat / epuizat nu se numără; **după un cod corect** (și după codul / QR-ul de conectare al telefonului) răspunsul dă și `go` = un link de
+  autentificare de 2 minute (`handoffLink`, rând `notify` în `auth_codes`) pe care pagina îl deschide imediat (`/login/link`, trece și pe `INSP_HOSTS`): cookie-ul
+  se pune și printr-o încărcare de pagină, ca la butonul din email — unele telefoane / aplicații instalate nu păstrau cookie-ul cererii din fundal și cereau
+  din nou emailul), `guard.ts` (acces pagini/API +
   mentenanță), `access.ts`/`orgs.ts` (firme, locuri, planuri), `plans.ts` (pipeline planuri), `maintenance.ts`,
   `email.ts` (Resend), `gmaps.ts`, `site.ts`, `track.ts`, `crypto.ts` (inclusiv `cleanPhone`).
 - `localizare-data/` — Localizatorul: HTML static (`index.html`, cu lista `UATS` inline: key/name/county/v/n/nb/bb/
