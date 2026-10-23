@@ -2254,7 +2254,15 @@ textarea.mbIn { min-height: 0; resize: vertical; }
 
 /* inspection detail */
 .mbHero { background: #fff; border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; }
-.mbMini { display: block; position: relative; height: 150px; background: #e8e2d6; isolation: isolate; z-index: 0; }
+.mbMini { display: block; position: relative; height: 150px; background: #e8e2d6; isolation: isolate; z-index: 0; cursor: pointer; transition: height .28s var(--ease); }
+/* opened by a tap: ~70% of the screen, movable */
+.mbMini.big { height: 70svh; cursor: default; }
+.mbMiniBase { position: absolute; top: 10px; right: 10px; z-index: 500; display: flex; background: rgba(20,20,20,.86); border-radius: 999px; padding: 3px; }
+.mbMiniBase button { border: 0; background: none; color: #fff; font: 700 12px var(--font); padding: 6px 11px; border-radius: 999px; }
+.mbMiniBase button[aria-pressed="true"] { background: var(--acc); color: #141414; }
+.mbMiniBtn { position: absolute; left: 10px; bottom: 10px; z-index: 500; border: 0; background: rgba(20,20,20,.86); color: #fff; font: 700 12px var(--font); padding: 7px 12px; border-radius: 999px; pointer-events: none; }
+button.mbMiniBtn { pointer-events: auto; }
+.mbMiniBtn.re { left: auto; right: 10px; }
 .mbMiniMap { position: absolute; inset: 0; }
 .mbMini.none { display: flex; align-items: center; justify-content: center; height: 70px; color: var(--muted-2); font-size: 12px; }
 /* Locația inspecției, înainte de semnătură */

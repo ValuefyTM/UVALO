@@ -230,7 +230,7 @@ export function MobileApp() {
     const start = (e: TouchEvent) => {
       y0 = null;
       if (busy || !ok() || window.scrollY > 0 || e.touches.length > 1) return;
-      if ((e.target as Element).closest?.(".mbMap, .mbSig, .mbSheetBg, input, textarea, select")) return;
+      if ((e.target as Element).closest?.(".mbMap, .mbMini.big, .mbSig, .mbSheetBg, input, textarea, select")) return;
       y0 = e.touches[0].clientY; d = 0;
       window.addEventListener("touchmove", move, { passive: false });
     };
@@ -890,21 +890,64 @@ function ScheduleSheet({ x, online, onClose, onSave }: { x: Sched; online: boole
 /* ---------- inspection detail ---------- */
 
 /** A small map of the property (Leaflet + OSM), not interactive: a tap opens the navigation. */
-function MiniMap({ lat, lng, href }: { lat: number; lng: number; href: string }) {
+const ESRI_SAT = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
+const ESRI_LABELS = "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}";
+const ESRI_ROADS = "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}";
+/** The map at the top of the detail: small and still; a tap opens it to ~70% of the screen, movable and zoomable, with Hartă / Satelit
+ *  (remembered in localStorage `insp-base`); „Restrânge” closes it. */
+function MiniMap({ lat, lng }: { lat: number; lng: number }) {
   const el = useRef<HTMLDivElement>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const map = useRef<any>(null), layers = useRef<{ osm: any; sat: any } | null>(null);
+  const [big, setBig] = useState(false);
+  const [base, setBase] = useState<"map" | "sat">(() => { try { return localStorage.getItem("insp-base") === "sat" ? "sat" : "map"; } catch { return "map"; } });
   useEffect(() => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let m: any = null, gone = false;
     loadLeaflet().then((L) => {
       if (gone || !el.current) return;
       m = L.map(el.current, { zoomControl: false, attributionControl: false, dragging: false, scrollWheelZoom: false, doubleClickZoom: false, touchZoom: false, boxZoom: false, keyboard: false, tap: false });
-      L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 }).addTo(m);
+      layers.current = {
+        osm: L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 }),
+        sat: L.layerGroup([L.tileLayer(ESRI_SAT, { maxZoom: 19 }), L.tileLayer(ESRI_ROADS, { maxZoom: 19 }), L.tileLayer(ESRI_LABELS, { maxZoom: 19 })]),
+      };
       L.marker([lat, lng], { icon: L.divIcon({ className: "", html: '<span class="mbPin" style="background:#141414"><b>●</b></span>', iconSize: [30, 30], iconAnchor: [15, 30] }) }).addTo(m);
       m.setView([lat, lng], 16);
+      map.current = m;
+      (base === "sat" ? layers.current.sat : layers.current.osm).addTo(m);
     }).catch(() => {});
-    return () => { gone = true; m?.remove(); };
+    return () => { gone = true; m?.remove(); map.current = null; layers.current = null; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lat, lng]);
-  return <a className="mbMini" href={href} target="_blank" rel="noopener" aria-label="Deschide navigația"><div ref={el} className="mbMiniMap" /></a>;
+  // Hartă / Satelit
+  useEffect(() => {
+    const m = map.current, l = layers.current;
+    if (!m || !l) return;
+    const on = base === "sat" ? l.sat : l.osm, off = base === "sat" ? l.osm : l.sat;
+    if (m.hasLayer(off)) m.removeLayer(off);
+    if (!m.hasLayer(on)) on.addTo(m);
+    try { localStorage.setItem("insp-base", base); } catch {}
+  }, [base]);
+  // opened: movable and zoomable; closed: still again, back on the property
+  useEffect(() => {
+    const m = map.current;
+    if (!m) return;
+    for (const h of [m.dragging, m.touchZoom, m.doubleClickZoom]) big ? h.enable() : h.disable();
+    const t = setTimeout(() => { m.invalidateSize(); if (!big) m.setView([lat, lng], 16); }, 300);
+    return () => clearTimeout(t);
+  }, [big, lat, lng]);
+  return (
+    <div className={`mbMini${big ? " big" : ""}`} onClick={big ? undefined : () => setBig(true)} role={big ? undefined : "button"} aria-label={big ? undefined : "Mărește harta"}>
+      <div ref={el} className="mbMiniMap" />
+      <span className="mbMiniBase" onClick={(e) => e.stopPropagation()}>
+        <button type="button" aria-pressed={base === "map"} onClick={() => setBase("map")}>Hartă</button>
+        <button type="button" aria-pressed={base === "sat"} onClick={() => setBase("sat")}>Satelit</button>
+      </span>
+      {big ? <button type="button" className="mbMiniBtn" onClick={(e) => { e.stopPropagation(); setBig(false); }}>Restrânge</button>
+        : <span className="mbMiniBtn" aria-hidden="true">⤢ Mărește</span>}
+      {big && <button type="button" className="mbMiniBtn re" onClick={(e) => { e.stopPropagation(); map.current?.setView([lat, lng], 17); }}>Centrează</button>}
+    </div>
+  );
 }
 
 const DOC_KIND: Record<string, [string, string]> = { cf: ["CF", "Extras de carte funciară"], releveu: ["RLV", "Releveu"], doc: ["DOC", "Document"] };
@@ -943,7 +986,7 @@ function Detail({ x, draft, mine, onBack, onStart, onSchedule, onAnswer, onRadar
       <header className="mbBar"><Back onClick={onBack} /><span><b>{x.code}</b><small>{x.template_name ?? "Fișa de inspecție"}{x.template_version ? ` · v${x.template_version}` : ""}</small></span></header>
       <div className="mbBody">
         <section className="mbHero">
-          {x.lat != null && x.lng != null ? <MiniMap lat={x.lat} lng={x.lng} href={gmaps} />
+          {x.lat != null && x.lng != null ? <MiniMap lat={x.lat} lng={x.lng} />
             : <div className="mbMini none"><span>Poziția nu a fost găsită pe hartă</span></div>}
           <div className="mbHeroBody">
             <span className="mbHeroTags">
