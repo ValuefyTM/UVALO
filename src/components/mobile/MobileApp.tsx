@@ -965,10 +965,10 @@ function LocTab({ on, shown, target }: { on: boolean; shown: boolean; target: { 
     return `/localizare?app=1&t=${t}&b=${56 + Math.max(6, b - 14) + 6}&s=${b}${target ? `#${target.key}-${target.nr}` : ""}`;
   });
   if (!on) return shown ? (
-    <div className="mbLoc off"><div className="mbSoon"><b>Localizatorul cadastral</b><small>Nu este în planul contului tău. Scrie-ne la office@uvalo.ro ca să-l activăm.</small></div></div>
+    <div className="mbLocTab off"><div className="mbSoon"><b>Localizatorul cadastral</b><small>Nu este în planul contului tău. Scrie-ne la office@uvalo.ro ca să-l activăm.</small></div></div>
   ) : null;
   return (
-    <div className="mbLoc" hidden={!shown} aria-hidden={!shown}>
+    <div className="mbLocTab" hidden={!shown} aria-hidden={!shown}>
       <iframe ref={frame} src={src} title="Localizator cadastral" allow="geolocation; clipboard-write" onLoad={() => { ready.current = true; }} />
     </div>
   );

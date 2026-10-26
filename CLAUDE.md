@@ -722,7 +722,7 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   urmărirea GPS (`gpsFollow = false`), ca harta să nu fie trasă înapoi la tine. **Fără analiza amplasamentului în aplicație** (`.ampBtn`, `#npAmp` ascunse). Alte linkuri spre
   restul platformei se deschid pe `APP_URL`, în browser. În afara planurilor (`.outArea`, `outAreaMsg()` în `index.html`: „în afara zonei acoperite… doar în județul X”, fără
   lista UAT-urilor, și pe web) aplicația nu deschide fișa: doar notificarea sus, 5 s; bara GPS spune la fel. Eveniment `localizare`/`page` cu `{app:1}`. Service
-  worker-ul aplicației (`uvalo-insp-v6`) servește din memorie doar navigarea spre `/`, nu și pe cea din iframe. Cheia Google Maps trebuie să
+  worker-ul aplicației (`uvalo-insp-v7`) servește din memorie doar navigarea spre `/`, nu și pe cea din iframe. Containerul tab-ului = `.mbLocTab` (NU `.mbLoc`: aceea e cardul „Locația inspecției” din ecranul de semnătură; când purtau același nume, cardul acoperea tot ecranul și semnătura / „Finalizează” nu se mai vedeau). Cheia Google Maps trebuie să
   accepte și referrer-ul `inspectii.uvalo.ro/*` pentru hărțile Google din localizator.
 - **Radar colegi** (prima fază: **doar super-adminii**, `user.super` din `/api/m/state`; design în canvasul „Radar colegi UVALO”): pornește **din
   detaliul unei inspecții a mele neefectuate** (`Detail`: cardul compact `RadarBanner` — un buton întreg, înalt cât mini-radarul de 40 px, „Scanează după colegi · TEST” + „›”, doar dacă eu o fac,
