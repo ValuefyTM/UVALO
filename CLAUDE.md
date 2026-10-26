@@ -146,6 +146,9 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   GPS, UAT-ul din localizator în care cade, `inPlan` = nr. cadastral găsit în planul lui). Cardul arată ce s-a citit, „identificat în planul
   cadastral” și „localizat după Stereo 70”, cu „Vezi pe harta cadastrală” (doar unde există plan) și „Analiză amplasament” (datele trec prin
   `sessionStorage` `uvalo-doc` → `/amplasament?doc=1`, fără a doua citire AI). Bara acceptă și Stereo 70 („X 476000 Y 210500”).
+- Exportul PDF al analizei (pagini A4 desenate pe canvas, `buildPages`): textul descrierii e aliniat stânga-dreapta (`pagesFromText`; ultimul rând al
+  paragrafului la stânga), rândurile „- …” devin listă cu buline, punctuația rămâne lipită de bold / marcaje, cuvintele mai lungi decât rândul se taie;
+  tabelele (`drawTable`) rup textul lung pe mai multe rânduri (`wrapLines`), fără „…”.
 - Exportul Word al analizei = aceeași așezare ca PDF-ul: hărțile una lângă alta (tabel de așezare fără chenar), sub fiecare tabelul ei
   (cu două tabele; altfel tabelul pe toată lățimea), apoi descrierea.
 - Harta zonei din amplasament: straturi „Hartă” / „Satelit” (Esri, ales în `localStorage` `amp-base`, folosit și la exportul PNG/PDF/Word);

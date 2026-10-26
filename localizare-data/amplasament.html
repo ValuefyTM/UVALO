@@ -1100,26 +1100,49 @@ function pageHead(ctx,M,W,sub){
 function pageFoot(ctx,M,W,H,txt){ctx.fillStyle='#CFC4AE';ctx.fillRect(M,H-M-26,W,1);ctx.fillStyle='#6b6559';ctx.font='400 11px Verdana, Geneva, sans-serif';ctx.textAlign='left';ctx.textBaseline='alphabetic';
   const words=txt.split(' ');let line='',y=H-M-10;const lines=[];words.forEach(w=>{const t=line?line+' '+w:w;if(ctx.measureText(t).width>W-140){lines.push(line);line=w}else line=t});lines.push(line);
   lines.slice(0,2).forEach((l,i)=>ctx.fillText(l,M,y+i*14-(lines.length>1?14:0)));ctx.textAlign='right';ctx.fillText('Generat cu UVALO',M+W,H-M-10);ctx.textAlign='left'}
+/* rupe un text pe rânduri de lățime w (cuvintele mai lungi decât rândul se taie pe litere) */
+function wrapLines(ctx,t,w){const out=[];let line='';String(t).split(/\s+/).filter(Boolean).forEach(word=>{
+    while(ctx.measureText(word).width>w&&word.length>1){if(line){out.push(line);line=''}let k=word.length-1;while(k>1&&ctx.measureText(word.slice(0,k)).width>w)k--;out.push(word.slice(0,k));word=word.slice(k)}
+    const s=line?line+' '+word:word;if(line&&ctx.measureText(s).width>w){out.push(line);line=word}else line=s});
+  if(line)out.push(line);return out.length?out:['']}
 function drawTable(ctx,x,y,w,title,rows){
   ctx.fillStyle='#1A1916';ctx.font='700 15px Verdana, Geneva, sans-serif';ctx.textAlign='left';ctx.textBaseline='alphabetic';ctx.fillText(title,x,y+16);y+=28;
-  const rh=30,c1=w*.55;rows.forEach((r,i)=>{ctx.fillStyle=i%2?'#FBF8F2':'#FFFFFF';ctx.fillRect(x,y,w,rh);ctx.strokeStyle='#E2D8C4';ctx.lineWidth=1;ctx.strokeRect(x+.5,y+.5,w-1,rh-1);
-    ctx.fillStyle=r[0].startsWith('⚠')?'#B3261E':'#4A4A4A';ctx.font='400 12.5px Verdana, Geneva, sans-serif';ctx.textBaseline='middle';ctx.fillText(trunc(ctx,r[0],c1-16),x+8,y+rh/2+1);
-    ctx.fillStyle='#141414';ctx.font='700 12.5px Verdana, Geneva, sans-serif';ctx.fillText(trunc(ctx,r[1],w-c1-12),x+c1,y+rh/2+1);ctx.textBaseline='alphabetic';y+=rh});
+  const c1=w*.5,lh=17,pad=7;rows.forEach((r,i)=>{
+    ctx.font='400 12.5px Verdana, Geneva, sans-serif';const L=wrapLines(ctx,r[0],c1-16);ctx.font='700 12.5px Verdana, Geneva, sans-serif';const R=wrapLines(ctx,r[1],w-c1-10);
+    const n=Math.max(L.length,R.length),rh=Math.max(30,n*lh+2*pad-1);
+    ctx.fillStyle=i%2?'#FBF8F2':'#FFFFFF';ctx.fillRect(x,y,w,rh);ctx.strokeStyle='#E2D8C4';ctx.lineWidth=1;ctx.strokeRect(x+.5,y+.5,w-1,rh-1);
+    ctx.textBaseline='middle';const y0=y+(rh-(n-1)*lh)/2+1;
+    ctx.fillStyle=r[0].startsWith('⚠')?'#B3261E':'#4A4A4A';ctx.font='400 12.5px Verdana, Geneva, sans-serif';L.forEach((l,k)=>ctx.fillText(l,x+8,y0+k*lh));
+    ctx.fillStyle='#141414';ctx.font='700 12.5px Verdana, Geneva, sans-serif';R.forEach((l,k)=>ctx.fillText(l,x+c1,y0+k*lh));ctx.textBaseline='alphabetic';y+=rh});
   return y;
 }
-/* textul cu bold și marcaje, rupt pe rânduri și pe pagini */
+/* textul cu bold și marcaje, rupt pe rânduri și pe pagini, aliniat stânga-dreapta (ultimul rând al paragrafului și rândurile de listă rămân la stânga) */
 function runsOf(par){const out=[];let bold=false;par.split(/(\*\*)/).forEach(part=>{if(part==='**'){bold=!bold;return}part.split(/(\[[^\]]{1,160}\])/).forEach(q=>{if(q)out.push({t:q,b:bold,m:/^\[.*\]$/.test(q)})})});return out}
 function pagesFromText(text,start,foot){
   const pages=[],M=80,W=1240-2*M,size=17,lh=29;let ctx=start.ctx,y=start.y;
+  const font=b=>(b?'700 ':'400 ')+size+'px Verdana, Geneva, sans-serif';
   const newPage=()=>{const p=a4();pageHead(p.ctx,M,W,'pagina '+(start.n+pages.length+1));pageFoot(p.ctx,M,W,1754,foot);pages.push(p.cv);ctx=p.ctx;y=M+110};
+  const measure=w=>{ctx.font=font(w.b);return ctx.measureText(w.t).width};
   text.split(/\n\n/).forEach(par=>{
-    const words=[];runsOf(par).forEach(r=>r.t.split(/(\s+)/).forEach(w=>{if(w)words.push({...r,t:w})}));
-    let line=[],lw=0;
-    const flush=()=>{if(y+lh>1754-M-44)newPage();let x=M;line.forEach(w=>{ctx.font=(w.b?'700 ':'400 ')+size+'px Verdana, Geneva, sans-serif';const ww=ctx.measureText(w.t).width;
-      if(w.m&&w.t.trim()){ctx.fillStyle='#FFF2B3';ctx.fillRect(x,y-size,ww,size+7)}ctx.fillStyle='#1A1916';ctx.textBaseline='alphabetic';ctx.fillText(w.t,x,y);x+=ww});y+=lh;line=[];lw=0};
-    words.forEach(w=>{ctx.font=(w.b?'700 ':'400 ')+size+'px Verdana, Geneva, sans-serif';const ww=ctx.measureText(w.t).width;
-      if(lw+ww>W&&line.length){while(line.length&&!line[line.length-1].t.trim())line.pop();flush();if(!w.t.trim())return}line.push(w);lw+=ww});
-    if(line.length)flush();y+=12});
+    /* rândurile simple dintr-un paragraf (liste „- …”) rămân rânduri separate */
+    par.split(/\n/).map(s=>s.trim()).filter(Boolean).forEach(src=>{
+      const bullet=/^[-•–*]\s+/.test(src),ind=bullet?26:0;if(bullet)src=src.replace(/^[-•–*]\s+/,'');
+      /* j = lipit de cuvântul dinainte (fără spațiu: „**405240**,”) */
+      const words=[];let ws0=true;runsOf(src).forEach(r=>r.t.split(/(\s+)/).forEach(t=>{if(!t)return;if(!t.trim()){ws0=true;return}words.push({...r,t,j:!ws0&&words.length>0});ws0=false}));
+      ctx.font=font(false);const sp=ctx.measureText(' ').width,avail=W-ind;
+      /* cuvintele mai lungi decât rândul se taie */
+      const parts=[];words.forEach(w=>{let t=w.t;ctx.font=font(w.b);while(ctx.measureText(t).width>avail&&t.length>1){let k=t.length-1;while(k>1&&ctx.measureText(t.slice(0,k)).width>avail)k--;parts.push({...w,t:t.slice(0,k)});t=t.slice(k);w={...w,j:false}}parts.push({...w,t})});
+      let line=[],lw=0,first=true;
+      const flush=last=>{if(y+lh>1754-M-44)newPage();
+        if(first&&bullet){ctx.font=font(false);ctx.fillStyle='#1A1916';ctx.textBaseline='alphabetic';ctx.fillText('•',M+6,y)}
+        const ws=line.map(measure),tot=ws.reduce((a,b)=>a+b,0),ng=line.filter((w,i)=>i&&!w.j).length,gap=!last&&ng?(avail-tot)/ng:sp;
+        let x=M+ind;line.forEach((w,i)=>{const ww=ws[i];if(i&&!w.j)x+=gap;
+          if(w.m){const nx=i<line.length-1&&line[i+1].m;ctx.fillStyle='#FFF2B3';ctx.fillRect(x,y-size,ww+(nx&&!line[i+1].j?gap:0),size+7)}
+          ctx.font=font(w.b);ctx.fillStyle='#1A1916';ctx.textBaseline='alphabetic';ctx.fillText(w.t,x,y);x+=ww});
+        y+=lh;line=[];lw=0;first=false};
+      parts.forEach(w=>{const ww=measure(w),add=(line.length&&!w.j?sp:0)+ww;if(line.length&&lw+add>avail){flush(false);w={...w,j:false};line.push(w);lw=ww}else{line.push(w);lw+=add}});
+      if(line.length)flush(true)});
+    y+=12});
   return pages;
 }
 async function buildPages(){
