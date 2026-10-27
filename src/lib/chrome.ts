@@ -4,6 +4,9 @@
 
 /** The extension's versions, newest first; the first must match "version" in extensions/chrome/manifest.json. */
 export const CHROME_VERSIONS: { v: string; date: string; notes: string[] }[] = [
+  { v: "2.0.4", date: "27 oct. 2026", notes: [
+    "Corectată eroarea „Debugger is not attached” la imobiliare.ro: după „Vezi tot numărul” extensia așteaptă numărul și nu mai apasă „Apelează acum”; dacă legătura cu tab-ul se pierde totuși, se reconectează singură.",
+  ] },
   { v: "2.0.3", date: "27 oct. 2026", notes: [
     "imobiliare.ro: butonul „Vezi tot numărul” deschide acum o fereastră cu numărul; extensia îl pune în pagină, în locul numărului ascuns („0788 ... ...”), ca să apară în captură.",
   ] },

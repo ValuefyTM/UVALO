@@ -376,8 +376,24 @@ function addItem(url, title) {
 }
 
 /* ── Motorul de captură (CDP) ───────────────────────────────── */
-function cdp(target, method, params) {
-  return chrome.debugger.sendCommand(target, method, params);
+/* Comandă CDP; dacă Chrome a desprins debugger-ul de tab (o apăsare în pagină care deschide alt proces, un link
+   tel:, dialogul de apelare), îl atașează din nou, refăcând lățimea de captură, și repetă comanda o dată. */
+const emuOf = new Map(); // tabId → parametrii Emulation.setDeviceMetricsOverride
+async function cdp(target, method, params) {
+  if (method === "Emulation.setDeviceMetricsOverride") emuOf.set(target.tabId, params);
+  try {
+    return await chrome.debugger.sendCommand(target, method, params);
+  } catch (e) {
+    if (!/not attached|detached/i.test(String(e && e.message || e))) throw e;
+    await chrome.debugger.attach(target, "1.3");
+    await chrome.debugger.sendCommand(target, "Page.enable");
+    const emu = emuOf.get(target.tabId);
+    if (emu && method !== "Emulation.setDeviceMetricsOverride") {
+      await chrome.debugger.sendCommand(target, "Emulation.setDeviceMetricsOverride", emu);
+      await sleep(500);
+    }
+    return chrome.debugger.sendCommand(target, method, params);
+  }
 }
 
 function waitForTabComplete(tabId, timeoutMs = 45000) {
@@ -410,7 +426,7 @@ async function pageRevealContacts() {
   const verb = /(afi[sșş]eaz[ăa]|arat[ăa]|vezi|vede[țţt]i|dezv[ăa]luie|show|reveal|view|display)/i;
   const noun = /(num[ăa]r|telefon|tel\.?\b|phone|contact)/i;
   const masked = /(\+?40|0)\s*7?\d[\d\s.\-]{0,4}[x*•…·.]{2,}|\d{2,4}\s*[x*•]{2,}\s*[x*•]{2,}/i;
-  const bad = /(trimite|mesaj|email|e-mail|whatsapp|programeaz|vizionare|raporteaz|salveaz|partajeaz|distribuie|anun[țţt]uri)/i;
+  const bad = /(trimite|mesaj|email|e-mail|whatsapp|programeaz|vizionare|raporteaz|salveaz|partajeaz|distribuie|anun[țţt]uri|apeleaz|sun[ăa]\b|call)/i;
   const phoneRe = /(?:\+?40|0)[\s.\-]?(?:7\d{2}|[23]\d{1,2})[\s.\-]?\d{3}[\s.\-]?\d{3}\b/g;
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const seen = new Set();
@@ -425,7 +441,8 @@ async function pageRevealContacts() {
     seen.add(el);
     if (el.tagName === "A") { // nu apăsa linkuri care ar naviga către altă pagină
       const href = el.getAttribute("href") || "";
-      if (href && !/^(#|tel:|javascript:)/i.test(href)) return;
+      // nici tel: (deschide aplicația de apelare și desprinde captura de tab)
+      if (href && !/^(#|javascript:)/i.test(href)) return;
     }
     if (!visible(el)) return;
     try { el.scrollIntoView({ block: "center" }); } catch (e) {}
@@ -436,7 +453,9 @@ async function pageRevealContacts() {
       el.dispatchEvent(new PointerEvent("pointerup", o)); el.dispatchEvent(new MouseEvent("mouseup", o));
       el.click(); clicks++;
     } catch (e) {}
-    await sleep(250);
+    // numărul vine de la server: așteaptă-l (până la 3,5 s) înainte de alt buton; altfel celelalte butoane de pe pagină
+    // ar fi deja „Apelează acum” și ar porni apelarea (imobiliare.ro), ceea ce desprinde captura de tab
+    for (let t = 0; t < 14 && !done(); t++) await sleep(250);
   };
 
   const label = (el) => [el.textContent, el.getAttribute("aria-label"), el.getAttribute("title"), el.getAttribute("data-cy"), el.getAttribute("data-testid")]
@@ -810,6 +829,7 @@ async function captureItemInTab(item, onStep) {
     item.error = (err && err.message) || String(err);
   } finally {
     if (attached) { try { await chrome.debugger.detach(target); } catch (e) {} }
+    emuOf.delete(tab.id);
     try { await chrome.tabs.remove(tab.id); } catch (e) {}
   }
 }

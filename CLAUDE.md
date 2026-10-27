@@ -214,7 +214,8 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   (imobiliare.ro activează butoanele abia vizibile); a doua trecere dacă nu apare niciun număr; numerele apărute doar în ferestre / bare fixe (pe care
   `pageHideFloating` le ascunde) înlocuiesc numărul mascat din pagină cu aceleași prime cifre (imobiliare.ro: `[data-cy='contact-phone']` → fereastra
   `phone-reveal-modal`; „0788 ... ...” din `phone-cta-headline` devine numărul), altfel intră în nota `#uvalo-contact-note` sus în pagină; după primul număr nou
-  nu se mai apasă nimic, iar fereastra primește Escape. Panoul arată rezultatul („date de contact afișate” / „nu am găsit butonul”).
+  nu se mai apasă nimic, iar fereastra primește Escape. După fiecare apăsare se așteaptă numărul (≤ 3,5 s), iar „Apelează / Sună” și linkurile `tel:`
+  nu se apasă (porneau apelarea → „Debugger is not attached”). `cdp()` se reatașează singur la tab dacă debugger-ul s-a desprins (refăcând emularea din `emuOf`). Panoul arată rezultatul („date de contact afișate” / „nu am găsit butonul”).
 - Instalare: „Încarcă extensia neîmpachetată” (fără Chrome Web Store deocamdată). Pagina `/chrome`: prezentare,
   instalare, versiuni; capturi în `public/chrome/prezentare/`.
 - Contul: la deschiderea panoului `GET /api/chrome/status` cu cookie-ul `vf_tools` (401 → ecran „Conectează-te la UVALO”,

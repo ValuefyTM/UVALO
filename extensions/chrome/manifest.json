@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "UVALO pentru Chrome — Comparabile",
-  "version": "2.0.3",
+  "version": "2.0.4",
   "description": "Capturează anunțuri imobiliare complete, feliate pe pagini A4, și generează dosarul Word/PDF cu comparabilele pentru raportul de evaluare. Necesită cont UVALO.",
   "permissions": [
     "debugger",
