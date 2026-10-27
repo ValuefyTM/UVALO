@@ -41,6 +41,27 @@
     <span>Capturează și harta localizării (dacă există)</span>
   </label>
 
+  <details class="setting-box" id="wordSet">
+    <summary>⚙ Export Word · <span id="wsSum"></span></summary>
+    <div class="ws-grid">
+      <label>Pagina
+        <select id="wsPage">
+          <option value="a4p">A4 portret (21 cm)</option>
+          <option value="a4l">A4 peisaj (29,7 cm)</option>
+          <option value="let">Letter (21,59 cm)</option>
+        </select>
+      </label>
+      <label>Margine stânga <span><input type="number" id="wsL" min="0" max="6" step="0.1"> cm</span></label>
+      <label>Margine dreapta <span><input type="number" id="wsR" min="0" max="6" step="0.1"> cm</span></label>
+      <label class="ws-col">Lățimea capturii: <b id="wsPctL"></b>
+        <input type="range" id="wsPct" min="30" max="100" step="5">
+      </label>
+      <div class="ws-bar" aria-hidden="true"><span id="wsArea"></span><span id="wsImg"></span></div>
+      <small>Se aplică la „Export Word”. Captura se centrează între margini și își păstrează proporțiile; marginile de sus și de jos rămân 1,27 cm.</small>
+      <button type="button" class="btn btn-ghost btn-small" id="wsReset">Revino la implicit</button>
+    </div>
+  </details>
+
   <div id="progress" class="progress hidden">
     <div class="progress-text" id="progressText">Se capturează…</div>
     <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>

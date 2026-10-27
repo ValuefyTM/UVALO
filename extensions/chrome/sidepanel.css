@@ -321,3 +321,19 @@ body {
 .foot { flex-wrap: wrap; row-gap: 4px; }
 .uv-foot { order: 3; width: 100%; }
 @media (max-width: 440px) { .brand-text { display: none; } .brand-logo { border-right: 0; padding-right: 0; } }
+
+/* Setările exportului Word (pagina, marginile, lățimea capturii) */
+.setting-box { margin: 4px 0 10px; border: 1px solid var(--line, #e6dfcf); border-radius: 10px; background: #fff; font-size: 12.5px; }
+.setting-box summary { cursor: pointer; padding: 8px 10px; font-weight: 700; color: var(--ink, #141414); }
+.setting-box summary span { font-weight: 500; color: #6b6559; }
+.ws-grid { display: grid; gap: 8px; padding: 0 10px 10px; }
+.ws-grid label { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.ws-grid label.ws-col { display: grid; gap: 4px; }
+.ws-grid input[type=number], .ws-grid select { padding: 4px 6px; border: 1px solid #cfc6b3; border-radius: 6px; font: inherit; }
+.ws-grid input[type=number] { width: 64px; }
+.ws-grid input[type=range] { width: 100%; accent-color: var(--amber, #E0AD4F); }
+.ws-grid small { color: #6b6559; line-height: 1.4; }
+.ws-bar { position: relative; height: 24px; border: 1px solid #cfc6b3; border-radius: 4px; background: #fff; overflow: hidden; }
+.ws-bar span { position: absolute; top: 0; bottom: 0; }
+#wsArea { background: #f3ead8; }
+#wsImg { top: 5px; bottom: 5px; background: #E0AD4F; border-radius: 2px; }

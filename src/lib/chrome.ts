@@ -4,6 +4,9 @@
 
 /** The extension's versions, newest first; the first must match "version" in extensions/chrome/manifest.json. */
 export const CHROME_VERSIONS: { v: string; date: string; notes: string[] }[] = [
+  { v: "2.0.5", date: "27 oct. 2026", notes: [
+    "„⚙ Export Word” în panou: alegi pagina (A4 portret / peisaj, Letter), marginile din stânga și din dreapta și cât din lățimea dintre margini ocupă captura; exportul Word le aplică, cu captura centrată.",
+  ] },
   { v: "2.0.4", date: "27 oct. 2026", notes: [
     "Corectată eroarea „Debugger is not attached” la imobiliare.ro: după „Vezi tot numărul” extensia așteaptă numărul și nu mai apasă „Apelează acum”; dacă legătura cu tab-ul se pierde totuși, se reconectează singură.",
   ] },

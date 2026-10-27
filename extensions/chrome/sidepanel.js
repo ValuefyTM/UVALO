@@ -20,9 +20,27 @@ const MAX_SLICES = 14;              // plafon de siguranță (~17.000 px)
 const IMG_SCALE = 2;                // factor de claritate al capturii
 const JPEG_QUALITY = 88;
 
-const WORD_CONTENT_W_PX = 698;      // lățimea zonei utile A4 în Word
-const WORD_MAX_H_FIRST = 850;       // înălțime max. prima felie (sub antet)
-const WORD_MAX_H_FULL = 1005;       // înălțime max. felie plină (cu rezervă)
+/* Pagina din exportul Word: setările „⚙ Export Word” (pagina, marginile stânga / dreapta, cât din lățimea dintre margini
+   ocupă captura). Implicit = A4 portret, margini 1,27 cm (0,5"), captura pe toată lățimea: 698 px × 1026 px utili la 96 dpi. */
+const WORD_PAGES = { a4p: [21, 29.7], a4l: [29.7, 21], let: [21.59, 27.94] };
+const WORD_DEF = { page: "a4p", left: 1.27, right: 1.27, pct: 100 };
+const WORD_TB_CM = 1.27;            // marginile de sus și de jos
+const CM_PX = 96 / 2.54, CM_TW = 567;
+function wordSet() {
+  const w = Object.assign({}, WORD_DEF, (state.settings && state.settings.word) || {});
+  if (!WORD_PAGES[w.page]) w.page = WORD_DEF.page;
+  const cl = (v, d, lo, hi) => { v = Number(v); return isFinite(v) ? Math.min(hi, Math.max(lo, v)) : d; };
+  w.left = cl(w.left, WORD_DEF.left, 0, 6); w.right = cl(w.right, WORD_DEF.right, 0, 6); w.pct = cl(w.pct, 100, 30, 100);
+  const [pw, ph] = WORD_PAGES[w.page];
+  w.pw = pw; w.ph = ph;
+  w.usable = Math.max(3, pw - w.left - w.right);
+  w.imgCm = w.usable * w.pct / 100;
+  const usableH = (ph - 2 * WORD_TB_CM) * CM_PX;
+  w.imgPx = Math.round(w.imgCm * CM_PX);
+  w.maxFull = Math.round(usableH - 21);    // felie plină, cu rezervă (1005 px la A4 portret)
+  w.maxFirst = Math.round(usableH - 176);  // prima felie, sub antet (850 px la A4 portret)
+  return w;
+}
 
 /* ── Stare ──────────────────────────────────────────────────── */
 let state = { groups: [], settings: { revealContacts: true, captureMap: true } };
@@ -975,14 +993,15 @@ async function buildItemBlocks(item, { groupName = null, pageBreak = false } = {
     ],
   }));
 
+  const ws = wordSet();
   for (let si = 0; si < blobs.length; si++) {
     const blob = blobs[si];
     const dims = await blobDims(blob);
     // Încadrare proporțională în cutia de siguranță a paginii:
     // prima felie stă sub antet, feliile pline păstrează o rezervă
     // ca să nu împingă niciodată conținutul pe o pagină nouă goală.
-    const maxH = si === 0 ? WORD_MAX_H_FIRST : WORD_MAX_H_FULL;
-    let w = WORD_CONTENT_W_PX;
+    const maxH = si === 0 ? ws.maxFirst : ws.maxFull;
+    let w = ws.imgPx;
     let h = Math.round(w * dims.h / dims.w);
     if (h > maxH) {
       w = Math.round(maxH * dims.w / dims.h);
@@ -991,6 +1010,7 @@ async function buildItemBlocks(item, { groupName = null, pageBreak = false } = {
     const buf = await blob.arrayBuffer();
     blocks.push(new Paragraph({
       spacing: { before: 0, after: 0 },
+      alignment: docx.AlignmentType.CENTER,
       children: [new ImageRun({ type: "jpg", data: buf, transformation: { width: w, height: h } })],
     }));
   }
@@ -1006,10 +1026,16 @@ function buildDoc(children) {
     },
     sections: [{
       properties: {
-        page: {
-          size: { width: 11906, height: 16838 },       // A4 portrait (twips)
-          margin: { top: 720, bottom: 720, left: 720, right: 720 }, // 0,5"
-        },
+        page: (() => {
+          const ws = wordSet(), tw = (cm) => Math.round(cm * CM_TW), tb = tw(WORD_TB_CM);
+          // docx: lățimea / înălțimea date mereu pentru portret, orientarea separat
+          const land = ws.pw > ws.ph;
+          return {
+            size: { width: tw(Math.min(ws.pw, ws.ph)), height: tw(Math.max(ws.pw, ws.ph)),
+              orientation: land ? docx.PageOrientation.LANDSCAPE : docx.PageOrientation.PORTRAIT },
+            margin: { top: tb, bottom: tb, left: tw(ws.left), right: tw(ws.right) },
+          };
+        })(),
       },
       children,
     }],
@@ -1305,6 +1331,28 @@ $("chkMap").addEventListener("change", () => {
   saveState();
 });
 
+/* ⚙ Export Word: pagina, marginile, lățimea capturii (state.settings.word) */
+function paintWordSet() {
+  const w = wordSet(), f = (v) => (Math.round(v * 100) / 100).toString().replace(".", ",");
+  $("wsPage").value = w.page; $("wsL").value = w.left; $("wsR").value = w.right; $("wsPct").value = w.pct;
+  $("wsSum").textContent = f(w.imgCm) + " cm, margini " + f(w.left) + " / " + f(w.right) + " cm";
+  $("wsPctL").textContent = f(w.imgCm) + " cm (" + w.pct + "% din " + f(w.usable) + " cm între margini)";
+  const L = w.left / w.pw * 100, U = w.usable / w.pw * 100, I = w.imgCm / w.pw * 100;
+  $("wsArea").style.left = L + "%"; $("wsArea").style.width = U + "%";
+  $("wsImg").style.left = (L + (U - I) / 2) + "%"; $("wsImg").style.width = I + "%";
+}
+function readWordSet() {
+  state.settings.word = { page: $("wsPage").value, left: $("wsL").value, right: $("wsR").value, pct: $("wsPct").value };
+  state.settings.word = Object.assign({}, wordSet(), {}); // valori curățate
+  ["pw", "ph", "usable", "imgCm", "imgPx", "maxFull", "maxFirst"].forEach((k) => delete state.settings.word[k]);
+  saveState(); paintWordSet();
+}
+["wsPage", "wsL", "wsR", "wsPct"].forEach((id) => {
+  $(id).addEventListener("change", readWordSet);
+  $(id).addEventListener("input", () => { if (id === "wsPct" || id === "wsPage") readWordSet(); });
+});
+$("wsReset").addEventListener("click", () => { state.settings.word = Object.assign({}, WORD_DEF); saveState(); paintWordSet(); });
+
 $("btnReset").addEventListener("click", resetAll);
 $("btnClear").addEventListener("click", resetAll);
 
@@ -1320,5 +1368,6 @@ chrome.storage.onChanged.addListener((changes, area) => {
 loadState().then(() => {
   $("chkReveal").checked = !!state.settings.revealContacts;
   $("chkMap").checked = !!state.settings.captureMap;
+  paintWordSet();
   render();
 });
