@@ -418,8 +418,10 @@ async function pageRevealContacts() {
   const visible = (el) => { const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0; };
   const clickable = (el) => el.closest("button, a, [role='button'], [onclick], label") || el;
 
+  let base = null; // numerele de dinainte; după primul număr nou nu mai apăsăm nimic
+  const done = () => base && [...found().keys()].some((k) => !base.has(k));
   const fire = async (el) => {
-    if (!el || seen.has(el) || clicks >= 5) return;
+    if (!el || seen.has(el) || clicks >= 5 || done()) return;
     seen.add(el);
     if (el.tagName === "A") { // nu apăsa linkuri care ar naviga către altă pagină
       const href = el.getAttribute("href") || "";
@@ -443,6 +445,7 @@ async function pageRevealContacts() {
   const pass = async () => {
     // selectoare cunoscute (OLX / Storia / Imobiliare.ro / platforme comune)
     const selectors = [
+      "[data-cy='contact-phone']", // imobiliare.ro (oct. 2026): „0788 ... ... · Vezi tot numărul” → fereastra cu numărul
       "[data-testid='show-phone']", "[data-testid*='phone'] button", "[data-testid*='phone' i][role='button']",
       "button[data-cy*='phone' i]", "a[data-cy*='phone' i]", "[data-cy*='show-phone' i]", "[data-cy*='telefon' i]",
       "button[class*='phone' i]", "button[class*='telefon' i]", "[class*='show-phone' i]", "[class*='showPhone' i]",
@@ -475,6 +478,7 @@ async function pageRevealContacts() {
   };
 
   const before = found();
+  base = before;
   await pass();
   if (clicks) await sleep(1800);
   let after = found();
@@ -484,18 +488,33 @@ async function pageRevealContacts() {
   const inFixed = (el) => { for (let e = el; e && e !== document.body; e = e.parentElement) { const p = getComputedStyle(e).position; if (p === "fixed") return true; } return false; };
   const fresh = [...after.entries()].filter(([k]) => !before.has(k));
   const hidden = fresh.filter(([, el]) => el && (inFixed(el) || !visible(el))).map(([k]) => k);
-  let noted = false;
-  if (hidden.length && !document.getElementById("uvalo-contact-note")) {
-    const fmt = (k) => k.replace(/^(\d{4})(\d{3})(\d{3})$/, "$1 $2 $3");
+  let noted = false, inline = 0;
+  const fmt = (k) => k.replace(/^(\d{4})(\d{3})(\d{3})$/, "$1 $2 $3");
+  // numărul ascuns din pagină („0788 ... ...”) primește numărul afișat în fereastră, cu aceleași prime cifre
+  if (hidden.length) {
+    for (const el of document.querySelectorAll("body *")) {
+      if (el.children.length || el.closest("#uvalo-contact-note")) continue;
+      const t = (el.textContent || "").trim();
+      if (!t || t.length > 30 || !masked.test(t)) continue;
+      const pre = key(t.replace(/[^\d+].*$/s, "")) || key(t.split(/\s/)[0]);
+      const k = hidden.find((h) => pre.length >= 3 && h.startsWith(pre)) || (hidden.length === 1 ? hidden[0] : null);
+      if (!k || inFixed(el)) continue;
+      el.textContent = fmt(k); inline++;
+    }
+  }
+  if (hidden.length && !inline && !document.getElementById("uvalo-contact-note")) {
+    const fmt0 = (k) => k.replace(/^(\d{4})(\d{3})(\d{3})$/, "$1 $2 $3");
     const box = document.createElement("div");
     box.id = "uvalo-contact-note";
     box.style.cssText = "position:static;margin:12px auto;max-width:820px;padding:10px 14px;border:1px solid #E0AD4F;background:#FFF8E8;border-radius:8px;font:600 15px/1.4 Arial,sans-serif;color:#141414";
-    box.textContent = "Telefon afișat pe site: " + hidden.map(fmt).join(", ");
+    box.textContent = "Telefon afișat pe site: " + hidden.map(fmt0).join(", ");
     document.body.insertBefore(box, document.body.firstChild);
     noted = true;
   }
   window.scrollTo(0, 0);
-  return { clicks, phones: after.size, fresh: fresh.length, noted };
+  // închide fereastra deschisă de buton (Esc), oricum o ascunde captura
+  if (fresh.length) try { document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })); } catch (e) {}
+  return { clicks, phones: after.size, fresh: fresh.length, noted: noted || inline > 0 };
 }
 
 /* Injectat în pagină: extinde descrierea anunțului („Vezi mai mult”,

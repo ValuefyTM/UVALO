@@ -4,6 +4,9 @@
 
 /** The extension's versions, newest first; the first must match "version" in extensions/chrome/manifest.json. */
 export const CHROME_VERSIONS: { v: string; date: string; notes: string[] }[] = [
+  { v: "2.0.3", date: "27 oct. 2026", notes: [
+    "imobiliare.ro: butonul „Vezi tot numărul” deschide acum o fereastră cu numărul; extensia îl pune în pagină, în locul numărului ascuns („0788 ... ...”), ca să apară în captură.",
+  ] },
   { v: "2.0.2", date: "27 oct. 2026", notes: [
     "Datele de contact: butoanele „Arată telefonul” sunt găsite și pe site-urile cu aspect nou (inclusiv imobiliare.ro), iar numărul apărut doar într-o fereastră se scrie sus în captură.",
     "În panou vezi dacă numărul s-a afișat sau dacă butonul de contact nu a fost găsit.",
