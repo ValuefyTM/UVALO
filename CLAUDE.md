@@ -209,6 +209,10 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   sursa în `extensions/chrome/` (sidepanel.js = captură CDP feliată pe A4, export Word/PDF; `uvalo.js` = contul UVALO,
   statistici, „Trimite în Word”). Arhiva descărcabilă `public/chrome/uvalo-chrome.zip` se reface cu
   `npm run chrome:zip` după orice schimbare (și crește `version` din `manifest.json` + `CHROME_VERSIONS` în `src/lib/chrome.ts`).
+- **Datele de contact** (`pageRevealContacts` în `sidepanel.js`, bifa `revealContacts`): selectoare cunoscute + text / aria-label / title pe butoane
+  și pe elemente simple (apasă strămoșul clickabil) + numere ascunse („07xx xxx xxx”); elementul e adus în vedere și primește pointer/mouse/click
+  (imobiliare.ro activează butoanele abia vizibile); a doua trecere dacă nu apare niciun număr; numerele apărute doar în ferestre / bare fixe (pe care
+  `pageHideFloating` le ascunde) intră în nota `#uvalo-contact-note` sus în pagină. Panoul arată rezultatul („date de contact afișate” / „nu am găsit butonul”).
 - Instalare: „Încarcă extensia neîmpachetată” (fără Chrome Web Store deocamdată). Pagina `/chrome`: prezentare,
   instalare, versiuni; capturi în `public/chrome/prezentare/`.
 - Contul: la deschiderea panoului `GET /api/chrome/status` cu cookie-ul `vf_tools` (401 → ecran „Conectează-te la UVALO”,

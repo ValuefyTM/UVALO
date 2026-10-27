@@ -400,48 +400,102 @@ function waitForTabComplete(tabId, timeoutMs = 45000) {
   });
 }
 
-/* Injectat în pagină: apasă butoanele „Afișează numărul / Vezi telefon”
-   ca datele de contact să fie vizibile în captură */
-function pageRevealContacts() {
-  const verb = /(afi[sșş]eaz[ăa]|arat[ăa]|vezi|dezv[ăa]luie|show|reveal)/i;
-  const noun = /(num[ăa]r|telefon|phone|contact)/i;
+/* Injectat în pagină: apasă butoanele „Afișează numărul / Vezi telefon / Arată telefonul”
+   ca datele de contact să fie vizibile în captură. Întoarce {clicks, phones, noted}.
+   Caută: selectoare cunoscute, text / aria-label / title (și pe elemente simple span / div, apăsând strămoșul
+   clickabil), numere ascunse („07xx xxx xxx”, „0722 ***”). Elementul e adus în vedere înainte de apăsare (unele
+   site-uri, ca imobiliare.ro, activează butoanele abia când sunt vizibile) și primește secvența completă de evenimente.
+   Dacă numărul apare doar într-o fereastră / bară fixă (pe care captura o ascunde), îl scrie într-o notă la începutul paginii. */
+async function pageRevealContacts() {
+  const verb = /(afi[sșş]eaz[ăa]|arat[ăa]|vezi|vede[țţt]i|dezv[ăa]luie|show|reveal|view|display)/i;
+  const noun = /(num[ăa]r|telefon|tel\.?\b|phone|contact)/i;
+  const masked = /(\+?40|0)\s*7?\d[\d\s.\-]{0,4}[x*•…·.]{2,}|\d{2,4}\s*[x*•]{2,}\s*[x*•]{2,}/i;
+  const bad = /(trimite|mesaj|email|e-mail|whatsapp|programeaz|vizionare|raporteaz|salveaz|partajeaz|distribuie|anun[țţt]uri)/i;
+  const phoneRe = /(?:\+?40|0)[\s.\-]?(?:7\d{2}|[23]\d{1,2})[\s.\-]?\d{3}[\s.\-]?\d{3}\b/g;
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const seen = new Set();
   let clicks = 0;
+  const visible = (el) => { const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0; };
+  const clickable = (el) => el.closest("button, a, [role='button'], [onclick], label") || el;
 
-  const safeClick = (el) => {
-    if (!el || seen.has(el) || clicks >= 4) return;
+  const fire = async (el) => {
+    if (!el || seen.has(el) || clicks >= 5) return;
     seen.add(el);
-    // nu apăsa linkuri care ar naviga către altă pagină
-    if (el.tagName === "A") {
+    if (el.tagName === "A") { // nu apăsa linkuri care ar naviga către altă pagină
       const href = el.getAttribute("href") || "";
       if (href && !/^(#|tel:|javascript:)/i.test(href)) return;
     }
-    try { el.click(); clicks++; } catch (e) {}
+    if (!visible(el)) return;
+    try { el.scrollIntoView({ block: "center" }); } catch (e) {}
+    await sleep(350);
+    const r = el.getBoundingClientRect(), o = { bubbles: true, cancelable: true, view: window, clientX: r.left + r.width / 2, clientY: r.top + r.height / 2 };
+    try {
+      el.dispatchEvent(new PointerEvent("pointerdown", o)); el.dispatchEvent(new MouseEvent("mousedown", o));
+      el.dispatchEvent(new PointerEvent("pointerup", o)); el.dispatchEvent(new MouseEvent("mouseup", o));
+      el.click(); clicks++;
+    } catch (e) {}
+    await sleep(250);
   };
 
-  // selectoare cunoscute (OLX / Storia / platforme comune)
-  const selectors = [
-    "[data-testid='show-phone']",
-    "[data-testid*='phone'] button",
-    "button[data-cy*='phone']",
-    "a[data-cy*='phone']",
-    "button[class*='phone' i]",
-    "button[class*='telefon' i]",
-  ];
-  for (const s of selectors) {
-    document.querySelectorAll(s).forEach(safeClick);
-  }
+  const label = (el) => [el.textContent, el.getAttribute("aria-label"), el.getAttribute("title"), el.getAttribute("data-cy"), el.getAttribute("data-testid")]
+    .filter(Boolean).join(" ").replace(/\s+/g, " ").trim();
 
-  // căutare generică după text: „afișează numărul”, „vezi telefon” etc.
-  const candidates = document.querySelectorAll(
-    "button, a, span[role='button'], div[role='button']"
-  );
-  for (const el of candidates) {
-    if (clicks >= 4) break;
-    const t = (el.textContent || "").trim();
-    if (t && t.length < 60 && verb.test(t) && noun.test(t)) safeClick(el);
+  const pass = async () => {
+    // selectoare cunoscute (OLX / Storia / Imobiliare.ro / platforme comune)
+    const selectors = [
+      "[data-testid='show-phone']", "[data-testid*='phone'] button", "[data-testid*='phone' i][role='button']",
+      "button[data-cy*='phone' i]", "a[data-cy*='phone' i]", "[data-cy*='show-phone' i]", "[data-cy*='telefon' i]",
+      "button[class*='phone' i]", "button[class*='telefon' i]", "[class*='show-phone' i]", "[class*='showPhone' i]",
+      "[aria-label*='telefon' i][role='button']", "button[aria-label*='telefon' i]", "button[aria-label*='phone' i]",
+    ];
+    for (const sel of selectors) for (const el of document.querySelectorAll(sel)) {
+      if (bad.test(label(el))) continue;
+      await fire(clickable(el));
+    }
+    // după text, aria-label sau title — și pe elemente simple (span / div), apăsând strămoșul clickabil
+    for (const el of document.querySelectorAll("button, a, [role='button'], span, div, p, strong")) {
+      if (clicks >= 5) break;
+      if (el.children.length > 3) continue;
+      const t = label(el);
+      if (!t || t.length > 70 || bad.test(t)) continue;
+      if ((verb.test(t) && noun.test(t)) || masked.test(t)) await fire(clickable(el));
+    }
+  };
+
+  const key = (x) => x.replace(/[^\d+]/g, "").replace(/^(\+?40)/, "0");
+  const found = () => {
+    const out = new Map();
+    document.querySelectorAll("a[href^='tel:']").forEach((a) => { const n = key(decodeURIComponent(a.getAttribute("href").slice(4))); if (n.length >= 9) out.set(n, a); });
+    const walk = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    for (let n = walk.nextNode(); n; n = walk.nextNode()) {
+      const m = (n.nodeValue || "").match(phoneRe);
+      if (m) m.forEach((x) => { const k = key(x); if (!out.has(k)) out.set(k, n.parentElement); });
+    }
+    return out;
+  };
+
+  const before = found();
+  await pass();
+  if (clicks) await sleep(1800);
+  let after = found();
+  if (clicks && after.size <= before.size) { await pass(); await sleep(1500); after = found(); }
+
+  // numerele apărute doar în ferestre / bare fixe → notă statică sus, ca să rămână în captură
+  const inFixed = (el) => { for (let e = el; e && e !== document.body; e = e.parentElement) { const p = getComputedStyle(e).position; if (p === "fixed") return true; } return false; };
+  const fresh = [...after.entries()].filter(([k]) => !before.has(k));
+  const hidden = fresh.filter(([, el]) => el && (inFixed(el) || !visible(el))).map(([k]) => k);
+  let noted = false;
+  if (hidden.length && !document.getElementById("uvalo-contact-note")) {
+    const fmt = (k) => k.replace(/^(\d{4})(\d{3})(\d{3})$/, "$1 $2 $3");
+    const box = document.createElement("div");
+    box.id = "uvalo-contact-note";
+    box.style.cssText = "position:static;margin:12px auto;max-width:820px;padding:10px 14px;border:1px solid #E0AD4F;background:#FFF8E8;border-radius:8px;font:600 15px/1.4 Arial,sans-serif;color:#141414";
+    box.textContent = "Telefon afișat pe site: " + hidden.map(fmt).join(", ");
+    document.body.insertBefore(box, document.body.firstChild);
+    noted = true;
   }
-  return clicks;
+  window.scrollTo(0, 0);
+  return { clicks, phones: after.size, fresh: fresh.length, noted };
 }
 
 /* Injectat în pagină: extinde descrierea anunțului („Vezi mai mult”,
@@ -648,7 +702,10 @@ async function captureItemInTab(item, onStep) {
       const [res] = await chrome.scripting.executeScript({
         target: { tabId: tab.id }, func: pageRevealContacts,
       });
-      if (res && res.result > 0) await sleep(2200); // așteaptă încărcarea numărului
+      const rv = (res && res.result) || {};
+      onStep(rv.fresh ? "date de contact afișate (" + rv.fresh + (rv.fresh === 1 ? " număr" : " numere") + ")…"
+        : rv.clicks ? "am apăsat butonul de contact, dar numărul nu a apărut…" : "nu am găsit butonul de contact…");
+      await sleep(rv.clicks ? 600 : 200);
     }
 
     await chrome.scripting.executeScript({ target: { tabId: tab.id }, func: pageHideFloating });
