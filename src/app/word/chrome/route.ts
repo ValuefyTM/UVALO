@@ -26,10 +26,10 @@ export async function GET(req: Request) {
   <div class="sec">Așezare</div>
   <label class="card" style="align-items:center;cursor:pointer"><input type="checkbox" id="optGroup" checked> <span>Numele grupului ca titlu</span></label>
   <label class="card" style="align-items:center;cursor:pointer"><input type="checkbox" id="optBreak" checked> <span>Fiecare comparabilă pe pagină nouă</span></label>
-  <div id="capBox"></div>
   <button type="button" class="btn" id="insert">Inserează în raport</button>
   <p style="font-size:11px">Pune cursorul pe un rând gol, în afara tabelelor. Inserarea se poate anula cu Ctrl+Z.</p>
 </div>
+<div id="capBox"></div>
 <div id="status" class="card" hidden></div>
 <a class="btn ghost" href="/word/instrumente">← Instrumentele UVALO</a>`;
   return new Response(panePage("Comparabile din Chrome", body, `<script src="/word/src/cap-width.js"></script><script src="/word/src/chrome-pane.js"></script>`), { headers: paneHeaders });
