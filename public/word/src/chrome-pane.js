@@ -74,7 +74,7 @@
       var g = batch.groups[+c.dataset.g]; picked.push({ group: g.name, it: g.items[+c.dataset.i] });
     });
     if (!picked.length) return;
-    var W = Math.max(8, Math.min(19, parseFloat($("optW").value) || 16)) * 28.3465, withGroup = $("optGroup").checked, brk = $("optBreak").checked;
+    var W = window.UVALO_CAP ? UVALO_CAP.widthPt() : 16 * 28.3465, withGroup = $("optGroup").checked, brk = $("optBreak").checked;
     var link13 = Office.context.requirements.isSetSupported("WordApi", "1.3");
     $("insert").disabled = true;
     try {

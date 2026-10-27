@@ -177,6 +177,9 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   (Office dialog). Acolo `public/word/src/comps-bridge.js` adaugă „Inserează în raport”: harta PNG + rândurile tabelului
   trimise prin `messageParent` pe bucăți de 30 000 de caractere; panoul (`comps-pane.js`) le inserează la cursor (imagine
   + tabel Word, WordApi 1.3).
+- **„Setări captură”** (`public/word/src/cap-width.js`, blocul `#capBox` în panourile „Comparabile din Chrome” și „Comparabile”): pagina (A4 portret /
+  peisaj / Letter / altă lățime), marginile stânga / dreapta (cm) și cât din lățimea dintre margini ocupă captura (30–100%), cu schița paginii;
+  `UVALO_CAP.widthPt()` = lățimea imaginilor inserate (centrate, proporții păstrate). Păstrate în `localStorage` `uvalo-word-cap` (rezervă în memorie).
 - Anexele păstrează lucrul la închiderea panoului: fișierele și lista (ordine, bife, descrieri, titluri) în IndexedDB
   `uvalo-anexe` (per mod, 12 ore); „Golește” șterge tot.
 - **Anexă foto → „Din inspecții”** (`public/word/src/insp-pick.js`, butonul `#btnInsp`, fereastra `#inspDlg`; doar cu modulele `word` + `inspectii`):

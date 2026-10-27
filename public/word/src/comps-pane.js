@@ -54,7 +54,7 @@
         var pPic = anchor.insertParagraph("", "After");
         pPic.alignment = "Centered";
         var pic = pPic.insertInlinePictureFromBase64(b64, "Start");
-        pic.lockAspectRatio = true; pic.width = 450;
+        pic.lockAspectRatio = true; pic.width = window.UVALO_CAP ? UVALO_CAP.widthPt() : 450;
         var cap = pPic.insertParagraph(d.caption || "Amplasarea proprietății subiect și a comparabilelor (distanțe în linie dreaptă)", "After");
         cap.alignment = "Centered"; cap.font.italic = true; cap.font.size = 9; cap.font.bold = false;
         if (withTable) {

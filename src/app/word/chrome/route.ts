@@ -26,11 +26,11 @@ export async function GET(req: Request) {
   <div class="sec">Așezare</div>
   <label class="card" style="align-items:center;cursor:pointer"><input type="checkbox" id="optGroup" checked> <span>Numele grupului ca titlu</span></label>
   <label class="card" style="align-items:center;cursor:pointer"><input type="checkbox" id="optBreak" checked> <span>Fiecare comparabilă pe pagină nouă</span></label>
-  <label class="card" style="align-items:center;gap:8px">Lățimea imaginilor <input type="number" id="optW" value="16" min="8" max="19" step="0.5" style="width:64px;padding:4px 6px;border:1px solid #cfc6b3;border-radius:6px"> cm</label>
+  <div id="capBox"></div>
   <button type="button" class="btn" id="insert">Inserează în raport</button>
   <p style="font-size:11px">Pune cursorul pe un rând gol, în afara tabelelor. Inserarea se poate anula cu Ctrl+Z.</p>
 </div>
 <div id="status" class="card" hidden></div>
 <a class="btn ghost" href="/word/instrumente">← Instrumentele UVALO</a>`;
-  return new Response(panePage("Comparabile din Chrome", body, `<script src="/word/src/chrome-pane.js"></script>`), { headers: paneHeaders });
+  return new Response(panePage("Comparabile din Chrome", body, `<script src="/word/src/cap-width.js"></script><script src="/word/src/chrome-pane.js"></script>`), { headers: paneHeaders });
 }

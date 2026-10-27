@@ -15,6 +15,9 @@ export const MANIFEST_VERSION = "1.1.0.0";
  * it is separate from MANIFEST_VERSION, which changes only with the buttons of the tab (and needs a new install).
  */
 export const WORD_VERSIONS: { v: string; date: string; manifest?: boolean; notes: string[] }[] = [
+  { v: "1.4.1", date: "27 oct. 2026", notes: [
+    "„Setări captură” în Comparabile din Chrome și în Comparabile: alegi pagina, marginile din stânga și din dreapta și cât din lățimea dintre margini ocupă captura; setarea se păstrează.",
+  ] },
   { v: "1.4.0", date: "23 oct. 2026", notes: [
     "Anexă foto → „Din inspecții”: alegi o inspecție din UVALO și pozele ei de pe server intră în anexă, pe categorii, cu ora și categoria ca descriere; le aranjezi și le inserezi ca de obicei.",
     "Tot de acolo, „Inserează fișa”: fișa de inspecție (imobilul, răspunsurile, încăperile, constatările, locația) se pune ca tabele la cursor, în documentul deschis.",
