@@ -67,6 +67,8 @@ button, input, select, textarea { font-family: inherit; }
 .meText small { font-size: 11px; color: var(--on-navy-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .logout { height: 36px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.15); background: transparent; color: var(--on-navy-2); font-size: 12px; font-weight: 700; cursor: pointer; }
 .logout:hover { color: #fff; border-color: rgba(255, 255, 255, 0.35); }
+.appInstall { display: flex; align-items: center; justify-content: center; gap: 7px; color: var(--acc-light); border-color: rgba(242, 169, 59, 0.35); }
+.appInstall:hover { color: var(--acc-light); border-color: var(--acc); }
 .main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .top {
   position: sticky; top: 0; z-index: 10; background: rgba(242, 236, 224, 0.94); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);

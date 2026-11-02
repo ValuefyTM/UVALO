@@ -7,6 +7,9 @@ import { relevantCount } from "@/lib/collab";
 import { LogoutButton, MenuButton, OrgSwitch } from "./ClientBits";
 import { Referral } from "./Referral";
 import { ViewAsStrip } from "./ViewAs";
+import { AppInstall } from "./AppInstall";
+import { isPhoneUa } from "@/lib/ua";
+import { headers } from "next/headers";
 
 type Key = "home" | "instrumente" | "colaborari" | "inspectii" | "localizare" | "amplasament" | "comparabile" | "word" | "chrome" | "firma" | "cont";
 // the tools' own pages light up "Instrumente" in the menu
@@ -26,6 +29,8 @@ const NavIcon = ({ k }: { k: Ico }) => <svg className="navIco" width="18" height
 export async function AppShell(props: { c: Ctx; active: Key; title: string; subtitle?: string; actions?: React.ReactNode; dark?: boolean; children: React.ReactNode }) {
   const mnt = props.c.super ? await maintenanceOn() : false;
   const { c } = props;
+  // the platform installs as an app only on a computer (manifest + "Instalează pe calculator"); on phones only the inspection app
+  const desktop = !isPhoneUa((await headers()).get("user-agent") ?? "");
   // Colaborări: the posts in this person's zones they have not answered yet, next to the menu item
   // (not activated yet: a "NOU" label instead)
   let collabN = 0, collabNew = false;
@@ -57,6 +62,8 @@ export async function AppShell(props: { c: Ctx; active: Key; title: string; subt
   const mobileNav = [...nav.filter((i) => i.key !== "firma"), { key: "cont" as const, label: "Contul meu", href: "/cont" }].slice(0, 4);
   const sub = c.user.anevar_no ? `Legitimație ANEVAR ${c.user.anevar_no}` : c.org ? `${c.org.name} · ${c.role ? ROLE_LABEL[c.role] : ""}` : c.super ? "Administrator UVALO" : c.user.email;
   return (
+    <>
+    {desktop && <link rel="manifest" href="/api/app/manifest" />}
     <div className="shell">
       <aside className="side">
         <div className="brand">
@@ -110,6 +117,7 @@ export async function AppShell(props: { c: Ctx; active: Key; title: string; subt
             </a>
           )}
           </div>
+          {desktop && <AppInstall />}
           <LogoutButton />
         </div>
       </aside>
@@ -139,5 +147,6 @@ export async function AppShell(props: { c: Ctx; active: Key; title: string; subt
       <script src="/feedback.js" async data-bottom="16" data-bottom-mobile="84" />
       <script src="/presence.js" async />
     </div>
+    </>
   );
 }

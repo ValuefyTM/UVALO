@@ -283,6 +283,14 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   (migrația 0018) și `users.last_seen_at`. Panoul: „Online acum” = sesiuni cu semnal în ultimele 3 minute, grupate pe
   persoană, cu pagina (UAT și nr. cadastral în localizator), dispozitivul și orașul; plus ultimele 15 minute și azi.
 
+## Platforma ca aplicație pe calculator (PWA, `app.uvalo.ro`, doar desktop)
+
+- Manifestul `/api/app/manifest` (`id` `/`, `start_url` `/?app=1`, `scope` `/`, iconițele `loc-icon-*`) e legat din `AppShell` **doar pentru
+  user-agent de calculator** (`isPhoneUa` în `src/lib/ua.ts`; ruta răspunde 404 telefoanelor, `Vary: User-Agent`): pe telefon se instalează doar
+  aplicația de inspecții (`inspectii.uvalo.ro`), iar `/admin` își păstrează manifestul propriu („UVALO Admin”). Fără service worker (Chrome / Edge
+  nu îl mai cer la instalare). În meniu, sub cardul de profil, butonul **„Instalează pe calculator”** (`AppInstall`, `.appInstall`) apare doar când
+  browserul oferă instalarea (`beforeinstallprompt`: Chrome / Edge, neinstalată încă); Safari pe Mac nu dă evenimentul (acolo: Fișier → „Adaugă în Dock”).
+
 ## UVALO Admin pe telefon (PWA, `/admin`)
 
 - Zona de admin se instalează ca aplicație separată, **„UVALO Admin”**: `src/app/admin/layout.tsx` (manifest `/api/admin/manifest`, public; `id` `/admin`,
