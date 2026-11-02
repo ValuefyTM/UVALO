@@ -1,13 +1,15 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { InstallModal } from "./HdPhone";
 
 /**
  * Inspecții → the gear in the page's top corner: the inspection sheets and the module's other settings (more will come here).
  * `children` = extra rows rendered by the page (e.g. the connected phone).
  */
-export function InspSettings({ children }: { children?: React.ReactNode }) {
+export function InspSettings({ children, appUrl, phones = 0 }: { children?: React.ReactNode; appUrl?: string; phones?: number }) {
   const [open, setOpen] = useState(false);
+  const [inst, setInst] = useState(false);
   const box = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!open) return;
@@ -30,6 +32,12 @@ export function InspSettings({ children }: { children?: React.ReactNode }) {
             {ico(<><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" /><path d="M14 3v6h6M8 13h8M8 17h5" /></>)}
             <span><b>Fișe de inspecție</b><small>Întrebările, încăperile, publicarea pe versiuni</small></span>
           </a>
+          {appUrl && (
+            <a role="menuitem" href="#telefon" onClick={(e) => { e.preventDefault(); setOpen(false); setInst(true); }}>
+              {ico(<><rect x="6" y="2.5" width="12" height="19" rx="2.5" /><path d="M10.5 18.5h3" /></>)}
+              <span><b>Conectează telefonul</b><small>{phones ? `${phones} ${phones === 1 ? "telefon conectat" : "telefoane conectate"} · un cod nou pentru alt telefon sau după reinstalare` : "Codul QR și pașii de instalare"}</small></span>
+            </a>
+          )}
           {children}
           <span className="inSetSoon" role="menuitem" aria-disabled="true">
             {ico(<><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9" /><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0" /></>)}
@@ -41,6 +49,7 @@ export function InspSettings({ children }: { children?: React.ReactNode }) {
           </span>
         </div>
       )}
+      {inst && appUrl && <InstallModal appUrl={appUrl} again={phones > 0} onClose={() => setInst(false)} />}
     </div>
   );
 }

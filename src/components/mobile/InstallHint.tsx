@@ -69,7 +69,7 @@ export function InstallHint({ compact = false }: { compact?: boolean }) {
       <button type="button" className="mbHintX" aria-label="Închide" onClick={close}>×</button>
       {k === "ios-safari" && <>
         <b>Instalează aplicația pe iPhone</b>
-        <small>Apasă <ShareIcon /> <b>Partajează</b> în bara Safari, apoi <b>„Adaugă pe ecranul principal”</b>. Aplicația se deschide apoi de pe ecran, ca oricare alta.</small>
+        <small>Apasă <ShareIcon /> <b>Partajează</b> în bara Safari, apoi <b>„Adaugă pe ecranul principal”</b>. Aplicația se deschide apoi de pe ecran, ca oricare alta. Dacă ți se cere din nou contul acolo, intră cu emailul sau cu un cod nou din UVALO (Inspecții → Setări → Conectează telefonul).</small>
         {!compact && <span className="mbHintArrow" aria-hidden="true" />}
       </>}
       {k === "ios-other" && <>

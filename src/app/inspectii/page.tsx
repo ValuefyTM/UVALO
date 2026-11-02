@@ -41,7 +41,7 @@ export default async function InspectiiPage() {
         {dev && <span className="inDev" title={dev.platform === "test" ? "Mod de test, fără telefon" : "Telefonul conectat"}><i />{dev.platform === "test" ? "Mod test (fără telefon)" : `Telefon conectat · ${dev.name ?? ""}`}</span>}
         <InspPreview appUrl={inspUrl()} />
         <InspBell items={notifs} />
-        <InspSettings />
+        <InspSettings appUrl={inspUrl()} phones={devs.filter((d) => d.platform !== "test").length} />
       </>}>
       {c.insp !== "on" && <div className="note inTestNote">Modul în test: îl văd administratorii UVALO și grupul de test. Datele introduse acum sunt marcate ca date de test.</div>}
       <InspList rows={rows} meId={c.user.id} ops={ops}

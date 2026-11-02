@@ -165,6 +165,7 @@ export function MobileApp() {
     // the last state known on this phone: the app shows at once, without waiting for the network
     try { const c = JSON.parse(localStorage.getItem("insp-state") || "null"); if (c?.user && c.allowed) { apply(c); setState("app"); } } catch {}
     const sp = new URLSearchParams(location.search), code = sp.get("pair"), openId = sp.get("open");
+    const auto = sp.get("auto") === "1"; // the token from the installed app's start_url (manifest): used once, then just skipped
     const standalone = matchMedia("(display-mode: standalone)").matches || (navigator as unknown as { standalone?: boolean }).standalone === true;
     (async () => {
       // already signed in as the same person (e.g. the web's preview frame opened again): the code is not used, no new session.
@@ -177,12 +178,13 @@ export function MobileApp() {
         signed = !!who && (!want || who === want);
       }
       if (code && signed) history.replaceState(null, "", location.pathname);
+      else if (code && auto && !navigator.onLine) { /* offline start of the installed app: the saved state is shown */ }
       else if (code) {
-        try { localStorage.removeItem("insp-state"); } catch {}
+        if (!auto) { try { localStorage.removeItem("insp-state"); } catch {} }
         history.replaceState(null, "", location.pathname);
         const r = await fetch("/api/m/pair", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code, standalone }) });
         const j = await J(r);
-        if (!r.ok) say(String(j.error || "Codul nu a mers."));
+        if (!r.ok) { if (!auto) say(String(j.error || "Codul nu a mers.")); }
         else if (typeof j.go === "string") { location.replace(j.go); return; } // the session again through a page load
       }
       await load();
@@ -590,7 +592,7 @@ function Login({ onDone }: { onDone: () => void }) {
         )}
         {step === "pair" && (
           <form onSubmit={async (e) => { e.preventDefault(); const v = await post("/api/m/pair", { code, standalone }); if (v) { if (typeof v.go === "string") { setBusy(true); location.replace(v.go); } else onDone(); } }}>
-            <p className="mbNote">Pe calculator, în UVALO → <b>Inspecții</b>, apasă „Arată codul de conectare”. Scanează codul QR cu camera telefonului sau scrie aici cele 8 cifre.</p>
+            <p className="mbNote">Pe calculator, în UVALO → <b>Inspecții</b> → <b>Setări</b> → „Conectează telefonul” (sau pe Acasă, cardul telefonului). Scanează codul QR cu camera telefonului sau scrie aici cele 8 cifre.</p>
             <label className="mbField">Codul de conectare<input inputMode="numeric" autoComplete="one-time-code" maxLength={8} value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))} required /></label>
             <button className="mbBtn gold big" disabled={busy || code.length < 8}>Conectează telefonul</button>
           </form>

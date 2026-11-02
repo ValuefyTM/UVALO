@@ -39,6 +39,14 @@ export async function pairCode(db: D1Database, userId: string) {
   return { code, token };
 }
 
+/** A sign-in token for the installed app's start_url (manifest): valid 3 days, used once, without touching the other codes of the person.
+ *  On iPhone the app added to the home screen does not share Safari's cookies: without it, the app would open signed out right after pairing. */
+export async function installToken(db: D1Database, userId: string) {
+  const token = randomToken(), exp = new Date(Date.now() + 3 * 864e5).toISOString();
+  await db.prepare("INSERT INTO insp_pair_codes (code_hash, user_id, expires_at) VALUES (?, ?, ?)").bind(await sha256(`t:${token}`), userId, exp).run();
+  return token;
+}
+
 /** Where the phone app lives (PWA on its own domain, the same worker). */
 export const inspUrl = () => (process.env.INSP_URL || "https://inspectii.uvalo.ro").replace(/\/$/, "");
 

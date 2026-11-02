@@ -601,6 +601,13 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   `localStorage` `insp-state` → aplicația apare imediat, apoi se actualizează (golit la 401, fără acces, „Ieși din cont”). Detaliul unei
   inspecții se arată din `insp-<id>` și se reîmprospătează după; la 2,5 s după pornire se descarcă în fundal detaliile primelor 15 inspecții
   active. `/api/m/device` se cheamă după listă, nu în paralel.
+- **Aplicația instalată pornește conectată** (manifest cu token): pe iPhone, aplicația adăugată pe ecranul principal are cookie-urile ei, separate de Safari,
+  deci după conectarea prin QR în Safari se deschidea neconectată (feedback utilizator, nov. 2026). `/api/m/manifest` e cerut cu cookie-ul sesiunii
+  (`<link rel="manifest" crossorigin="use-credentials">` randat în `src/app/m/page.tsx`, nu prin `metadata.manifest`) și, pentru cine e conectat, pune
+  `start_url = /?pair=<installToken>&u=<uid>&auto=1` (`installToken` în `insp.ts`: rând `t:` în `insp_pair_codes`, 3 zile, o singură folosire, fără să
+  șteargă celelalte coduri; `Cache-Control: private, no-store`); neconectat → `start_url: /`. În `MobileApp`, `auto=1` = tokenul se încearcă în liniște:
+  consumat / expirat → fără eroare, ecranul de autentificare sau starea salvată (offline nu se încearcă). Pe web, codul QR se poate cere oricând:
+  **Inspecții → Setări → „Conectează telefonul”** (`InspSettings` cu `appUrl` + `phones`, deschide `InstallModal` din `HdPhone.tsx`).
 - Instalare după dispozitiv (`InstallHint.tsx`): iPhone Safari → Partajează → „Adaugă pe ecranul principal” (balon cu săgeată spre bara Safari);
   iPhone în alt browser → „Deschide în Safari” (`x-safari-https://…`, nu merge peste tot) + „Copiază linkul”; Android → `beforeinstallprompt`
   sau meniul ⋮; Android în aplicații (Instagram, WhatsApp…) → `intent://…package=com.android.chrome`; calculator → QR. Ascuns 3 zile la ×.

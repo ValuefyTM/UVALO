@@ -41,7 +41,7 @@ export function HdPhone({ installed, title, lines, appUrl }: { installed: boolea
   );
 }
 
-function InstallModal({ appUrl, again, onClose }: { appUrl: string; again: boolean; onClose: () => void }) {
+export function InstallModal({ appUrl, again, onClose }: { appUrl: string; again: boolean; onClose: () => void }) {
   const [code, setCode] = useState<string | null>(null);
   const [err, setErr] = useState("");
   const host = appUrl.replace(/^https?:\/\//, "");
