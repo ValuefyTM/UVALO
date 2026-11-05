@@ -7,6 +7,7 @@
   var me = document.currentScript;
   var bottom = (me && me.dataset.bottom) || "16";
   var bottomM = (me && me.dataset.bottomMobile) || bottom;
+  var unread = parseInt((me && me.dataset.unread) || "0", 10) || 0; // răspunsuri necitite de la echipa UVALO (din AppShell)
 
   var css = "" +
     ".uvfb-btn{position:fixed;right:16px;bottom:" + bottom + "px;z-index:2147483000;width:44px;height:44px;border-radius:999px;border:0;background:#141414;color:#E0AD4F;" +
@@ -27,6 +28,8 @@
     ".uvfb-chk{display:flex;gap:8px;align-items:center;font-size:12px;color:#4A4A4A;cursor:pointer}.uvfb-chk input{width:16px;height:16px;accent-color:#E0931A}" +
     ".uvfb-send{height:40px;border:0;border-radius:10px;background:#F2A93B;color:#141414;font:700 13px \"Plus Jakarta Sans\",system-ui,sans-serif;cursor:pointer}.uvfb-send:disabled{opacity:.6;cursor:progress}" +
     ".uvfb-err{color:#B3261E;font-size:12px;font-weight:700}.uvfb-ok{padding:6px 14px 18px;font-size:13px;color:#157F55;font-weight:700}.uvfb-ok a{display:block;margin-top:4px;color:#9A5F00}" +
+    ".uvfb-n{position:absolute;top:-4px;right:-4px;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:#E0AD4F;color:#141414;font:800 10.5px \"Plus Jakarta Sans\",system-ui,sans-serif;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 2px #141414}" +
+    ".uvfb-new{display:flex;align-items:center;gap:8px;margin:0 14px 10px;padding:9px 12px;border-radius:10px;background:#FDF1DC;color:#9A5F00;font-size:12.5px;font-weight:700;text-decoration:none}.uvfb-new:hover{background:#F5D9A6}" +
     ".uvfb-sup{font-size:11.5px;color:#6B6B6B;margin:-2px 0 0}.uvfb-sup a{color:#9A5F00;font-weight:700;text-decoration:none}" +
     "@media (max-width:979px){.uvfb-btn{bottom:calc(" + bottomM + "px + env(safe-area-inset-bottom,0px))}.uvfb-panel{bottom:calc(" + bottomM + "px + 54px + env(safe-area-inset-bottom,0px))}}" +
     "@media print{.uvfb-btn,.uvfb-panel{display:none!important}}";
@@ -40,6 +43,13 @@
   btn.setAttribute("aria-label", "Tichet nou · suport tehnic");
   btn.setAttribute("aria-expanded", "false");
   btn.innerHTML = '<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/><path d="M8.5 11h7M8.5 14h4"/></svg><span class="uvfb-tip">Suport · tichet nou</span>';
+  if (unread > 0) {
+    var n = document.createElement("span");
+    n.className = "uvfb-n"; n.textContent = unread > 99 ? "99+" : String(unread);
+    n.setAttribute("aria-label", unread === 1 ? "un răspuns nou" : unread + " răspunsuri noi");
+    btn.appendChild(n);
+    btn.querySelector(".uvfb-tip").textContent = unread === 1 ? "Un răspuns nou de la UVALO" : unread + " răspunsuri noi de la UVALO";
+  }
   document.body.appendChild(btn);
 
   var panel = null, kind = "problema";
@@ -58,6 +68,13 @@
       '<label class="uvfb-chk"><input type="checkbox" checked> Îmi puteți răspunde pe email</label>' +
       '<span class="uvfb-err" role="alert" hidden></span><button type="submit" class="uvfb-send">Trimite</button>' +
       '<p class="uvfb-sup">Răspundem în chat, în <a href="' + (window.UVALO_APP_URL || "") + '/suport">Suport tehnic</a> (acolo poți atașa și o captură de ecran).</p></form>';
+    if (unread > 0) {
+      var nl = document.createElement("a");
+      nl.className = "uvfb-new"; nl.href = (window.UVALO_APP_URL || "") + "/suport";
+      nl.innerHTML = '<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>' +
+        (unread === 1 ? "Ai un răspuns nou de la echipa UVALO →" : "Ai " + unread + " răspunsuri noi de la echipa UVALO →");
+      panel.insertBefore(nl, panel.querySelector("form"));
+    }
     document.body.appendChild(panel);
     btn.setAttribute("aria-expanded", "true");
     kind = "problema";
