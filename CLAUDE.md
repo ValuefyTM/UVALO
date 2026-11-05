@@ -43,10 +43,10 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
 
 ## Structură
 
-- Meniul (`AppShell`), cu iconițe (`NavIcon`, conturul auriu la pagina curentă): **Acasă**, (**Inspecții** pe locul 2 doar după lansare, modul `on`,
+- Meniul (`AppShell`), cu iconițe (`NavIcon`, conturul auriu la pagina curentă): **Acasă**, **Inspecții** (pe locul 2, pentru toți cei cu modulul,
   cu contorul auriu = inspecțiile mele de azi neterminate), **Colaborări** (pentru cine are acces în modul curent), **Instrumente**
   (`/instrumente`, toate instrumentele pe o pagină, grupate „Pe platformă” și „În Word și în browser”; paginile instrumentelor aprind „Instrumente”),
-  apoi **În curând**: Inspecții (cât modul ≠ `on`; link cu TEST pentru cei din grupul de test, altfel estompat) și Analize de piață.
+  apoi **În curând**: Analize de piață.
   Pe telefon: Acasă, Colaborări, Instrumente, Contul meu.
 - `src/app/` — pagini: `login`, `solicita-cont`, `invitatie`, `cont`, `firma` (panoul firmei), `admin/*`
   (firme, utilizatori, solicitări, recomandări, activitate, tablou ANEVAR, planuri), `mentenanta`, `localizare`.
@@ -257,7 +257,7 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
 
 - După canvasul „UVALO — Dashboard Acasă”. Acces după **mod** (Admin → Instrumente → Acasă nouă, `app_settings` `acasa_mode`, API `/api/admin/acasa`,
   `c.homeNew` în `context()`); `src/app/page.tsx` o arată în loc de pagina veche. Ceilalți văd pagina veche.
-- Conținut (doar ce are persoana în module): „Ce evaluăm azi?” + bara de căutare închisă, pe toată lățimea (`QuickSearch` cu `extra` = „+ Inspecție” și `recent` = ultimele parcele ca
+- Conținut (doar ce are persoana în module): „Ce evaluăm azi?” + bara de căutare închisă, pe toată lățimea (`QuickSearch` cu `insp` = „+ Inspecție” și `recent` = ultimele parcele ca
   „Recente”), cifrele zilei, compacte pe un rând (inspecții azi / săptămâna asta / fișe de verificat = finalizate de verificat / lucrări noi în zonă), **Inspecții** pe
   hartă sau calendar (`HdInsp`, refolosește `MapView` / `CalView` din `InspList`, alegerea în `localStorage` `home-insp-view`; doar nefinalizatele — În lucru, Programată,
   De programat; harta 360 px cu lista în dreapta — carduri compacte cu scroll (`.hdMapRow`, `.hdItem`: număr, stare, data + ora, adresa,
@@ -515,14 +515,14 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   link de autentificare 7 zile; eveniment `colaborari`/`launch_mail` pe destinatar), doar celor cu acces în modul curent și fără profil.
 - Evenimente `colaborari`: `page`, `profile`, `post`, `request`, `open_chat`, `pick`, `post_status` (meta `{test:1}` în test).
 
-## Inspecții (`/inspectii`, modulul `inspectii`) — moduri ca la Colaborări
+## Inspecții (`/inspectii`, modulul `inspectii`) — lansat pentru toți
 
 - Pregătite pe web, făcute pe telefon (aplicația PWA de pe `inspectii.uvalo.ro`, vezi mai jos), văzute pe web. Mockup: canvasul „UVALO — Inspecții” (pagini Web / Mobil).
-- Acces după **mod** (Admin → Instrumente → Inspecții, `app_settings` cheia `inspectii_mode` = `{mode, users}`, `src/lib/modmode.ts`:
-  `modeSettings` / `setModeSettings` / `modeAllowed`; API `/api/admin/inspectii` cu `mode`, `add_many`, `remove`; panoul = `CollabAdmin` cu
-  `endpoint` / `name` / `counts={null}`): `off` = doar super-adminii, `test` = super-adminii + grupul de test (orice cont activ, indiferent de
-  abonament și de legitimație), `on` = toți cei cu acces la platformă. `context()` pune `inspectii` în `c.modules` după mod (comutatorul
-  „dezactivat” din `off` îl scoate pentru non-super-admini), `c.insp` = modul; meniul arată eticheta TEST cât timp modul ≠ `on`.
+- **Fără moduri** (6 nov 2026: modul de lucru Dezactivat / Test / Activ și grupul de test au fost scoase; cheia veche `inspectii_mode` din `app_settings`
+  nu se mai citește): `context()` pune `inspectii` în `c.modules` pentru toți cei cu acces la platformă (firmă activă, abonament valabil) și pentru
+  super-admini; doar comutatorul generic al instrumentului (Admin → Instrumente, `off`) îl mai poate opri temporar. Inspecțiile noi au `test = 0`;
+  cele din perioada de test rămân cu `test = 1` (Acasă nouă nu le arată). `/api/admin/inspectii` are doar `launch_mail`. Butoanele de super-admin
+  „Continuă fără telefon (test)”, „Simulează inspecția” și „Adaugă fotografii (test)” rămân.
 - Fără telefon conectat (`insp_devices`) → pagina de activare (`InspActivate`: cod QR spre `<INSP_URL>/?pair=<token>` (token lung, aleator, negăbil) + **codul de 8 cifre** de
   scris de mână, ambele în `insp_pair_codes` (hash `t:` / `m:`), 10 min, o singură folosire (`pairCode` / `usePairCode` în `insp.ts`); codurile scrise
   greșit: max. 10 / 15 min de la o adresă IP, iar peste 200 pe zi pe toată platforma codurile scrise se opresc până a doua zi (QR-ul merge); pagina întreabă `device_status` la 3 s și se deschide singură după conectare). Modulul pornește doar după o
@@ -535,8 +535,8 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   componenta `LaunchMail` generalizată cu `endpoint` / `img` / `all`): emailul „Inspecțiile au ajuns în UVALO” după canvasul „UVALO — Email lansare
   Inspecții” (https://claude.ai/artifact/6STAcouDrDCFwNTztJffDG): antet, titlu, salut cu `greetName`, bannerul `public/site/inspectii-banner.png`, buton =
   `magicLink` spre `/inspectii` 7 zile, cei trei pași, „Ce găsești în modul”, caseta de instalare, Suport tehnic, subsol. `inspLaunchList`: conturi active,
-  nu super-admini, cu `access` (membru activ într-o firmă activă, neexpirată), `allowed` după modul Inspecții (`on` toți, `test` grupul), `mailed` =
-  eveniment `inspectii`/`launch_mail`. Implicit doar celor cu `newsletter = 1`; bifa „trimite și celor fără noutățile bifate” → `all: true`. O singură
+  nu super-admini, cu `access` (membru activ într-o firmă activă, neexpirată), `mailed` =
+  eveniment `inspectii`/`launch_mail`; `allowed` = `access`. Implicit doar celor cu `newsletter = 1`; bifa „trimite și celor fără noutățile bifate” → `all: true`. O singură
   dată per persoană; audit `insp.launch_mail`.
 - **„Previzualizează aplicația”** (`InspPreview`, pe `/inspectii` și pe pagina de activare): aplicația de telefon reală într-o ramă de telefon
   (iframe spre `inspUrl()`), conectată singură cu un cod de conectare (`pair_code` → `/?pair=`); dacă rama are deja sesiune, codul nu se mai

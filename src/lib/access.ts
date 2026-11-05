@@ -64,7 +64,6 @@ export type Ctx = {
   off: string[];
   /** Colaborări: Dezactivat / Test / Activ (in "modules" only for the people allowed in the current mode). */
   collab: CollabMode;
-  insp: CollabMode;
   /** "Birou de evaluare" turned on for this person by the administration (super-admins: always). */
   office: boolean;
   /** Offices this person is an associated administrator of (office_links.admin): they see and manage those firms' inspections. */
@@ -115,9 +114,8 @@ export async function contextOf(db: D1Database, user: User, session: Session): P
   const cs = await collabSettings(db);
   const valuer = !!user.anevar_no?.trim();
   if ((sup || valuer) && collabAllowed(cs, { super: sup, userId: user.id, hasAccess: !!org && !block })) modules.push("colaborari");
-  // Inspecții: by its mode (Admin → Instrumente → Inspecții): super-admins, the test group, or everyone with access when Activ.
-  const ins = await modeSettings(db, "inspectii");
-  const insOk = sup || (!off.includes("inspectii") && modeAllowed(ins, { super: sup, userId: user.id, hasAccess: !!org && !block }));
+  // Inspecții: launched, for everyone with access (an admin may still switch the tool off in Admin → Instrumente)
+  const insOk = sup || (!off.includes("inspectii") && !!org && !block);
   const ii = modules.indexOf("inspectii");
   if (ii >= 0 && !insOk) modules.splice(ii, 1);
   if (ii < 0 && insOk) modules.push("inspectii");
@@ -130,7 +128,7 @@ export async function contextOf(db: D1Database, user: User, session: Session): P
   const hn = await modeSettings(db, "acasa");
   // super-admins see it only from Test on (with Dezactivat nobody does, so the current home page stays checkable)
   const homeNew = hn.mode !== "off" && modeAllowed(hn, { super: sup, userId: user.id, hasAccess: !!org && !block });
-  return { user, session, super: sup, orgs, org, role, modules: allowed, block, off, collab: cs.mode, insp: ins.mode, office: sup || !!user.office_allowed, linkAdmin, homeNew };
+  return { user, session, super: sup, orgs, org, role, modules: allowed, block, off, collab: cs.mode, office: sup || !!user.office_allowed, linkAdmin, homeNew };
 }
 
 /** "Birou de evaluare" (Firma mea: colleagues, seats): only for the accounts the administration turned it on for (in test). */

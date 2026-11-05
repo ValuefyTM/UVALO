@@ -87,7 +87,7 @@ export async function HomeDash({ db, c }: { db: Db; c: Ctx }) {
 
   /* ---------- inspections ---------- */
   const ops = isOps(c);
-  const rows = rowsAll.filter((r) => !r.test || c.insp !== "on");
+  const rows = rowsAll.filter((r) => !r.test); // the inspections made while the module was in test stay out of the home page
   const mineToDo = (r: (typeof rows)[number]) => r.assignee_id === uid || (r.who !== "forothers" && canPrepare(c, r));
   const open = rows.filter((r) => ["prog", "plan", "lucru"].includes(r.status));
   const todayRows = open.filter((r) => r.scheduled_at?.startsWith(today) && r.status !== "prog");

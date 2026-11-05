@@ -114,12 +114,7 @@ export default async function Instrument({ params }: { params: Promise<{ key: st
   }
 
   if (key === "inspectii") {
-    const ms = await modeSettings(db, "inspectii");
-    const [users, all, n, app] = await Promise.all([testUsers(db, ms.users),
-      db.prepare(`SELECT u.id, COALESCE(NULLIF(u.name, ''), u.email) AS name, u.email, u.anevar_no AS anevar, u.is_superadmin AS sup,
-          (SELECT o.name FROM memberships m JOIN orgs o ON o.id = m.org_id WHERE m.user_id = u.id AND m.status = 'active' ORDER BY o.name LIMIT 1) AS org
-        FROM users u WHERE u.status = 'active' ORDER BY name COLLATE NOCASE LIMIT 3000`)
-        .all<{ id: string; name: string; email: string; anevar: string | null; sup: number; org: string | null }>(),
+    const [n, app] = await Promise.all([
       db.prepare(`SELECT COUNT(*) AS total, SUM(status IN ('gata', 'pred')) AS done, COUNT(DISTINCT created_by) AS people,
           (SELECT COUNT(*) FROM insp_devices) AS phones, (SELECT COUNT(*) FROM insp_files WHERE kind = 'photo') AS photos
         FROM inspections WHERE deleted_at IS NULL`).first<{ total: number; done: number | null; people: number; phones: number; photos: number }>(), appStats(db)]);
@@ -128,16 +123,18 @@ export default async function Instrument({ params }: { params: Promise<{ key: st
     const launch = await inspLaunchList(db);
     const lWait = launch.filter((r) => !r.mailed), lReady = lWait.filter((r) => r.allowed && r.newsletter), lNoNews = lWait.filter((r) => r.allowed && !r.newsletter);
     return (
-      <AdminShell c={c} active="instrumente" pending={pending} title={tool.name} subtitle="Mod de lucru, grupul de test și statistici" actions={<a className="btn btnGhost btnSm" href="/admin/instrumente">← Instrumente</a>}>
-        <CollabAdmin mode={ms.mode} users={users} counts={null} accounts={all.results} endpoint="/api/admin/inspectii" name="Inspecțiile"
-          testNote={<>Cât timp modulul nu e „Activ”, în meniu apare cu eticheta TEST. Persoanele din grupul de test îl folosesc pe web și în aplicația de telefon (inspectii.uvalo.ro), indiferent de abonament.</>} />
+      <AdminShell c={c} active="instrumente" pending={pending} title={tool.name} subtitle="Lansat pentru toți: anunțul de lansare, statistici, aplicația de telefon" actions={<a className="btn btnGhost btnSm" href="/admin/instrumente">← Instrumente</a>}>
+        <section className="card">
+          <div className="cardHead"><h2>Modulul Inspecții</h2><span className="pill pillOk"><i />Activ pentru toți</span></div>
+          <p className="hint">Modulul e lansat: îl au toate conturile cu acces la platformă (în meniu, pe locul 2) și aplicația de telefon. Nu mai are mod de test. Oprirea temporară, ca la celelalte instrumente, din pagina Instrumente.</p>
+        </section>
         <section className="card" id="lansare">
           <div className="cardHead"><h2>Anunțul de lansare</h2><span className="pill"><i />{launch.filter((r) => r.mailed).length} trimise</span></div>
           <p className="hint">Emailul „Inspecțiile au ajuns în UVALO” (după canvasul „UVALO — Email lansare Inspecții”): bannerul aplicației, cei trei pași, ce face modulul, instalarea pe telefon
-            și un buton care autentifică direct, valabil 7 zile. Merge o singură dată la fiecare persoană, doar celor care pot folosi modulul în modul curent
-            ({ms.mode === "on" ? "toți cei cu acces la platformă" : ms.mode === "test" ? "grupul de test" : "nimeni, modulul e dezactivat"}); implicit doar celor care au bifat noutățile UVALO.</p>
+            și un buton care autentifică direct, valabil 7 zile. Merge o singură dată la fiecare persoană, doar celor cu acces la platformă (firmă activă);
+            implicit doar celor care au bifat noutățile UVALO.</p>
           <LaunchMail ready={lReady.length} waiting={lWait.filter((r) => r.newsletter).length} sent={launch.filter((r) => r.mailed).length} activated={launch.filter((r) => r.access).length}
-            endpoint="/api/admin/inspectii" img="/site/inspectii-banner.png" waitingLabel="fără acces în modul curent" activatedLabel="conturi cu acces în total"
+            endpoint="/api/admin/inspectii" img="/site/inspectii-banner.png" waitingLabel="fără acces (firmă inactivă)" activatedLabel="conturi cu acces în total"
             all={[lNoNews.length, "trimite și celor fără noutățile bifate"]} />
         </section>
         <h2 className="secTitle">Statistici</h2>

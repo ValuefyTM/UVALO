@@ -1,5 +1,5 @@
 // Server-only: Inspecții (module `inspectii`). Prepared on the web, done on the phone (UVALO app), seen on the web.
-// In test: only super-admins have the module (context() in access.ts); everything written now has test = 1.
+// The inspections made while the module was in test keep test = 1 (hidden on the home page); new ones are real (test = 0).
 import { canManageOrg, type Ctx } from "./access";
 import { getFiles, now, uuid } from "./db";
 import { randomCode, randomToken, sha256 } from "./crypto";
@@ -516,7 +516,7 @@ export async function saveInspection(db: D1Database, c: Ctx, b: Record<string, u
   const nid = uuid();
   await db.prepare(`INSERT INTO inspections (address, cad_nr, cf_nr, uat, county, lat, lng, prop_type, area_util, area_land, rooms, template_id, template_name, template_version,
     template, contact_name, contact_phone, contact_role, scheduled_at, duration_min, assignee_id, assignee_kind, notes, status, id, code, created_by, org_id, test)
-    VALUES (${Array(29).fill("?").join(", ")})`).bind(...cols, nid, await nextCode(db), c.user.id, opts.orgId ?? c.org?.id ?? null, 1).run();
+    VALUES (${Array(29).fill("?").join(", ")})`).bind(...cols, nid, await nextCode(db), c.user.id, opts.orgId ?? c.org?.id ?? null, 0).run();
   if (ask) await db.prepare("UPDATE inspections SET assign_state = 'pending' WHERE id = ?").bind(nid).run();
   if (v.radar) await db.prepare("UPDATE inspections SET radar = ? WHERE id = ?").bind(v.radar, nid).run();
   await logIt(db, nid, c.user.id, `Creată ${b.from_phone ? "pe telefon" : "pe web"}${b.from_doc ? " din documentele încărcate" : ""}`);

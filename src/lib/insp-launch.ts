@@ -3,21 +3,19 @@
 // steps, what the module does, how to install the phone app.
 import { magicLink } from "./auth";
 import { esc, greetName, sendEmails } from "./email";
-import { modeSettings } from "./modmode";
 import { origin } from "./site";
 
 export type LaunchRow = { id: string; email: string; name: string; sup: number; newsletter: number; access: number; mailed: string | null; allowed: boolean };
 
-/** Everyone the launch email could go to: active accounts with access to a firm, with whether the mode lets them use Inspecții now. */
+/** Everyone the launch email could go to: active accounts, with whether they have access (an active firm with a valid subscription). */
 export async function inspLaunchList(db: D1Database): Promise<LaunchRow[]> {
-  const s = await modeSettings(db, "inspectii");
   const { results } = await db.prepare(`SELECT u.id, u.email, u.name, u.is_superadmin AS sup, COALESCE(u.newsletter, 0) AS newsletter,
       EXISTS (SELECT 1 FROM memberships m JOIN orgs o ON o.id = m.org_id WHERE m.user_id = u.id AND m.status = 'active' AND o.status = 'active'
         AND (o.valid_until IS NULL OR o.valid_until >= date('now'))) AS access,
       (SELECT MAX(x.at) FROM events x WHERE x.user_id = u.id AND x.module = 'inspectii' AND x.action = 'launch_mail') AS mailed
     FROM users u WHERE u.status = 'active' AND u.is_superadmin = 0 ORDER BY u.name COLLATE NOCASE`)
     .all<Omit<LaunchRow, "allowed">>();
-  return results.map((r) => ({ ...r, allowed: !!r.access && (s.mode === "on" || (s.mode === "test" && s.users.includes(r.id))) }));
+  return results.map((r) => ({ ...r, allowed: !!r.access }));
 }
 
 /** Sends the launch email to those allowed and not mailed yet: with `all`, also to those who did not tick the newsletter. */

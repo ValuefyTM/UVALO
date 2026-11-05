@@ -54,8 +54,8 @@ export async function AppShell(props: { c: Ctx; active: Key; title: string; subt
   const dbS = await getDb();
   const supN = dbS ? await supportUnread(dbS, c.user.id) : 0;
   const survey = dbS ? await surveyFor(dbS, c).catch(() => null) : null;
-  // Inspecții: 2nd in the menu once launched (mode Activ); until then under "În curând" (a link with TEST for those allowed in the test)
-  const inspLive = c.insp === "on" && c.modules.includes("inspectii");
+  // Inspecții: 2nd in the menu, for everyone with the module
+  const inspLive = c.modules.includes("inspectii");
   const nav: { key: Key; label: string; href: string; icon: Ico; count?: number; gold?: boolean; isNew?: boolean; test?: boolean }[] = [
     { key: "home", label: "Acasă", href: "/", icon: "home" },
     ...(inspLive ? [{ key: "inspectii" as const, label: "Inspecții", href: "/inspectii", icon: "insp" as const, count: inspN, gold: true }] : []),
@@ -63,7 +63,6 @@ export async function AppShell(props: { c: Ctx; active: Key; title: string; subt
     ...(c.modules.includes("colaborari") ? [{ key: "colaborari" as const, label: "Colaborări", href: "/colaborari", icon: "collab" as const, count: collabN, isNew: collabNew }] : []),
     { key: "instrumente", label: "Instrumente", href: "/instrumente", icon: "tools" },
   ];
-  const inspTest = !inspLive && c.modules.includes("inspectii");
   const current = (k: Key) => (k === "instrumente" ? TOOL_KEYS.includes(props.active) : props.active === k) ? "page" as const : undefined;
   // Phone: Acasă, Instrumente, Colaborări (when open to this person) and the account in the bottom menu; the rest behind "Meniu".
   const mobileNav = [...nav.filter((i) => i.key !== "firma"), { key: "cont" as const, label: "Contul meu", href: "/cont" }].slice(0, 4);
@@ -91,9 +90,6 @@ export async function AppShell(props: { c: Ctx; active: Key; title: string; subt
             </a>
           ))}
           <span className="navSec">În curând</span>
-          {inspTest
-            ? <a className="navI navSoonOn" href="/inspectii" aria-current={current("inspectii")}><NavIcon k="insp" /><span className="navLbl">Inspecții</span>{!!inspN && <span className="navCount gold">{inspN}</span>}<span className="navNew navTest">TEST</span></a>
-            : !inspLive && <a aria-disabled="true" tabIndex={-1} className="navI navSoon"><NavIcon k="insp" /><span className="navLbl">Inspecții</span></a>}
           <a aria-disabled="true" tabIndex={-1} className="navI navSoon"><NavIcon k="chart" /><span className="navLbl">Analize de piață</span></a>
           {!c.modules.includes("colaborari") && c.collab !== "on" && !!c.user.anevar_no?.trim() && <a aria-disabled="true" tabIndex={-1} className="navI navSoon"><NavIcon k="collab" /><span className="navLbl">Colaborări</span></a>}
         </nav>

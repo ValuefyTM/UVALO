@@ -28,7 +28,7 @@ export default async function InspectiiPage() {
   const ops = isOps(c);
   if (!devs.length && !ops) {
     return (
-      <AppShell c={c} active="inspectii" title="Inspecții" dark subtitle={c.insp === "on" ? "Conectează telefonul" : "Modul în test"} actions={<InspPreview appUrl={inspUrl()} />}>
+      <AppShell c={c} active="inspectii" title="Inspecții" dark subtitle="Conectează telefonul" actions={<InspPreview appUrl={inspUrl()} />}>
         <InspActivate testMode={c.super} appUrl={inspUrl()} />
       </AppShell>
     );
@@ -43,7 +43,6 @@ export default async function InspectiiPage() {
         <InspBell items={notifs} />
         <InspSettings appUrl={inspUrl()} phones={devs.filter((d) => d.platform !== "test").length} />
       </>}>
-      {c.insp !== "on" && <div className="note inTestNote">Modul în test: îl văd administratorii UVALO și grupul de test. Datele introduse acum sunt marcate ca date de test.</div>}
       <InspList rows={rows} meId={c.user.id} ops={ops}
         // the administrator's own office is "Ale mele"; an operational's office and the offices that made them an associated administrator: "Ale firmei"
         mergeOrg={firmView(c) && !ops ? c.org!.id : null} firmOrgs={[...(ops ? [c.org!.id] : []), ...c.linkAdmin]} />
