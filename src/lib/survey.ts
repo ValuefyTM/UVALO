@@ -42,6 +42,10 @@ export async function surveyFor(db: D1Database, c: Ctx): Promise<SurveyState | n
   if (c.super || c.viewAs) return null;
   const s = await surveySettings(db);
   if (!s.on) return null;
+  // not for the people a firm added: members of a firm (evaluators in an office, operational staff) and the associated
+  // employees / collaborators of an office — the questionnaire is for the account holders
+  if (c.role === "member") return null;
+  if (await db.prepare("SELECT 1 FROM office_links WHERE user_id = ? AND status = 'active' LIMIT 1").bind(c.user.id).first().catch(() => null)) return null;
   if (s.stop_at && new Date().toLocaleDateString("en-CA", { timeZone: "Europe/Bucharest" }) > s.stop_at) return null;
   const row = await db.prepare("SELECT step, answers, done_at FROM survey_answers WHERE survey_id = ? AND user_id = ?").bind(s.id, c.user.id)
     .first<{ step: number; answers: string; done_at: string | null }>().catch(() => null);

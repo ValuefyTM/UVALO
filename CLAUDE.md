@@ -300,7 +300,7 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   bifării (indexul în lista `wants` din setări, `DEFAULT_WANTS`) + „Altceva”; (4) probleme (+ textul, cu mențiunea instrumentelor notate sub 3),
   frecvență, dispozitiv, „ce te-a făcut să te întorci”; (5) preț pe lună, model (evaluator / birou / credite), „ar plăti separat”, „Putem vorbi 15 min?”
   cu telefonul; final „Mulțumim” + `Referral variant="button"`. Etichetele în `SURVEY_LABELS`.
-- **Cui îi apare** (`surveyFor`): modul pornit, nu super-admin, nu în „Vezi ca utilizatorul”, cel puțin `min_actions` rânduri în `events` (implicit 30),
+- **Cui îi apare** (`surveyFor`): modul pornit, nu super-admin, nu în „Vezi ca utilizatorul”, **nu cei adăugați în firme** (membri cu rol `member` — evaluatori în birou, operaționali — și asociații cu `office_links` active: angajați / colaboratori), cel puțin `min_actions` rânduri în `events` (implicit 30),
   nu a completat chestionarul curent, nu s-a atins `stop_n` / `stop_at`. La prima eligibilitate se face rândul în `survey_answers` (`actions` = câte
   acțiuni avea); fiecare „Continuă” salvează pasul (`POST /api/survey {step, answers}` → `saveSurvey`, chei din `KEYS`), deci revine unde a rămas.
   **Pe web**: `AppShell` cheamă `surveyFor` și pune `SurveyModal` (`.svBg`, nu se poate închide) peste orice pagină; **pe telefon**: `/api/m/state`
