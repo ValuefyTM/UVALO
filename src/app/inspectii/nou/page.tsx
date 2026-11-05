@@ -11,8 +11,8 @@ export const dynamic = "force-dynamic";
 const fmt = (n: number | null | undefined) => (n == null ? "" : String(n).replace(".", ","));
 
 /** Prepare an inspection on the web (or edit one not started yet). */
-export default async function InspNou({ searchParams }: { searchParams: Promise<{ id?: string }> }) {
-  const { id } = await searchParams;
+export default async function InspNou({ searchParams }: { searchParams: Promise<{ id?: string; nr?: string; uat?: string; adr?: string }> }) {
+  const { id, nr, uat, adr } = await searchParams;
   const { db, c } = await page();
   const ops = isOps(c);
   if (!c.modules.includes("inspectii") || (!ops && !(await devices(db, c.user.id)).length)) redirect("/inspectii");
@@ -27,14 +27,15 @@ export default async function InspNou({ searchParams }: { searchParams: Promise<
     date: old.scheduled_at?.slice(0, 10) ?? "", time: old.scheduled_at?.slice(11, 16) ?? "10:00", duration_min: old.duration_min, assignee_kind: old.assignee_kind,
     assignee_id: old.assignee_kind === "office" ? old.assignee_id ?? "" : "", notes: old.notes ?? "", radar: old.radar ?? "yes",
   } : {
-    address: "", cad_nr: "", cf_nr: "", uat: "", county: "", lat: null, lng: null, prop_type: "", area_util: "", area_land: "", rooms: [],
+    // from the home search bar ("+ Inspecție" next to a typed number / address): the form looks the parcel up and fills the rest
+    address: (adr ?? "").slice(0, 300), cad_nr: (nr ?? "").slice(0, 40), cf_nr: "", uat: (uat ?? "").slice(0, 80), county: "", lat: null, lng: null, prop_type: "", area_util: "", area_land: "", rooms: [],
     template_id: tpls[0]?.id ?? "", contact_name: "", contact_phone: "", contact_role: "", date: "", time: "10:00", duration_min: 60, assignee_kind: ops ? (cols.length ? "office" : "collab") : "me", assignee_id: "", notes: "", radar: "yes",
   };
   const owner = (o: string) => (o === "uvalo" ? "UVALO" : o === "org" ? "Biroul" : "A mea");
   return (
     <AppShell c={c} active="inspectii" title={old ? `Inspecția ${old.code}` : "Inspecție nouă"} subtitle={old ? old.address : "Pregătești pe web; pe telefon doar o faci"}
       actions={<a className="btn btnGhost" href="/inspectii">← Inspecții</a>}>
-      <InspForm init={init} team={cols} ops={ops} canRead={c.super || c.modules.includes("amplasament")}
+      <InspForm init={init} team={cols} ops={ops} canRead={c.super || c.modules.includes("amplasament")} lookup={!old && !!nr}
         tpls={tpls.map((t) => ({ id: t.id, name: t.name, owner: owner(t.owner_type), version: t.version, prop: t.prop_type, enforced: !!t.enforced, tpl: t.published ?? t.draft }))} />
     </AppShell>
   );

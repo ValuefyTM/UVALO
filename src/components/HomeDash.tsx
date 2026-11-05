@@ -183,7 +183,7 @@ export async function HomeDash({ db, c }: { db: Db; c: Ctx }) {
           </div>
           {loc ? (
             <QuickSearch uats={list.map((u) => ({ key: u.key, name: u.name, county: u.county ?? "Timiș" }))} amp={amp} dark
-              extra={insp ? <a className="quickBtn alt" href="/inspectii/nou">+ Inspecție</a> : undefined}
+              insp={insp}
               recent={recent.map((r) => ({ label: `${r.nr} · ${r.uat}`, href: r.href }))} />
           ) : (
             <p className="heroNote">{c.off.includes("localizare") ? "Localizatorul cadastral este dezactivat temporar. Revine în curând." : "Abonamentul firmei tale nu include localizatorul cadastral."}</p>

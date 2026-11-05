@@ -16,7 +16,7 @@ function loadLeaflet(): Promise<L> {
   return leaflet;
 }
 
-export function InspLocMap({ lat, lng, acc, addr }: { lat: number; lng: number; acc: number | null; addr: [number, number] | null }) {
+export function InspLocMap({ lat, lng, acc, addr, label = "locul inspecției" }: { lat: number; lng: number; acc: number | null; addr: [number, number] | null; label?: string }) {
   const el = useRef<HTMLDivElement>(null);
   useEffect(() => {
     let m: L = null, gone = false;
@@ -26,12 +26,12 @@ export function InspLocMap({ lat, lng, acc, addr }: { lat: number; lng: number; 
       Lf.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: "© OpenStreetMap" }).addTo(m);
       if (acc && acc > 5) Lf.circle([lat, lng], { radius: acc, color: "#2563eb", weight: 1, fillOpacity: 0.08 }).addTo(m);
       if (addr) Lf.circleMarker(addr, { radius: 6, color: "#fff", weight: 2, fillColor: "#8a7a5a", fillOpacity: 1 }).addTo(m).bindTooltip("adresa din pregătire", { direction: "top", offset: [0, -6] });
-      Lf.marker([lat, lng], { icon: Lf.divIcon({ className: "", html: '<span class="inLocPin"><b>●</b></span>', iconSize: [30, 30], iconAnchor: [15, 30] }) }).addTo(m).bindTooltip("locul inspecției", { direction: "top", offset: [0, -28] });
+      Lf.marker([lat, lng], { icon: Lf.divIcon({ className: "", html: '<span class="inLocPin"><b>●</b></span>', iconSize: [30, 30], iconAnchor: [15, 30] }) }).addTo(m).bindTooltip(label, { direction: "top", offset: [0, -28] });
       // both the pin and the prepared address in view (the GPS often lands a street away), never closer than zoom 17
       if (addr) m.fitBounds(Lf.latLngBounds([[lat, lng], addr]), { padding: [36, 36], maxZoom: 17 });
       else m.setView([lat, lng], 17);
     }).catch(() => {});
     return () => { gone = true; m?.remove(); };
-  }, [lat, lng, acc, addr]);
+  }, [lat, lng, acc, addr, label]);
   return <div ref={el} className="inLocMap" />;
 }

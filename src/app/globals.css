@@ -3383,3 +3383,8 @@ html:has(.mb) { -webkit-tap-highlight-color: transparent; -webkit-text-size-adju
   .spCompose { bottom: 70px; } .spComposeRow { margin-right: 62px; }
   .spRow { padding: 14px 14px; border-radius: 14px; } .spRowText b { font-size: 15px; }
 }
+
+/* Inspecție nouă: the parcel found by its cadastral number, on a small map in the side column */
+.inFormMap { gap: 8px; padding: 10px; }
+.inFormMap .inLocMap { height: 200px; }
+.inFormMap small { font-size: 12px; color: var(--muted-2); line-height: 1.45; }

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { InspLocMap } from "./InspLocMap";
 import { UserAv } from "./UserAv";
 import { ASSIGN_LABEL, CONTACT_ROLES, fold, qCount, typesOf, type AssignKind, type Template } from "@/lib/insp-shared";
 import { nr } from "@/lib/plural";
@@ -61,8 +62,31 @@ export function TeamPick({ team, value, onPick, date, time, dur, selfId }: { tea
   );
 }
 
-export function InspForm({ init, tpls, team, canRead, ops }: { init: FormInit; tpls: FormTpl[]; team: TeamPerson[]; canRead: boolean; ops?: boolean }) {
+type Located = { nr: string; uat: string; county: string; lat: number; lng: number; address: string; link: string | null };
+
+export function InspForm({ init, tpls, team, canRead, ops, lookup }: { init: FormInit; tpls: FormTpl[]; team: TeamPerson[]; canRead: boolean; ops?: boolean; lookup?: boolean }) {
   const [v, setV] = useState(init);
+  // the parcel from the locator plans (by the cadastral number): the small map in the side column, the address / position prefilled
+  const [loc, setLoc] = useState<Located | null>(null);
+  const [locMsg, setLocMsg] = useState("");
+  const [locBusy, setLocBusy] = useState(false);
+  const locFor = useRef("");
+  const locate = useCallback(async (nr: string, uat: string, fill: boolean) => {
+    const key = `${nr}|${uat}`;
+    if (!nr.trim() || locFor.current === key) return;
+    locFor.current = key; setLocBusy(true); setLocMsg("");
+    try {
+      const r = await fetch(`/api/inspectii/locate?nr=${encodeURIComponent(nr)}${uat ? `&uat=${encodeURIComponent(uat)}` : ""}`);
+      const j = (await r.json().catch(() => ({}))) as Partial<Located> & { found?: boolean; error?: string; candidates?: string[] };
+      if (!r.ok || !j.found) { setLoc(null); setLocMsg(j.error || "Numărul nu apare în planurile din localizator."); return; }
+      const l = j as Located;
+      setLoc(l);
+      setV((o) => ({ ...o, uat: o.uat || l.uat, county: o.county || l.county, lat: fill || o.lat == null ? l.lat : o.lat, lng: fill || o.lng == null ? l.lng : o.lng,
+        address: fill || !o.address.trim() ? l.address : o.address }));
+    } catch { setLocMsg("Nu am putut căuta numărul (conexiune)."); }
+    finally { setLocBusy(false); }
+  }, []);
+  useEffect(() => { if (lookup && init.cad_nr) void locate(init.cad_nr, init.uat, true); }, [lookup, init.cad_nr, init.uat, locate]);
   const [later, setLater] = useState(!init.date);
   const [busy, setBusy] = useState(false);
   const [reading, setReading] = useState(false);
@@ -138,7 +162,7 @@ export function InspForm({ init, tpls, team, canRead, ops }: { init: FormInit; t
           )}
           <div className="grid2">
             <label className="field span2">Adresa<input className="input" value={v.address} onChange={(e) => set("address", e.target.value)} placeholder="Str. Florilor nr. 7, Giroc, jud. Timiș" /></label>
-            <label className="field"><span>Nr. cadastral <small className="hint" style={{ fontWeight: 500 }}>(util pentru localizatorul cadastral)</small></span><input className="input" value={v.cad_nr} onChange={(e) => set("cad_nr", e.target.value)} /></label>
+            <label className="field"><span>Nr. cadastral <small className="hint" style={{ fontWeight: 500 }}>(util pentru localizatorul cadastral)</small></span><input className="input" value={v.cad_nr} onChange={(e) => set("cad_nr", e.target.value)} onBlur={() => void locate(v.cad_nr, v.uat, false)} /></label>
             <label className="field">Carte funciară<input className="input" value={v.cf_nr} onChange={(e) => set("cf_nr", e.target.value)} /></label>
             <label className="field">Tipul imobilului<select className="select" value={v.prop_type} onChange={(e) => pickType(e.target.value)}>
               <option value="">Alege…</option>{types.map((p) => <option key={p}>{p}</option>)}</select></label>
@@ -220,6 +244,14 @@ export function InspForm({ init, tpls, team, canRead, ops }: { init: FormInit; t
       </div>
 
       <aside className="inFormSide">
+        {(loc || locBusy || locMsg) && (
+          <section className="card inFormMap">
+            {loc ? <>
+              <InspLocMap lat={loc.lat} lng={loc.lng} acc={null} addr={null} label={`nr. cad. ${loc.nr}`} />
+              <small>Nr. cad. <b>{loc.nr}</b> · {loc.uat}, jud. {loc.county} · din planul cadastral{loc.link && <> · <a className="rowLink" href={loc.link} target="_blank" rel="noopener">Vezi în localizator ↗</a></>}</small>
+            </> : <small className="hint">{locBusy ? "Caut numărul cadastral în planurile din localizator…" : locMsg}</small>}
+          </section>
+        )}
         <section className="card inSum">
           <b>{v.address || "Bunul"}</b>
           <small>{[v.prop_type, v.cad_nr && `nr. cad. ${v.cad_nr}`, v.lat != null ? "poziție găsită" : null].filter(Boolean).join(" · ") || "Completează datele bunului"}</small>

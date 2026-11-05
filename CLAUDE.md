@@ -558,6 +558,13 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   fișa, contact, programare, cine o face: eu / coleg din birou / Colaborări), `/inspectii/<id>` (fișa ca document: cuprins în stânga, conținut;
   „Descarcă PDF” = print; antetul fișei = logo-ul firmei inspecției (`inspections.org_id`, doar dacă are logo) + nr. autorizație; în test „Simulează inspecția” completează fișa ca telefonul), `/inspectii/fise` (`InspTemplates`: editor de grupuri și
   întrebări, răspunsuri precompletate, publicare pe versiuni).
+- **„+ Inspecție” din bara de pe Acasă** (`QuickSearch` cu `insp`): butonul duce la `/inspectii/nou?nr=<nr>&uat=<localitate>` când în câmp e un număr
+  cadastral (+ localitatea), sau `?adr=` pentru o adresă. Pagina pune numărul / adresa în formular (`lookup`), iar `InspForm` cheamă
+  `GET /api/inspectii/locate?nr=&uat=` (`locateParcel` din `cadastre.ts`: centrul parcelei din planurile localizatorului — doar în UAT-ul dat, altfel în
+  toate planurile; + `reverseGeocode` pentru adresa străzii, fără cheie Google rămâne „UAT, jud.”) → completează adresa (dacă e goală sau vine din bară),
+  UAT-ul, județul, `lat`/`lng` și arată **harta mică** în coloana din dreapta (`.inFormMap`, `InspLocMap` cu eticheta „nr. cad. …”, „Vezi în localizator ↗”)
+  **doar dacă numărul e găsit în plan**; altfel nota „nu apare în planurile din localizator”. Aceeași căutare și la ieșirea din câmpul „Nr. cadastral”
+  (`onBlur`), fără să suprascrie adresa deja scrisă.
 - **Fișe pe tipuri de imobil**: fișele UVALO se numesc „Template UVALO” (tipul e dat de `prop`), cele personalizate cum le denumește
   utilizatorul (copia unei fișe UVALO: „Fișa mea · <tip>”). În editor (`InspTemplates`) lista e **grupată pe tipul imobilului** (în fiecare:
   biroul, ale mele, UVALO), câmpul „Tipul imobilului” + **„+ Tip nou”** (tip propriu, text liber, salvat în `prop_type`). La inspecție nouă (web

@@ -60,7 +60,7 @@ const EXAMPLES = ["413830 Giroc", "Str. Lavandei 11, Dumbrăvița", "X 476000 Y 
  * placed (Stereo 70, the locator's plan) and the way on — the site analysis (read data passed on, no re-read) or the map.
  */
 /** extra = more buttons on the search row (the new home: "+ Inspecție"); recent = the person's last parcels, shown instead of the examples */
-export function QuickSearch({ uats, amp = false, dark = false, extra, recent }: { uats: Uat[]; amp?: boolean; dark?: boolean; extra?: React.ReactNode; recent?: { label: string; href: string }[] }) {
+export function QuickSearch({ uats, amp = false, dark = false, extra, insp = false, recent }: { uats: Uat[]; amp?: boolean; dark?: boolean; extra?: React.ReactNode; insp?: boolean; recent?: { label: string; href: string }[] }) {
   const [text, setText] = useState("");
   const [tried, setTried] = useState(false);
   const [doc, setDoc] = useState<Doc | null>(null);
@@ -109,6 +109,9 @@ export function QuickSearch({ uats, amp = false, dark = false, extra, recent }: 
 
   const p = doc?._place ?? null;
   const nr = doc?.nr_cadastral?.match(/\d+(?:\/\d+)*/)?.[0] ?? null;
+  // "+ Inspecție": the form opens with what was typed (a cadastral number + locality → the parcel's position and address; an address as such)
+  const inspHref = r.kind === "number" ? `/inspectii/nou?nr=${encodeURIComponent(r.nr)}${r.uat ? `&uat=${encodeURIComponent(r.uat.name)}` : ""}`
+    : r.kind === "address" ? `/inspectii/nou?adr=${encodeURIComponent(r.q)}` : "/inspectii/nou";
   const toMap = p?.uat ? (p.inPlan && nr ? `/localizare?uat=${encodeURIComponent(p.uat.key)}&q=${encodeURIComponent(nr)}` : `/localizare?adr=${p.lat.toFixed(6)},${p.lng.toFixed(6)}`)
     : p ? `https://www.google.com/maps?q=${p.lat.toFixed(6)},${p.lng.toFixed(6)}` : null;
   const stated = doc?.suprafata_masurata_mp ?? doc?.suprafata_din_acte_mp ?? null;
@@ -137,6 +140,7 @@ export function QuickSearch({ uats, amp = false, dark = false, extra, recent }: 
         </div>
         <button type="submit" className="quickBtn" value="loc">Localizează</button>
         {amp && <button type="submit" className="quickBtn alt" value="amp">Analiză amplasament</button>}
+        {insp && <a className="quickBtn alt" href={inspHref} title={r.kind === "number" ? `Inspecție nouă pentru nr. cad. ${r.nr}: completăm numărul, adresa și poziția` : "Inspecție nouă"}>+ Inspecție</a>}
         {extra}
       </div>
 
