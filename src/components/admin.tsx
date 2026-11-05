@@ -431,7 +431,7 @@ export function CollabAdmin({ mode: m0, users: u0, counts: c0, accounts, endpoin
   );
 }
 
-const FB_STATUS: Record<string, string> = { nou: "Nou", citit: "Citit", rezolvat: "Rezolvat" };
+const FB_STATUS: Record<string, string> = { nou: "Nou", citit: "În lucru", raspuns: "Răspuns", rezolvat: "Rezolvat" };
 
 /** Admin → Feedback: status of a message, an internal note and a reply by email. */
 export function FeedbackActions({ id, status: s0, email, note: n0 }: { id: number; status: string; email: string | null; note: string | null }) {
@@ -447,13 +447,13 @@ export function FeedbackActions({ id, status: s0, email, note: n0 }: { id: numbe
   };
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-end", minWidth: 170 }}>
-      <span className={`pill ${status === "rezolvat" ? "pillOk" : status === "nou" ? "pillWarn" : ""}`}><i />{FB_STATUS[status] ?? status}</span>
+      <span className={`pill ${status === "rezolvat" || status === "raspuns" ? "pillOk" : status === "nou" ? "pillWarn" : ""}`}><i />{FB_STATUS[status] ?? status}</span>
       <div className="actions" style={{ justifyContent: "flex-end", flexWrap: "wrap" }}>
-        {status === "nou" && <button type="button" className="linkBtn" disabled={busy} onClick={async () => (await save({ status: "citit" })) && setStatus("citit")}>Citit</button>}
+        {status === "nou" && <button type="button" className="linkBtn" disabled={busy} onClick={async () => (await save({ status: "citit" })) && setStatus("citit")}>În lucru</button>}
         {status !== "rezolvat"
           ? <button type="button" className="linkBtn" disabled={busy} onClick={async () => (await save({ status: "rezolvat" })) && setStatus("rezolvat")}>Rezolvat</button>
           : <button type="button" className="linkBtn" disabled={busy} onClick={async () => (await save({ status: "citit" })) && setStatus("citit")}>Redeschide</button>}
-        {email && <a className="linkBtn" href={`mailto:${email}?subject=${encodeURIComponent("Răspuns la feedback-ul tău UVALO")}`}>Răspunde</a>}
+        {email && <a className="linkBtn" href={`mailto:${email}?subject=${encodeURIComponent("Răspuns la feedback-ul tău UVALO")}`} title="Pe email, în afara platformei; „Deschide” răspunde în fir">Email</a>}
         <button type="button" className="linkBtn" onClick={() => setEditing(!editing)}>{note ? "Notă" : "+ Notă"}</button>
       </div>
       {editing && (

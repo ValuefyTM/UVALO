@@ -70,6 +70,10 @@ export async function mergeUsers(db: D1Database, by: User, keepId: string, fromI
     move("UPDATE insp_push SET user_id = ? WHERE user_id = ?"),
     db.prepare("DELETE FROM insp_pair_codes WHERE user_id = ?").bind(fromId),
     move("UPDATE feedback SET user_id = ? WHERE user_id = ?"),
+    move("UPDATE feedback_replies SET user_id = ? WHERE user_id = ?"),
+    // the questionnaire: the kept account's answer wins; the old one's is dropped if both answered the same survey
+    db.prepare("DELETE FROM survey_answers WHERE user_id = ?1 AND survey_id IN (SELECT survey_id FROM survey_answers WHERE user_id = ?2)").bind(fromId, keepId),
+    move("UPDATE survey_answers SET user_id = ? WHERE user_id = ?"),
     move("UPDATE office_leaves SET user_id = ? WHERE user_id = ?"),
     move("UPDATE office_leaves SET decided_by = ? WHERE decided_by = ?"),
     // asocieri: an open link of the old account to an office the kept one is already linked with is dropped
@@ -160,6 +164,8 @@ export async function deleteUser(db: D1Database, by: User, id: string) {
     one("DELETE FROM insp_push WHERE user_id = ?"),
     one("DELETE FROM insp_pair_codes WHERE user_id = ?"),
     one("UPDATE feedback SET user_id = NULL WHERE user_id = ?"),
+    one("UPDATE feedback_replies SET user_id = NULL WHERE user_id = ?"),
+    one("DELETE FROM survey_answers WHERE user_id = ?"),
     one("DELETE FROM office_leaves WHERE user_id = ?"),
     one("UPDATE office_leaves SET decided_by = NULL WHERE decided_by = ?"),
     one("DELETE FROM office_links WHERE user_id = ?"),

@@ -274,7 +274,40 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   `comparabile` (nu în fereastra Word). Atribute `data-bottom` / `data-bottom-mobile` pentru barele fixe (meniul de jos pe
   telefon, scara hărții). Trimite la `/api/feedback` (tip problemă / idee / altceva, text, pagina, acord de răspuns; max. 10/oră),
   salvat în tabelul `feedback` (migrația 0017), email către super-admini. Admin → Feedback (`/admin/feedback`): filtre,
-  stare nou / citit / rezolvat, notă internă, „Răspunde” pe email; contorul de noi în meniul admin.
+  stare nou / în lucru (`citit`) / răspuns (`raspuns`) / rezolvat, notă internă, „Email” (în afara platformei); contorul de noi în meniul admin.
+- **Suport tehnic** (`/suport`, migrația 0044, logica în `src/lib/support.ts`): sesizările persoanei (tot tabelul `feedback`, deci și cele din
+  butonul de feedback) sunt **tichete cu fir de răspunsuri** (`feedback_replies`: `staff = 1` = echipa UVALO) și **imagine / captură de ecran**
+  (R2 `FILES`, chei `support/…`, JPG / PNG / WebP / GIF ≤ 6 MB, micșorată în browser la ≤ 1600 px — `shrinkImage` în `src/components/Support.tsx`;
+  servită de `/api/suport/img/<f|r>/<id>` doar proprietarului și super-adminilor). Linkul **„Suport tehnic”** stă în bara laterală, sub Recomandă
+  și deasupra cardului „Contul meu” (`.meSupport`), cu contorul auriu = tichete cu răspuns nedeschis (`supportUnread`: `status` răspuns / rezolvat și
+  `updated_at` > `user_seen_at`). Pagina: formular nou (`TicketForm` → `POST /api/feedback`, acum și multipart cu `image`) + lista (deschise, apoi
+  rezolvate, „Răspuns nou”); `/suport/<id>` = firul (`ticket()` marchează `user_seen_at`) + `ReplyForm` → `POST /api/suport/<id>` (starea revine la
+  `nou`, email super-adminilor). Admin: `/admin/feedback/<id>` = firul + `ReplyForm staff` → `POST /api/admin/feedback/<id>/reply` (`replyTicket`:
+  starea `raspuns` — rămâne `rezolvat` dacă era —, `updated_at`, email persoanei cu link spre `/suport/<id>` dacă a acceptat răspuns pe email);
+  deschiderea în admin trece `nou` → `citit`. Lista din admin arată „cu imagine”, numărul de mesaje, „Deschide și răspunde”. `feedback.js` trimite spre
+  `/suport` pentru capturi și după trimitere. `merge.ts` acoperă `feedback_replies` și `survey_answers`.
+
+## Chestionarul de feedback (`src/lib/survey.ts`, `src/components/Survey.tsx`)
+
+- După canvasul „UVALO — Chestionar de feedback” (https://claude.ai/artifact/PQ283jXco3N2fWf3nNFTSW): **obligatoriu, o singură dată**, 5 pași:
+  (1) NPS 0–10 (singurul răspuns obligatoriu) + motivul; (2) instrumentele (`SURVEY_TOOLS`, cheia = modulul din `events`) „Nu l-am folosit” / 1–5 stele,
+  precompletat: cele fără acțiuni sunt bifate nefolosite, la celelalte se arată numărul de acțiuni; (3) „Ce ți-ar fi util” — cel mult 3, în ordinea
+  bifării (indexul în lista `wants` din setări, `DEFAULT_WANTS`) + „Altceva”; (4) probleme (+ textul, cu mențiunea instrumentelor notate sub 3),
+  frecvență, dispozitiv, „ce te-a făcut să te întorci”; (5) preț pe lună, model (evaluator / birou / credite), „ar plăti separat”, „Putem vorbi 15 min?”
+  cu telefonul; final „Mulțumim” + `Referral variant="button"`. Etichetele în `SURVEY_LABELS`.
+- **Cui îi apare** (`surveyFor`): modul pornit, nu super-admin, nu în „Vezi ca utilizatorul”, cel puțin `min_actions` rânduri în `events` (implicit 30),
+  nu a completat chestionarul curent, nu s-a atins `stop_n` / `stop_at`. La prima eligibilitate se face rândul în `survey_answers` (`actions` = câte
+  acțiuni avea); fiecare „Continuă” salvează pasul (`POST /api/survey {step, answers}` → `saveSurvey`, chei din `KEYS`), deci revine unde a rămas.
+  **Pe web**: `AppShell` cheamă `surveyFor` și pune `SurveyModal` (`.svBg`, nu se poate închide) peste orice pagină; **pe telefon**: `/api/m/state`
+  dă `survey`, iar `MobileApp` arată `Survey full` pe tot ecranul (doar online) înainte de orice altceva. Stiluri `.sv*`; `.btnPri` = butonul auriu.
+- **La completare** (pasul 5) super-adminii primesc email „Chestionar completat · nume · nota N (· vrea să fie sunat)” cu toate răspunsurile
+  (`notifyAdmins`, `surveyLines`). Evenimente `home`/`survey_step`, `survey_done`.
+- **Admin → Feedback → „Chestionarul de feedback”** (`/admin/feedback/chestionar`, `SurveyAdmin`, API `/api/admin/survey`): setările
+  (`app_settings` `survey` = `{id, on, min_actions, stop_n, stop_at, wants, started_at}`; `on` implicit oprit → se pornește din admin),
+  **„+ Chestionar nou”** = id nou (`YYYY-MM`, apoi data) → toți eligibilii îl primesc din nou, răspunsurile vechi rămân la id-ul vechi (filele cu
+  chestionarele anterioare, `?id=`); cifrele (`surveyStats`: complete / începute / doar deschise, NPS cu promotori / detractori, nota medie, câți vor
+  să fie sunați, prețul cel mai ales), dorințele ponderate 3-2-1, nota pe instrument, distribuțiile (preț, model, extra, probleme, frecvență,
+  dispozitiv, motivul revenirii), tabelul răspunsurilor (motivul + „Toate răspunsurile”), „Exportă CSV” (`?csv=1`, `surveyCsv`, separator `;`).
 
 ## Cine e online (Admin → Panou)
 

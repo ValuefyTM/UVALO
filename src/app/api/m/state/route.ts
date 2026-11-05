@@ -1,6 +1,7 @@
 import { api } from "@/lib/api";
 import { origin } from "@/lib/site";
 import { myAssigned, phoneCollab, phoneFirms, phoneInfo, phoneNotifs, usableTemplates } from "@/lib/insp";
+import { surveyFor } from "@/lib/survey";
 
 /** Phone app: who is signed in (profile, activity, this phone), the inspections they have to do, the sheets for a new one. */
 export async function GET() {
@@ -25,5 +26,7 @@ export async function GET() {
     // Colaborări in the phone tab (same module and mode as on the web) and the web address for what stays on the web (profile, zones)
     collabOn: c.modules.includes("colaborari"), locOn: c.modules.includes("localizare"), app: await origin(),
     templates: tpls.map((t) => ({ id: t.id, name: t.name, prop_type: t.prop_type })),
+    // the feedback questionnaire, mandatory once (the same as on the web); null = nothing to answer
+    survey: await surveyFor(db, c).catch(() => null),
   }, { headers: { "Cache-Control": "no-store" } });
 }

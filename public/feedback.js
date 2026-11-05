@@ -25,7 +25,8 @@
     ".uvfb-panel textarea:focus{outline:none;border-color:#9A5F00;background:#fff}" +
     ".uvfb-chk{display:flex;gap:8px;align-items:center;font-size:12px;color:#4A4A4A;cursor:pointer}.uvfb-chk input{width:16px;height:16px;accent-color:#E0931A}" +
     ".uvfb-send{height:40px;border:0;border-radius:10px;background:#F2A93B;color:#141414;font:700 13px \"Plus Jakarta Sans\",system-ui,sans-serif;cursor:pointer}.uvfb-send:disabled{opacity:.6;cursor:progress}" +
-    ".uvfb-err{color:#B3261E;font-size:12px;font-weight:700}.uvfb-ok{padding:6px 14px 18px;font-size:13px;color:#157F55;font-weight:700}" +
+    ".uvfb-err{color:#B3261E;font-size:12px;font-weight:700}.uvfb-ok{padding:6px 14px 18px;font-size:13px;color:#157F55;font-weight:700}.uvfb-ok a{display:block;margin-top:4px;color:#9A5F00}" +
+    ".uvfb-sup{font-size:11.5px;color:#6B6B6B;margin:-2px 0 0}.uvfb-sup a{color:#9A5F00;font-weight:700;text-decoration:none}" +
     "@media (max-width:979px){.uvfb-btn{bottom:calc(" + bottomM + "px + env(safe-area-inset-bottom,0px))}.uvfb-panel{bottom:calc(" + bottomM + "px + 54px + env(safe-area-inset-bottom,0px))}}" +
     "@media print{.uvfb-btn,.uvfb-panel{display:none!important}}";
   var st = document.createElement("style");
@@ -53,7 +54,8 @@
       '<button type="button" data-k="problema" aria-pressed="true">Problemă</button><button type="button" data-k="idee" aria-pressed="false">Idee</button><button type="button" data-k="altceva" aria-pressed="false">Altceva</button></div>' +
       '<textarea maxlength="2000" required aria-label="Mesajul tău" placeholder="Ce nu merge sau ce ai vrea să facă UVALO…"></textarea>' +
       '<label class="uvfb-chk"><input type="checkbox" checked> Îmi puteți răspunde pe email</label>' +
-      '<span class="uvfb-err" role="alert" hidden></span><button type="submit" class="uvfb-send">Trimite</button></form>';
+      '<span class="uvfb-err" role="alert" hidden></span><button type="submit" class="uvfb-send">Trimite</button>' +
+      '<p class="uvfb-sup">Cu captură de ecran sau ca să vezi răspunsurile: <a href="' + (window.UVALO_APP_URL || "") + '/suport">Suport tehnic →</a></p></form>';
     document.body.appendChild(panel);
     btn.setAttribute("aria-expanded", "true");
     kind = "problema";
@@ -80,8 +82,12 @@
           var ok = document.createElement("div");
           ok.className = "uvfb-ok"; ok.setAttribute("role", "status");
           ok.textContent = "Mulțumim! Am primit mesajul tău.";
+          var lnk = document.createElement("a");
+          lnk.href = (window.UVALO_APP_URL || "") + "/suport/" + (x.d.id || "");
+          lnk.textContent = "Răspunsul îl primești în Suport tehnic →";
+          ok.appendChild(lnk);
           panel.appendChild(ok);
-          setTimeout(function () { if (panel) close(); }, 2500);
+          setTimeout(function () { if (panel) close(); }, 6000);
         })
         .catch(function (e2) { send.disabled = false; send.textContent = "Trimite"; err.hidden = false; err.textContent = e2.message || "Nu am putut trimite. Verifică conexiunea."; });
     };

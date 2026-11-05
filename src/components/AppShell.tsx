@@ -10,8 +10,11 @@ import { ViewAsStrip } from "./ViewAs";
 import { AppInstall } from "./AppInstall";
 import { isPhoneUa } from "@/lib/ua";
 import { headers } from "next/headers";
+import { surveyFor } from "@/lib/survey";
+import { supportUnread } from "@/lib/support";
+import { SurveyModal } from "./Survey";
 
-type Key = "home" | "instrumente" | "colaborari" | "inspectii" | "localizare" | "amplasament" | "comparabile" | "word" | "chrome" | "firma" | "cont";
+type Key = "home" | "instrumente" | "colaborari" | "inspectii" | "localizare" | "amplasament" | "comparabile" | "word" | "chrome" | "firma" | "cont" | "suport";
 // the tools' own pages light up "Instrumente" in the menu
 const TOOL_KEYS: Key[] = ["instrumente", "localizare", "amplasament", "comparabile", "word", "chrome"];
 
@@ -47,6 +50,10 @@ export async function AppShell(props: { c: Ctx; active: Key; title: string; subt
     inspN = db ? ((await db.prepare("SELECT COUNT(*) AS n FROM inspections WHERE assignee_id = ? AND deleted_at IS NULL AND status IN ('plan', 'lucru') AND substr(scheduled_at, 1, 10) = ?")
       .bind(c.user.id, today).first<{ n: number }>().catch(() => null))?.n ?? 0) : 0;
   }
+  // Suport tehnic (above the account card): tickets with an answer not opened yet; the feedback questionnaire, mandatory once
+  const dbS = await getDb();
+  const supN = dbS ? await supportUnread(dbS, c.user.id) : 0;
+  const survey = dbS ? await surveyFor(dbS, c).catch(() => null) : null;
   // Inspecții: 2nd in the menu once launched (mode Activ); until then under "În curând" (a link with TEST for those allowed in the test)
   const inspLive = c.insp === "on" && c.modules.includes("inspectii");
   const nav: { key: Key; label: string; href: string; icon: Ico; count?: number; gold?: boolean; isNew?: boolean; test?: boolean }[] = [
@@ -94,6 +101,11 @@ export async function AppShell(props: { c: Ctx; active: Key; title: string; subt
           {c.super && <a className="sideLink" href="/admin">Portal admin →</a>}
           <OrgSwitch orgs={c.orgs.map((o) => ({ id: o.org_id, name: o.org_name }))} current={c.org?.id ?? null} />
           <Referral />
+          <a className="meSupport" href="/suport" aria-current={props.active === "suport" ? "page" : undefined} title="Suport tehnic: sesizările tale și răspunsurile echipei UVALO">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z" /><path d="M8.5 11h7M8.5 14h4" /></svg>
+            <span>Suport tehnic</span>
+            {supN > 0 && <span className="navCount gold" aria-label={`${supN} ${supN === 1 ? "răspuns nou" : "răspunsuri noi"}`} title={`${supN === 1 ? "Un răspuns nou" : `${supN} răspunsuri noi`} de la echipa UVALO`}>{supN}</span>}
+          </a>
           <div className={`meStack${officeActive(c) ? " withOffice" : ""}`}>
           <a className="meCard meLink" href="/cont" aria-current={props.active === "cont" ? "page" : undefined} title="Contul meu: imagine, email, birou de evaluare">
             {c.user.has_avatar
@@ -146,6 +158,7 @@ export async function AppShell(props: { c: Ctx; active: Key; title: string; subt
       {/* feedback button, bottom right (above the bottom menu on phones) */}
       <script src="/feedback.js" async data-bottom="16" data-bottom-mobile="84" />
       <script src="/presence.js" async />
+      {survey && <SurveyModal survey={survey} />}
     </div>
     </>
   );

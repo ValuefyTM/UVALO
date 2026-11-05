@@ -9,6 +9,8 @@ import { DocViewer } from "./DocViewer";
 import { gpsFix, LocPick, type Loc } from "./LocPick";
 import { SigCard } from "./SigCard";
 import { Radar, RadarBanner } from "./Radar";
+import { Survey } from "../Survey";
+import type { SurveyState } from "@/lib/survey-shared";
 
 /** The first phone number of a field that may hold two ("0721 123 456 / 0256 …"), digits and + only, for tel: / sms: links. */
 const firstPhone = (s: string) => (s.split(/[\/,;]|\bsau\b/)[0] ?? s).replace(/[^\d+]/g, "");
@@ -85,6 +87,7 @@ export function MobileApp() {
   const [items, setItems] = useState<InspRow[]>([]);
   const [collabOn, setCollabOn] = useState(false); // Colaborări open for this account (same mode as on the web)
   const [locOn, setLocOn] = useState(true); // the cadastral locator is in the account's modules
+  const [survey, setSurvey] = useState<SurveyState | null>(null); // the feedback questionnaire, mandatory once (same as on the web)
   const locSeen = useRef(false); // the locator tab, once opened, stays loaded (the map keeps its place between tabs)
   const [locSheet, setLocSheet] = useState(false); // the parcel sheet is open in the locator: the menu steps aside
   // a parcel to show in the locator (from an inspection's detail) and the inspection to go back to („Înapoi la fișă”)
@@ -144,6 +147,7 @@ export function MobileApp() {
     setItems((j.items as InspRow[]) ?? []);
     setFirms((j.firms as { id: string; name: string }[]) ?? []);
     setCollabOn(!!j.collabOn); setLocOn(j.locOn !== false); setAppUrl(String(j.app ?? ""));
+    setSurvey((j.survey as SurveyState | null) ?? null);
     setInfo((j.info as Info) ?? null);
     setTpls((j.templates as Tpl[]) ?? []);
     setNotifs((j.notifs as Notif[]) ?? []);
@@ -446,6 +450,8 @@ export function MobileApp() {
     const v = { at: notifs[0]?.at && notifs[0].at > seen.at ? notifs[0].at : seen.at, keys: reminders.map((r) => r.key) };
     setSeen(v); try { localStorage.setItem("insp-notif-seen", JSON.stringify(v)); } catch {}
   };
+  // the questionnaire takes the whole screen until it is sent (online only: it needs the server)
+  if (survey && online) return <Survey survey={survey} full onDone={() => { setSurvey(null); try { const c = JSON.parse(localStorage.getItem("insp-state") || "null"); if (c) { c.survey = null; localStorage.setItem("insp-state", JSON.stringify(c)); } } catch {} }} />;
   return (
     <div className={`mb${nav ? " withNav" : ""}`}>
       {(pull > 0 || pulling) && (
