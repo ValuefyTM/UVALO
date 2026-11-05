@@ -531,6 +531,13 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   instalată (dispozitive `insp_devices` nerevocate, fără `test`, cu numele „· aplicație” = deschisă instalată) din cei cu telefon conectat, o folosesc azi / 7 / 30 de
   zile (`last_seen_at`, actualizat la fiecare pornire), au finalizat fișe în 30 de zile, iPhone / Android, notificări pornite (`insp_push`) + tabelul „Cine are
   aplicația”; pe Panou cardul „Aplicația Inspecții” (instalată · o folosesc 7 zile) duce acolo.
+- **Anunțul de lansare** (Admin → Instrumente → Inspecții, `#lansare`; `src/lib/insp-launch.ts`, acțiunea `launch_mail` din `/api/admin/inspectii`,
+  componenta `LaunchMail` generalizată cu `endpoint` / `img` / `all`): emailul „Inspecțiile au ajuns în UVALO” după canvasul „UVALO — Email lansare
+  Inspecții” (https://claude.ai/artifact/6STAcouDrDCFwNTztJffDG): antet, titlu, salut cu `greetName`, bannerul `public/site/inspectii-banner.png`, buton =
+  `magicLink` spre `/inspectii` 7 zile, cei trei pași, „Ce găsești în modul”, caseta de instalare, Suport tehnic, subsol. `inspLaunchList`: conturi active,
+  nu super-admini, cu `access` (membru activ într-o firmă activă, neexpirată), `allowed` după modul Inspecții (`on` toți, `test` grupul), `mailed` =
+  eveniment `inspectii`/`launch_mail`. Implicit doar celor cu `newsletter = 1`; bifa „trimite și celor fără noutățile bifate” → `all: true`. O singură
+  dată per persoană; audit `insp.launch_mail`.
 - **„Previzualizează aplicația”** (`InspPreview`, pe `/inspectii` și pe pagina de activare): aplicația de telefon reală într-o ramă de telefon
   (iframe spre `inspUrl()`), conectată singură cu un cod de conectare (`pair_code` → `/?pair=`); dacă rama are deja sesiune, codul nu se mai
   folosește (fără sesiuni noi) — doar dacă e același cont: `pair_code` întoarce și `uid`, rama primește `&u=` și, dacă sesiunea ei e a altcuiva

@@ -468,13 +468,19 @@ export function FeedbackActions({ id, status: s0, email, note: n0 }: { id: numbe
 }
 
 /** Colaborări → "Anunțul de lansare": sends the launch email to the subscribers who may use it now. */
-export function LaunchMail({ ready, waiting, sent, activated }: { ready: number; waiting: number; sent: number; activated: number }) {
+export function LaunchMail({ ready, waiting, sent, activated, endpoint = "/api/admin/colaborari", img = "/email/colaborari-lansare.png", waitingLabel = "fără acces încă", activatedLabel = "au activat deja", extra, all }: {
+  ready: number; waiting: number; sent: number; activated: number; endpoint?: string; img?: string; waitingLabel?: string; activatedLabel?: string; extra?: React.ReactNode;
+  /** with it, a checkbox "și celor fără noutățile bifate" that sends to everyone allowed (`all: true`): [count without the newsletter, label] */
+  all?: [number, string];
+}) {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
+  const [toAll, setToAll] = useState(false);
+  const n = ready + (toAll && all ? all[0] : 0);
   const go = async () => {
-    if (!confirm(`Trimiți emailul de lansare la ${ready} ${ready === 1 ? "persoană" : "persoane"}?`)) return;
+    if (!confirm(`Trimiți emailul de lansare la ${n} ${n === 1 ? "persoană" : "persoane"}?`)) return;
     setBusy(true); setMsg("");
-    const r = await fetch("/api/admin/colaborari", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "launch_mail" }) }).catch(() => null);
+    const r = await fetch(endpoint, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "launch_mail", all: toAll }) }).catch(() => null);
     const d = ((await r?.json().catch(() => ({}))) ?? {}) as { sent?: number; error?: string };
     setBusy(false);
     if (!r?.ok) return setMsg(d.error || "Nu am putut trimite. Încearcă din nou.");
@@ -483,9 +489,11 @@ export function LaunchMail({ ready, waiting, sent, activated }: { ready: number;
   };
   return (
     <div className="actions" style={{ gap: 12, flexWrap: "wrap", alignItems: "center" }}>
-      <button type="button" className="btn btnGold btnSm" disabled={busy || ready === 0} onClick={go}>{busy ? "Se trimite…" : `Trimite emailul de lansare (${ready})`}</button>
-      <a className="btn btnGhost btnSm" href="/email/colaborari-lansare.png" target="_blank" rel="noreferrer">Vezi imaginea din email</a>
-      <span className="muted" style={{ fontSize: 12.5 }}>{waiting - ready > 0 ? `${waiting - ready} fără acces încă · ` : ""}{sent} trimise · {activated} au activat deja</span>
+      <button type="button" className="btn btnGold btnSm" disabled={busy || n === 0} onClick={go}>{busy ? "Se trimite…" : `Trimite emailul de lansare (${n})`}</button>
+      <a className="btn btnGhost btnSm" href={img} target="_blank" rel="noreferrer">Vezi imaginea din email</a>
+      {extra}
+      <span className="muted" style={{ fontSize: 12.5 }}>{waiting - ready > 0 ? `${waiting - ready} ${waitingLabel} · ` : ""}{sent} trimise · {activated} {activatedLabel}</span>
+      {all && all[0] > 0 && <label className="muted" style={{ fontSize: 12.5, display: "flex", gap: 6, alignItems: "center" }}><input type="checkbox" checked={toAll} onChange={(e) => setToAll(e.target.checked)} /> {all[1]} ({all[0]})</label>}
       {msg && <span className="okMsg">{msg}</span>}
     </div>
   );

@@ -3,6 +3,7 @@ import { api, err, json, str } from "@/lib/api";
 import { audit } from "@/lib/auth";
 import { track } from "@/lib/track";
 import { modeSettings, setModeSettings } from "@/lib/modmode";
+import { sendInspLaunchEmails } from "@/lib/insp-launch";
 
 /** Inspecții in the administration: mode (Dezactivat / Test / Activ) and the test users, as for Colaborări. */
 export async function POST(req: Request) {
@@ -34,6 +35,12 @@ export async function POST(req: Request) {
       await setModeSettings(a.db, "inspectii", actor, { ...cur, users: cur.users.filter((x) => x !== id) });
       await audit(a.db, actor, "insp.test_remove", "user", id);
       return NextResponse.json({ ok: true });
+    }
+    // the launch email ("Inspecțiile au ajuns în UVALO"), once per person, to those who may use the module now
+    case "launch_mail": {
+      const r = await sendInspLaunchEmails(a.db, b.all === true);
+      await audit(a.db, actor, "insp.launch_mail", "inspectii", undefined, String(r.sent));
+      return NextResponse.json({ ok: true, sent: r.sent });
     }
   }
   return err("Acțiune necunoscută.");

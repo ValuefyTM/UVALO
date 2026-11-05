@@ -10,6 +10,7 @@ import { AiLimits, CollabAdmin, LaunchMail, FeatureSwitches, PromptEditor, ToolS
 import { collabCounts, collabSettings, launchSubscribers, testUsers } from "@/lib/collab";
 import { modeSettings } from "@/lib/modmode";
 import { appStats } from "@/lib/insp";
+import { inspLaunchList } from "@/lib/insp-launch";
 import { CountTable, UatCountTable } from "@/components/Charts";
 import { PlanList, PlanUploader } from "@/components/plans";
 import { ToolAnalytics } from "@/components/ToolAnalytics";
@@ -123,10 +124,22 @@ export default async function Instrument({ params }: { params: Promise<{ key: st
           (SELECT COUNT(*) FROM insp_devices) AS phones, (SELECT COUNT(*) FROM insp_files WHERE kind = 'photo') AS photos
         FROM inspections WHERE deleted_at IS NULL`).first<{ total: number; done: number | null; people: number; phones: number; photos: number }>(), appStats(db)]);
     const a = app.k;
+    // the launch email: those allowed now and not mailed, split by the newsletter tick
+    const launch = await inspLaunchList(db);
+    const lWait = launch.filter((r) => !r.mailed), lReady = lWait.filter((r) => r.allowed && r.newsletter), lNoNews = lWait.filter((r) => r.allowed && !r.newsletter);
     return (
       <AdminShell c={c} active="instrumente" pending={pending} title={tool.name} subtitle="Mod de lucru, grupul de test și statistici" actions={<a className="btn btnGhost btnSm" href="/admin/instrumente">← Instrumente</a>}>
         <CollabAdmin mode={ms.mode} users={users} counts={null} accounts={all.results} endpoint="/api/admin/inspectii" name="Inspecțiile"
           testNote={<>Cât timp modulul nu e „Activ”, în meniu apare cu eticheta TEST. Persoanele din grupul de test îl folosesc pe web și în aplicația de telefon (inspectii.uvalo.ro), indiferent de abonament.</>} />
+        <section className="card" id="lansare">
+          <div className="cardHead"><h2>Anunțul de lansare</h2><span className="pill"><i />{launch.filter((r) => r.mailed).length} trimise</span></div>
+          <p className="hint">Emailul „Inspecțiile au ajuns în UVALO” (după canvasul „UVALO — Email lansare Inspecții”): bannerul aplicației, cei trei pași, ce face modulul, instalarea pe telefon
+            și un buton care autentifică direct, valabil 7 zile. Merge o singură dată la fiecare persoană, doar celor care pot folosi modulul în modul curent
+            ({ms.mode === "on" ? "toți cei cu acces la platformă" : ms.mode === "test" ? "grupul de test" : "nimeni, modulul e dezactivat"}); implicit doar celor care au bifat noutățile UVALO.</p>
+          <LaunchMail ready={lReady.length} waiting={lWait.filter((r) => r.newsletter).length} sent={launch.filter((r) => r.mailed).length} activated={launch.filter((r) => r.access).length}
+            endpoint="/api/admin/inspectii" img="/site/inspectii-banner.png" waitingLabel="fără acces în modul curent" activatedLabel="conturi cu acces în total"
+            all={[lNoNews.length, "trimite și celor fără noutățile bifate"]} />
+        </section>
         <h2 className="secTitle">Statistici</h2>
         <div className="kpis">
           <div className="kpi"><small>Inspecții</small><b>{n?.total ?? 0}</b></div>
