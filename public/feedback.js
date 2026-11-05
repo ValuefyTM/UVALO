@@ -21,6 +21,7 @@
     ".uvfb-body{padding:0 14px 14px;display:flex;flex-direction:column;gap:10px}" +
     ".uvfb-kinds{display:flex;gap:6px;flex-wrap:wrap}.uvfb-kinds button{border:1px solid #E2D8C4;background:#fff;border-radius:999px;padding:6px 11px;font:700 12px \"Plus Jakarta Sans\",system-ui,sans-serif;color:#4A4A4A;cursor:pointer}" +
     ".uvfb-kinds button[aria-pressed=true]{background:#141414;border-color:#141414;color:#fff}" +
+    ".uvfb-panel input[type=text]{width:100%;box-sizing:border-box;height:38px;border:1px solid #E2D8C4;border-radius:10px;padding:0 11px;font:13px \"Plus Jakarta Sans\",system-ui,sans-serif;color:#141414;background:#FBF8F2}.uvfb-panel input[type=text]:focus{outline:none;border-color:#9A5F00;background:#fff}" +
     ".uvfb-panel textarea{width:100%;box-sizing:border-box;min-height:96px;resize:vertical;border:1px solid #E2D8C4;border-radius:10px;padding:9px 11px;font:13px/1.5 \"Plus Jakarta Sans\",system-ui,sans-serif;color:#141414;background:#FBF8F2}" +
     ".uvfb-panel textarea:focus{outline:none;border-color:#9A5F00;background:#fff}" +
     ".uvfb-chk{display:flex;gap:8px;align-items:center;font-size:12px;color:#4A4A4A;cursor:pointer}.uvfb-chk input{width:16px;height:16px;accent-color:#E0931A}" +
@@ -36,9 +37,9 @@
   var btn = document.createElement("button");
   btn.type = "button";
   btn.className = "uvfb-btn";
-  btn.setAttribute("aria-label", "Trimite feedback");
+  btn.setAttribute("aria-label", "Tichet nou · suport tehnic");
   btn.setAttribute("aria-expanded", "false");
-  btn.innerHTML = '<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/><path d="M8.5 11h7M8.5 14h4"/></svg><span class="uvfb-tip">Feedback</span>';
+  btn.innerHTML = '<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/><path d="M8.5 11h7M8.5 14h4"/></svg><span class="uvfb-tip">Suport · tichet nou</span>';
   document.body.appendChild(btn);
 
   var panel = null, kind = "problema";
@@ -49,13 +50,14 @@
     panel.className = "uvfb-panel";
     panel.setAttribute("role", "dialog");
     panel.setAttribute("aria-label", "Trimite feedback");
-    panel.innerHTML = '<div class="uvfb-head"><b>Spune-ne ce crezi</b><button type="button" class="uvfb-x" aria-label="Închide">×</button></div>' +
+    panel.innerHTML = '<div class="uvfb-head"><b>Tichet nou</b><button type="button" class="uvfb-x" aria-label="Închide">×</button></div>' +
       '<form class="uvfb-body"><div class="uvfb-kinds" role="group" aria-label="Tipul mesajului">' +
       '<button type="button" data-k="problema" aria-pressed="true">Problemă</button><button type="button" data-k="idee" aria-pressed="false">Idee</button><button type="button" data-k="altceva" aria-pressed="false">Altceva</button></div>' +
+      '<input type="text" maxlength="120" aria-label="Subiect" placeholder="Subiect (opțional)">' +
       '<textarea maxlength="2000" required aria-label="Mesajul tău" placeholder="Ce nu merge sau ce ai vrea să facă UVALO…"></textarea>' +
       '<label class="uvfb-chk"><input type="checkbox" checked> Îmi puteți răspunde pe email</label>' +
       '<span class="uvfb-err" role="alert" hidden></span><button type="submit" class="uvfb-send">Trimite</button>' +
-      '<p class="uvfb-sup">Cu captură de ecran sau ca să vezi răspunsurile: <a href="' + (window.UVALO_APP_URL || "") + '/suport">Suport tehnic →</a></p></form>';
+      '<p class="uvfb-sup">Răspundem în chat, în <a href="' + (window.UVALO_APP_URL || "") + '/suport">Suport tehnic</a> (acolo poți atașa și o captură de ecran).</p></form>';
     document.body.appendChild(panel);
     btn.setAttribute("aria-expanded", "true");
     kind = "problema";
@@ -74,7 +76,7 @@
       if (text.length < 3) { err.hidden = false; err.textContent = "Scrie câteva cuvinte."; ta.focus(); return; }
       send.disabled = true; send.textContent = "Se trimite…"; err.hidden = true;
       fetch("/api/feedback", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ kind: kind, text: text, contact: panel.querySelector(".uvfb-chk input").checked, page: location.pathname + location.search + location.hash }) })
+        body: JSON.stringify({ kind: kind, subject: panel.querySelector("input[type=text]").value.trim(), text: text, contact: panel.querySelector(".uvfb-chk input").checked, page: location.pathname + location.search + location.hash }) })
         .then(function (r) { return r.json().catch(function () { return {}; }).then(function (d) { return { ok: r.ok, d: d }; }); })
         .then(function (x) {
           if (!x.ok) throw new Error(x.d.error || "Nu am putut trimite. Încearcă din nou.");
@@ -84,7 +86,7 @@
           ok.textContent = "Mulțumim! Am primit mesajul tău.";
           var lnk = document.createElement("a");
           lnk.href = (window.UVALO_APP_URL || "") + "/suport/" + (x.d.id || "");
-          lnk.textContent = "Răspunsul îl primești în Suport tehnic →";
+          lnk.textContent = "Deschide conversația în Suport tehnic →";
           ok.appendChild(lnk);
           panel.appendChild(ok);
           setTimeout(function () { if (panel) close(); }, 6000);

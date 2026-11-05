@@ -10,7 +10,7 @@ export * from "./support-shared";
 const IMAGE_TYPES: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/gif": "gif" };
 export const IMAGE_MAX = 6 * 1024 * 1024;
 
-export type Ticket = { id: number; user_id: string | null; kind: string; text: string; page: string | null; contact: number; status: string; note: string | null; image_key: string | null; created_at: string; updated_at: string | null; user_seen_at: string | null };
+export type Ticket = { id: number; user_id: string | null; kind: string; subject: string | null; text: string; page: string | null; contact: number; status: string; note: string | null; image_key: string | null; created_at: string; updated_at: string | null; user_seen_at: string | null };
 export type Reply = { id: number; user_id: string | null; staff: number; text: string; image_key: string | null; created_at: string; who: string | null };
 
 /** Puts an image in the bucket (jpeg / png / webp / gif, ≤ 6 MB); `null` = no file; an error message for a bad file. */
@@ -28,7 +28,7 @@ export async function putImage(bucket: R2Bucket | null, prefix: string, f: unkno
 const cleanText = (t: unknown, max = 4000) => (typeof t === "string" ? t.replace(/\r\n/g, "\n").trim().slice(0, max) : "");
 
 /** A new ticket (from the floating button or from /suport); the UVALO administrators get an email. */
-export async function createTicket(db: D1Database, bucket: R2Bucket | null, c: Ctx, ua: string, b: { kind?: unknown; text?: unknown; page?: unknown; contact?: unknown; image?: unknown }): Promise<{ id: number } | { error: string; status?: number }> {
+export async function createTicket(db: D1Database, bucket: R2Bucket | null, c: Ctx, ua: string, b: { kind?: unknown; subject?: unknown; text?: unknown; page?: unknown; contact?: unknown; image?: unknown }): Promise<{ id: number } | { error: string; status?: number }> {
   const text = cleanText(b.text);
   if (text.length < 3) return { error: "Scrie câteva cuvinte." };
   const kind = typeof b.kind === "string" && b.kind in SUPPORT_KINDS ? b.kind : "altceva";
@@ -37,10 +37,11 @@ export async function createTicket(db: D1Database, bucket: R2Bucket | null, c: C
   if ((recent?.n ?? 0) >= 10) return { error: "Ai trimis multe mesaje în ultima oră. Încearcă puțin mai târziu.", status: 429 };
   const img = await putImage(bucket, `support/t`, b.image);
   if (img && "error" in img) return img;
-  const r = await db.prepare("INSERT INTO feedback (user_id, org_id, kind, text, page, ua, contact, image_key, image_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)")
-    .bind(c.user.id, c.org?.id ?? null, kind, text, page, ua.slice(0, 300), b.contact === false || b.contact === "0" ? 0 : 1, img?.key ?? null, img?.type ?? null).run();
+  const subject = cleanText(b.subject, 120) || null;
+  const r = await db.prepare("INSERT INTO feedback (user_id, org_id, kind, subject, text, page, ua, contact, image_key, image_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+    .bind(c.user.id, c.org?.id ?? null, kind, subject, text, page, ua.slice(0, 300), b.contact === false || b.contact === "0" ? 0 : 1, img?.key ?? null, img?.type ?? null).run();
   const id = Number(r.meta.last_row_id);
-  await mailAdmins(db, c, { subject: `Feedback (${SUPPORT_KINDS[kind]}) de la ${c.user.name || c.user.email}`, title: `${SUPPORT_KINDS[kind]} de la ${c.user.name || c.user.email}`, text, page, id, image: !!img }).catch(() => {});
+  await mailAdmins(db, c, { subject: `Tichet nou${subject ? ` · ${subject}` : ` (${SUPPORT_KINDS[kind]})`} de la ${c.user.name || c.user.email}`, title: subject || `${SUPPORT_KINDS[kind]} de la ${c.user.name || c.user.email}`, text, page, id, image: !!img }).catch(() => {});
   return { id };
 }
 
@@ -65,9 +66,9 @@ export async function replyTicket(db: D1Database, bucket: R2Bucket | null, c: Ct
       const base = await origin();
       await sendEmail({
         to: u.email, subject: "Echipa UVALO ți-a răspuns la sesizare",
-        text: `Ai un răspuns de la echipa UVALO la sesizarea ta („${t.text.slice(0, 80)}”):\n\n${text}\n\nVezi firul și răspunde: ${base}/suport/${id}`,
+        text: `Ai un răspuns de la echipa UVALO la sesizarea ta („${ticketTitle(t).slice(0, 80)}”):\n\n${text}\n\nVezi firul și răspunde: ${base}/suport/${id}`,
         html: layout({ eyebrow: "UVALO · Suport tehnic", title: "Echipa UVALO ți-a răspuns",
-          body: `<p style="margin:0 0 10px;font-size:13px;color:#6B6B6B">La sesizarea ta: „${esc(t.text.slice(0, 120))}${t.text.length > 120 ? "…" : ""}”</p><p style="margin:0;font-size:15px;line-height:1.65;color:#141414;white-space:pre-wrap">${esc(text)}</p>${img ? `<p style="margin:10px 0 0;font-size:12px;color:#6B6B6B">+ o imagine atașată (o vezi în platformă)</p>` : ""}`,
+          body: `<p style="margin:0 0 10px;font-size:13px;color:#6B6B6B">La conversația: „${esc(ticketTitle(t))}”</p><p style="margin:0;font-size:15px;line-height:1.65;color:#141414;white-space:pre-wrap">${esc(text)}</p>${img ? `<p style="margin:10px 0 0;font-size:12px;color:#6B6B6B">+ o imagine atașată (o vezi în platformă)</p>` : ""}`,
           button: { label: "Vezi răspunsul și scrie înapoi →", url: `${base}/suport/${id}` }, foot: "Primești acest email pentru că ai trimis o sesizare din UVALO și ai acceptat răspuns pe email." }),
       }).catch(() => false);
     }
@@ -93,7 +94,7 @@ async function mailAdmins(db: D1Database, c: Ctx, m: { subject: string; title: s
 
 /** The person's tickets, newest activity first, with „răspuns nou” when the team wrote after they last opened it. */
 export async function myTickets(db: D1Database, userId: string) {
-  const { results } = await db.prepare(`SELECT f.id, f.kind, f.text, f.status, f.image_key, f.created_at, f.updated_at, f.user_seen_at,
+  const { results } = await db.prepare(`SELECT f.id, f.kind, f.subject, f.text, f.status, f.image_key, f.created_at, f.updated_at, f.user_seen_at,
       (SELECT COUNT(*) FROM feedback_replies r WHERE r.feedback_id = f.id) AS replies
     FROM feedback f WHERE f.user_id = ? ORDER BY COALESCE(f.updated_at, f.created_at) DESC LIMIT 200`).bind(userId)
     .all<Ticket & { replies: number }>();
@@ -101,6 +102,9 @@ export async function myTickets(db: D1Database, userId: string) {
 }
 
 export const isUnread = (t: Pick<Ticket, "status" | "updated_at" | "user_seen_at">) => (t.status === "raspuns" || t.status === "rezolvat") && !!t.updated_at && (!t.user_seen_at || t.user_seen_at < t.updated_at);
+
+/** The title of a conversation: its subject, else the first line of the message. */
+export const ticketTitle = (t: { subject?: string | null; text: string }) => (t.subject?.trim() || t.text.split("\n")[0].trim() || "Sesizare").slice(0, 120);
 
 /** Tickets with an answer the person has not opened yet (the count in the menu). */
 export async function supportUnread(db: D1Database, userId: string): Promise<number> {

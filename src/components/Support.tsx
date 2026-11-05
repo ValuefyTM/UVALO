@@ -1,9 +1,8 @@
 "use client";
 
-// Suport tehnic: the new-ticket form (kind, text, screenshot) and the reply form in a thread (the person, or the UVALO team in
-// admin). Images are shrunk in the browser (≤ 1600 px, JPEG) before upload, so a phone screenshot stays small.
+// Suport tehnic: the new-ticket form (subject, message, photo) and the chat composer of a thread (the person, or the UVALO
+// team in admin). Images are shrunk in the browser (≤ 1600 px, JPEG) before upload, so a phone screenshot stays small.
 import { useRef, useState } from "react";
-import { SUPPORT_KINDS } from "@/lib/support-shared";
 
 async function shrinkImage(f: File): Promise<File> {
   if (!/^image\/(jpeg|png|webp|gif)$/.test(f.type) || f.size < 400 * 1024) return f;
@@ -17,89 +16,95 @@ async function shrinkImage(f: File): Promise<File> {
   } catch { return f; }
 }
 
-function Attach({ file, onFile }: { file: File | null; onFile: (f: File | null) => void }) {
+const ImgIco = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2" /><path d="M3 15l5-5 4 4 3-3 6 6" /><circle cx="16" cy="9" r="1.5" /></svg>;
+const SendIco = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M21 3L10 14M21 3l-7 18-4-7-7-4z" /></svg>;
+
+function usePick() {
   const inp = useRef<HTMLInputElement>(null);
+  const [file, setFile] = useState<File | null>(null);
   const [url, setUrl] = useState<string | null>(null);
-  const take = async (f: File | undefined) => {
-    if (!f) return;
-    const s = await shrinkImage(f);
-    onFile(s); setUrl(URL.createObjectURL(s));
-  };
-  return (
-    <div className="spAttach" onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); void take(e.dataTransfer.files?.[0]); }}>
-      <input ref={inp} type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={(e) => { void take(e.target.files?.[0]); e.target.value = ""; }} />
-      {file && url ? (
-        <>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img className="spPrev" src={url} alt="" />
-          <span>{file.name} · {Math.max(1, Math.round(file.size / 1024))} KB</span>
-          <button type="button" className="linkBtn" onClick={() => { onFile(null); setUrl(null); }}>Scoate</button>
-        </>
-      ) : (
-        <button type="button" className="spDrop" onClick={() => inp.current?.click()}>+ Adaugă o captură de ecran sau o poză</button>
-      )}
-      {!file && <span>JPG, PNG, WebP · se micșorează automat</span>}
-    </div>
-  );
+  const take = async (f: File | undefined) => { if (!f) return; const s = await shrinkImage(f); setFile(s); setUrl(URL.createObjectURL(s)); };
+  const clear = () => { setFile(null); setUrl(null); };
+  const input = <input ref={inp} type="file" accept="image/jpeg,image/png,image/webp,image/gif" style={{ display: "none" }} onChange={(e) => { void take(e.target.files?.[0]); e.target.value = ""; }} />;
+  return { inp, file, url, take, clear, input };
 }
 
-/** A new ticket → POST /api/feedback (multipart), then the thread page. */
+async function post(url: string, fd: FormData) {
+  return fetch(url, { method: "POST", body: fd }).then((x) => x.json().then((v: unknown) => ({ ok: x.ok, j: v as { error?: string; id?: number } }))).catch(() => null);
+}
+
+/** /suport/nou: subject, message, a photo → POST /api/feedback (multipart), then the chat. */
 export function TicketForm() {
-  const [kind, setKind] = useState("problema");
+  const [subject, setSubject] = useState("");
   const [text, setText] = useState("");
-  const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
+  const pk = usePick();
   const send = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (text.trim().length < 3) return setMsg("Scrie câteva cuvinte.");
+    if (text.trim().length < 3) return setMsg("Descrie problema în câteva cuvinte.");
     setBusy(true); setMsg("");
     const fd = new FormData();
-    fd.set("kind", kind); fd.set("text", text); fd.set("page", "/suport");
-    if (file) fd.set("image", file);
-    const r = await fetch("/api/feedback", { method: "POST", body: fd }).then((x) => x.json().then((v: unknown) => ({ ok: x.ok, j: v as { error?: string; id?: number } }))).catch(() => null);
+    fd.set("kind", "problema"); fd.set("subject", subject); fd.set("text", text); fd.set("page", "/suport");
+    if (pk.file) fd.set("image", pk.file);
+    const r = await post("/api/feedback", fd);
     setBusy(false);
     if (!r?.ok) return setMsg(r?.j.error || "Nu am putut trimite. Încearcă din nou.");
     location.href = `/suport/${r.j.id}`;
   };
   return (
-    <form className="spForm" onSubmit={send}>
-      <div className="spKinds" role="group" aria-label="Tipul sesizării">
-        {Object.entries(SUPPORT_KINDS).map(([k, l]) => <button key={k} type="button" className={`svChip${kind === k ? " on" : ""}`} aria-pressed={kind === k} onClick={() => setKind(k)}>{l}</button>)}
-      </div>
-      <textarea className="textarea" rows={4} required maxLength={4000} value={text} onChange={(e) => setText(e.target.value)} aria-label="Mesajul tău"
-        placeholder={kind === "idee" ? "Ce ai vrea să adăugăm sau să schimbăm…" : kind === "problema" ? "Ce nu merge, unde și ce ai încercat…" : "Scrie-ne…"} />
-      <Attach file={file} onFile={setFile} />
+    <form className="spForm" onSubmit={send} onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); void pk.take(e.dataTransfer.files?.[0]); }}>
+      <label className="field"><span>Subiect</span><input className="input" value={subject} maxLength={120} onChange={(e) => setSubject(e.target.value)} placeholder="ex. Nu se încarcă pozele în anexă" /></label>
+      <label className="field"><span>Mesaj</span><textarea className="textarea" rows={5} required maxLength={4000} value={text} onChange={(e) => setText(e.target.value)} placeholder="Descrie problema…" /></label>
+      {pk.input}
+      {pk.file && pk.url ? (
+        <div className="spAttach">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img className="spPrev" src={pk.url} alt="" /><span>{pk.file.name} · {Math.max(1, Math.round(pk.file.size / 1024))} KB</span>
+          <button type="button" className="linkBtn" onClick={pk.clear}>Scoate</button>
+        </div>
+      ) : <button type="button" className="spPick" onClick={() => pk.inp.current?.click()}><ImgIco />Atașează o poză (opțional)</button>}
       {msg && <div className="error" role="alert">{msg}</div>}
-      <div className="actions"><button type="submit" className="btn btnNavy" disabled={busy}>{busy ? "Se trimite…" : "Trimite sesizarea"}</button><span className="hint" style={{ fontSize: 12 }}>Primești răspunsul aici și pe email.</span></div>
+      <button type="submit" className="btn btnPri spBig" disabled={busy}>{busy ? "Se trimite…" : <><SendIco />Trimite</>}</button>
     </form>
   );
 }
 
-/** A reply in a thread: the person (`/api/suport/<id>`) or the UVALO team (`/api/admin/feedback/<id>/reply`). */
-export function ReplyForm({ id, staff }: { id: number; staff?: boolean }) {
+/** The composer at the bottom of a chat: a photo button, the message, send. The person (`/api/suport/<id>`) or the team (`/api/admin/feedback/<id>/reply`). */
+export function Composer({ id, staff }: { id: number; staff?: boolean }) {
   const [text, setText] = useState("");
-  const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
-  const send = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (text.trim().length < 2) return setMsg("Scrie mesajul.");
+  const pk = usePick();
+  const send = async () => {
+    if (text.trim().length < 2 && !pk.file) return setMsg("Scrie mesajul.");
     setBusy(true); setMsg("");
     const fd = new FormData();
-    fd.set("text", text);
-    if (file) fd.set("image", file);
-    const r = await fetch(staff ? `/api/admin/feedback/${id}/reply` : `/api/suport/${id}`, { method: "POST", body: fd }).then((x) => x.json().then((v: unknown) => ({ ok: x.ok, j: v as { error?: string } }))).catch(() => null);
+    fd.set("text", text.trim() || "(imagine)");
+    if (pk.file) fd.set("image", pk.file);
+    const r = await post(staff ? `/api/admin/feedback/${id}/reply` : `/api/suport/${id}`, fd);
     setBusy(false);
     if (!r?.ok) return setMsg(r?.j.error || "Nu am putut trimite. Încearcă din nou.");
     location.reload();
   };
   return (
-    <form className="spForm" onSubmit={send}>
-      <textarea className="textarea" rows={3} required maxLength={4000} value={text} onChange={(e) => setText(e.target.value)} aria-label="Răspunsul tău" placeholder={staff ? "Răspunsul echipei UVALO (persoana îl primește și pe email)…" : "Scrie înapoi…"} />
-      <Attach file={file} onFile={setFile} />
+    <div className="spCompose" onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); void pk.take(e.dataTransfer.files?.[0]); }}>
+      {pk.file && pk.url && (
+        <div className="spAttach">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img className="spPrev" src={pk.url} alt="" /><span>{pk.file.name}</span>
+          <button type="button" className="linkBtn" onClick={pk.clear}>Scoate</button>
+        </div>
+      )}
       {msg && <div className="error" role="alert">{msg}</div>}
-      <div className="actions"><button type="submit" className="btn btnNavy" disabled={busy}>{busy ? "Se trimite…" : staff ? "Trimite răspunsul" : "Trimite"}</button></div>
-    </form>
+      <form className="spComposeRow" onSubmit={(e) => { e.preventDefault(); void send(); }}>
+        {pk.input}
+        <button type="button" className="spRound spRoundGhost" aria-label="Atașează o imagine" title="Atașează o captură de ecran sau o poză" onClick={() => pk.inp.current?.click()}><ImgIco /></button>
+        <textarea className="spInput" rows={1} value={text} maxLength={4000} aria-label={staff ? "Răspunsul echipei UVALO" : "Mesajul tău"} placeholder={staff ? "Răspunsul echipei UVALO…" : "Scrie un mesaj…"}
+          onChange={(e) => { setText(e.target.value); e.target.style.height = "auto"; e.target.style.height = `${Math.min(160, e.target.scrollHeight)}px`; }}
+          onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void send(); } }} />
+        <button type="submit" className="spRound" aria-label="Trimite" disabled={busy}><SendIco /></button>
+      </form>
+    </div>
   );
 }

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { fmtDate, superPage } from "@/lib/guard";
 import { AdminShell } from "@/components/AdminShell";
 import { FeedbackActions } from "@/components/admin";
-import { SUPPORT_KINDS } from "@/lib/support";
+import { SUPPORT_KINDS, ticketTitle } from "@/lib/support";
 
 export const metadata: Metadata = { title: "Feedback | UVALO Admin" };
 export const dynamic = "force-dynamic";
@@ -20,7 +20,7 @@ export default async function Feedback({ searchParams }: { searchParams: Promise
         (SELECT COUNT(*) FROM feedback_replies r WHERE r.feedback_id = f.id) AS replies
       FROM feedback f LEFT JOIN users u ON u.id = f.user_id LEFT JOIN orgs o ON o.id = f.org_id
       WHERE ${where} ORDER BY COALESCE(f.updated_at, f.created_at) DESC LIMIT 300`)
-      .all<{ id: number; user_id: string | null; kind: string; text: string; page: string | null; contact: number; status: string; note: string | null; image_key: string | null; created_at: string; updated_at: string | null; who: string | null; email: string | null; org: string | null; replies: number }>(),
+      .all<{ id: number; user_id: string | null; kind: string; subject: string | null; text: string; page: string | null; contact: number; status: string; note: string | null; image_key: string | null; created_at: string; updated_at: string | null; who: string | null; email: string | null; org: string | null; replies: number }>(),
     db.prepare("SELECT SUM(status = 'nou') AS nou, SUM(status <> 'rezolvat') AS open, COUNT(*) AS n FROM feedback").first<{ nou: number | null; open: number | null; n: number }>(),
   ]);
   return (
@@ -43,6 +43,7 @@ export default async function Feedback({ searchParams }: { searchParams: Promise
                         {f.image_key && <span className="pill">cu imagine</span>}
                         {f.replies > 0 && <span className="pill">{f.replies} {f.replies === 1 ? "mesaj" : "mesaje"}</span>}
                       </div>
+                      <b style={{ display: "block", marginBottom: 4 }}>{ticketTitle(f)}</b>
                       <div style={{ whiteSpace: "pre-wrap", lineHeight: 1.5 }}>{f.text.length > 400 ? `${f.text.slice(0, 400)}…` : f.text}</div>
                       <div className="muted" style={{ fontSize: 12, marginTop: 6 }}>
                         <a className="rowLink" href={`/admin/feedback/${f.id}`}><b>Deschide și răspunde →</b></a>

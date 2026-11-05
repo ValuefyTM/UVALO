@@ -275,17 +275,22 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   telefon, scara hărții). Trimite la `/api/feedback` (tip problemă / idee / altceva, text, pagina, acord de răspuns; max. 10/oră),
   salvat în tabelul `feedback` (migrația 0017), email către super-admini. Admin → Feedback (`/admin/feedback`): filtre,
   stare nou / în lucru (`citit`) / răspuns (`raspuns`) / rezolvat, notă internă, „Email” (în afara platformei); contorul de noi în meniul admin.
-- **Suport tehnic** (`/suport`, migrația 0044, logica în `src/lib/support.ts`): sesizările persoanei (tot tabelul `feedback`, deci și cele din
-  butonul de feedback) sunt **tichete cu fir de răspunsuri** (`feedback_replies`: `staff = 1` = echipa UVALO) și **imagine / captură de ecran**
-  (R2 `FILES`, chei `support/…`, JPG / PNG / WebP / GIF ≤ 6 MB, micșorată în browser la ≤ 1600 px — `shrinkImage` în `src/components/Support.tsx`;
-  servită de `/api/suport/img/<f|r>/<id>` doar proprietarului și super-adminilor). Linkul **„Suport tehnic”** stă în bara laterală, sub Recomandă
-  și deasupra cardului „Contul meu” (`.meSupport`), cu contorul auriu = tichete cu răspuns nedeschis (`supportUnread`: `status` răspuns / rezolvat și
-  `updated_at` > `user_seen_at`). Pagina: formular nou (`TicketForm` → `POST /api/feedback`, acum și multipart cu `image`) + lista (deschise, apoi
-  rezolvate, „Răspuns nou”); `/suport/<id>` = firul (`ticket()` marchează `user_seen_at`) + `ReplyForm` → `POST /api/suport/<id>` (starea revine la
-  `nou`, email super-adminilor). Admin: `/admin/feedback/<id>` = firul + `ReplyForm staff` → `POST /api/admin/feedback/<id>/reply` (`replyTicket`:
-  starea `raspuns` — rămâne `rezolvat` dacă era —, `updated_at`, email persoanei cu link spre `/suport/<id>` dacă a acceptat răspuns pe email);
-  deschiderea în admin trece `nou` → `citit`. Lista din admin arată „cu imagine”, numărul de mesaje, „Deschide și răspunde”. `feedback.js` trimite spre
-  `/suport` pentru capturi și după trimitere. `merge.ts` acoperă `feedback_replies` și `survey_answers`.
+- **Suport tehnic** (`/suport`, migrațiile 0044 + 0045, logica în `src/lib/support.ts`, UI după capturile utilizatorului, 5 nov 2026): sesizările
+  persoanei (tot tabelul `feedback`, deci și cele din butonul flotant) sunt **conversații ca un chat** cu echipa UVALO (`feedback_replies`: `staff = 1`
+  = echipa) cu **subiect** (`feedback.subject`, altfel prima linie — `ticketTitle()`) și **imagine / captură** (R2 `FILES`, chei `support/…`, JPG / PNG /
+  WebP / GIF ≤ 6 MB, micșorată în browser la ≤ 1600 px — `shrinkImage` în `src/components/Support.tsx`; servită de `/api/suport/img/<f|r>/<id>` doar
+  proprietarului și super-adminilor). Totul **centrat pe pagină** (`.spWrap`, max. 1100 px). Linkul **„Suport tehnic”** stă în bara laterală, sub
+  Recomandă și deasupra cardului „Contul meu” (`.meSupport`), cu contorul auriu = conversații cu răspuns nedeschis (`supportUnread`: `status` răspuns /
+  rezolvat și `updated_at` > `user_seen_at`). Pagini: `/suport` = „Conversațiile mele” (rânduri `.spRow`: iconiță, subiect, ora / data, starea Deschis /
+  În lucru / Răspuns / Rezolvat — `SUPPORT_STATUS` —, „Răspuns nou”) + butonul mare auriu **„+ Tichet nou”**; `/suport/nou` = `TicketForm` (Subiect,
+  Mesaj, „Atașează o poză (opțional)”, „Trimite”) → `POST /api/feedback` (multipart cu `subject`, `image`) → conversația; `/suport/<id>` = chatul (`Chat`
+  în `src/components/SupportChat.tsx`: bulele mele negre la dreapta, ale echipei la stânga pe crem cu „ECHIPA UVALO”, separatoare pe zile, ora în bulă,
+  imaginea în bulă) + bara de scris jos (`Composer`, lipicioasă: buton de imagine, „Scrie un mesaj…”, Enter trimite, buton rotund auriu) →
+  `POST /api/suport/<id>` (starea revine la `nou`, email super-adminilor; `ticket()` marchează `user_seen_at`). Admin: `/admin/feedback/<id>` = același chat
+  (bulele echipei la dreapta, numele pe fiecare) + `Composer staff` → `POST /api/admin/feedback/<id>/reply` (`replyTicket`: starea `raspuns` — rămâne
+  `rezolvat` dacă era —, `updated_at`, email persoanei cu link spre `/suport/<id>` dacă a acceptat răspuns pe email); deschiderea în admin trece `nou` →
+  `citit`. Lista din admin arată subiectul, „cu imagine”, numărul de mesaje, „Deschide și răspunde”. **Butonul flotant** (`feedback.js`, „Tichet nou”:
+  subiect opțional + mesaj) creează același tichet și trimite spre conversația din `/suport/<id>`. `merge.ts` acoperă `feedback_replies` și `survey_answers`.
 
 ## Chestionarul de feedback (`src/lib/survey.ts`, `src/components/Survey.tsx`)
 
