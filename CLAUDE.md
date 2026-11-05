@@ -780,6 +780,36 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   sincronizarea (`localStorage` `insp-sync` = ultima trimitere completă, de trimis, rețea); „Ieși din cont” și „Deconectează telefonul”
   (`DELETE /api/m/device` → `disconnectPhone`: scos din lista de pe web + sesiunea închisă, datele locale șterse).
 
+### PLANIFICAT (neimplementat, 5 nov 2026): inspecție cu mai multe bunuri la aceeași adresă
+
+- Mockup = canvasul „UVALO — Inspecție cu mai multe bunuri” (https://claude.ai/artifact/8VbQZXh2wVMjJ3Q2Cxv4fH): telefon M1–M6 (detaliu cu
+  lista bunurilor, fișa cu chip-urile Comun / 1 / 2 / 3, fișa unui bun, poze comune + pe bun, finalizare cu bunuri gata / în lucru, inspecție
+  nouă cu „+ Adaugă un bun”) și web W1–W5 (pregătire cu secțiunea Bunuri din CF-ul citit, lista + hartă cu chip-uri, calendar cu slot cât suma
+  bunurilor, pagina inspecției cu file pe bunuri și PDF pe bun / toate, editorul de fișe cu grup „Comun”). Utilizatorul a aprobat planul; se face când spune.
+- **Principiu**: o inspecție = o vizită cu N bunuri **doar la aceeași adresă** (altă adresă = altă inspecție). Comun, o singură dată: adresa /
+  amplasament, acces, utilități în zonă, imobil, contact, programare, acte, locația GPS, persoana prezentă și semnăturile. Pe bun: tip, fișă,
+  răspunsuri, încăperi, poze, constatări, **număr de fișă propriu** (FI-2026-0041, 0042…), stare proprie. Finalizare parțială permisă: inspecția
+  rămâne `lucru` până sunt gata toate bunurile; lista arată „În lucru · 2 din 3”.
+- **Comutator per utilizator, de la început** (utilizatorul vrea să bifeze el cine o are, ca mai târziu să o lege de planuri): refolosește
+  `modmode.ts` → `app_settings` `multibun_mode` = `{mode, users}`; panou nou în Admin → Instrumente → Inspecții cu `CollabAdmin`
+  (endpoint `/api/admin/multibun`); `c.multi` în `contextOf()` (modul + modulul Inspecții); `/api/m/state` dă `multi`. Cu `c.multi` fals nimic nu
+  se schimbă. Dreptul se verifică **la creare** (formular web, `/api/m/new`, `/api/inspectii`; 403 pentru > 1 bun fără drept), **nu** la
+  vizualizare / completare: un coleg sau colaborator fără drept face inspecția primită. Cheia API v1: dreptul de la cine a creat cheia (etapă
+  ulterioară). La planuri: planurile primesc `features` (ex. `multibun`); modul `on` = permis dacă planul firmei are funcția; `users` rămâne
+  ca excepții manuale. Fără migrare de date.
+- **Date (migrația 0044)**: `insp_items` (inspecția, poziție, `prop_type`, fișa instantaneu + versiune, cad, CF, suprafețe, încăperi, răspunsuri,
+  finisaje, constatări, `sheet_no` / `sheet_at`, stare, `cover_file_id`, `ext_ref`, `deleted_at`); `insp_files.item_id` și `insp_sheets.item_id`
+  (NULL = comun). **Compatibilitate**: o inspecție fără rânduri în `insp_items` = un singur bun în coloanele de azi; `itemsOf()` întoarce un bun
+  virtual din ele, deci lista, fișa web, PDF, link public, Word, API v1, MCP merg neschimbate. `Group.common` în `insp-shared.ts`: la fișele UVALO
+  amplasament / acces / utilități / imobil sunt comune din cod; răspunsurile comune rămân în `inspections.answers`, cele pe bun în
+  `insp_items.answers`; potrivirea între fișe după cheia întrebării (aceeași în toate fișele VALUEFY). `numberSheet` pe bun, la primul răspuns al
+  bunului. Progres = grupurile comune o dată + grupurile proprii ale fiecărui bun.
+- **Etape**: E0 comutatorul singur (setare, panou, `c.multi`, `multi` pe telefon; nimic vizibil) → E1 date + pregătire web (Bunuri din CF, durată
+  propusă: 45 min apartament / casă, 30 min teren / spațiu, 20 min accesoriu; chip-uri în listă, hartă, calendar) → E2 telefon (detaliu, fișa cu
+  chip-uri, poze pe bun, finalizare parțială) → E3 web după teren (file pe bunuri, PDF pe bun / toate, fișa publică, Word „Din inspecții” cu alegerea
+  bunului, `items[]` în API v1 + webhook) → E4 editorul de fișe (comutatorul „Comun pentru toate bunurile de la aceeași adresă” pe grup; o fișă
+  proprie fără grupuri comune întreabă totul pe bun).
+
 ## Instrumente în admin (`/admin/instrumente`)
 
 - **Localizări efectuate** (evenimentul `locate`, „Localizare efectuată”, în `track-js`): un imobil găsit efectiv — după nr. cadastral (`show()`
