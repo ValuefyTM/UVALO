@@ -279,7 +279,7 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   persoanei (tot tabelul `feedback`, deci și cele din butonul flotant) sunt **conversații ca un chat** cu echipa UVALO (`feedback_replies`: `staff = 1`
   = echipa) cu **subiect** (`feedback.subject`, altfel prima linie — `ticketTitle()`) și **imagine / captură** (R2 `FILES`, chei `support/…`, JPG / PNG /
   WebP / GIF ≤ 6 MB, micșorată în browser la ≤ 1600 px — `shrinkImage` în `src/components/Support.tsx`; servită de `/api/suport/img/<f|r>/<id>` doar
-  proprietarului și super-adminilor). Totul **centrat pe pagină** (`.spWrap`, max. 1100 px). Linkul **„Suport tehnic”** stă în bara laterală, sub
+  proprietarului și super-adminilor). Totul **centrat pe pagină, pe 70% din lățime** (`.spWrap`: 70%, max. 1200 px, min. 640 px; pe telefon 100%), cu fonturile obișnuite ale platformei (14 px). Linkul **„Suport tehnic”** stă în bara laterală, sub
   Recomandă și deasupra cardului „Contul meu” (`.meSupport`), cu contorul auriu = conversații cu răspuns nedeschis (`supportUnread`: `status` răspuns /
   rezolvat și `updated_at` > `user_seen_at`). Pagini: `/suport` = „Conversațiile mele” (rânduri `.spRow`: iconiță, subiect, ora / data, starea Deschis /
   În lucru / Răspuns / Rezolvat — `SUPPORT_STATUS` —, „Răspuns nou”) + butonul mare auriu **„+ Tichet nou”**; `/suport/nou` = `TicketForm` (Subiect,
