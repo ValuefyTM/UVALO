@@ -58,11 +58,20 @@ export function HdInsp({ rows: initial, list, meId, title, tags, empty }: { rows
                 </span>
               </>
             ) : (
-              <div className="hbEmpty bare">
+              <>
+                {/* a faded sketch of a map (streets, blocks, a river), as in the canvas, behind the placemark */}
+                <svg className="hbGhostMap" viewBox="0 0 400 190" preserveAspectRatio="none" aria-hidden="true">
+                  <path d="M0 60 C 80 70, 140 40, 200 55 S 320 90, 400 70 L400 100 C 320 120, 260 90, 200 85 S 80 100, 0 90 Z" fill="#E6EDF1" />
+                  <g fill="#F1ECE2"><rect x="20" y="105" width="60" height="38" rx="2" /><rect x="95" y="110" width="50" height="30" rx="2" /><rect x="160" y="120" width="70" height="40" rx="2" /><rect x="250" y="115" width="45" height="35" rx="2" /><rect x="310" y="120" width="70" height="45" rx="2" /><rect x="30" y="10" width="70" height="32" rx="2" /><rect x="120" y="8" width="55" height="26" rx="2" /><rect x="230" y="12" width="60" height="28" rx="2" /><rect x="320" y="15" width="60" height="30" rx="2" /></g>
+                  <g stroke="#FFFFFF" strokeWidth="5" fill="none" strokeLinecap="round"><path d="M0 150 H400" /><path d="M85 0 V190" /><path d="M240 0 V190" /><path d="M0 48 H400" /><path d="M300 100 V190" /><path d="M150 100 L170 190" /></g>
+                  <g stroke="#F3E3C3" strokeWidth="7" fill="none" strokeLinecap="round"><path d="M0 170 H400" /><path d="M190 0 V190" /></g>
+                </svg>
+                <div className="hbEmpty bare">
                 <i><svg viewBox="0 0 24 24" fill="none" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 21s6-5.3 6-10a6 6 0 1 0-12 0c0 4.7 6 10 6 10z" /><circle cx="12" cy="11" r="2.2" /></svg></i>
                 <b>{list.length ? "Inspecțiile cu adresă găsită apar aici, pe hartă" : "Nicio inspecție programată"}</b>
                 {!list.length && <p>Inspecțiile tale vor apărea aici, pe hartă și în calendar.</p>}
-              </div>
+                </div>
+              </>
             )}
           </div>
           {list.length ? (

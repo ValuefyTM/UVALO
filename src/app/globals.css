@@ -3236,6 +3236,7 @@ html:has(.mb) { -webkit-tap-highlight-color: transparent; -webkit-text-size-adju
 .hbMap { position: relative; height: 300px; border-radius: 12px; overflow: hidden; border: 1px solid #E8DFCC; background: #E9E4D8; isolation: isolate; }
 .hbMap .inMap.inSplitMap { position: static; height: 100%; min-height: 0; border: 0; border-radius: 0; }
 .hbMap.ghost { background: #FBF8F2; border-style: dashed; }
+.hbGhostMap { position: absolute; inset: 0; width: 100%; height: 100%; opacity: .55; }
 .hbRows { display: flex; flex-direction: column; }
 .hbRow { display: flex; gap: 10px; align-items: center; padding: 9px 0; border-top: 1px solid #EFE9DC; color: #141414; text-decoration: none; min-width: 0; }
 .hbRows > .hbRow:first-child { border-top: 0; }
