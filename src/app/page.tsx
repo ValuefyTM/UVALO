@@ -9,7 +9,7 @@ import { Referral } from "@/components/Referral";
 import { CollabHome, CollabLaunch } from "@/components/HomeCollab";
 import { collabLaunch, collabState } from "@/lib/collab";
 import { HomeDash } from "@/components/HomeDash";
-import { ViewAsPicker } from "@/components/ViewAs";
+import { ViewAsButton } from "@/components/ViewAs";
 
 export const metadata: Metadata = { title: "UVALO" };
 export const dynamic = "force-dynamic";
@@ -71,8 +71,7 @@ export default async function Home() {
   const asked = new Set((await db.prepare("SELECT DISTINCT target FROM events WHERE user_id = ? AND module = 'home' AND action = 'notify'").bind(c.user.id).all<{ target: string }>()).results.map((r) => r.target));
 
   return (
-    <AppShell c={c} active="home" title={`Bună${first ? `, ${first}` : ""}!`} subtitle={sub}>
-      {(c.super || c.viewAs) && <ViewAsPicker current={c.viewAs ? { id: c.viewAs.id, name: c.viewAs.name } : null} />}
+    <AppShell c={c} active="home" title={`Bună${first ? `, ${first}` : ""}!`} subtitle={sub} actions={c.super && !c.viewAs ? <ViewAsButton /> : undefined}>
       {c.block && !c.super && <div className="note">{c.block} Scrie-ne la <a className="rowLink" href="mailto:office@uvalo.ro">office@uvalo.ro</a> ca să reactivăm accesul.</div>}
 
       <div className="home">

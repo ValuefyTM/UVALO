@@ -2987,14 +2987,21 @@ html:has(.mb) { -webkit-tap-highlight-color: transparent; -webkit-text-size-adju
 .intMcpBody pre { margin: 0; background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; font-size: 12px; white-space: pre-wrap; word-break: break-all; }
 .intMcpBody code, .clMoreBody code { background: #fff; border: 1px solid var(--line); border-radius: 6px; padding: 1px 5px; }
 /* Vezi ca utilizatorul (super-admin, doar vizualizare) */
-.vaStrip { background: #1A1714; color: #fff; font-size: 12.5px; padding: 8px 16px; text-align: center; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px 14px; }
-.vaStrip b { color: var(--acc); }
-.vaStrip button { background: var(--acc); color: #1A1714; border: 0; border-radius: 8px; padding: 5px 10px; font: inherit; font-weight: 700; cursor: pointer; }
-.vaOpen { align-self: flex-start; background: none; border: 1px dashed var(--line); border-radius: 10px; padding: 6px 12px; font: inherit; font-size: 12.5px; color: var(--muted-2); cursor: pointer; margin-bottom: 14px; }
-.vaOpen:hover { border-color: var(--ink); color: var(--ink); }
-.vaCard { gap: 10px; margin-bottom: 18px; }
-.vaHead { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
-.vaHead .hint { flex: 1 1 320px; }
+/* the orange strip while viewing as someone else: thin, in the flow above the header, nothing else moves */
+.vaStrip { background: #F29A2E; color: #141414; font-size: 12.5px; font-weight: 600; padding: 5px 16px; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px 10px; line-height: 1.3; }
+.vaStrip b { font-weight: 800; }
+.vaStrip svg { flex: none; }
+.vaStrip button { background: #141414; color: #fff; border: 0; border-radius: 999px; padding: 3px 10px; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
+.vaStrip button:hover { background: #2A2A2A; }
+/* the header button (no text) that opens the picker */
+.vaBtn { width: 40px; height: 40px; flex: none; border-radius: 50%; border: 1px solid var(--line); background: #fff; color: var(--muted); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+.vaBtn:hover { border-color: var(--acc); color: var(--ink); }
+.topDark .vaBtn { background: #1F1F1F; border-color: #2E2E2E; color: #A8A8A8; }
+.topDark .vaBtn:hover { border-color: var(--acc); color: #fff; }
+.vaModal { width: min(560px, 100%); }
+.vaModal .vaSearch { margin-top: 14px; }
+.vaModal .input { height: 44px; }
+.vaModal .muted { display: block; margin-top: 6px; font-size: 12.5px; }
 .vaSearch { position: relative; }
 .vaHits { list-style: none; margin: 6px 0 0; padding: 4px; border: 1px solid var(--line); border-radius: 12px; background: #fff; display: flex; flex-direction: column; }
 .vaHits button { width: 100%; text-align: left; background: none; border: 0; padding: 8px 10px; border-radius: 8px; font: inherit; font-size: 13.5px; cursor: pointer; }

@@ -14,7 +14,7 @@ import { QuickSearch } from "./QuickSearch";
 import { InspBell } from "./InspBell";
 import { HdInsp, type HdRow } from "./HdInsp";
 import { HdPhone } from "./HdPhone";
-import { ViewAsPicker } from "./ViewAs";
+import { ViewAsButton } from "./ViewAs";
 import { nr } from "@/lib/plural";
 
 const TZ = "Europe/Bucharest";
@@ -202,6 +202,7 @@ export async function HomeDash({ db, c }: { db: Db; c: Ctx }) {
             ? <img src={`/api/avatar/${uid}`} alt="" />
             : initialsOf(c.user.name, c.user.email)}
         </a>
+        {c.super && !c.viewAs && <ViewAsButton />}
       </>}
       hero={loc ? (
         <QuickSearch uats={list.map((u) => ({ key: u.key, name: u.name, county: u.county ?? "Timiș" }))} amp={amp} dark insp={insp && !ops}
@@ -209,7 +210,6 @@ export async function HomeDash({ db, c }: { db: Db; c: Ctx }) {
       ) : (
         <p className="heroNote">{c.off.includes("localizare") ? "Localizatorul cadastral este dezactivat temporar. Revine în curând." : "Abonamentul firmei tale nu include localizatorul cadastral."}</p>
       )}>
-      {(c.super || c.viewAs) && <ViewAsPicker current={c.viewAs ? { id: c.viewAs.id, name: c.viewAs.name } : null} />}
       {c.block && !c.super && <div className="note">{c.block} Scrie-ne la <a className="rowLink" href="mailto:office@uvalo.ro">office@uvalo.ro</a> ca să reactivăm accesul.</div>}
       <div className="hb">
         <div className="hbGrid">

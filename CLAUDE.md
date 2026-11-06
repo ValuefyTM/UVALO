@@ -910,15 +910,17 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
 
 ## Vezi ca utilizatorul (super-admin, doar vizualizare)
 
-- Pe Acasă (pagina veche și dashboard-ul) super-adminul are „Vezi platforma ca un utilizator” (`ViewAsPicker` în `src/components/ViewAs.tsx`:
-  căutare după nume / email / firmă în lista de la `GET /api/admin/view`, conturi active + închise / dezactivate, fără super-admini) →
+- Pe Acasă (pagina veche și dashboard-ul) super-adminul are în antet, lângă avatar, **butonul fără text cu ochiul** (`ViewAsButton` în
+  `src/components/ViewAs.tsx`, `.vaBtn`; nu mai există cardul / dropdown-ul din pagină) → fereastra `ViewAsModal` (`.hdModal.vaModal`: căutare după
+  nume / email / firmă în lista de la `GET /api/admin/view`, conturi active + închise / dezactivate, fără super-admini) →
   `POST /api/admin/view {user_id}` pune cookie-ul **`vf_view`** (`VIEW_COOKIE`, httpOnly, 8 ore; verifică super-adminul real cu `currentSession`,
   nu cu `context()`). `context()` în `access.ts`: dacă sesiunea e a unui super-admin și cookie-ul există → `contextOf(target, pseudo-sesiune
   `view:<id>`)` = platforma exact cum o vede persoana (firma, planul, modulele, `super = false`), cu `c.viewAs = {id, name, email, by}` și
   sesiunea reală păstrată (logout). Mentenanța nu-l blochează pe cel care vizualizează (`!c.viewAs` în `guard.page`, `api()`, `locatorAccess`).
 - **Doar citire**: `worker.ts` (`readOnlyView`) refuză cu 403 orice cerere non-GET cât timp există cookie-ul, înainte de aplicație, cu excepția
   `/api/admin/view` (ieșirea) și `/api/auth/logout`; `track()` nu scrie nimic când `c.viewAs` e setat (fără evenimente pe persoana vizualizată).
-- Bara neagră `ViewAsStrip` în `AppShell` pe toate paginile („Vezi platforma ca X · doar vizualizare” + „Ieși din vizualizare” = `DELETE /api/admin/view`).
+- **Banda portocalie subțire** `ViewAsStrip` (`.vaStrip`, `#F29A2E`) în `AppShell` deasupra antetului, pe toate paginile, fără să schimbe restul
+  așezării („Vezi platforma ca X · doar vizualizare” + „Ieși din vizualizare” = `DELETE /api/admin/view`); cât vizualizezi, butonul cu ochiul dispare.
   Paginile de admin redirecționează la `/` cât timp vizualizezi (contextul nu mai e super).
 
 ## Mod mentenanță
