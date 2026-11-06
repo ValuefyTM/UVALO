@@ -140,7 +140,7 @@ export function QuickSearch({ uats, amp = false, dark = false, extra, insp = fal
         </div>
         <button type="submit" className="quickBtn" value="loc">Localizează</button>
         {amp && <button type="submit" className="quickBtn alt" value="amp">Analiză amplasament</button>}
-        {insp && <a className="quickBtn alt" href={inspHref} title={r.kind === "number" ? `Inspecție nouă pentru nr. cad. ${r.nr}: completăm numărul, adresa și poziția` : "Inspecție nouă"}>+ Inspecție</a>}
+        {insp && <a className="quickBtn alt" href={inspHref} title={r.kind === "number" ? `Inspecție nouă pentru nr. cad. ${r.nr}: completăm numărul, adresa și poziția` : "Inspecție nouă"}>+ Inspecție nouă</a>}
         {extra}
       </div>
 

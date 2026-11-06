@@ -29,7 +29,8 @@ const ICO: Record<Ico, React.ReactNode> = {
 const NavIcon = ({ k }: { k: Ico }) => <svg className="navIco" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{ICO[k]}</svg>;
 
 /** Sidebar layout (UVALO design): Acasă, Instrumente (all the tools on one page), În curând. */
-export async function AppShell(props: { c: Ctx; active: Key; title: string; subtitle?: string; actions?: React.ReactNode; dark?: boolean; children: React.ReactNode }) {
+/** hero = a dark band right under the header (the new home: the search bar), continuous with the dark header */
+export async function AppShell(props: { c: Ctx; active: Key; title: string; subtitle?: string; actions?: React.ReactNode; dark?: boolean; hero?: React.ReactNode; children: React.ReactNode }) {
   const mnt = props.c.super ? await maintenanceOn() : false;
   const { c } = props;
   // the platform installs as an app only on a computer (manifest + "Instalează pe calculator"); on phones only the inspection app
@@ -139,6 +140,7 @@ export async function AppShell(props: { c: Ctx; active: Key; title: string; subt
           </div>
           {props.actions && <div className="actions">{props.actions}</div>}
         </header>
+        {props.hero && <div className="topHero">{props.hero}</div>}
         <main className="content">{props.children}</main>
       </div>
       <nav className="bottomNav" aria-label="Meniu">

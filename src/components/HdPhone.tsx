@@ -1,7 +1,8 @@
 "use client";
 
-// The new home, the phone card: connected → its state + "Reinstalează"; never installed → the whole card asks to install the app.
-// Both open a window with a QR code (it also signs the phone in, a one-time code) and the install steps for iPhone / Android.
+// The new home, the phone: a pill in the dark header (connected → its state; never installed → "Telefon neconectat · Conectează")
+// and a plain button ("Conectează telefonul") in the inspections' empty state. Both open the window with the QR code (it also
+// signs the phone in, a one-time code) and the install steps for iPhone / Android.
 import { useEffect, useRef, useState } from "react";
 import { qrSvg } from "./mobile/InstallHint";
 
@@ -11,29 +12,21 @@ const PhoneIco = ({ size = 22 }: { size?: number }) => (
   </svg>
 );
 
-export function HdPhone({ installed, title, lines, appUrl }: { installed: boolean; title: string; lines: string[]; appUrl: string }) {
+export function HdPhone({ installed, title, lines, appUrl, variant = "pill" }: { installed: boolean; title: string; lines: string[]; appUrl: string; variant?: "pill" | "btn" }) {
   const [open, setOpen] = useState(false);
   return (
     <>
-      {installed ? (
-        <section className="hdPhone hdPhoneSm" aria-label="Telefonul">
-          <span className="hdPhoneArt" aria-hidden="true"><i /><b /><b /></span>
-          <span className="hdPhoneText">
-            <span className="hdPhoneOn"><i />{title}</span>
-            {lines.map((l) => <small key={l}>{l}</small>)}
-          </span>
-          <button type="button" className="hdPhoneRe" onClick={() => setOpen(true)} title="Instalează din nou aplicația pe telefon (alt telefon, aplicația ștearsă)">
-            <PhoneIco size={16} />Reinstalează
-          </button>
-        </section>
+      {variant === "btn" ? (
+        <button type="button" className="hbBtn line" onClick={() => setOpen(true)}><PhoneIco size={14} />{installed ? "Reinstalează aplicația" : "Conectează telefonul"}</button>
+      ) : installed ? (
+        <button type="button" className="hbPhone on" onClick={() => setOpen(true)} title="Instalează din nou aplicația pe telefon (alt telefon, aplicația ștearsă)">
+          <i aria-hidden="true" />
+          <span><b>{title}</b><small>{lines.join(" · ")}</small></span>
+        </button>
       ) : (
-        <button type="button" className="hdPhone hdPhoneCta" onClick={() => setOpen(true)}>
-          <span className="hdPhoneBig" aria-hidden="true"><PhoneIco size={30} /></span>
-          <span className="hdPhoneText">
-            <span className="hdPhoneOn">Instalează aplicația UVALO</span>
-            <small>Faci inspecțiile pe telefon: fișa, pozele, semnătura. Merge și fără semnal.</small>
-            <span className="hdPhoneGo">Instalează acum →</span>
-          </span>
+        <button type="button" className="hbPhone" onClick={() => setOpen(true)}>
+          <i aria-hidden="true" />
+          <span><b>Telefon neconectat</b><small>instalează aplicația <em>Conectează →</em></small></span>
         </button>
       )}
       {open && <InstallModal appUrl={appUrl} again={installed} onClose={() => setOpen(false)} />}

@@ -255,18 +255,31 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
 
 ## Acasă nouă (dashboard, `src/components/HomeDash.tsx`)
 
-- După canvasul „UVALO — Dashboard Acasă”. Acces după **mod** (Admin → Instrumente → Acasă nouă, `app_settings` `acasa_mode`, API `/api/admin/acasa`,
-  `c.homeNew` în `context()`); `src/app/page.tsx` o arată în loc de pagina veche. Ceilalți văd pagina veche.
-- Conținut (doar ce are persoana în module): „Ce evaluăm azi?” + bara de căutare închisă, pe toată lățimea (`QuickSearch` cu `insp` = „+ Inspecție” și `recent` = ultimele parcele ca
-  „Recente”), cifrele zilei, compacte pe un rând (inspecții azi / săptămâna asta / fișe de verificat = finalizate de verificat / lucrări noi în zonă), **Inspecții** pe
-  hartă sau calendar (`HdInsp`, refolosește `MapView` / `CalView` din `InspList`, alegerea în `localStorage` `home-insp-view`; doar nefinalizatele — În lucru, Programată,
-  De programat; harta 360 px cu lista în dreapta — carduri compacte cu scroll (`.hdMapRow`, `.hdItem`: număr, stare, data + ora, adresa,
-  inspectorul), cardul atins aprinde pinul (`focus` în `MapView`); pe telefon lista sub hartă; lângă titlu etichete colorate `.hdTag`: azi / pe teren acum /
-  săptămâna asta / de programat, cifra în bulină), telefonul (`HdPhone`: cu un telefon real conectat — card compact pe un rând („iPhone conectat”, „Semnal … · push activ”) + butonul „Reinstalează”; fără niciunul (dispozitivul `test` nu se numără) tot cardul
-  îndeamnă „Instalează aplicația UVALO”; ambele deschid fereastra cu QR — `pair_code`, se conectează singur — și pașii iPhone / Android), „Necesită atenția ta” (fișe întoarse, de verificat, solicitări fără răspuns / refuzate,
-  fără dată, cereri noi la anunțul meu, mesaje necitite), Colaborări (anunțurile din zonă cu distanța), caruselul de instrumente (`HdTools`, iconițe
-  Word / Chrome), „Luna ta” (finalizate, timp mediu, fotografii, analize AI, grafic pe 8 săptămâni), activitatea recentă (`phoneNotifs` + notificările
-  Colaborări), „Analize de piață și comparabile” în curând. Fără „Documente recente” (cerut). Comparabile = „Localizator Comparabile”. Stiluri `.hd*`.
+- După canvasul „UVALO — Acasă: două propuneri noi” (https://claude.ai/artifact/NZ3Xcckz3Ah2PAPk2US1Zi), **varianta B „Panoul de lucru”** (6 nov 2026; planșa
+  „B · fără activitate” = stările goale). Acces după **mod** (Admin → Instrumente → Acasă nouă, `app_settings` `acasa_mode`, API `/api/admin/acasa`,
+  `c.homeNew` în `context()`); `src/app/page.tsx` o arată în loc de pagina veche. Ceilalți văd pagina veche. Stiluri `.hb*` (+ `.hdSeg`, `.hdTag`, `.hdNum`,
+  `.hdChip`, `.hdAv`, `.hdLegend`, `.hdCal`, fereastra `.hdModal*` / `.hdInst*`, păstrate din prima variantă).
+- **Banda închisă de sus** = antetul `AppShell dark` (salutul după oră + linia „Vineri, 6 noiembrie 2026 · Timiș · 3 inspecții azi, una în lucru acum · 2 de
+  rezolvat”; în `actions`: pastila telefonului `HdPhone` — „iPhone conectat · semnal … · push activ” sau, punctat, „Telefon neconectat · Conectează →”, ambele
+  deschid fereastra cu QR (`InstallModal`, `pair_code`) —, clopoțelul `InspBell`, avatarul `.hbAv` spre `/cont`) + `hero` (prop nou în `AppShell`, `.topHero`,
+  continuă antetul): `QuickSearch` cu „CF / plan” în câmp, Localizează, Analiză amplasament, „+ Inspecție nouă” (`insp`), „Recente” / exemplele.
+- **Sub bandă**, `.hbGrid` 7/12 + 5/12 (cardurile de pe același rând au aceeași înălțime; `.push` = lipit de marginea de jos):
+  **Inspecții** (`HdInsp`: titlu + comutatorul Hartă / Calendar + „Toate →”; etichetele `.hdTag` azi / pe teren acum / săptămâna asta / de programat cu
+  „+ Inspecție nouă” în dreapta — doar când există inspecții deschise; harta `.hbMap` 300 px pe toată lățimea (`MapView bare`), sub ea rândurile `.hbRow`
+  cu primele 6 nefinalizate: număr = pinul, adresa, starea, tipul, inspectorul (dacă nu sunt eu), ora + ziua sau „Programează”; rândul atins aprinde pinul;
+  fără inspecții: harta estompată `.hbMap.ghost` cu placemark-ul „Nicio inspecție programată” și blocul „Pregătește prima inspecție” cu Inspecție nouă (auriu) +
+  „Conectează telefonul” (`HdPhone variant="btn"`); fără modulul Inspecții, cardul = „Ultimele imobile căutate”) și **Colaborări** (mesajul necitit `.hbMsg`
+  cu „Răspunde” → `?view=chat&conv=`, anunțurile din zonă cu avatar, tip, termen, onorariu, distanță și „Detalii”, anunțul meu, rândul punctat „+ Postează un
+  anunț” (`?compose=1`), rândul „Mesaje · N conversații”; fără profil: „Lucrări de la colegi, în zonele tale” + „Deschide Colaborările” + „N colegi îl folosesc
+  deja” (`activatedCount`); cu profil dar fără anunțuri: „Postează un anunț” + „Zonele mele”; fără modul: aici stă „Necesită atenția ta”).
+- **Rândul comprimat** `.hbRow2` (carduri `.hbCard.cp`): **Necesită atenția ta** (`TodoCard`: fișe întoarse, solicitări refuzate → „Realocă”, fișe de verificat,
+  solicitări fără răspuns, fără dată → „Programează”, cereri noi la anunțul meu, mesaje necitite, răspunsuri noi de la suport; gol = bifa verde „Nimic de
+  rezolvat”), **Luna ta** (finalizate / timp mediu / fotografii în `.hbKp`, barele `.hbBars` pe 8 săptămâni, cifrele gri `.zero` + „Statisticile apar după prima
+  inspecție finalizată”; fără Inspecții: imobile deschise / analize AI / localități cu plan), **Activitate recentă** (`.hbLog`: ora sau ziua + textul —
+  `phoneNotifs`, notificările Colaborări, ultimele localizări; gol = „Încă nimic aici”).
+- **Banda de instrumente** `.hbTools` jos: chip-uri `.hbTool` — Localizator cadastral (N UAT), Localizator Comparabile, Word și Chrome („instalat” după `events`,
+  altfel pastila „Instalează”), Suport tehnic (contorul auriu `supportUnread` sau „tichet nou”), „Analize de piață · în curând” (punctat), „Toate instrumentele →”.
+  Fără carusel (`HdTools` a fost șters), fără cifrele zilei, fără cardul „În curând”. Pe telefon totul pe o coloană (`@media 979px`), grila 7/12 cade sub 1100 px.
 
 ## Feedback (buton în dreapta jos)
 
@@ -565,7 +578,7 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   fișa, contact, programare, cine o face: eu / coleg din birou / Colaborări), `/inspectii/<id>` (fișa ca document: cuprins în stânga, conținut;
   „Descarcă PDF” = print; antetul fișei = logo-ul firmei inspecției (`inspections.org_id`, doar dacă are logo) + nr. autorizație; în test „Simulează inspecția” completează fișa ca telefonul), `/inspectii/fise` (`InspTemplates`: editor de grupuri și
   întrebări, răspunsuri precompletate, publicare pe versiuni).
-- **„+ Inspecție” din bara de pe Acasă** (`QuickSearch` cu `insp`): butonul duce la `/inspectii/nou?nr=<nr>&uat=<localitate>` când în câmp e un număr
+- **„+ Inspecție” din bara de pe Acasă** (`QuickSearch` cu `insp`, „+ Inspecție nouă”): butonul duce la `/inspectii/nou?nr=<nr>&uat=<localitate>` când în câmp e un număr
   cadastral (+ localitatea), sau `?adr=` pentru o adresă. Pagina pune numărul / adresa în formular (`lookup`), iar `InspForm` cheamă
   `GET /api/inspectii/locate?nr=&uat=` (`locateParcel` din `cadastre.ts`: centrul parcelei din planurile localizatorului — doar în UAT-ul dat, altfel în
   toate planurile; + `reverseGeocode` pentru adresa străzii, fără cheie Google rămâne „UAT, jud.”) → completează adresa (dacă e goală sau vine din bară),
