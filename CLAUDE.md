@@ -974,6 +974,10 @@ Variabile/secret-uri worker: `APP_URL`, `OLD_HOSTS`, `SITE_HOSTS`, `RESEND_API_K
 
 - CRM-ul VALUEFY (`ValuefyTM` CRM, alt repo) cheamă `/api/localizare/centroid` (centrul parcelei după nr. cadastral)
   cu `LOCATOR_API_TOKEN`; la el `LOCATOR_API_URL` trebuie mutat pe `https://app.uvalo.ro`.
+- **`/api/localizare/parcela`** (pentru tab-ul „Amplasament” din CRM, aceeași cheie `LOCATOR_API_TOKEN` sau un utilizator conectat):
+  `GET ?nr=&city=` sau `?lat=&lng=` [`&vecini=0`] → `parcelForApp` în `src/lib/mcp-localizare.ts` = tot ce dă instrumentul MCP `parcela`
+  (suprafața, perimetrul, inventarul de coordonate, construcțiile, POT, vecinii, straturile Timișoara, grila 2026) cu `geojson`, plus
+  `vecini_contururi` (FeatureCollection cu conturul fiecărui vecin înscris, max. 40) și `uat`. Număr negăsit → 404 cu mesajul în română.
 - Numele vechi rămân intern: pachetul `valuefy-tools`, D1 `valuefy-tools-db`, cookie `vf_tools`. Nu le redenumi
   fără plan de migrare (D1 nu se redenumește; cookie nou = toți utilizatorii se reloghează).
 

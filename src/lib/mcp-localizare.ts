@@ -352,3 +352,54 @@ export async function callTool(req: Request, c: McpCtx, name: string, a: Record<
       throw new ToolError(`Instrument necunoscut: ${name}.`);
   }
 }
+
+/* ---------- for other apps (the CRM): a parcel with its contour, buildings and the contours of its neighbours ---------- */
+
+/** The plan (UAT) of a cadastral number: in the locality given, else in the plan that has it (one only). */
+async function planOf(req: Request, nr: string, city: string) {
+  const list = await uats(req);
+  if (city) {
+    const key = uatOfName(list, city);
+    const u = list.find((x) => x.key === key);
+    if (!u) throw new ToolError(`Localitatea „${city}” nu are plan în localizator.`);
+    return u;
+  }
+  const hits: Uat[] = [];
+  for (const x of list) if ((await centres(x.key, req))?.[nr]) hits.push(x);
+  if (hits.length > 1) throw new ToolError(`Numărul ${nr} apare în ${hits.length} localități (${hits.slice(0, 12).map((h) => h.name).join(", ")}). Precizează localitatea.`);
+  if (!hits.length) throw new ToolError(`Numărul ${nr} nu apare în niciun plan din localizator.`);
+  return hits[0];
+}
+
+/**
+ * A parcel as another app needs it to analyse the site (the CRM's "Amplasament"): everything `parcela` gives (surface, contour
+ * with the coordinates inventory, buildings, POT, neighbours, the Timișoara layers, the notarial grid) with the GeoJSON, plus the
+ * contours of the registered neighbours (for the site plan). By number (+ locality) or by a point (lat / lng).
+ */
+export async function parcelForApp(req: Request, app: string, q: { nr?: string; city?: string; lat?: number | null; lng?: number | null; neighbours?: boolean }) {
+  const c: McpCtx = { modules: ["localizare"], app };
+  let u: Uat | undefined, rec: Rec | null = null, point: unknown = null;
+  const nr = cadastralRoot(str(q.nr, 40));
+  if (nr) {
+    u = await planOf(req, nr, str(q.city));
+    const recs = await records(req, u.key, nr);
+    if (!recs.length) throw new ToolError(`Numărul ${nr} nu apare în planul ${u.name}. Verifică UAT-ul sau numărul din extrasul CF; imobilele foarte noi pot lipsi.`);
+    rec = recs.find((r) => !r.o) ?? recs[0];
+  } else if (q.lat != null && q.lng != null && Number.isFinite(q.lat) && Number.isFinite(q.lng)) {
+    const ll: [number, number] = [q.lat, q.lng];
+    const [E, N] = wgs84ToStereo70(ll[0], ll[1]);
+    point = { lat: r6(ll[0]), lng: r6(ll[1]), stereo70: { x: r3(N), y: r3(E) } };
+    for (const x of (await uats(req)).filter((x) => inBb(x, ll))) {
+      const r = await parcelAt(req, x, ll, [E, N]);
+      if (r) { u = x; rec = r; break; }
+    }
+    if (!rec) return { punct: point, parcela: null, mesaj: "Punctul nu cade pe un imobil din planurile cadastrale ale localizatorului." };
+  } else throw new ToolError("Dă numărul cadastral (și localitatea) sau un punct (lat, lng).");
+  const parcela = await describe(req, c, u!, rec!, { geojson: true });
+  // the registered neighbours, each with its contour (the first record of the number)
+  const vecini = q.neighbours === false ? [] : (await Promise.all((rec!.n ?? []).slice(0, 40).map(async (id) => {
+    const r = (await records(req, u!.key, id)).find((x) => !x.o) ?? (await records(req, u!.key, id))[0];
+    return r ? geojson(decodeRing(r.z), { nr_cadastral: id, suprafata_mp: r.a }) : null;
+  }))).filter(Boolean);
+  return { ...(point ? { punct: point } : {}), uat: { cheie: u!.key, nume: u!.name, judet: u!.county ?? "Timiș" }, parcela, vecini_contururi: { type: "FeatureCollection", features: vecini } };
+}
