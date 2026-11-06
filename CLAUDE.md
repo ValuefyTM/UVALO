@@ -569,15 +569,36 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
 - **Întrebare compusă** (`kind: "comp"`): o alegere cu întrebări de urmat pe răspuns (`sub: {răspuns: SubQ[]}`, tipuri unică / multiplă / text / număr);
   răspunsul la `answers[id]`, urmările la `answers["id.subId"]`; `compSummary()` pe o linie în fișa web. În editor: „+ Întrebare compusă” și, pe fiecare
   răspuns, „+ Întrebare după „X”” (redenumirea răspunsului mută și urmările). Migrația 0024 a șters (logic) copiile personale ale primelor fișe UVALO. Logica: `src/lib/insp.ts`; API unic `POST /api/inspectii {action}`.
-- Pagini: `/inspectii` (`InspList`: file **Toate** (implicit) / **Ale mele** (inclusiv cele făcute de colegi sau colaboratori pentru mine — nu mai au filă separată) / Făcute pentru colegi (+ Ale firmei); stările ca tab-uri segmentate `.inTabs` (cu numere)
-  și căutarea `.inSearchBox` (adresă, nr. cad., contact, cod; numărul de rezultate) pe același rând, în cardul `.inFilterBar`; vederi Listă / **Listă + hartă** (`.inSplit`:
-  carduri în stânga, harta lipicioasă în dreapta; cardul atins aprinde pinul, pinul derulează la card) / Hartă (Leaflet) / Calendar
-  săptămânal cu „De programat” trase pe o oră → `schedule`; header închis la culoare (`AppShell dark` → `.top.topDark`, titlu alb, nu gros), în colțul de sus
-  clopoțelul `InspBell` (`phoneNotifs`: ce fac alții pe inspecțiile mele, 30 de zile; necitite după `localStorage` `insp-web-notif-seen`) și **Setări**
-  (`InspSettings`, meniu: Fișe de inspecție + viitoare setări marcate „În curând”); „Inspecție nouă” stă deasupra tabelului, în `.inBar`), `/inspectii/nou[?id=]` (`InspForm`: CF citit cu `/api/amplasament/plan`, încăperi,
-  fișa, contact, programare, cine o face: eu / coleg din birou / Colaborări), `/inspectii/<id>` (fișa ca document: cuprins în stânga, conținut;
-  „Descarcă PDF” = print; antetul fișei = logo-ul firmei inspecției (`inspections.org_id`, doar dacă are logo) + nr. autorizație; în test „Simulează inspecția” completează fișa ca telefonul), `/inspectii/fise` (`InspTemplates`: editor de grupuri și
-  întrebări, răspunsuri precompletate, publicare pe versiuni).
+- Pagini (6 nov 2026, după canvasul „UVALO — Inspecții: listă + hartă și detaliu”, https://claude.ai/artifact/5SHoxyhrG3pQdjdhUQnWNB; stiluri `.ix*`):
+  **`/inspectii`** (`InspList`): header închis (`AppShell dark`) cu subtitlul „N în total · N azi · N pe teren acum”, clopoțelul `InspBell`
+  (`phoneNotifs`, necitite după `localStorage` `insp-web-notif-seen`), **Setări** (`InspSettings`), butonul auriu „+ Inspecție nouă” și avatarul `.hbAv`.
+  **Bara de filtre pe un rând** `.ixBar`: filele `.ixTabs` **Toate** (implicit) / **Ale mele** (inclusiv cele făcute de colegi sau colaboratori pentru mine)
+  / Pentru colegi (+ Ale firmei), stările `.ixSt` ca pastile cu punct colorat și număr, căutarea `.ixSearch` (adresă, nr. cad., contact, cod), vederile
+  `.ixViews` ca iconițe: **Listă + hartă (implicit)** / Listă (tabelul) / Hartă / Calendar (`localStorage` `insp-view`). **Listă + hartă** = `.ixSplit`:
+  lista `.ixList` (rânduri `.ixRow`: pinul numerotat în culoarea stării — bifă verde la finalizate —, adresa, starea, tipul · contactul sau nr. fișei,
+  inspectorul / „pentru X”, ora + ziua în dreapta sau „Programează”; ordonate: în lucru, programate după dată, de programat, apoi finalizatele, cele mai
+  noi întâi), **separatorul `.ixDiv`** cu mânerul `.ixGrip` tras cu mouse-ul / degetul (`pointerdown` + `pointermove`): lista între 25 și 75 %,
+  **dublu-click = 45 / 55**, tras sub 12 % sau peste 88 % = o parte se strânge în bara `.ixFold` „Arată lista · N” / „Arată harta · N”; poziția în
+  `localStorage` `insp-split` (procent sau `list` / `map`); sub 36 % lista trece pe un rând pe inspecție (`.ixList.one`). Harta (`MapView` cu
+  `controls`): comutatorul Hartă / Satelit (`.ixLayer`, Esri World Imagery, `localStorage` `insp-base`), zoom `.ixCtl`, legenda, „Încadrează toate”;
+  rândul atins aprinde pinul, pinul atins derulează lista la rând și deschide **cardul** `.ixPop` (adresa, starea · ora · tipul · inspectorul, „Deschide”,
+  „Navighează” = Google Maps). Pe telefon (≤ 860 px) harta sus, lista sub ea, mânerul orizontal (`.ixSplit.vert`, tras în sus / jos). Calendarul
+  săptămânal cu „De programat” trase pe o oră → `schedule` neschimbat.
+  **`/inspectii/<id>`**: header închis cu adresa ca titlu, subtitlul „tip · cod · pregătită de X, data”, „‹ Inspecții”; în `hero` (`.ixHero`) chip-urile
+  `.ixChip` (starea + programarea / data finalizării, tipul, fișa cu versiunea, codul, nr. fișei sau „se dă la început”, DATE DE TEST, DOAR CITIRE) și
+  acțiunile de până acum (`InspDocActions`: Editează / PDF / Copiază linkul / Marchează predată / Retrimite pe telefon / Simulează; `InspReassign`,
+  `InspShare`, `InspSheetDelete`, `InspDelete`). Sub bandă **pașii** `.ixSteps`: Pregătită (`created_at`) · Programată · Pe teren (`started_at`) ·
+  Finalizată · Predată, fiecare cu data și persoana, cel curent auriu. Apoi `.ixBody` 8/12 + 4/12: **filele** `InspTabs` (`.ixTabs2`, aleasă și din
+  `#hash`: Detalii / Fișa (N / M răspunsuri sau ✓) / Fotografii / Acte / Istoric; implicit Detalii, la finalizate Fișa) — **Detalii** = notele (retrimisă /
+  în lucru), **Proprietatea** ca grilă `.ixFacts` (tip, nr. cad. · UAT, CF, UAT · județ, suprafețe din acte, încăperile din releveu, client · utilizator,
+  `facts`), **Fișa** cu progresul pe grupuri `.ixGrp` (bare, N / M; finisajele, fotografiile), **Fotografii** (primele 6 sau categoriile fișei ca
+  placeholder-e `.ixPh.ghost`), **Instrucțiuni** `.ixInstr`; **Fișa** = documentul de până acum (`inDoc`: cuprinsul doar la finalizate, `inPaper` cu
+  rezumat, grupuri, încăperi, constatări, fotografii, acte, locația, semnături; „Descarcă PDF” = print, antetul = logo-ul firmei + nr. autorizație);
+  **Fotografii** / **Acte** (cu încărcare) / **Istoric** complete. **Coloana din dreapta** `.ixSide`: harta mică (`InspLocMap` cu GPS-ul de pe telefon sau
+  adresa; „Vezi în localizator”, Google Maps, Waze, Analiză amplasament), Cine o face (avatar, legitimația, starea solicitării), Programarea
+  („Reprogramează” → formular), Contact la fața locului (Sună / SMS), Acte (primele 4), Istoric (ultimele 4). La tipar rămâne doar fișa.
+  `/inspectii/nou[?id=]` (`InspForm`: CF citit cu `/api/amplasament/plan`, încăperi, fișa, contact, programare, cine o face: eu / coleg din birou /
+  Colaborări), `/inspectii/fise` (`InspTemplates`: editor de grupuri și întrebări, răspunsuri precompletate, publicare pe versiuni).
 - **„+ Inspecție” din bara de pe Acasă** (`QuickSearch` cu `insp`, „+ Inspecție nouă”): butonul duce la `/inspectii/nou?nr=<nr>&uat=<localitate>` când în câmp e un număr
   cadastral (+ localitatea), sau `?adr=` pentru o adresă. Pagina pune numărul / adresa în formular (`lookup`), iar `InspForm` cheamă
   `GET /api/inspectii/locate?nr=&uat=` (`locateParcel` din `cadastre.ts`: centrul parcelei din planurile localizatorului — doar în UAT-ul dat, altfel în

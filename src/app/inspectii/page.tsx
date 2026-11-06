@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { page } from "@/lib/guard";
+import { page, initials } from "@/lib/guard";
 import { track } from "@/lib/track";
 import { devices, firmView, inspUrl, isOps, listInspections, phoneNotifs } from "@/lib/insp";
 import { AppShell } from "@/components/AppShell";
@@ -12,7 +12,9 @@ import { InspSettings } from "@/components/InspSettings";
 export const metadata: Metadata = { title: "Inspecții | UVALO" };
 export const dynamic = "force-dynamic";
 
-/** Inspecții: prepared here, done on the phone (UVALO app), seen here. Who has it: by its mode (Admin → Instrumente → Inspecții). */
+const TZ = "Europe/Bucharest";
+
+/** Inspecții: prepared here, done on the phone (UVALO app), seen here. The page opens in Listă + hartă (InspList). */
 export default async function InspectiiPage() {
   const { db, c } = await page();
   if (!c.modules.includes("inspectii")) {
@@ -34,14 +36,23 @@ export default async function InspectiiPage() {
     );
   }
   const [rows, notifs] = await Promise.all([listInspections(db, c), phoneNotifs(db, c.user.id)]);
-  const dev = devs[0];
+  // the line under the title: how many, today's, on site now
+  const today = new Date().toLocaleDateString("en-CA", { timeZone: TZ });
+  const todayN = rows.filter((r) => r.scheduled_at?.startsWith(today) && (r.status === "plan" || r.status === "lucru")).length;
+  const onSite = rows.filter((r) => r.status === "lucru").length;
+  const sub = [`${rows.length} în total`, todayN ? `${todayN} azi` : null, onSite ? `${onSite === 1 ? "una" : onSite} pe teren acum` : null].filter(Boolean).join(" · ");
   return (
-    <AppShell c={c} active="inspectii" title="Inspecții" dark subtitle="Le pregătești aici; pe telefon doar le faci. Fișele, pozele și actele se văd aici."
+    <AppShell c={c} active="inspectii" title="Inspecții" dark subtitle={sub}
       actions={<>
-        {dev && <span className="inDev" title={dev.platform === "test" ? "Mod de test, fără telefon" : "Telefonul conectat"}><i />{dev.platform === "test" ? "Mod test (fără telefon)" : `Telefon conectat · ${dev.name ?? ""}`}</span>}
-        <InspPreview appUrl={inspUrl()} />
         <InspBell items={notifs} />
         <InspSettings appUrl={inspUrl()} phones={devs.filter((d) => d.platform !== "test").length} />
+        {!ops && <a className="btn btnGold ixNew" href="/inspectii/nou"><span aria-hidden="true">+</span> Inspecție nouă</a>}
+        <a className="hbAv" href="/cont" title="Contul meu" aria-label="Contul meu">
+          {c.user.has_avatar
+            // eslint-disable-next-line @next/next/no-img-element
+            ? <img src={`/api/avatar/${c.user.id}`} alt="" />
+            : initials(c.user.name, c.user.email)}
+        </a>
       </>}>
       <InspList rows={rows} meId={c.user.id} ops={ops}
         // the administrator's own office is "Ale mele"; an operational's office and the offices that made them an associated administrator: "Ale firmei"

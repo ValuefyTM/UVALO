@@ -1848,7 +1848,8 @@ span.meOfficeLogo { background: #2a2a2a; color: var(--acc); }
   .inSearch { margin-left: 0; max-width: none; }
 }
 @media print {
-  .side, .bottomNav, .top .actions, .inDocTop, .inToc, .inNoPrint, .uvfb-btn, .inTestNote { display: none !important; }
+  .side, .bottomNav, .top .actions, .inDocTop, .inToc, .inNoPrint, .uvfb-btn, .inTestNote, .topHero, .ixSteps, .ixSide, .ixTabs2, .vaStrip { display: none !important; }
+  .ixBody { display: block; }
   .inPaper { box-shadow: none; max-width: none; padding: 0; }
   .inFind, .inKpis .dark { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .inSec { break-inside: avoid; }
@@ -3310,3 +3311,200 @@ a.hbTool:hover { border-color: #E0AD4F; }
   .hbPhone small { display: none; }
   .hbCard { padding: 14px; }
 }
+
+/* ---------- Inspecții (canvas „UVALO — Inspecții: listă + hartă și detaliu”, .ix*): the one-row filter bar, Listă + hartă with the
+   draggable divider, the compact rows, the pins' cards; the inspection page: the dark band with chips + actions, the steps, the tabs,
+   the side cards ---------- */
+.ixNew { height: 40px; gap: 6px; }
+.ixNew span { font-size: 18px; font-weight: 500; }
+.topDark .hbAv { margin-left: 2px; }
+.ixBar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 8px 10px; }
+.ixTabs { display: flex; gap: 2px; background: #EEE6D8; border-radius: 10px; padding: 3px; }
+.ixTabs button { height: 30px; padding: 0 12px; border: 0; border-radius: 8px; background: transparent; font: inherit; font-size: 12.5px; font-weight: 700; color: #4A4A4A; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.ixTabs button i { font-style: normal; font-size: 11px; font-weight: 800; color: #8C8C8C; font-variant-numeric: tabular-nums; }
+.ixTabs button[aria-selected="true"] { background: #141414; color: #fff; }
+.ixTabs button[aria-selected="true"] i { color: var(--acc-light); }
+.ixSt { display: flex; gap: 4px; flex-wrap: wrap; }
+.ixSt button { height: 30px; padding: 0 10px; border-radius: 999px; border: 1px solid var(--line); background: #fff; font: inherit; font-size: 12px; font-weight: 700; color: #4A4A4A; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.ixSt button::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--c, #BDB3A0); }
+.ixSt button b { font-weight: 800; font-variant-numeric: tabular-nums; }
+.ixSt button[aria-selected="true"] { background: #141414; border-color: #141414; color: #fff; }
+.ixSearch { flex: 1 1 200px; min-width: 160px; height: 36px; display: flex; align-items: center; gap: 8px; background: #FBF8F2; border: 1px solid var(--line); border-radius: 10px; padding: 0 10px; color: #8C8C8C; }
+.ixSearch:focus-within { background: #fff; border-color: var(--acc); box-shadow: 0 0 0 3px rgba(242, 169, 59, 0.28); }
+.ixSearch input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font: inherit; font-size: 13px; color: var(--ink); }
+.ixSearch em { font-style: normal; font-size: 12px; font-weight: 700; color: var(--acc-text); }
+.ixSearch button { border: 0; background: rgba(20,20,20,.07); width: 22px; height: 22px; border-radius: 50%; font-size: 14px; line-height: 1; cursor: pointer; color: #6B6B6B; }
+.ixViews { display: flex; gap: 2px; background: #EEE6D8; border-radius: 10px; padding: 3px; margin-left: auto; }
+.ixViews button { width: 36px; height: 30px; border: 0; border-radius: 8px; background: transparent; color: #4A4A4A; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+.ixViews button[aria-pressed="true"] { background: #141414; color: #fff; }
+/* the split: the list, the divider, the map */
+.ixSplit { display: flex; height: calc(100vh - 230px); min-height: 480px; border: 1px solid var(--line); border-radius: 16px; overflow: hidden; background: #fff; }
+.ixList { flex: 0 0 45%; min-width: 0; min-height: 0; display: flex; flex-direction: column; background: var(--bg, #F4ECE1); }
+.ixHead { display: flex; align-items: center; gap: 4px; padding: 10px 14px 6px 16px; font-size: 12px; color: #6B6B6B; font-weight: 600; flex-wrap: wrap; }
+.ixHead b { color: var(--ink); }
+.ixRows { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; padding: 0 10px 12px 16px; }
+.ixRow { display: flex; gap: 10px; align-items: center; padding: 9px 12px; border-radius: 14px; background: #fff; border: 1px solid #E8DFCC; color: var(--ink); text-decoration: none; min-width: 0; flex: none; transition: border-color .15s, box-shadow .15s; }
+.ixRow:hover, .ixRow.on { border-color: var(--acc); box-shadow: 0 2px 10px rgba(20, 20, 20, .07); }
+.ixPin { width: 26px; height: 26px; border-radius: 50%; color: #fff; font-size: 11px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex: none; box-shadow: 0 0 0 2px #fff; }
+.ixTxt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.ixTxt > b { font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ixTxt > small { font-size: 11.5px; color: #6B6B6B; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.ixTxt .inBadge { height: 20px; padding: 0 8px; font-size: 10.5px; }
+.ixTxt em { font-style: normal; font-size: 11px; font-weight: 800; color: #7A5AA6; }
+.ixTxt em.no { color: #B3261E; }
+.ixTxt em.off { color: #9A9384; font-weight: 600; }
+.ixWho { display: inline-flex; align-items: center; gap: 5px; font-weight: 600; color: #4A4A4A; }
+.ixWhen { flex: none; text-align: right; display: flex; flex-direction: column; line-height: 1.2; }
+.ixWhen b { font-size: 13px; font-weight: 800; white-space: nowrap; }
+.ixWhen small { font-size: 11px; color: #6B6B6B; font-weight: 600; white-space: nowrap; }
+.ixWhen.done b { color: #157F55; }
+.ixBtn { flex: none; display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px; border-radius: 9px; border: 1px solid #E2D8C4; background: #fff; color: #141414; font: inherit; font-size: 12px; font-weight: 700; text-decoration: none; white-space: nowrap; cursor: pointer; box-sizing: border-box; }
+.ixBtn:hover { border-color: var(--acc); color: #141414; }
+.ixBtn.dark { background: #141414; border-color: #141414; color: #fff; }
+.ixBtn.dark:hover { background: #2A2A2A; color: #fff; }
+/* a narrow list (under 36 %): one line per inspection */
+.ixList.one .ixTxt > small { display: none; }
+.ixList.one .ixTxt { flex-direction: row; align-items: center; gap: 8px; }
+.ixList.one .ixTxt > b { flex: 1; }
+.ixList.one .ixWhen small { display: none; }
+.ixDiv { flex: 0 0 14px; background: #E8DFCC; position: relative; cursor: col-resize; display: flex; align-items: center; justify-content: center; touch-action: none; user-select: none; }
+.ixDiv::before { content: ""; position: absolute; top: 0; bottom: 0; left: 6px; width: 2px; background: #D9CFBA; }
+.ixDiv:hover { background: #E0D5BE; }
+.ixGrip { position: relative; z-index: 1; width: 22px; height: 54px; border-radius: 999px; background: #141414; border: 2px solid var(--bg, #F4ECE1); color: var(--acc-light); display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0, 0, 0, .25); }
+.ixGrip svg { width: 10px; height: 18px; }
+.ixMap { flex: 1; min-width: 0; position: relative; }
+.ixMapBox { position: relative; height: 100%; isolation: isolate; }
+.ixMapBox .inMap.inSplitMap { position: static; height: 100%; min-height: 0; border: 0; border-radius: 0; }
+.ixMapOnly { height: calc(100vh - 230px); min-height: 480px; border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
+.ixFold { flex: 0 0 44px; border: 0; background: #141414; color: var(--acc-light); cursor: pointer; font: inherit; font-size: 11.5px; font-weight: 800; letter-spacing: .04em; display: flex; align-items: center; justify-content: center; }
+.ixFold span { writing-mode: vertical-rl; transform: rotate(180deg); white-space: nowrap; }
+.ixLayer { position: absolute; left: 12px; top: 12px; z-index: 500; display: flex; gap: 2px; background: #fff; border-radius: 9px; padding: 3px; border: 1px solid var(--line); box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+.ixLayer button { padding: 5px 10px; border: 0; border-radius: 7px; background: transparent; font: inherit; font-size: 11.5px; font-weight: 700; color: #4A4A4A; cursor: pointer; }
+.ixLayer button[aria-pressed="true"] { background: #141414; color: #fff; }
+.ixCtl { position: absolute; right: 12px; top: 12px; z-index: 500; display: flex; flex-direction: column; gap: 6px; }
+.ixCtl button { width: 34px; height: 34px; border-radius: 9px; background: #fff; border: 1px solid var(--line); font: inherit; font-size: 17px; font-weight: 700; color: #141414; cursor: pointer; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+.ixFit { position: absolute; right: 12px; bottom: 12px; z-index: 500; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+.ixMapBox .hdLegend { bottom: 12px; left: 12px; }
+.leaflet-popup-content-wrapper { border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,.18); font-family: var(--font); }
+.leaflet-popup-content { margin: 12px 14px; font-size: 13px; line-height: 1.4; }
+.ixPop { display: flex; flex-direction: column; gap: 4px; min-width: 220px; }
+.ixPop b { font-size: 13.5px; }
+.ixPop small { font-size: 12px; color: #6B6B6B; }
+.ixPopActs { display: flex; gap: 6px; margin-top: 6px; }
+.ixPopActs .ixBtn { height: 30px; }
+@media (max-width: 860px) {
+  .ixSplit.vert { flex-direction: column; height: calc(100vh - 220px); min-height: 520px; }
+  .ixSplit.vert .ixList { flex-basis: 60%; order: 3; }
+  .ixSplit.vert .ixMap { flex: 1; min-height: 120px; order: 1; }
+  .ixSplit.vert .ixDiv { order: 2; flex-basis: 14px; cursor: row-resize; }
+  .ixSplit.vert .ixDiv::before { left: 0; right: 0; top: 6px; bottom: auto; width: auto; height: 2px; }
+  .ixSplit.vert .ixGrip { width: 54px; height: 22px; }
+  .ixSplit.vert .ixGrip svg { transform: rotate(90deg); }
+  .ixSplit.vert .ixFold { flex-basis: 44px; }
+  .ixSplit.vert .ixFold span { writing-mode: horizontal-tb; transform: none; }
+  .ixViews { margin-left: 0; }
+  .ixBar { padding: 8px; }
+}
+
+/* the inspection page */
+.ixHero { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px 18px; flex-wrap: wrap; padding-top: 4px; }
+.ixChips { display: flex; gap: 6px; flex-wrap: wrap; flex: 1 1 320px; }
+.ixChip { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px; border-radius: 999px; font-size: 11.5px; font-weight: 800; white-space: nowrap; }
+.ixChip.ghost { background: #1F1F1F; color: #D6D6D6; border: 1px solid #2E2E2E; font-weight: 600; }
+.ixChip.test { background: #2a2722; color: var(--acc-light); }
+.ixHero .inDocBtns { margin-left: 0; }
+.topHero .inDocBtns .btnGhost { background: #1F1F1F; color: #fff; border-color: #3A3A3A; }
+.topHero .inDocBtns .btnGhost:hover { border-color: var(--acc); }
+.topHero .inRedo, .topHero .inSetMenu { color: var(--ink); }
+.topHero .inDocMsg { color: #D6D6D6; }
+.ixSteps { display: flex; align-items: center; background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 12px 18px; }
+.ixStep { flex: 1; display: flex; align-items: center; gap: 10px; min-width: 0; }
+.ixStep i { width: 26px; height: 26px; border-radius: 50%; border: 2px solid #D9CFBA; background: #fff; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; color: #8C8C8C; flex: none; font-style: normal; }
+.ixStep.done i { background: #157F55; border-color: #157F55; color: #fff; }
+.ixStep.now i { background: var(--acc); border-color: var(--acc); color: #141414; box-shadow: 0 0 0 4px rgba(242, 169, 59, .25); }
+.ixStep span { display: flex; flex-direction: column; line-height: 1.2; min-width: 0; }
+.ixStep b { font-size: 12.5px; white-space: nowrap; }
+.ixStep small { font-size: 11px; color: #6B6B6B; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ixStep.todo b { color: #8C8C8C; }
+.ixStep::after { content: ""; flex: 1; height: 2px; background: #E8DFCC; margin: 0 14px; min-width: 10px; }
+.ixStep.done::after { background: #157F55; }
+.ixStep:last-child::after { display: none; }
+.ixBody { display: grid; grid-template-columns: minmax(0, 8fr) minmax(0, 4fr); gap: 16px; align-items: start; }
+.ixMain, .ixSide, .ixCol { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.ixPanel { display: flex; flex-direction: column; gap: 16px; }
+.ixPanel[hidden] { display: none; }
+.ixTabs2 { display: flex; gap: 2px; background: #EEE6D8; border-radius: 12px; padding: 3px; align-self: flex-start; max-width: 100%; overflow-x: auto; scrollbar-width: none; }
+.ixTabs2 button { flex: none; height: 36px; padding: 0 14px; border: 0; border-radius: 9px; background: transparent; font: inherit; font-size: 13px; font-weight: 700; color: #4A4A4A; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+.ixTabs2 button i { font-style: normal; font-size: 11px; font-weight: 800; color: #8C8C8C; font-variant-numeric: tabular-nums; }
+.ixTabs2 button[aria-selected="true"] { background: #141414; color: #fff; }
+.ixTabs2 button[aria-selected="true"] i { color: var(--acc-light); }
+.ixCard { background: #fff; border: 1px solid var(--line); border-radius: 18px; padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.ixCard.map { padding: 12px; }
+.ixCard h2 { margin: 0; font-size: 14px; font-weight: 800; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.ixCard h2 small { font-size: 11.5px; font-weight: 600; color: #6B6B6B; }
+.ixCard h2 a { margin-left: auto; font-size: 12px; font-weight: 700; color: var(--acc-text); text-decoration: none; }
+.ixCard h2 a:hover { color: var(--ink); }
+.ixFacts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.ixFacts div { background: #FBF8F2; border-radius: 12px; padding: 9px 12px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.ixFacts small { font-size: 10.5px; font-weight: 800; letter-spacing: .05em; color: #8C8C8C; text-transform: uppercase; }
+.ixFacts b { font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ixFacts b em { font-style: normal; font-weight: 600; color: #6B6B6B; font-size: 12px; }
+.ixGroups { display: flex; flex-direction: column; }
+.ixGrp { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-top: 1px solid #EFE9DC; font-size: 13px; }
+.ixGrp:first-child { border-top: 0; }
+.ixGrp b { flex: 1; min-width: 0; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ixBar2, .ixGrp .ixBar { width: 160px; height: 6px; border-radius: 3px; background: #EFE9DC; overflow: hidden; flex: none; }
+.ixGrp .ixBar i { display: block; height: 100%; background: var(--acc); }
+.ixGrp.ok .ixBar i { background: #157F55; }
+.ixGrp small { width: 52px; text-align: right; font-size: 11.5px; color: #6B6B6B; font-variant-numeric: tabular-nums; }
+.ixNote { font-size: 12px; color: #8C8C8C; }
+.ixPh { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; }
+.ixPh > * { position: relative; aspect-ratio: 4 / 3; border-radius: 10px; background: #E4DED3; overflow: hidden; display: block; }
+.ixPh img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ixPh > [data-l]::after { content: attr(data-l); position: absolute; left: 6px; bottom: 6px; max-width: calc(100% - 12px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; font-weight: 800; background: rgba(20, 20, 20, .75); color: #fff; border-radius: 6px; padding: 2px 6px; }
+.ixPh.ghost > * { background: #EFE9DC; }
+.ixPh .more { background: #141414; color: var(--acc-light); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; text-decoration: none; }
+.ixInstr { background: #FDF1DC; border: 1px solid #F5D9A6; border-radius: 12px; padding: 10px 12px; font-size: 13px; line-height: 1.45; white-space: pre-wrap; }
+.ixInstr b { display: block; font-size: 11px; font-weight: 800; letter-spacing: .05em; color: #9A5F00; margin-bottom: 3px; }
+.ixMapCard { position: relative; border-radius: 12px; overflow: hidden; }
+.ixMapCard .inLocMap { height: 180px; border: 0; border-radius: 12px; }
+.ixMapBtn { position: absolute; right: 8px; bottom: 8px; z-index: 500; height: 28px; font-size: 11.5px; }
+.ixCard .ixRow { display: flex; flex-direction: column; gap: 2px; padding: 4px 4px 0; border: 0; background: none; box-shadow: none; }
+.ixCard .ixRow b { font-size: 13px; }
+.ixCard .ixRow small { font-size: 12px; color: #6B6B6B; }
+.ixActs { display: flex; gap: 6px; flex-wrap: wrap; padding: 0 4px; }
+.ixWho { display: flex; gap: 10px; align-items: center; }
+.ixWho > span:last-child { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.ixWho b { font-size: 13.5px; }
+.ixWho small { font-size: 12px; color: #6B6B6B; }
+.ixWho small.warn { color: #7A5AA6; font-weight: 700; }
+.ixWho small.bad { color: #B3261E; font-weight: 700; }
+.ixAv { width: 40px; height: 40px; flex: none; border-radius: 50%; background: #C9B8A8; color: #141414; font-size: 13px; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+.ixKv { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; font-size: 13px; }
+.ixKv small { color: #6B6B6B; font-size: 12px; font-weight: 600; }
+.ixDoc { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid #EFE9DC; font-size: 13px; color: var(--ink); text-decoration: none; }
+.ixDoc:first-of-type { border-top: 0; }
+.ixDoc i { width: 30px; height: 36px; border-radius: 7px; background: #FBF8F2; border: 1px solid #E8DFCC; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 4px; box-sizing: border-box; font-size: 9px; font-weight: 800; color: var(--acc-text); font-style: normal; flex: none; }
+.ixDoc span { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.ixDoc b { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ixDoc small { font-size: 11.5px; color: #6B6B6B; }
+.ixHist { display: flex; gap: 10px; padding: 6px 0; font-size: 12.5px; line-height: 1.4; border-top: 1px solid #EFE9DC; }
+.ixHist:first-of-type { border-top: 0; }
+.ixHist small { color: #6B6B6B; white-space: nowrap; min-width: 64px; font-variant-numeric: tabular-nums; }
+.inDoc.noToc { display: block; }
+.inDoc.noToc .inPaper { max-width: none; }
+@media (max-width: 1100px) {
+  .ixBody { grid-template-columns: 1fr; }
+  .ixFacts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ixSteps { flex-wrap: wrap; gap: 10px; }
+  .ixStep { flex: 1 1 45%; }
+  .ixStep::after { display: none; }
+  .ixPh { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+/* the sheet inside the Fișa tab: the table of contents stays beside the paper even in the 8/12 column */
+.ixPanel .inDoc { flex-wrap: nowrap; gap: 16px; }
+.ixPanel .inToc { flex: 0 0 200px; max-width: 200px; }
+.ixPanel .inToc a { font-size: 12.5px; padding: 6px 8px; }
+.ixPanel .inPaper { flex: 1 1 0; min-width: 0; max-width: none; }
+.ixSide .ixHist { flex-direction: column; gap: 1px; }
+@media (max-width: 760px) { .ixPanel .inDoc { flex-wrap: wrap; } .ixPanel .inToc { flex: 1 1 100%; max-width: none; position: static; } }
