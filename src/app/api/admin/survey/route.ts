@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { api, err, json } from "@/lib/api";
 import { setSurveySettings, surveyCsv, surveyRows, surveySettings } from "@/lib/survey";
 
-/** Admin → Feedback → Chestionar: `?csv=1` downloads every answer of the active questionnaire. */
+/** Admin → Chestionar: `?csv=1` downloads every answer of the active questionnaire (or of `?id=`). */
 export async function GET(req: Request) {
   const a = await api("super");
   if ("res" in a) return a.res;

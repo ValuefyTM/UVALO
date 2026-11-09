@@ -14,7 +14,7 @@ const ICONS: Partial<Record<AdminKey, string>> = {
   solicitari: "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M19 8v6M22 11h-6",
 };
 
-export type AdminKey = "panou" | "solicitari" | "recomandari" | "tablou" | "utilizatori" | "firme" | "activitate" | "instrumente" | "feedback";
+export type AdminKey = "panou" | "solicitari" | "recomandari" | "tablou" | "utilizatori" | "firme" | "activitate" | "instrumente" | "feedback" | "chestionar";
 
 /** UVALO administration portal: its own menu, separate from the tools the valuers use. */
 export async function AdminShell(props: { c: Ctx; active: AdminKey; pending?: number; title: string; subtitle?: string; actions?: React.ReactNode; children: React.ReactNode }) {
@@ -25,7 +25,7 @@ export async function AdminShell(props: { c: Ctx; active: AdminKey; pending?: nu
   const fb = db ? (await db.prepare("SELECT COUNT(*) AS n FROM feedback WHERE status = 'nou'").first<{ n: number }>().catch(() => null))?.n ?? 0 : 0;
   const nav: [AdminKey, string, string][] = [
     ["panou", "Panou", "/admin"], ["solicitari", "Solicitări de cont", "/admin/solicitari"], ["recomandari", "Recomandări", "/admin/recomandari"], ["tablou", "Tablou ANEVAR", "/admin/tablou"],
-    ["utilizatori", "Utilizatori", "/admin/utilizatori"], ["firme", "Firme și abonamente", "/admin/firme"], ["activitate", "Activitate", "/admin/activitate"], ["instrumente", "Instrumente", "/admin/instrumente"], ["feedback", "Feedback", "/admin/feedback"],
+    ["utilizatori", "Utilizatori", "/admin/utilizatori"], ["firme", "Firme și abonamente", "/admin/firme"], ["activitate", "Activitate", "/admin/activitate"], ["instrumente", "Instrumente", "/admin/instrumente"], ["feedback", "Feedback", "/admin/feedback"], ["chestionar", "Chestionar", "/admin/chestionar"],
   ];
   return (
     <div className="shell">

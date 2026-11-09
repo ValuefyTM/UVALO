@@ -132,11 +132,11 @@ async function notifyAdmins(db: D1Database, c: Ctx, a: Record<string, unknown>) 
     await sendEmail({
       to: x.email,
       subject: `Chestionar completat · ${who} · nota ${a.nps ?? "—"}${a.call === "yes" ? " · vrea să fie sunat" : ""}`,
-      text: `${who} (${c.user.email}${c.org ? `, ${c.org.name}` : ""}) a completat chestionarul ${s.id}:\n\n${lines.map(([k, v]) => `${k}: ${v}`).join("\n")}\n\nToate răspunsurile: ${base}/admin/feedback/chestionar`,
+      text: `${who} (${c.user.email}${c.org ? `, ${c.org.name}` : ""}) a completat chestionarul ${s.id}:\n\n${lines.map(([k, v]) => `${k}: ${v}`).join("\n")}\n\nToate răspunsurile: ${base}/admin/chestionar`,
       html: layout({
         eyebrow: "UVALO · Chestionar", title: `${who} a completat chestionarul`,
         body: `<p style="margin:0 0 10px;font-size:13px;color:#6B6B6B">${esc(c.user.email)}${c.org ? ` · ${esc(c.org.name)}` : ""}</p><table role="presentation" cellpadding="0" cellspacing="0" style="border-collapse:collapse">${html}</table>`,
-        button: { label: "Vezi toate răspunsurile →", url: `${base}/admin/feedback/chestionar` },
+        button: { label: "Vezi toate răspunsurile →", url: `${base}/admin/chestionar` },
         foot: "Primești acest email ca administrator UVALO.",
       }),
     }).catch(() => false);
@@ -145,7 +145,7 @@ async function notifyAdmins(db: D1Database, c: Ctx, a: Record<string, unknown>) 
 
 export type SurveyRow = { id: number; user_id: string; who: string; email: string; org: string | null; actions: number; step: number; done_at: string | null; created_at: string; updated_at: string; answers: Record<string, unknown> };
 
-/** Admin → Feedback → Chestionar: every answer of the active questionnaire (or of `id`). */
+/** Admin → Chestionar: every answer of the active questionnaire (or of `id`). */
 export async function surveyRows(db: D1Database, id: string): Promise<SurveyRow[]> {
   const { results } = await db.prepare(`SELECT s.id, s.user_id, COALESCE(NULLIF(u.name, ''), u.email) AS who, u.email, o.name AS org, s.actions, s.step, s.done_at, s.created_at, s.updated_at, s.answers
     FROM survey_answers s JOIN users u ON u.id = s.user_id LEFT JOIN orgs o ON o.id = s.org_id WHERE s.survey_id = ? ORDER BY s.updated_at DESC`).bind(id)
@@ -183,4 +183,69 @@ export function surveyCsv(rows: SurveyRow[], wants: string[]) {
   const head = ["Data", "Nume", "Email", "Firmă", "Acțiuni", "Completat", ...surveyLines({}, wants).map(([k]) => k)];
   const body = rows.map((r) => [r.updated_at, r.who, r.email, r.org ?? "", r.actions, r.done_at ? "da" : `pasul ${r.step}`, ...surveyLines(r.answers, wants).map(([, v]) => v)].map(q).join(";"));
   return "﻿" + [head.map(q).join(";"), ...body].join("\n");
+}
+
+/* ---------- Admin → Chestionar: every question, centralised ---------- */
+
+export type Person = { user_id: string; who: string; org: string | null; nps: number | null };
+export type DistItem = { k: string; label: string; n: number; who: Person[] };
+export type Dist = { n: number; items: DistItem[] };
+
+const person = (r: SurveyRow): Person => ({ user_id: r.user_id, who: r.who, org: r.org, nps: typeof r.answers.nps === "number" ? r.answers.nps : null });
+const has = (v: unknown) => v !== undefined && v !== null && v !== "" && !(Array.isArray(v) && !v.length);
+
+/**
+ * The per-question figures of a questionnaire: who answered each question (the partial answers count too, for the questions they reached),
+ * the distribution of every option with the people behind it, the NPS histogram, each tool's stars, the wants by position, the free texts,
+ * the people who want to be called.
+ */
+export function surveyDetail(rows: SurveyRow[], wants: string[]) {
+  const withKey = (key: string) => rows.filter((r) => has(r.answers[key]));
+  const dist = (key: string, labels: Record<string, string>): Dist => {
+    const base = withKey(key);
+    return { n: base.length, items: Object.keys(labels).map((k) => { const rs = base.filter((r) => r.answers[key] === k); return { k, label: labels[k], n: rs.length, who: rs.map(person) }; }) };
+  };
+  const distArr = (key: string, labels: Record<string, string>): Dist => {
+    const base = withKey(key);
+    return { n: base.length, items: Object.keys(labels).map((k) => { const rs = base.filter((r) => Array.isArray(r.answers[key]) && (r.answers[key] as unknown[]).includes(k)); return { k, label: labels[k], n: rs.length, who: rs.map(person) }; }) };
+  };
+  // step 1: the note 0–10 and the reason
+  const npsRows = rows.filter((r) => typeof r.answers.nps === "number");
+  const hist = Array.from({ length: 11 }, (_, i) => ({ k: i, n: npsRows.filter((r) => r.answers.nps === i).length, who: npsRows.filter((r) => r.answers.nps === i).map(person) }));
+  const prom = npsRows.filter((r) => (r.answers.nps as number) >= 9).length, det = npsRows.filter((r) => (r.answers.nps as number) <= 6).length;
+  const why = rows.filter((r) => has(r.answers.why)).map((r) => ({ ...person(r), text: String(r.answers.why), at: r.updated_at }))
+    .sort((a, b) => (a.nps ?? 11) - (b.nps ?? 11));
+  // step 2: the tools, each with "not used" and the stars 1–5
+  const toolRows = rows.filter((r) => r.answers.tools && typeof r.answers.tools === "object");
+  const tools = SURVEY_TOOLS.map((t) => {
+    const vals = toolRows.map((r) => ({ r, v: ((r.answers.tools ?? {}) as Record<string, unknown>)[t.key] }));
+    const rated = vals.filter((x): x is { r: SurveyRow; v: number } => typeof x.v === "number");
+    const stars = [1, 2, 3, 4, 5].map((s) => ({ k: String(s), label: `${s} ${s === 1 ? "stea" : "stele"}`, n: rated.filter((x) => x.v === s).length, who: rated.filter((x) => x.v === s).map((x) => person(x.r)) }));
+    const none = vals.filter((x) => x.v === "none");
+    return { ...t, asked: vals.filter((x) => x.v !== undefined).length, rated: rated.length, none: none.length, avg: rated.length ? rated.reduce((a, x) => a + x.v, 0) / rated.length : null, stars,
+      low: rated.filter((x) => x.v <= 2).map((x) => ({ ...person(x.r), v: x.v, text: String(x.r.answers.problems_text ?? "") })) };
+  });
+  // step 3: the wants, by the position they were chosen on (1st = 3 p, 2nd = 2 p, 3rd = 1 p)
+  const wantRows = rows.filter((r) => Array.isArray(r.answers.wants) && (r.answers.wants as unknown[]).length);
+  const wantsD = wants.map((w, i) => {
+    const pos = [0, 0, 0];
+    const who: Person[] = [];
+    for (const r of wantRows) { const a = (r.answers.wants as unknown[]).indexOf(i); if (a >= 0 && a < 3) { pos[a]++; who.push(person(r)); } }
+    return { i, label: w.split(" · ")[0], detail: w.split(" · ").slice(1).join(" · "), pts: pos[0] * 3 + pos[1] * 2 + pos[2], n: pos[0] + pos[1] + pos[2], pos, who };
+  }).sort((a, b) => b.pts - a.pts || b.n - a.n);
+  const wantsOther = rows.filter((r) => has(r.answers.wants_other)).map((r) => ({ ...person(r), text: String(r.answers.wants_other) }));
+  // step 4
+  const problemsText = rows.filter((r) => has(r.answers.problems_text)).map((r) => ({ ...person(r), text: String(r.answers.problems_text), kind: lab(L.problems, r.answers.problems) }));
+  // step 5
+  const calls = rows.filter((r) => r.answers.call === "yes").map((r) => ({ ...person(r), phone: String(r.answers.phone ?? ""), email: r.email, price: lab(L.price, r.answers.price), at: r.updated_at }));
+  // the funnel: how far people got
+  const steps = Array.from({ length: SURVEY_STEPS + 1 }, (_, i) => ({ step: i, n: rows.filter((r) => (r.done_at ? SURVEY_STEPS : r.step) >= i).length }));
+  return {
+    n: rows.length, done: rows.filter((r) => r.done_at).length, steps,
+    nps: { n: npsRows.length, hist, prom, det, pass: npsRows.length - prom - det, score: npsRows.length ? Math.round(((prom - det) / npsRows.length) * 100) : null,
+      avg: npsRows.length ? npsRows.reduce((a, r) => a + (r.answers.nps as number), 0) / npsRows.length : null },
+    why, tools, toolsN: toolRows.length, wants: wantsD, wantsN: wantRows.length, wantsOther,
+    problems: dist("problems", L.problems), problemsText, freq: dist("freq", L.freq), device: dist("device", L.device), back: dist("back", L.back),
+    price: dist("price", L.price), model: dist("model", L.model), extra: distArr("extra", L.extra), calls,
+  };
 }

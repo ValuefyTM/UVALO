@@ -320,12 +320,19 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   dă `survey`, iar `MobileApp` arată `Survey full` pe tot ecranul (doar online) înainte de orice altceva. Stiluri `.sv*`; `.btnPri` = butonul auriu.
 - **La completare** (pasul 5) super-adminii primesc email „Chestionar completat · nume · nota N (· vrea să fie sunat)” cu toate răspunsurile
   (`notifyAdmins`, `surveyLines`). Evenimente `home`/`survey_step`, `survey_done`.
-- **Admin → Feedback → „Chestionarul de feedback”** (`/admin/feedback/chestionar`, `SurveyAdmin`, API `/api/admin/survey`): setările
-  (`app_settings` `survey` = `{id, on, min_actions, stop_n, stop_at, wants, started_at}`; `on` implicit oprit → se pornește din admin),
-  **„+ Chestionar nou”** = id nou (`YYYY-MM`, apoi data) → toți eligibilii îl primesc din nou, răspunsurile vechi rămân la id-ul vechi (filele cu
-  chestionarele anterioare, `?id=`); cifrele (`surveyStats`: complete / începute / doar deschise, NPS cu promotori / detractori, nota medie, câți vor
-  să fie sunați, prețul cel mai ales), dorințele ponderate 3-2-1, nota pe instrument, distribuțiile (preț, model, extra, probleme, frecvență,
-  dispozitiv, motivul revenirii), tabelul răspunsurilor (motivul + „Toate răspunsurile”), „Exportă CSV” (`?csv=1`, `surveyCsv`, separator `;`).
+- **Admin → „Chestionar”** (secțiune proprie în meniul admin, 9 nov 2026; `/admin/feedback/chestionar` redirecționează; API `/api/admin/survey`,
+  stiluri `.sq*`), cu sub-navigația `SurveyNav` (Statistici / Răspunsurile / Setări) și chip-urile chestionarelor (activul + cele anterioare, `?id=`):
+  **`/admin/chestionar`** = statisticile, **întrebare cu întrebare**, din `surveyDetail()` în `survey.ts` (intră și răspunsurile parțiale, la întrebările
+  la care au ajuns; fiecare cifră are „cine” = persoanele din spate, cu nota lor, link spre Activitate): KPI-uri (complete + rata de finalizare, NPS cu
+  promotori / pasivi / detractori, nota medie 0–10, media stelelor instrumentelor, câți vor să fie sunați, prețul cel mai ales), **parcursul** (câți au
+  ajuns la fiecare pas), histograma notelor 0–10 + împărțirea detractori / pasivi / promotori, motivele ordonate de la nota mică la cea mare,
+  instrumentele cu media, numărul de note, „nefolosit” și distribuția stelelor 1–5 (cu cine a dat sub 3), dorințele ponderate 3-2-1 cu de câte ori
+  pe locul 1 / 2 / 3 + „Altceva”, problemele + textele, frecvența, dispozitivul, motivul revenirii, prețul, modelul, „ar plăti separat”, tabelul celor
+  care vor să fie sunați (telefon, notă, preț); **`/admin/chestionar/raspunsuri`** = tabelul persoanelor (motivul + „Toate răspunsurile”);
+  **`/admin/chestionar/setari`** = `SurveyAdmin`: setările (`app_settings` `survey` = `{id, on, min_actions, stop_n, stop_at, wants, started_at}`;
+  `on` implicit oprit → se pornește din admin), **„+ Chestionar nou”** = id nou (`YYYY-MM`, apoi data) → toți eligibilii îl primesc din nou,
+  răspunsurile vechi rămân la id-ul vechi. „Exportă CSV” pe fiecare pagină (`?csv=1[&id=]`, `surveyCsv`, separator `;`). `surveyStats` rămâne pentru
+  cifrele vechi. Emailul de completare trimite la `/admin/chestionar`.
 
 ## Cine e online (Admin → Panou)
 

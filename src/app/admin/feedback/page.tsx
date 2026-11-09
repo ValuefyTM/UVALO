@@ -27,7 +27,7 @@ export default async function Feedback({ searchParams }: { searchParams: Promise
     <AdminShell c={c} active="feedback" pending={pending} title="Feedback" subtitle={`${counts?.nou ?? 0} noi · ${counts?.open ?? 0} de rezolvat · ${counts?.n ?? 0} în total`}>
       <div className="actions" style={{ justifyContent: "flex-start", flexWrap: "wrap" }}>
         {FILTERS.map(([v, l]) => <a key={v} className={`btn btnSm ${s === v ? "btnNavy" : "btnGhost"}`} href={v ? `/admin/feedback?s=${v}` : "/admin/feedback"}>{l}</a>)}
-        <a className="btn btnSm btnGhost" href="/admin/feedback/chestionar" style={{ marginLeft: "auto" }}>Chestionarul de feedback →</a>
+        <a className="btn btnSm btnGhost" href="/admin/chestionar" style={{ marginLeft: "auto" }}>Chestionarul de feedback →</a>
       </div>
       {results.length === 0 ? <section className="card"><p className="hint">Niciun mesaj aici.</p></section> : (
         <section className="card flush">

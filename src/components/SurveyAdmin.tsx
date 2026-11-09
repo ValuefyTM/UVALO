@@ -1,6 +1,6 @@
 "use client";
 
-// Admin → Feedback → Chestionar: the settings of the active questionnaire (on / off, threshold, stop, the options of step 3)
+// Admin → Chestionar → Setări: the settings of the active questionnaire (on / off, threshold, stop, the options of step 3)
 // and „Chestionar nou” (a new id: everyone eligible gets it again).
 import { useState } from "react";
 import type { SurveySettings } from "@/lib/survey-shared";
