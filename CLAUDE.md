@@ -70,6 +70,11 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   sau CF / plan citit cu AI (`/api/amplasament/plan`, folosește `_place.swap`; doar cu modulul `amplasament`, `window.UVALO_DOC.ai` injectat
   de rută) → conturul pe aceeași hartă (`docL`) + cardul din `#out` (suprafață, GPS, „Analiză amplasament” prin `uvalo-doc`). Evenimente
   `no_plan_county`, `stereo_locate`.
+  **Export CAD** (10 nov 2026): în fișa parcelei, lângă KML / GeoJSON, butonul **„DXF (CAD)”** (`dxf(p)` în `index.html`): fișier DXF AutoCAD R12
+  (`AC1009`, text; se deschide în AutoCAD / BricsCAD / ZWCAD și se salvează ca DWG de acolo — DWG e format binar proprietar, nu se scrie în browser):
+  conturul parcelei ca POLYLINE închisă pe stratul `PARCELA`, construcțiile pe `CONSTRUCTII` (cu eticheta C1 · mp), punctele numerotate pe `PUNCTE`
+  (POINT + TEXT), „Nr. cad. …” și „S = … mp - UAT” pe `TEXT`, la centrul parcelei. Coordonate Stereo 70 în metri: în CAD X = est (Y Stereo), Y = nord
+  (X Stereo); `p.s[k] = [Y(E), X(N)]`. Eveniment `localizare`/`export` cu `{fmt: 'dxf'}`.
   Pe telefon: harta 72svh, butonul ⤢ (`#full`) = hartă pe tot ecranul (`body.mapFull`), pornită automat de „Locația mea” și oprită la
   „×”; acolo, parcela atinsă dă butonul „Vezi fișa ↓” (`toOut`). Bara GPS e compactă: stare + ×, o linie de detalii, acțiuni pe un rând.
   **Straturi Timișoara** (în panoul Straturi, oprite implicit): „Cartiere Timișoara” (contur alb punctat + nume, ascunse sub zoom 13)

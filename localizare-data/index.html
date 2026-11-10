@@ -1086,7 +1086,7 @@ function show(id,idx,fromMap){
   const bs=p.bs||[], tot=bs.reduce((s,x)=>s+x.a,0);
   h+='<div class="sec"><span class="h2">Construcții · '+bs.length+'</span>'+(bs.length?'<div class="blist">'+bs.map(b=>'<button type="button" data-b="'+b.k+'"><i></i><b>'+esc(b.c)+'</b><span>'+fmt(b.a,2)+' mp la sol →</span></button>').join('')+'</div><p class="muted">Total la sol '+fmt(tot,2)+' mp · POT '+fmt(100*tot/p.a,1)+'%. Atinge o construcție pentru coordonate și laturi.</p>':'<p class="muted">Nicio construcție în planul cadastral pe această parcelă.</p>')+'</div>';
   h+=coordSection(p,p.a);
-  h+=linksGrid(p,'<button type="button" id="kml">KML</button><button type="button" id="gj">GeoJSON</button>');
+  h+=linksGrid(p,'<button type="button" id="kml">KML</button><button type="button" id="gj">GeoJSON</button><button type="button" id="dxf" title="Conturul parcelei și construcțiile în Stereo 70, pentru AutoCAD / BricsCAD / ZWCAD (se salvează ca DWG din program)">DXF (CAD)</button>');
   if(p.t&&p.t.length)h+='<div class="sec"><span class="h2">Nr. topo (orientativ) · '+p.t.length+'</span><div class="tchips">'+p.t.map(x=>'<span>'+esc(x)+'</span>').join('')+'</div><p class="muted">Numere scrise în desenele planului în interiorul parcelei. Pot fi și numere vechi (înainte de dezmembrări). Numărul corect e cel din extrasul CF.</p></div>';
   h+='<div class="sec"><span class="h2">Vecini · '+p.n.length+'</span>'+(p.n.length?'<div class="nb">'+p.n.map(n=>'<button type="button" class="chip" data-id="'+esc(n)+'">'+esc(n)+'</button>').join('')+'</div>':'<p class="muted">Niciun imobil înscris lipit de contur (drum, parcelă neînscrisă sau limită de UAT).</p>')+'</div>';
   out.innerHTML=h;
@@ -1099,6 +1099,7 @@ function show(id,idx,fromMap){
   if($('back'))$('back').onclick=()=>renderNear();
   $('kml').onclick=()=>dl(p.id+'_'+U.key+'.kml','application/vnd.google-earth.kml+xml',kml(p,'Nr. cad. '+p.id+' – '+U.name+' – '+p.a+' mp'));
   $('gj').onclick=()=>dl(p.id+'_'+U.key+'.geojson','application/geo+json',JSON.stringify(gjson(p)));
+  $('dxf').onclick=()=>{dl(p.id+'_'+U.key+'.dxf','application/dxf',dxf(p));try{window.vfTrack&&vfTrack('export',p.id,{fmt:'dxf',uat:U.name})}catch(e){}};
   history.replaceState(null,'','#'+U.key+'-'+p.id);
   refreshLabels();
   toOut(fromMap,'nr. cad. '+p.id);
@@ -1171,6 +1172,26 @@ function kml(p,name){
   const r=p.w.concat([p.w[0]]).map(w=>w[1]+','+w[0]+',0').join(' ');
   const pts=p.w.map((w,k)=>'<Placemark><name>'+(k+1)+'</name><description>X='+p.s[k][1].toFixed(3)+' Y='+p.s[k][0].toFixed(3)+'</description><Point><coordinates>'+w[1]+','+w[0]+',0</coordinates></Point></Placemark>').join('');
   return '<?xml version="1.0" encoding="UTF-8"?>\n<kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>'+esc(name)+'</name><Style id="p"><LineStyle><color>ff3ba9f2</color><width>3</width></LineStyle><PolyStyle><color>403ba9f2</color></PolyStyle></Style><Placemark><name>'+esc(name)+'</name><styleUrl>#p</styleUrl><Polygon><outerBoundaryIs><LinearRing><coordinates>'+r+'</coordinates></LinearRing></outerBoundaryIs></Polygon></Placemark>'+pts+'</Document></kml>';
+}
+/* DXF (AutoCAD R12, deschis de orice program CAD; „Salvează ca DWG” din program): conturul parcelei ca polilinie închisă pe stratul
+   PARCELA, construcțiile pe CONSTRUCTII, numerele punctelor pe PUNCTE, eticheta parcelei pe TEXT. Coordonate Stereo 70 în metri:
+   în CAD X = est (Y Stereo), Y = nord (X Stereo). */
+function dxf(p){
+  const L=[], w=(c,v)=>{L.push(String(c),String(v))}, n3=v=>v.toFixed(3);
+  const poly=(pts,layer)=>{w(0,'POLYLINE');w(8,layer);w(66,1);w(70,1);w(10,0);w(20,0);w(30,0);
+    pts.forEach(q=>{w(0,'VERTEX');w(8,layer);w(10,n3(q[0]));w(20,n3(q[1]));w(30,0)});w(0,'SEQEND');w(8,layer)};
+  const text=(x,y,h,t,layer,mid)=>{w(0,'TEXT');w(8,layer);w(10,n3(x));w(20,n3(y));w(30,0);w(40,h);w(1,t);if(mid){w(72,1);w(73,2);w(11,n3(x));w(21,n3(y));w(31,0)}};
+  const layers=[['PARCELA',3],['CONSTRUCTII',1],['PUNCTE',7],['TEXT',2]];
+  w(0,'SECTION');w(2,'HEADER');w(9,'$ACADVER');w(1,'AC1009');w(9,'$INSUNITS');w(70,6);w(0,'ENDSEC');
+  w(0,'SECTION');w(2,'TABLES');w(0,'TABLE');w(2,'LAYER');w(70,layers.length);
+  layers.forEach(([nm,col])=>{w(0,'LAYER');w(2,nm);w(70,0);w(62,col);w(6,'CONTINUOUS')});w(0,'ENDTAB');w(0,'ENDSEC');
+  w(0,'SECTION');w(2,'ENTITIES');
+  poly(p.s,'PARCELA');
+  p.s.forEach((q,k)=>{w(0,'POINT');w(8,'PUNCTE');w(10,n3(q[0]));w(20,n3(q[1]));w(30,0);text(q[0]+0.4,q[1]+0.4,0.8,String(k+1),'PUNCTE')});
+  const c=stCenter(p); text(c[1],c[0],1.2,'Nr. cad. '+p.id,'TEXT',true); text(c[1],c[0]-1.8,0.9,'S = '+fmt(p.a,2)+' mp - '+U.name,'TEXT',true);
+  (p.bs||[]).forEach(b=>{if(!b.s||b.s.length<3)return;poly(b.s,'CONSTRUCTII');const bc=stCenter(b);text(bc[1],bc[0],0.9,(b.c||'C')+' - '+fmt(b.a,1)+' mp','CONSTRUCTII',true)});
+  w(0,'ENDSEC');w(0,'EOF');
+  return L.join('\r\n')+'\r\n';
 }
 function dl(name,type,data){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([data],{type}));a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),3000)}
 
