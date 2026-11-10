@@ -6,12 +6,12 @@ import { getDb } from "@/lib/db";
 import { referralByToken } from "@/lib/referrals";
 
 const OG_TITLE = "Cont gratuit UVALO pentru evaluatori";
-const OG_DESC = "Localizator cadastral pentru județul Timiș: orice imobil după număr cadastral, topo sau adresă, cu vecinii, construcțiile și coordonatele Stereo 70. Fișa în PDF și Word.";
+const OG_DESC = "Colaborări între evaluatori ANEVAR și inspecții de pe telefon: găsești un coleg pentru inspecție în câteva minute, pregătești inspecția pe web, fișa se completează pe teren. Plus localizatorul cadastral și anexele în Word.";
 export const metadata: Metadata = {
   title: "Cont gratuit pentru evaluatori | UVALO",
   description: OG_DESC,
   openGraph: { type: "website", siteName: "UVALO", locale: "ro_RO", url: "/solicita-cont", title: OG_TITLE, description: OG_DESC,
-    images: [{ url: "/og-uvalo.jpg", width: 1200, height: 630, alt: "UVALO: localizator cadastral pentru evaluatori" }] },
+    images: [{ url: "/og-uvalo.jpg", width: 1200, height: 630, alt: "UVALO: colaborări și inspecții pentru evaluatori" }] },
   twitter: { card: "summary_large_image", title: OG_TITLE, description: OG_DESC, images: ["/og-uvalo.jpg"] },
 };
 export const dynamic = "force-dynamic";

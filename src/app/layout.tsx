@@ -3,16 +3,16 @@ import "./globals.css";
 
 // The preview of a shared link (WhatsApp, Facebook, LinkedIn…): the same image everywhere, so a link that is redirected
 // (e.g. to /mentenanta) still shows it. public/og-uvalo.jpg, 1200×630.
-const OG_IMAGE = { url: "/og-uvalo.jpg", width: 1200, height: 630, alt: "UVALO: localizator cadastral pentru evaluatori" };
+const OG_IMAGE = { url: "/og-uvalo.jpg", width: 1200, height: 630, alt: "UVALO: colaborări și inspecții pentru evaluatori" };
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.APP_URL || "https://app.uvalo.ro"),
   title: "UVALO",
-  description: "Instrumente pentru evaluatori: localizator cadastral și altele.",
+  description: "Colaborări între evaluatori ANEVAR și inspecții de pe telefon, plus localizatorul cadastral, analiza amplasamentului și anexele în Word.",
   robots: { index: false, follow: false },
   openGraph: {
     type: "website", siteName: "UVALO", locale: "ro_RO",
     title: "UVALO · Platforma evaluatorilor autorizați din România",
-    description: "Localizator cadastral gratuit: orice imobil din planurile ANCPI, după număr cadastral, topo sau adresă. Fișa în PDF și Word.",
+    description: "Găsești un coleg pentru inspecție în câteva minute. Pregătești inspecția pe web, fișa se completează pe telefon, la fața locului. Cont gratuit.",
     images: [OG_IMAGE],
   },
   twitter: { card: "summary_large_image", images: [OG_IMAGE.url] },
