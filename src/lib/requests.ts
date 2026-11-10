@@ -1,11 +1,10 @@
-// Server-only: ANEVAR list lookups and account requests (ask → VALUEFY approves → invitation by email).
+// Server-only: ANEVAR list lookups and account requests (ask → UVALO approves → invitation by email).
 import { headers } from "next/headers";
 import { now, uuid } from "./db";
 import { audit, findUser, invite, type User } from "./auth";
 import { cleanPhone, normEmail, validEmail } from "./crypto";
 import { esc, layout, sendEmail } from "./email";
 import { origin } from "./site";
-import { supportEmail } from "./config";
 import { seatsUsed } from "./access";
 import { getOrg } from "./orgs";
 import { referralByToken } from "./referrals";
@@ -45,7 +44,7 @@ export async function lookup(db: D1Database, legitRaw: unknown): Promise<Lookup>
   const legit = cleanLegit(legitRaw);
   const m = legit ? await memberByLegit(db, legit) : null;
   if (!m) return { status: "not_found" };
-  const u = await db.prepare("SELECT id FROM users WHERE anevar_no = ? AND status <> 'disabled'").bind(legit).first();
+  const u = await db.prepare("SELECT id FROM users WHERE anevar_no = ? AND status NOT IN ('disabled', 'closed')").bind(legit).first();
   if (u) return { status: "has_account", name: m.name };
   const p = await db.prepare("SELECT id FROM account_requests WHERE legit = ? AND status = 'pending'").bind(legit).first();
   if (p) return { status: "pending", name: m.name };
@@ -65,15 +64,16 @@ export async function createRequest(db: D1Database, b: Record<string, unknown>) 
   const phone = cleanPhone(b.phone);
   if (!phone) return { ok: false as const, error: "Completează un număr de telefon valid (ex. 0722 123 456)." };
   if (b.confirm !== true) return { ok: false as const, error: `Confirmă că ești ${l.name}.` };
+  if (b.terms !== true) return { ok: false as const, error: "Pentru a continua, acceptă Termenii și condițiile și Politica de confidențialitate." };
   const taken = await findUser(db, email);
-  if (taken && taken.status !== "disabled") return { ok: false as const, error: "Adresa de email are deja cont. Intră cu ea sau folosește altă adresă." };
+  if (taken && taken.status !== "disabled" && taken.status !== "closed") return { ok: false as const, error: "Adresa de email are deja cont. Intră cu ea sau folosește altă adresă." };
   const { ip, ua } = await ipUa();
   const id = uuid();
   const legit = cleanLegit(b.legit);
   // Came from a colleague's recommendation (link in the email)?
   const ref = await referralByToken(db, typeof b.r === "string" ? b.r : null);
-  await db.prepare("INSERT INTO account_requests (id, legit, name, email, phone, company, message, ip, user_agent, referral_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
-    .bind(id, legit, l.name, email, phone, s("company") || null, s("message", 1000) || null, ip, ua, ref?.id ?? null).run();
+  await db.prepare("INSERT INTO account_requests (id, legit, name, email, phone, company, message, ip, user_agent, referral_id, terms_at, newsletter) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+    .bind(id, legit, l.name, email, phone, s("company") || null, s("message", 1000) || null, ip, ua, ref?.id ?? null, now(), b.newsletter === true ? 1 : 0).run();
   await db.prepare("INSERT INTO events (module, action, target, meta) VALUES ('public', 'request', ?, ?)").bind(legit, JSON.stringify({ email })).run();
 
   const base = await origin();
@@ -87,7 +87,7 @@ export async function createRequest(db: D1Database, b: Record<string, unknown>) 
       foot: "Dacă nu ai cerut tu contul, ignoră acest email.",
     }),
   });
-  // Tell the VALUEFY administrators.
+  // Tell the UVALO administrators.
   const { results: admins } = await db.prepare("SELECT email FROM users WHERE is_superadmin = 1 AND status = 'active'").all<{ email: string }>();
   for (const a of admins) {
     await sendEmail({
@@ -144,7 +144,7 @@ export async function approve(db: D1Database, by: User, id: string, b: Record<st
       .bind(orgId, r.company?.trim() || r.name, plan, until, r.email, by.id, `Cont individual, din solicitarea ${r.legit}`).run();
     await audit(db, by.id, "org.create", "org", orgId, `${r.name} · ${plan} · cont individual`);
   }
-  const inv = await invite(db, by, orgId, r.email, b.org ? "member" : "owner", r.name);
+  const inv = await invite(db, by, orgId, r.email, b.org ? "member" : "owner", m?.name ?? r.name, true);
   await db.batch([
     db.prepare("UPDATE users SET name = ?, anevar_no = ?, county = ?, specs = ?, phone = COALESCE(phone, ?) WHERE id = ?")
       .bind(m?.name ?? r.name, r.legit, m?.county ?? null, m?.specs ?? null, r.phone, inv.userId),
@@ -164,10 +164,10 @@ export async function reject(db: D1Database, by: User, id: string, note: string,
     await sendEmail({
       to: r.email,
       subject: "Solicitarea ta de cont UVALO",
-      text: `Bună ziua, ${r.name}!\nDeocamdată nu putem activa contul solicitat în UVALO.${note ? `\n${note}` : ""}\nPentru detalii, scrie-ne la ${supportEmail()}.`,
+      text: `Bună ziua, ${r.name}!\nDeocamdată nu putem activa contul solicitat în UVALO.${note ? `\n${note}` : ""}\nPentru detalii, scrie-ne la office@uvalo.ro.`,
       html: layout({
         eyebrow: "UVALO", title: `Bună ziua, ${r.name}!`,
-        body: `<p style="margin:0 0 10px;font-size:15px;line-height:1.65;color:#4A4A4A">Deocamdată nu putem activa contul solicitat în UVALO.</p>${note ? `<p style="margin:0 0 10px;font-size:15px;line-height:1.65;color:#4A4A4A">${esc(note)}</p>` : ""}<p style="margin:0;font-size:15px;line-height:1.65;color:#4A4A4A">Pentru detalii, scrie-ne la ${supportEmail()}.</p>`,
+        body: `<p style="margin:0 0 10px;font-size:15px;line-height:1.65;color:#4A4A4A">Deocamdată nu putem activa contul solicitat în UVALO.</p>${note ? `<p style="margin:0 0 10px;font-size:15px;line-height:1.65;color:#4A4A4A">${esc(note)}</p>` : ""}<p style="margin:0;font-size:15px;line-height:1.65;color:#4A4A4A">Pentru detalii, scrie-ne la office@uvalo.ro.</p>`,
         foot: "UVALO · platformă pentru evaluatori",
       }),
     });

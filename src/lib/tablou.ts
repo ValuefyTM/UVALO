@@ -1,14 +1,17 @@
 // Server-only: the ANEVAR list in the administration, with accounts and activity (who signs in, who never did).
-export type TablouFilter = { judet?: string; spec?: string; cont?: string; q?: string; vechi?: string; sort?: string; page?: string };
+export type TablouFilter = { judet?: string; spec?: string; cont?: string; contact?: string; q?: string; vechi?: string; sort?: string; page?: string; grup?: string };
 export type TablouRow = {
   legit: string; name: string; county: string | null; specs: string | null; in_current: number; tablou_date: string | null;
+  pub_address: string | null; pub_phone: string | null; pub_fax: string | null; pub_email: string | null; pub_website: string | null; contact_source: string | null; contact_date: string | null;
   user_id: string | null; user_status: string | null; email: string | null; last_login_at: string | null; last_seen_at: string | null; events_30: number; request: string | null;
 };
 
 export const CONT_FILTERS: [string, string][] = [
   ["", "Toți membrii"], ["cu", "Cu cont activ"], ["activi", "Activi în ultimele 30 de zile"], ["inactivi", "Cu cont, inactivi 30 de zile"],
-  ["niciodata", "Cu cont, neautentificați niciodată"], ["invitati", "Invitați (cont neactivat)"], ["solicitari", "Solicitare în așteptare"], ["fara", "Fără cont"],
+  ["niciodata", "Cu cont, neautentificați niciodată"], ["invitati", "Invitați (cont neactivat)"], ["renuntat", "Au renunțat (cont închis)"], ["solicitari", "Solicitare în așteptare"], ["fara", "Fără cont"],
 ];
+// Public contact details (anevar.ro): who has published some, or an email / a phone in particular.
+export const CONTACT_FILTERS: [string, string][] = [["", "Oricare"], ["da", "Cu date de contact publice"], ["email", "Cu email public"], ["tel", "Cu telefon public"], ["nu", "Fără date de contact"]];
 export const SPECS = ["EPI", "EBM", "EI", "EIF", "VE-EPI", "VE-EBM", "VE-EI", "VE-EIF"];
 export const PAGE_SIZE = 100;
 
@@ -24,6 +27,12 @@ function where(f: TablouFilter, withCounty = true) {
     if (/^\d+$/.test(q)) { w.push("m.legit LIKE ?"); p.push(`${q}%`); }
     else { w.push("m.name LIKE ?"); p.push(`%${q.replace(/[%_]/g, "")}%`); }
   }
+  switch (f.contact) {
+    case "da": w.push("m.contact_date IS NOT NULL"); break;
+    case "email": w.push("m.pub_email IS NOT NULL"); break;
+    case "tel": w.push("m.pub_phone IS NOT NULL"); break;
+    case "nu": w.push("m.contact_date IS NULL"); break;
+  }
   const s30 = since30();
   switch (f.cont) {
     case "cu": w.push("u.status = 'active'"); break;
@@ -31,6 +40,7 @@ function where(f: TablouFilter, withCounty = true) {
     case "inactivi": w.push("u.status = 'active' AND (u.last_seen_at IS NULL OR u.last_seen_at <= ?)"); p.push(s30); break;
     case "niciodata": w.push("u.status = 'active' AND u.last_login_at IS NULL"); break;
     case "invitati": w.push("u.status = 'invited'"); break;
+    case "renuntat": w.push("u.status = 'closed'"); break;
     case "solicitari": w.push("EXISTS (SELECT 1 FROM account_requests r WHERE r.legit = m.legit AND r.status = 'pending')"); break;
     case "fara": w.push("u.id IS NULL"); break;
   }
@@ -38,15 +48,18 @@ function where(f: TablouFilter, withCounty = true) {
 }
 
 // One account per card number (the most recent one that is not disabled, else any).
-const FROM = `FROM anevar_members m LEFT JOIN users u ON u.id = (SELECT x.id FROM users x WHERE x.anevar_no = m.legit ORDER BY x.status = 'disabled', x.created_at DESC LIMIT 1)`;
+const FROM = `FROM anevar_members m LEFT JOIN users u ON u.id = (SELECT x.id FROM users x WHERE x.anevar_no = m.legit ORDER BY x.status IN ('disabled', 'closed'), x.created_at DESC LIMIT 1)`;
 
 export async function tablou(db: D1Database, f: TablouFilter, all = false) {
   const { sql, p } = where(f);
-  const order = f.sort === "judet" ? "m.county, m.name" : f.sort === "login" ? "u.last_seen_at IS NULL, u.last_seen_at DESC, m.name" : f.sort === "legit" ? "CAST(m.legit AS INTEGER)" : "m.name";
+  // grouped by county: counties in order, the chosen sort inside each county
+  const inner = f.sort === "login" ? "u.last_seen_at IS NULL, u.last_seen_at DESC, m.name" : f.sort === "legit" ? "CAST(m.legit AS INTEGER)" : "m.name";
+  const order = f.grup === "judet" ? `m.county IS NULL, m.county, ${inner}` : f.sort === "judet" ? "m.county, m.name" : f.sort === "login" ? "u.last_seen_at IS NULL, u.last_seen_at DESC, m.name" : f.sort === "legit" ? "CAST(m.legit AS INTEGER)" : "m.name";
   const page = Math.max(1, Number(f.page) || 1);
   const [total, rows] = await Promise.all([
     db.prepare(`SELECT COUNT(*) AS n ${FROM} ${sql}`).bind(...p).first<{ n: number }>(),
-    db.prepare(`SELECT m.legit, m.name, m.county, m.specs, m.in_current, m.tablou_date, u.id AS user_id, u.status AS user_status, u.email, u.last_login_at, u.last_seen_at,
+    db.prepare(`SELECT m.legit, m.name, m.county, m.specs, m.in_current, m.tablou_date,
+        m.pub_address, m.pub_phone, m.pub_fax, m.pub_email, m.pub_website, m.contact_source, m.contact_date, u.id AS user_id, u.status AS user_status, u.email, u.last_login_at, u.last_seen_at,
         (SELECT COUNT(*) FROM events e WHERE e.user_id = u.id AND e.at > ?) AS events_30,
         (SELECT r.status FROM account_requests r WHERE r.legit = m.legit ORDER BY r.created_at DESC LIMIT 1) AS request
       ${FROM} ${sql} ORDER BY ${order} ${all ? "LIMIT 10000" : `LIMIT ${PAGE_SIZE} OFFSET ${(page - 1) * PAGE_SIZE}`}`).bind(since30(), ...p).all<TablouRow>(),

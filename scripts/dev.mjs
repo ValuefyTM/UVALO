@@ -1,6 +1,6 @@
-// npm run dev — the app as it runs in Cloudflare (OpenNext build + wrangler dev = the workerd runtime), with the local
+// npm run dev:cf — the app as it runs in Cloudflare (OpenNext build + wrangler dev = the workerd runtime), with the local
 // D1 database. .dev.vars is created from .dev.vars.example the first time. Sign-in links appear at /dev/mail.
-//   npm run dev -- --no-build     start again without building (when only the database changed)
+//   npm run dev:cf -- --no-build     start again without building (when only the database changed)
 import { execSync } from "node:child_process";
 import { copyFileSync, existsSync } from "node:fs";
 

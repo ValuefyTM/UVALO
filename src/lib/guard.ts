@@ -2,18 +2,19 @@
 import { redirect } from "next/navigation";
 import { getDb } from "./db";
 import { maintenance } from "./maintenance";
-import { canManageOrg, context, OFFICE_READY, type Ctx } from "./access";
+import { canManageOrg, context, type Ctx } from "./access";
 
-export async function page(): Promise<{ db: D1Database; c: Ctx }> {
+/** `maint`: the page works during maintenance too (e.g. "Contul meu", where office invitations are accepted). */
+export async function page(opts: { maint?: boolean } = {}): Promise<{ db: D1Database; c: Ctx }> {
   const db = await getDb();
   if (!db) throw new Error("Baza de date nu este disponibilă.");
   const c = await context(db);
   if (!c) redirect("/login");
-  if (!c.super && (await maintenance(db)).on) redirect("/mentenanta");
+  if (!c.super && !c.viewAs && !opts.maint && (await maintenance(db)).on) redirect("/mentenanta");
   return { db, c };
 }
 
-/** VALUEFY administration portal; also the number of account requests waiting (menu badge). */
+/** UVALO administration portal; also the number of account requests waiting (menu badge). */
 export async function superPage() {
   const r = await page();
   if (!r.c.super) redirect("/");
@@ -24,7 +25,7 @@ export async function superPage() {
 export async function orgAdminPage() {
   const r = await page();
   if (!r.c.org || !canManageOrg(r.c)) redirect("/");
-  if (!r.c.super && (!OFFICE_READY || !r.c.user.is_office)) redirect("/cont"); // "Firma mea" is turned on from the account ("Lucrez ca birou")
+  if (!r.c.super && (!r.c.office || !r.c.user.is_office)) redirect("/cont"); // "Firma mea" is turned on from the account ("Birou de evaluare")
   return r;
 }
 

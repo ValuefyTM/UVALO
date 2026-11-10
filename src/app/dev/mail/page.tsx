@@ -11,7 +11,7 @@ type Mail = { id: number; to_addr: string; subject: string; html: string; text: 
 
 /**
  * Local and test environments: the emails the app would have sent (login links, invitations…). Not in production.
- * Locally anyone can open it (that is how you sign in); in staging only VALUEFY administrators.
+ * Locally anyone can open it (that is how you sign in); in staging only the super-admins.
  */
 export default async function DevMail({ searchParams }: { searchParams: Promise<{ id?: string }> }) {
   const env = appEnv();

@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect } from "react";
+
 export function LogoutButton() {
   return (
     <button type="button" className="logout" onClick={async () => {
@@ -48,4 +50,25 @@ export function MenuButton() {
       <button type="button" className="menuClose" aria-label="Închide meniul" onClick={() => set(false)}>✕</button>
     </>
   );
+}
+
+/**
+ * Admin on the phone: the filter forms (Utilizatori, Tablou) show only the search; the other fields behind "Mai multe filtre"
+ * ("Filtre (N)" when some are set). After hydration, so React does not redo the form.
+ */
+export function FilterFold() {
+  useEffect(() => {
+    if (!matchMedia("(max-width: 979px)").matches) return;
+    let n = 0;
+    new URLSearchParams(location.search).forEach((v, k) => { if (v && k !== "q" && k !== "page") n++; });
+    document.querySelectorAll<HTMLFormElement>("form.tabFilters").forEach((f) => {
+      if (f.querySelector(".tfMore")) return;
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "btn btnGhost btnSm tfMore"; b.textContent = n ? `Filtre (${n}) ▾` : "Mai multe filtre ▾";
+      b.onclick = () => { f.classList.remove("fold"); b.remove(); };
+      f.classList.add("fold");
+      f.insertBefore(b, f.children[1] ?? null);
+    });
+  }, []);
+  return null;
 }

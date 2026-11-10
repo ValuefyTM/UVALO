@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 
 /** "Recomandă unui coleg": small sticker (menu, or a card on the phone) that opens a form in a modal. */
-export function Referral({ variant = "side" }: { variant?: "side" | "card" }) {
+export function Referral({ variant = "side", label = "Recomandă unui coleg" }: { variant?: "side" | "card" | "button"; label?: string }) {
   const dlg = useRef<HTMLDialogElement>(null);
   const [f, setF] = useState({ email: "", name: "", note: "" });
   const [msg, setMsg] = useState("");
@@ -25,7 +25,9 @@ export function Referral({ variant = "side" }: { variant?: "side" | "card" }) {
 
   return (
     <>
-      {variant === "side" ? (
+      {variant === "button" ? (
+        <button type="button" className="btn btnGold" onClick={open}>{label}</button>
+      ) : variant === "side" ? (
         <button type="button" className="refSticker" onClick={open}>
           <span className="refIcon" aria-hidden="true">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="8" r="3.5" /><path d="M2.5 20c.8-3.6 3.3-5.5 6.5-5.5s5.7 1.9 6.5 5.5" /><path d="M19 8v6M16 11h6" /></svg>

@@ -3,21 +3,24 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "node scripts/dev.mjs",
-    "dev:ui": "next dev -p 3300",
+    "dev": "next dev -p 3300",
+    "dev:cf": "node scripts/dev.mjs",
     "build": "next build",
     "lint": "tsc --noEmit",
     "check": "tsc --noEmit && npm run cf:build",
     "cf:build": "opennextjs-cloudflare build && node scripts/copy-localizare.mjs",
+    "cf:deploy": "(wrangler d1 create valuefy-tools-db > /dev/null 2>&1 || true) && wrangler d1 migrations apply DB --remote && opennextjs-cloudflare build && node scripts/copy-localizare.mjs && opennextjs-cloudflare deploy",
     "db:migrate:local": "wrangler d1 migrations apply DB --local",
     "db:reset": "node -e \"require('fs').rmSync('.wrangler/state/v3/d1',{recursive:true,force:true})\" && wrangler d1 migrations apply DB --local",
     "db:pull": "node scripts/db-copy.mjs --to local",
     "db:pull:staging": "node scripts/db-copy.mjs --to staging",
-    "cf:deploy": "node -e \"console.error('Deploy-ul se face din GitHub Actions (workflow-ul Deploy, cu aprobare). Dacă vezi asta în Cloudflare, deconectează Workers Builds: Workers → tools → Settings → Build.'); process.exit(1)\""
+    "chrome:zip": "node scripts/chrome-zip.mjs"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.133.0",
     "@opennextjs/cloudflare": "1.20.6",
     "next": "16.3.6",
+    "qrcode-generator": "^1.4.4",
     "react": "^19.3.0",
     "react-dom": "^19.3.0"
   },

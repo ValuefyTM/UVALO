@@ -71,3 +71,19 @@ export async function geocode(q: string): Promise<Place[] | null> {
     label: r.formatted_address.replace(/, (România|Romania)$/, "").replace(/ \d{6}(?=,|$)/, ""),
   }));
 }
+
+/** Coordinates → the street address (Geocoding API), for a new inspection started on the spot. Null without a key. */
+export async function reverseGeocode(lat: number, lng: number): Promise<string | null> {
+  const k = key();
+  if (!k) return null;
+  const u = new URL("https://maps.googleapis.com/maps/api/geocode/json");
+  u.searchParams.set("latlng", `${lat},${lng}`);
+  u.searchParams.set("key", k);
+  u.searchParams.set("language", "ro");
+  u.searchParams.set("result_type", "street_address|premise|route");
+  const res = await fetch(u, { headers: await referer() });
+  if (!res.ok) return null;
+  const j = (await res.json()) as { status: string; results?: { formatted_address: string }[] };
+  const a = j.results?.[0]?.formatted_address;
+  return a ? a.replace(/, (România|Romania)$/, "").replace(/ \d{6}(?=,|$)/, "") : null;
+}

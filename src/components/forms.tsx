@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { UserAv } from "./UserAv";
 
 async function send(url: string, method: string, body?: unknown) {
   const r = await fetch(url, { method, headers: body ? { "Content-Type": "application/json" } : undefined, body: body ? JSON.stringify(body) : undefined }).catch(() => null);
@@ -11,7 +12,7 @@ async function send(url: string, method: string, body?: unknown) {
 const ROLES: [string, string][] = [["member", "Membru"], ["admin", "Administrator"], ["owner", "Titular cont"]];
 
 export type MemberRow = {
-  user_id: string; email: string; name: string; status: string; role: string; last_seen: string; events_30: number; searches_30: number; exports_30: number; me: boolean;
+  user_id: string; email: string; name: string; status: string; role: string; last_seen: string; events_30: number; searches_30: number; exports_30: number; me: boolean; has_av?: boolean;
 };
 export type InviteRow = { id: string; email: string; role: string; created: string; expires: string; by: string | null };
 
@@ -55,7 +56,7 @@ export function MembersPanel({ org, members, invites, seats, used, canOwner, adm
           <tbody>
             {members.map((m) => (
               <tr key={m.user_id}>
-                <td><b className="block">{m.name || m.email}{m.me && <span className="muted"> (tu)</span>}</b><span className="muted">{m.email}</span>{m.status !== "active" && <span className={`pill ${m.status === "disabled" ? "pillErr" : "pillWarn"}`} style={{ marginLeft: 8 }}><i />{m.status === "disabled" ? "Dezactivat" : "Invitat"}</span>}</td>
+                <td><span className="mpWho"><UserAv id={m.user_id} name={m.name || m.email} has={m.has_av} size={32} /><span><b className="block">{m.name || m.email}{m.me && <span className="muted"> (tu)</span>}</b><span className="muted">{m.email}</span>{m.status !== "active" && <span className={`pill ${m.status === "disabled" ? "pillErr" : m.status === "closed" ? "pillMuted" : "pillWarn"}`} style={{ marginLeft: 8 }}><i />{m.status === "disabled" ? "Dezactivat" : m.status === "closed" ? "A renunțat" : "Invitat"}</span>}</span></span></td>
                 <td>
                   {m.me || (m.role === "owner" && !canOwner) ? ROLES.find(([k]) => k === m.role)?.[1] : (
                     <select className="select" style={{ height: 36 }} value={m.role} disabled={busy} aria-label={`Rolul lui ${m.name || m.email}`}
@@ -95,7 +96,7 @@ export function MembersPanel({ org, members, invites, seats, used, canOwner, adm
 
 export type OrgValues = { name: string; cui: string; city: string; plan_id: string; seats: number; valid_until: string; status: string; billing_email: string; notes: string };
 
-/** Firm details and subscription (VALUEFY). New firm: also its owner, invited right away. */
+/** Firm details and subscription (UVALO administration). New firm: also its owner, invited right away. */
 export function OrgForm({ id, initial, plans }: { id?: string; initial?: Partial<OrgValues>; plans: { id: string; name: string }[] }) {
   const [f, setF] = useState<OrgValues & { owner_email: string; owner_name: string }>({
     name: "", cui: "", city: "", plan_id: "trial", seats: 1, valid_until: "", status: "active", billing_email: "", notes: "", owner_email: "", owner_name: "", ...initial,
@@ -184,8 +185,8 @@ export function SessionsList({ rows }: { rows: SessionRow[] }) {
   );
 }
 
-/** Account actions in the VALUEFY administration (disable, enable, sign out everywhere, VALUEFY admin). */
-export function UserActions({ id, status, isSuper, me }: { id: string; status: string; isSuper: boolean; me: boolean }) {
+/** Account actions in the UVALO administration (disable, enable, sign out everywhere, UVALO admin). */
+export function UserActions({ id, status, isSuper, me, email, office = false }: { id: string; status: string; isSuper: boolean; me: boolean; email: string; office?: boolean }) {
   if (me) return <span className="muted">tu</span>;
   const go = async (action: string, q?: string) => {
     if (q && !confirm(q)) return;
@@ -195,10 +196,17 @@ export function UserActions({ id, status, isSuper, me }: { id: string; status: s
   };
   return (
     <span className="actions" style={{ justifyContent: "flex-end", gap: 12 }}>
-      {status === "disabled"
+      {status === "disabled" || status === "closed"
         ? <button type="button" className="linkBtn" onClick={() => go("enable")}>Reactivează</button>
         : <button type="button" className="linkBtn danger" onClick={() => go("disable", "Dezactivezi contul? Persoana este deconectată imediat de pe toate dispozitivele.")}>Dezactivează</button>}
+      {!isSuper && <button type="button" className="linkBtn" onClick={() => go(office ? "office_off" : "office_on", office ? "Retragi funcția de birou? „Firma mea” dispare din meniul persoanei (firma și colegii rămân)." : "Permiți funcția de birou? Persoana o poate activa din „Contul meu” și adăuga colegi.")}>{office ? "Retrage birou" : "Permite birou"}</button>}
       <button type="button" className="linkBtn" onClick={() => go("logout_all", "Deconectezi persoana de pe toate dispozitivele?")}>Deconectează</button>
+      {!isSuper && <button type="button" className="linkBtn danger" onClick={async () => {
+        if (!confirm(`Ștergi definitiv contul ${email}?\n\nSe șterg sesiunile, firma individuală (dacă nu mai are alți membri), invitațiile deschise și datele din Colaborări. Persoana poate cere apoi un cont nou, cu adresa corectă.`)) return;
+        const e = await send(`/api/admin/users/${id}`, "DELETE");
+        if (e) return alert(e);
+        location.reload();
+      }}>Șterge contul</button>}
       <button type="button" className="linkBtn" onClick={() => go(isSuper ? "super_off" : "super_on", isSuper ? "Scoți drepturile de administrator UVALO?" : "Faci persoana administrator UVALO (vede și administrează toate firmele)?")}>{isSuper ? "Scoate admin" : "Fă admin"}</button>
     </span>
   );
@@ -213,9 +221,73 @@ export function InviteAdmin() {
       const er = await send("/api/admin/superadmins", "POST", { email });
       setMsg(er ? { ok: false, t: er } : { ok: true, t: `Invitația a fost trimisă la ${email}.` });
     }}>
-      <label className="field">Invită un administrator UVALO<input className="input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="coleg@valuefy.ro" required /></label>
+      <label className="field">Invită un administrator UVALO<input className="input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="coleg@firma.ro" required /></label>
       <button type="submit" className="btn btnGhost">Invită</button>
       {msg && <span role={msg.ok ? "status" : "alert"} className={msg.ok ? "okMsg" : "error"}>{msg.t}</span>}
     </form>
+  );
+}
+
+type MergeUser = { id: string; email: string; name: string; anevar_no: string | null; county: string | null; status: string; is_superadmin: number; orgs: string | null };
+const norm = (x: string) => x.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+
+function PickUser({ label, users, value, onChange, exclude }: { label: string; users: MergeUser[]; value: string; onChange: (id: string) => void; exclude: string }) {
+  const [q, setQ] = useState("");
+  const list = users.filter((u) => u.id !== exclude && (!q.trim() || norm(`${u.name} ${u.email} ${u.anevar_no ?? ""}`).includes(norm(q.trim())))).slice(0, 200);
+  return (
+    <div className="field">{label}
+      <input className="input" type="search" placeholder="Caută după nume, email sau legitimație" aria-label={`${label}: caută`} value={q} onChange={(e) => setQ(e.target.value)} />
+      <select className="select" size={6} aria-label={label} value={value} onChange={(e) => onChange(e.target.value)} style={{ height: "auto" }}>
+        {list.map((u) => <option key={u.id} value={u.id}>{u.name || u.email} · {u.email}{u.anevar_no ? ` · leg. ${u.anevar_no}` : ""}{u.status !== "active" ? ` · ${u.status === "disabled" ? "dezactivat" : u.status === "closed" ? "a renunțat" : "invitat"}` : ""}</option>)}
+      </select>
+    </div>
+  );
+}
+
+/** Two accounts of the same person → one: the kept account keeps its email and takes the other's profile and data. */
+export function MergeUsers({ users, me }: { users: MergeUser[]; me: string }) {
+  const [keep, setKeep] = useState(me);
+  const [from, setFrom] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState("");
+  const k = users.find((u) => u.id === keep), f = users.find((u) => u.id === from);
+  const pick = (a: string | null | undefined, b: string | null | undefined) => (b && b.trim() ? b : a || "—");
+  const go = async () => {
+    if (!k || !f) return;
+    if (!confirm(`Unești contul ${f.email} în ${k.email}? Contul ${f.email} se șterge, iar datele lui trec pe ${k.email}. Nu se poate anula.`)) return;
+    setBusy(true); setMsg("");
+    const e = await send("/api/admin/users/merge", "POST", { keep, from });
+    setBusy(false);
+    if (e) return setMsg(e);
+    location.reload();
+  };
+  return (
+    <details className="card mergeCard">
+      <summary><b>Unește două conturi</b><span className="muted">aceeași persoană cu două conturi (de exemplu emailul de lucru și contul din Tabloul ANEVAR)</span></summary>
+      <div className="mergeGrid">
+        <PickUser label="Contul care rămâne (își păstrează emailul)" users={users} value={keep} onChange={setKeep} exclude={from} />
+        <PickUser label="Contul care se unește în el (se șterge)" users={users} value={from} onChange={setFrom} exclude={keep} />
+      </div>
+      {k && f && (
+        <div className="tableWrap">
+          <table className="table" style={{ minWidth: 0 }}>
+            <thead><tr><th /><th>Rămâne</th><th>Se șterge</th><th>Rezultat</th></tr></thead>
+            <tbody>
+              <tr><td>Email</td><td>{k.email}</td><td>{f.email}</td><td><b>{k.email}</b></td></tr>
+              <tr><td>Nume</td><td>{k.name || "—"}</td><td>{f.name || "—"}</td><td><b>{pick(k.name, f.name)}</b></td></tr>
+              <tr><td>Legitimație ANEVAR</td><td>{k.anevar_no || "—"}</td><td>{f.anevar_no || "—"}</td><td><b>{pick(k.anevar_no, f.anevar_no)}</b></td></tr>
+              <tr><td>Județ</td><td>{k.county || "—"}</td><td>{f.county || "—"}</td><td><b>{pick(k.county, f.county)}</b></td></tr>
+              <tr><td>Firme</td><td>{k.orgs?.split(";;").map((x) => x.split("|")[0]).join(", ") || "—"}</td><td>{f.orgs?.split(";;").map((x) => x.split("|")[0]).join(", ") || "—"}</td><td><b>amândouă</b></td></tr>
+              <tr><td>Admin UVALO</td><td>{k.is_superadmin ? "da" : "nu"}</td><td>{f.is_superadmin ? "da" : "nu"}</td><td><b>{k.is_superadmin || f.is_superadmin ? "da" : "nu"}</b></td></tr>
+            </tbody>
+          </table>
+        </div>
+      )}
+      <p className="hint">Se preiau și telefonul, specializările și poza (când contul care se șterge le are), sesiunile, activitatea, recomandările, datele din Colaborări și din UVALO pentru Chrome. O copie a contului șters rămâne în jurnalul de audit.</p>
+      {msg && <div role="alert" className="error">{msg}</div>}
+      <div className="actions" style={{ justifyContent: "flex-start" }}>
+        <button type="button" className="btn btnNavy btnSm" disabled={busy || !k || !f} onClick={go}>{busy ? "Se unesc…" : "Unește conturile"}</button>
+      </div>
+    </details>
   );
 }

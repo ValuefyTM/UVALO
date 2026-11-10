@@ -146,6 +146,13 @@ export async function startUpload(db: D1Database, c: Ctx, f: { key: string; name
 
 type Run = { id: number; display_title: string; status: string; conclusion: string | null; html_url: string; created_at: string };
 
+/** The summary of a finished conversion (the commit message of branch plan/<id>; "" when it has none), or null when the
+ *  branch does not exist. */
+async function converted(id: string) {
+  const commit = await gh<{ commit: { message: string } }>("GET", `/commits/plan/${id}`).catch(() => null);
+  return commit ? commit.commit.message.split("\n").slice(2).join("\n").trim() : null;
+}
+
 /** Brings the uploads in progress up to date with their GitHub runs. */
 export async function refresh(db: D1Database) {
   const open = (await db.prepare("SELECT * FROM plan_uploads WHERE status IN ('converting', 'publishing')").all<PlanUpload>()).results;
@@ -177,15 +184,19 @@ export async function refresh(db: D1Database) {
       continue;
     }
     const t = now();
-    if (run.conclusion !== "success") {
+    // A second run for the same upload (started twice) fails once the first one has converted the file and deleted it:
+    // the plan's branch is what tells whether the conversion worked.
+    const done = mode === "convert" && run.conclusion !== "success" ? await converted(u.id) : null;
+    if (done !== null) {
+      await db.prepare("UPDATE plan_uploads SET status = 'ready', summary = ?, error = NULL, updated_at = ? WHERE id = ?").bind(done || null, t, u.id).run();
+    } else if (run.conclusion !== "success") {
       const why = run.conclusion === "cancelled"
         ? (mode === "convert" ? "Conversia a fost oprită înainte să înceapă. Fișierul e păstrat: apasă „Reîncearcă”." : "Publicarea a fost oprită. Apasă „Publică din nou”.")
         : (mode === "convert" ? "Conversia a eșuat. Detaliile sunt în jurnalul de pe GitHub." : "Publicarea a eșuat. Detaliile sunt în jurnalul de pe GitHub.");
       await db.prepare("UPDATE plan_uploads SET status = 'failed', error = ?, run_url = ?, updated_at = ? WHERE id = ?")
         .bind(why, run.html_url, t, u.id).run();
     } else if (mode === "convert") {
-      const commit = await gh<{ commit: { message: string } }>("GET", `/commits/plan/${u.id}`).catch(() => null);
-      const summary = commit?.commit.message.split("\n").slice(2).join("\n").trim() || null;
+      const summary = (await converted(u.id)) || null;
       await db.prepare("UPDATE plan_uploads SET status = 'ready', summary = ?, run_url = ?, updated_at = ? WHERE id = ?").bind(summary, run.html_url, t, u.id).run();
     } else {
       await db.prepare("UPDATE plan_uploads SET status = 'published', published_at = ?, run_url = ?, updated_at = ? WHERE id = ?").bind(t, run.html_url, t, u.id).run();
@@ -220,6 +231,19 @@ export async function retry(db: D1Database, c: Ctx, ids: string[]) {
   for (const id of [...new Set(ids)].slice(0, 40)) {
     const u = await db.prepare("SELECT * FROM plan_uploads WHERE id = ?").bind(id).first<PlanUpload>();
     if (!u || u.status !== "failed" || u.summary || !u.asset_id) continue;
+    // already converted (the failure was a second run of the same upload): ready to publish, nothing to convert again
+    const done = await converted(u.id);
+    if (done !== null) {
+      await db.prepare("UPDATE plan_uploads SET status = 'ready', summary = ?, error = NULL, updated_at = ? WHERE id = ?").bind(done || null, now(), u.id).run();
+      n++;
+      continue;
+    }
+    // the uploaded file is gone: converting again cannot work, it has to be uploaded again
+    if (!(await gh("GET", `/releases/assets/${u.asset_id}`).then(() => true, () => false))) {
+      await db.prepare("UPDATE plan_uploads SET error = ?, updated_at = ? WHERE id = ?")
+        .bind("Fișierul încărcat nu mai există pe GitHub: anulează planul și încarcă-l din nou.", now(), u.id).run();
+      continue;
+    }
     await dispatch({ mode: "convert", id: u.id, key: u.uat_key, name: u.new_uat ? u.uat_name : "", county: u.new_uat ? (u.county ?? "") : "", asset: String(u.asset_id) });
     await db.prepare("UPDATE plan_uploads SET status = 'converting', error = NULL, run_url = NULL, updated_at = ? WHERE id = ?").bind(now(), u.id).run();
     n++;

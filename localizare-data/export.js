@@ -72,7 +72,6 @@
     if (!b) {
       const bs = o.bs || [], tot = bs.reduce((s, x) => s + x.a, 0);
       d.facts.push(["Construcții", bs.length ? `${bs.length} · ${nf(tot, 2)} mp` : "0"]);
-      d.notes.push(o.iv ? `În intravilanul istoric al localității ${o.iv} (plan 1:5000).` : "În afara intravilanului istoric din plan. Poate fi totuși intravilan prin PUG/PUZ — verifică în extrasul CF.");
       if (bs.length) d.sections.push({ h: "Construcții (amprentă la sol)", lines: bs.map((x) => `${x.c || "—"}: ${nf(x.a, 2)} mp`).concat([`Total la sol ${nf(tot, 2)} mp · POT ${nf((100 * tot) / o.a, 1)}%`]) });
       if (o.t && o.t.length) d.sections.push({ h: "Nr. topo (orientativ)", lines: [o.t.join(", ")] });
       if (o.n && o.n.length) d.sections.push({ h: `Vecini (${o.n.length})`, lines: [o.n.join(", ")] });
@@ -83,7 +82,7 @@
     return d;
   }
 
-  const MCOLS = [["Nr. cadastral", 190], ["Suprafață [mp]", 190], ["Perimetru [m]", 170], ["Construcții", 140], ["Intravilan ist.", 160], ["Centru (WGS84)", 250]];
+  const MCOLS = [["Nr. cadastral", 190], ["Suprafață [mp]", 190], ["Perimetru [m]", 170], ["Construcții", 140], ["Centru (WGS84)", 250]];
 
   /** Sheet of a multiple location: every parcel found, with totals and the numbers not found. */
   function multiData(m) {
@@ -97,7 +96,7 @@
       file: `Localizare_multipla_${m.items.length}_imobile_${U.key}`,
       facts: [["Imobile găsite", `${m.items.length} din ${m.items.length + m.missing.length}`], ["Suprafață totală", `${nf(tot, 2)} mp`], ["Construcții", String(blds)], ["Negăsite", String(m.missing.length)]],
       notes, sections: [], cols: MCOLS, tableTitle: "Imobilele localizate",
-      rows: m.items.map((p) => [p.id, nf(p.a, 2), nf(geom(p).per, 2), String(p.bs ? p.bs.length : 0), p.iv ? "da" : "nu", `${p.c[0].toFixed(5)}, ${p.c[1].toFixed(5)}`]),
+      rows: m.items.map((p) => [p.id, nf(p.a, 2), nf(geom(p).per, 2), String(p.bs ? p.bs.length : 0), `${p.c[0].toFixed(5)}, ${p.c[1].toFixed(5)}`]),
       total: `Total: ${m.items.length} imobile · S = ${nf(tot, 2)} mp`,
       center: `${c[0].toFixed(7)}, ${c[1].toFixed(7)}`,
     };
@@ -433,8 +432,8 @@
     h += '<div class="facts"><div><small>Găsite</small><b>' + items.length + " din " + (items.length + missing.length) + "</b></div><div><small>Suprafață totală</small><b>" +
       nf(tot, 2) + " mp</b></div><div><small>Construcții</small><b>" + blds + "</b></div></div>";
     if (missing.length) h += '<div class="flag">Nu apar în planul pentru ' + esc(U.name) + ":<div class=\"vfm-miss\">" + missing.map((m) => "<span>" + esc(m) + "</span>").join("") + "</div></div>";
-    h += '<section><h2>Imobile (' + items.length + ')</h2><div class="tw"><table class="vfm-t"><thead><tr><th>Nr. cadastral</th><th>Suprafață [mp]</th><th>Constr.</th><th>Intravilan ist.</th></tr></thead><tbody>' +
-      items.map((p) => '<tr><td><button type="button" data-v="' + p.i + '">' + esc(p.id) + "</button></td><td>" + nf(p.a, 2) + "</td><td>" + (p.bs ? p.bs.length : 0) + "</td><td>" + (p.iv ? "da" : "nu") + "</td></tr>").join("") +
+    h += '<section><h2>Imobile (' + items.length + ')</h2><div class="tw"><table class="vfm-t"><thead><tr><th>Nr. cadastral</th><th>Suprafață [mp]</th><th>Constr.</th></tr></thead><tbody>' +
+      items.map((p) => '<tr><td><button type="button" data-v="' + p.i + '">' + esc(p.id) + "</button></td><td>" + nf(p.a, 2) + "</td><td>" + (p.bs ? p.bs.length : 0) + "</td></tr>").join("") +
       '</tbody><tfoot><tr><td colspan="4" style="text-align:left">Total S = ' + nf(tot, 2) + " mp</td></tr></tfoot></table></div>" +
       '<p class="hint" style="margin-top:8px">Atinge un număr ca să vezi parcela, coordonatele și vecinii.</p></section>';
     h += '<div class="actions"><button type="button" class="btn2" id="vfmCopy">Copiază tabelul</button><button type="button" class="btn2" id="vfmKml">Descarcă KML</button>' +
@@ -448,8 +447,8 @@
       sel.eachLayer((l) => l.bringToFront && l.bringToFront());
     };
     $("vfmCopy").onclick = () => {
-      const rows = ["Nr. cadastral\tSuprafață [mp]\tPerimetru [m]\tConstrucții\tIntravilan istoric\tLatitudine\tLongitudine"]
-        .concat(items.map((p) => [p.id, p.a.toFixed(2), geom(p).per.toFixed(2), p.bs ? p.bs.length : 0, p.iv ? "da" : "nu", p.c[0].toFixed(7), p.c[1].toFixed(7)].join("\t")));
+      const rows = ["Nr. cadastral\tSuprafață [mp]\tPerimetru [m]\tConstrucții\tLatitudine\tLongitudine"]
+        .concat(items.map((p) => [p.id, p.a.toFixed(2), geom(p).per.toFixed(2), p.bs ? p.bs.length : 0, p.c[0].toFixed(7), p.c[1].toFixed(7)].join("\t")));
       if (missing.length) rows.push("Negăsite: " + missing.join(", "));
       const txt = rows.join("\n");
       (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(() => say("Tabel copiat. Lipește-l în Excel sau Word."), () => say("Copierea nu e permisă în acest browser"));

@@ -26,52 +26,68 @@ Versiunile `next` / `@opennextjs/cloudflare` / `wrangler` sunt fixate: Next 16.4
 
 | | Local | Staging (test) | Producție |
 |---|---|---|---|
-| Pornire / deploy | `npm run dev` | push pe branch-ul `staging` | push pe `main` + **aprobare** |
+| Pornire / deploy | `npm run dev:cf` | push pe branch-ul `staging` (GitHub Actions → **Deploy**) | push pe `main` (Cloudflare Workers Builds) |
 | Worker | `wrangler dev` (același runtime) | `tools-staging` | `tools` |
 | D1 | local (`.wrangler/`) | `valuefy-tools-staging-db` | `valuefy-tools-db` |
-| Adresă | http://localhost:8787 | `tools-staging.<cont>.workers.dev` | https://app.uvalo.ro |
-| Emailuri | doar în `/dev/mail` | `/dev/mail` + reale doar pentru `MAIL_ALLOW` (`@valuefy.ro`) | reale |
+| R2 (fișierele inspecțiilor) | local | `uvalo-inspectii-staging` | `uvalo-inspectii` |
+| Adresă | http://localhost:8787 | https://test.uvalo.ro (telefon: https://inspectii-test.uvalo.ro) | https://app.uvalo.ro (telefon: https://inspectii.uvalo.ro) |
+| Emailuri | doar în `/dev/mail` | `/dev/mail` + reale doar pentru `MAIL_ALLOW` (`@valuefy.ro`, `@uvalo.ro`), cu `[TEST]` | reale |
+| Memento-uri push (cron) | — | oprite | la 15 min |
 | Planuri cadastrale din admin | — | branch `staging` | branch `main` |
 
 Aceeași configurare (`wrangler.jsonc`), aceleași migrări, același build (OpenNext) în toate trei. Pe local și staging, o
 bandă roșie jos arată mediul. Ce diferă între medii sunt doar variabilele: `APP_ENV`, `APP_URL`, `APP_NAME`,
-`SUPPORT_EMAIL`, `MAIL_ALLOW`, `PLANS_GITHUB_BRANCH` (în `wrangler.jsonc`) și secretele (în Cloudflare, pe fiecare worker).
+`SUPPORT_EMAIL`, `MAIL_ALLOW`, `INSP_HOSTS` / `INSP_URL`, `SITE_HOSTS` / `OLD_HOSTS`, `PLANS_GITHUB_BRANCH` (în
+`wrangler.jsonc`, blocul `env.staging`) și secretele (în Cloudflare, pe fiecare worker).
 Schimbarea domeniului înseamnă `APP_URL` plus domeniul pe worker, în Resend și la restricția cheii Google.
+
+**Cum lucrăm**: tot ce e nou se dezvoltă și se împinge pe `staging` (se vede pe test.uvalo.ro); când e bun, se face
+`git merge staging` în `main` → producție. `main` primește doar ce a fost verificat pe staging (sau corecturi urgente).
 
 ### Local
 
 ```bash
 npm ci
-npm run dev            # migrări locale + build + wrangler dev → http://localhost:8787
+npm run dev:cf         # migrări locale + build + wrangler dev → http://localhost:8787
 ```
 
 - Prima dată se creează `.dev.vars` din `.dev.vars.example`: pune adresa ta în `TOOLS_SUPERADMINS`.
 - Autentificare: ceri codul în `/login`, apoi îl iei din **http://localhost:8787/dev/mail** (local nu pleacă emailuri).
-- `npm run db:pull` — copie a bazei din **producție**, cu datele personale anonimizate (emailurile și telefoanele
-  evaluatorilor și ale solicitărilor; sesiunile și codurile de login se șterg; administratorii VALUEFY își păstrează
-  emailul). Cere `npx wrangler login` o dată. `--raw` (fără anonimizare) doar dacă e strict necesar.
-- `npm run db:reset` — bază locală goală, doar cu migrările. `npm run dev -- --no-build` repornește fără build.
-- `npm run dev:ui` — `next dev` pe portul 3300, doar pentru lucru rapid pe interfață (nu e identic cu Cloudflare).
+- `npm run db:pull` — copie a bazei din **producție**, cu datele personale anonimizate (emailurile, telefoanele și
+  semnăturile evaluatorilor, solicitările, contactele de la inspecții; sesiunile, codurile de login, telefoanele conectate,
+  abonările push, cheile API și tokenurile OAuth se șterg; super-adminii își păstrează emailul). Cere `npx wrangler login`
+  o dată. `--raw` (fără anonimizare) doar dacă e strict necesar.
+- `npm run db:reset` — bază locală goală, doar cu migrările. `npm run dev:cf -- --no-build` repornește fără build.
+- `npm run dev` — `next dev` pe portul 3300, doar pentru lucru rapid pe interfață (nu e identic cu Cloudflare).
 
 ### Staging
 
-- Deploy: push pe branch-ul `staging` (sau Actions → **Deploy** → Run workflow → staging).
+- Deploy: push pe branch-ul `staging` (sau Actions → **Deploy** → Run workflow → staging). Workflow-ul face: tipuri, build,
+  crearea bazei D1 și a bucket-ului R2 dacă lipsesc, migrările, deploy-ul workerului `tools-staging`.
 - Datele: Actions → **Copiază producția în staging** → Run workflow (anonimizat, ca `db:pull`), sau
-  `npm run db:pull:staging` de pe calculator.
-- Secretele workerului `tools-staging` se pun separat: Cloudflare → Workers → tools-staging → Settings → Variables and
-  Secrets (`TOOLS_SUPERADMINS`, `RESEND_API_KEY`, `EMAIL_FROM`, opțional `GOOGLE_MAPS_KEY`, `PLANS_GITHUB_TOKEN`).
+  `npm run db:pull:staging` de pe calculator. Fișierele din R2 (pozele, actele inspecțiilor) nu se copiază: în staging
+  pozele inspecțiilor vechi lipsesc.
+- Secretele workerului `tools-staging` se pun separat (nu se copiază de la `tools`): Cloudflare → Workers & Pages →
+  tools-staging → Settings → Variables and Secrets: `TOOLS_SUPERADMINS`, `RESEND_API_KEY`, `TOOLS_EMAIL_FROM`, opțional
+  `GOOGLE_MAPS_KEY` (cheia trebuie să accepte și `test.uvalo.ro/*`, `inspectii-test.uvalo.ro/*`), `ANTHROPIC_API_KEY`,
+  `PLANS_GITHUB_TOKEN`, `LOCATOR_API_TOKEN`.
+- Domeniile: pe workerul `tools-staging` → Settings → Domains & Routes → Custom domains: `test.uvalo.ro` și
+  `inspectii-test.uvalo.ro` (zona `uvalo.ro` e în Cloudflare, DNS-ul se face singur). Altă adresă = schimbă `APP_URL`,
+  `INSP_HOSTS`, `INSP_URL` în `env.staging`.
+- Sesiunile sunt pe domeniu: pe staging te autentifici separat (codul ajunge pe email doar adreselor din `MAIL_ALLOW`;
+  pentru restul se vede la `/dev/mail`, doar super-adminii).
 
 ### Producție
 
-- Deploy: push (sau merge de Pull Request) pe `main` → Actions → **Deploy** așteaptă aprobarea în mediul `production`
-  → tipuri, build, migrări D1, deploy. Fără aprobare nu se publică nimic.
+- Deploy: **Cloudflare Workers Builds** la push pe `main` (`npm run cf:deploy` aplică migrațiile și publică). Workflow-ul
+  **Deploy** din GitHub poate publica și el producția, doar pornit manual (Run workflow → production, de pe `main`), după
+  aprobarea în mediul `production`; nu e pornit automat, ca să nu publice de două ori.
 - Un Pull Request rulează doar verificarea (tipuri + build), fără deploy.
-- Publicarea planurilor din admin pornește tot workflow-ul **Deploy** (cu aprobare).
 - Variabile și secrete (Cloudflare → Workers → tools): `TOOLS_SUPERADMINS`, `RESEND_API_KEY` (secret),
-  `EMAIL_FROM` (ex. `UVALO <noreply@uvalo.ro>`, domeniul verificat în Resend; până e setat se folosesc `TOOLS_EMAIL_FROM` / `CRM_EMAIL_FROM`),
+  `TOOLS_EMAIL_FROM` (ex. `UVALO <cont@uvalo.ro>`, domeniul verificat în Resend),
   `GOOGLE_MAPS_KEY` (secret, opțional: hărțile Google și căutarea adreselor în localizator, doar pentru firmele al căror plan
   are modulul `google_maps`; în Google Cloud cheia are activate **Map Tiles API** și **Geocoding API**),
-  `LOCATOR_API_TOKEN`, `PLANS_GITHUB_TOKEN`.
+  `LOCATOR_API_TOKEN`, `PLANS_GITHUB_TOKEN`, `ANTHROPIC_API_KEY`.
 
 ### Domeniul
 
@@ -81,17 +97,18 @@ Producția e pe `app.uvalo.ro` (Custom domain pe workerul `tools`; `APP_URL` în
 trimise rămân valide). Cheia Google Maps are în restricții domeniul `app.uvalo.ro`; CRM-ul are
 `LOCATOR_API_URL=https://app.uvalo.ro`. Sesiunile sunt legate de domeniu: după mutare, fiecare se autentifică o dată.
 
-### Configurare GitHub și Cloudflare (o singură dată)
+### Configurare GitHub și Cloudflare pentru staging (o singură dată)
 
-1. **Cloudflare → Workers → tools → Settings → Build: deconectează repository-ul (Workers Builds).** Deploy-ul se face
-   acum din GitHub Actions; altfel Cloudflare ar publica la fiecare push, fără aprobare. (`npm run cf:deploy` se oprește
-   intenționat cu un mesaj, ca să nu publice pe ascuns.)
-2. **GitHub → tools → Settings → Environments:** `production` cu **Required reviewers** (tu) și „Deployment branches:
-   main”; `staging` fără reguli.
-3. **GitHub → Settings → Secrets and variables → Actions:** `CLOUDFLARE_API_TOKEN` (Cloudflare → My Profile → API Tokens →
-   șablonul „Edit Cloudflare Workers”, plus permisiunea **D1: Edit**) și `CLOUDFLARE_ACCOUNT_ID`.
-4. Primul deploy pe `staging` creează workerul `tools-staging` și baza lui; apoi pune-i secretele (vezi Staging) și
-   rulează **Copiază producția în staging**.
+1. **GitHub → uvalo → Settings → Secrets and variables → Actions:** `CLOUDFLARE_API_TOKEN` (Cloudflare → My Profile →
+   API Tokens → Create Token → șablonul „Edit Cloudflare Workers”, la care adaugi permisiunile **D1: Edit** și
+   **Workers R2 Storage: Edit**) și `CLOUDFLARE_ACCOUNT_ID` (Workers & Pages → Overview, în dreapta).
+2. Primul push pe `staging` (sau Actions → **Deploy** → Run workflow → staging) creează workerul `tools-staging`, baza
+   `valuefy-tools-staging-db` și bucket-ul `uvalo-inspectii-staging`.
+3. Pe workerul `tools-staging`: secretele și domeniile (vezi Staging).
+4. Actions → **Copiază producția în staging** → Run workflow: datele anonimizate.
+5. Opțional, **GitHub → Settings → Environments → `production`** cu **Required reviewers** (tu) și „Deployment branches:
+   main”, dacă vrei să publici producția și din Actions (Run workflow → production). Dacă treci de tot pe Actions,
+   deconectează Workers Builds (Cloudflare → Workers → tools → Settings → Build), ca să nu publice de două ori.
 
 ## Adăugarea unor UAT-uri noi în localizator
 

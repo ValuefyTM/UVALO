@@ -1,0 +1,6268 @@
+{
+ "unmatched": [
+  [
+   "timisoara",
+   203,
+   "Bd. Bulbuca Iosif",
+   "3"
+  ],
+  [
+   "timisoara",
+   213,
+   "Str. Călin Ion",
+   "3"
+  ],
+  [
+   "timisoara",
+   239,
+   "Intr. Catul Bogdan",
+   "2"
+  ],
+  [
+   "timisoara",
+   283,
+   "Str. Colonia Radio ",
+   "4"
+  ],
+  [
+   "timisoara",
+   339,
+   "P-ța Crucii ",
+   "1"
+  ],
+  [
+   "timisoara",
+   374,
+   "Str. Dima Gheorghe",
+   "0"
+  ],
+  [
+   "timisoara",
+   385,
+   "Str. Doda Traian",
+   "0"
+  ],
+  [
+   "timisoara",
+   409,
+   "P-ța Economu Virgil",
+   "2"
+  ],
+  [
+   "timisoara",
+   414,
+   "P-ța Eliade Mircea",
+   "0"
+  ],
+  [
+   "timisoara",
+   449,
+   "P-ța Foch Ferdinand",
+   "0"
+  ],
+  [
+   "timisoara",
+   452,
+   "P-ța Forul Eugeniu Carada ",
+   "0"
+  ],
+  [
+   "timisoara",
+   458,
+   "Str. Frăției ",
+   "3"
+  ],
+  [
+   "timisoara",
+   459,
+   "Str. Fremont Maximilian",
+   "3"
+  ],
+  [
+   "timisoara",
+   486,
+   "Str. Ghirlandei ",
+   "1"
+  ],
+  [
+   "timisoara",
+   515,
+   "Str. Grupul Sigma ",
+   "0"
+  ],
+  [
+   "timisoara",
+   516,
+   "Str. Guttenberg Johann",
+   "2"
+  ],
+  [
+   "timisoara",
+   564,
+   "Str. Ionescu-Ogrezeanu Sofia",
+   "4"
+  ],
+  [
+   "timisoara",
+   585,
+   "P-ța Istria ",
+   "3"
+  ],
+  [
+   "timisoara",
+   591,
+   "Str. Izvorului ",
+   "1"
+  ],
+  [
+   "timisoara",
+   598,
+   "Str. Kallai Erno",
+   "5"
+  ],
+  [
+   "timisoara",
+   766,
+   "Str. Mokka Irene",
+   "3"
+  ],
+  [
+   "timisoara",
+   822,
+   "Str. Nischbach Joseph",
+   "1"
+  ],
+  [
+   "timisoara",
+   829,
+   "Str. Nou Proiectata ",
+   "3"
+  ],
+  [
+   "timisoara",
+   831,
+   "Str. Nouă case ",
+   "4"
+  ],
+  [
+   "timisoara",
+   907,
+   "P-ța Petofi Sandor ",
+   "4"
+  ],
+  [
+   "timisoara",
+   922,
+   "Alee Plutasilor ",
+   "3"
+  ],
+  [
+   "timisoara",
+   1052,
+   "Str. Satu Nou ",
+   "2"
+  ],
+  [
+   "timisoara",
+   1071,
+   "P-ța Sfanta Maria ",
+   "1"
+  ],
+  [
+   "timisoara",
+   1128,
+   "Str. Subuleasa ",
+   "3"
+  ],
+  [
+   "chisoda",
+   2,
+   " Agrişelor ",
+   "B"
+  ],
+  [
+   "chisoda",
+   4,
+   " Arborilor ",
+   "C"
+  ],
+  [
+   "chisoda",
+   5,
+   " Armoniei ",
+   "A"
+  ],
+  [
+   "chisoda",
+   7,
+   " Bradului ",
+   "A"
+  ],
+  [
+   "chisoda",
+   12,
+   " Căpşunilor ",
+   "A"
+  ],
+  [
+   "chisoda",
+   13,
+   " Cedrului ",
+   "A"
+  ],
+  [
+   "chisoda",
+   14,
+   " Cetinei ",
+   "A"
+  ],
+  [
+   "chisoda",
+   20,
+   " Eroul Iosub Constantin ",
+   "A"
+  ],
+  [
+   "chisoda",
+   22,
+   " Fragilor ",
+   "A"
+  ],
+  [
+   "chisoda",
+   23,
+   " Fructelor ",
+   "A"
+  ],
+  [
+   "chisoda",
+   24,
+   " Ghindei ",
+   "A"
+  ],
+  [
+   "chisoda",
+   25,
+   " Gorunului ",
+   "B"
+  ],
+  [
+   "chisoda",
+   27,
+   " Izvor ",
+   "A"
+  ],
+  [
+   "chisoda",
+   28,
+   " Lacului ",
+   "A"
+  ],
+  [
+   "chisoda",
+   29,
+   " Lianei ",
+   "A"
+  ],
+  [
+   "chisoda",
+   30,
+   " Limetei ",
+   "C"
+  ],
+  [
+   "chisoda",
+   31,
+   " Măceșului ",
+   "A"
+  ],
+  [
+   "chisoda",
+   36,
+   " Mugurilor ",
+   "A"
+  ],
+  [
+   "chisoda",
+   38,
+   " Nectarului ",
+   "C"
+  ],
+  [
+   "chisoda",
+   48,
+   " Portocalului ",
+   "C"
+  ],
+  [
+   "chisoda",
+   52,
+   " Roşcoavei ",
+   "B"
+  ],
+  [
+   "chisoda",
+   53,
+   " Salciei ",
+   "B"
+  ],
+  [
+   "chisoda",
+   54,
+   " Serelor ",
+   "A"
+  ],
+  [
+   "chisoda",
+   58,
+   " Strugurilor ",
+   "A"
+  ],
+  [
+   "chisoda",
+   59,
+   " Viilor ",
+   "C"
+  ],
+  [
+   "dudestii-noi",
+   6,
+   "str. Berlin ",
+   "A"
+  ],
+  [
+   "dudestii-noi",
+   53,
+   " Alete zone de intravilan fără denumire de stradă ",
+   "B"
+  ],
+  [
+   "dudestii-noi",
+   54,
+   " Zona industrială ",
+   "C"
+  ],
+  [
+   "dumbravita",
+   1,
+   " 53 Gaz ",
+   "D"
+  ],
+  [
+   "dumbravita",
+   2,
+   " 54 Gaz ",
+   "D"
+  ],
+  [
+   "dumbravita",
+   3,
+   " 55 Gaz ",
+   "D"
+  ],
+  [
+   "dumbravita",
+   4,
+   " 56 Gaz ",
+   "D"
+  ],
+  [
+   "dumbravita",
+   8,
+   " Albatrosului ",
+   "D"
+  ],
+  [
+   "dumbravita",
+   9,
+   " Albert Einstein ",
+   "D"
+  ],
+  [
+   "dumbravita",
+   13,
+   " Alma ",
+   "B"
+  ],
+  [
+   "dumbravita",
+   15,
+   " Amsterdam ",
+   "C"
+  ],
+  [
+   "dumbravita",
+   32,
+   " Bach ",
+   "C"
+  ],
+  [
+   "dumbravita",
+   35,
+   " Baltagul ",
+   "D"
+  ],
+  [
+   "dumbravita",
+   36,
+   " Ban ",
+   "A"
+  ],
+  [
+   "dumbravita",
+   43,
+   " Beregsăului ",
+   "D"
+  ],
+  [
+   "dumbravita",
+   50,
+   " Bobâlnița ",
+   "A"
+  ],
+  [
+   "dumbravita",
+   53,
+   " Bratislava ",
+   "C"
+  ],
+  [
+   "dumbravita",
+   56,
+   " Bruxelles II ",
+   "A"
+  ],
+  [
+   "dumbravita",
+   62,
+   " Cameliei ",
+   "A"
+  ],
+  [
+   "dumbravita",
+   63,
+   " Camil Petrescu ",
+   "C"
+  ],
+  [
+   "dumbravita",
+   64,
+   " Caraș ",
+   "B"
+  ],
+  [
+   "dumbravita",
+   67,
+   " Castilia ",
+   "A"
+  ],
+  [
+   "dumbravita",
+   72,
+   " Centura ",
+   "D"
+  ],
+  [
+   "dumbravita",
+   77,
+   " Chișinău ",
+   "C"
+  ],
+  [
+   "dumbravita",
+   80,
+   " Ciprian Porumbescu ",
+   "D"
+  ],
+  [
+   "dumbravita",
+   91,
+   " Coral ",
+   "B"
+  ],
+  [
+   "dumbravita",
+   98,
+   " Criș ",
+   "C"
+  ],
+  [
+   "dumbravita",
+   101,
+   " Crișurilor II ",
+   "C"
+  ],
+  [
+   "dumbravita",
+   102,
+   " Crizantemelor ",
+   "D"
+  ],
+  [
+   "dumbravita",
+   115,
+   " Encsel Moor ",
+   "A"
+  ],
+  [
+   "dumbravita",
+   127,
+   " Fizicii ",
+   "C"
+  ],
+  [
+   "dumbravita",
+   132,
+   " Freziei ",
+   "B"
+  ],
+  [
+   "dumbravita",
+   136,
+   " Gardony Geza ",
+   "D"
+  ],
+  [
+   "dumbravita",
+   145,
+   " Granada ",
+   "C"
+  ],
+  [
+   "dumbravita",
+   148,
+   " Grigore Alexandrescu ",
+   "A"
+  ],
+  [
+   "dumbravita",
+   152,
+   " Haydn ",
+   "C"
+  ],
+  [
+   "dumbravita",
+   158,
+   " Hunyadi Matyas ",
+   "D"
+  ],
+  [
+   "dumbravita",
+   159,
+   " Iasomiei ",
+   "C"
+  ],
+  [
+   "dumbravita",
+   161,
+   " Inginerilor ",
+   "C"
+  ],
+  [
+   "dumbravita",
+   162,
+   "Intrarea Apelor ",
+   "B"
+  ],
+  [
+   "dumbravita",
+   166,
+   "Intrarea Siret ",
+   "B"
+  ],
+  [
+   "dumbravita",
+   171,
+   " Isac Newton ",
+   "C"
+  ],
+  [
+   "dumbravita",
+   174,
+   " J.R. Kipling ",
+   "C"
+  ],
+  [
+   "dumbravita",
+   175,
+   " James Watt ",
+   "C"
+  ],
+  [
+   "dumbravita",
+   177,
+   " Johan Sebastian Bach ",
+   "C"
+  ],
+  [
+   "dumbravita",
+   178,
+   " Johannes Kepler ",
+   "C"
+  ],
+  [
+   "dumbravita",
+   179,
+   " Jokai Mor ",
+   "D"
+  ],
+  [
+   "dumbravita",
+   182,
+   " Jules Verne ",
+   "C"
+  ],
+  [
+   "dumbravita",
+   184,
+   " Kalman Imre ",
+   "C"
+  ],
+  [
+   "dumbravita",
+   185,
+   " Kepler ",
+   "C"
+  ],
+  [
+   "dumbravita",
+   187,
+   " Kodaly Zoltan ",
+   "C"
+  ],
+  [
+   "dumbravita",
+   190,
+   " Lacului ",
+   "D"
+  ],
+  [
+   "dumbravita",
+   193,
+   " Lăcătuşului ",
+   "E"
+  ],
+  [
+   "dumbravita",
+   203,
+   " Liniștei ",
+   "C"
+  ],
+  [
+   "dumbravita",
+   213,
+   " Ludovic Spiess ",
+   "C"
+  ],
+  [
+   "dumbravita",
+   216,
+   " Luxemburg ",
+   "C"
+  ],
+  [
+   "dumbravita",
+   221,
+   " Magnoliilor ",
+   "D"
+  ],
+  [
+   "dumbravita",
+   223,
+   " Marcel Iancu ",
+   "B"
+  ],
+  [
+   "dumbravita",
+   226,
+   " Marie Curie ",
+   "D"
+  ],
+  [
+   "dumbravita",
+   227,
+   " Mark Twain ",
+   "C"
+  ],
+  [
+   "dumbravita",
+   229,
+   " Maurice Ravel ",
+   "D"
+  ],
+  [
+   "dumbravita",
+   231,
+   " Mărgăritar ",
+   "B"
+  ],
+  [
+   "dumbravita",
+   243,
+   " Modena ",
+   "B"
+  ],
+  [
+   "dumbravita",
+   246,
+   " Moricz Zsigmond ",
+   "D"
+  ],
+  [
+   "dumbravita",
+   250,
+   " Mușcatelor ",
+   "C"
+  ],
+  [
+   "dumbravita",
+   256,
+   " Neptun II ",
+   "A"
+  ],
+  [
+   "dumbravita",
+   262,
+   " Nicolae Titulescu ",
+   "D"
+  ],
+  [
+   "dumbravita",
+   269,
+   " Oltul 2 ",
+   "A"
+  ],
+  [
+   "dumbravita",
+   270,
+   " Opal ",
+   "A"
+  ],
+  [
+   "dumbravita",
+   279,
+   " Percuției ",
+   "C"
+  ],
+  [
+   "dumbravita",
+   295,
+   " Poeziei 2 ",
+   "C"
+  ],
+  [
+   "dumbravita",
+   301,
+   " Proton ",
+   "C"
+  ],
+  [
+   "dumbravita",
+   304,
+   " Racului ",
+   "D"
+  ],
+  [
+   "dumbravita",
+   314,
+   " Sandor Falva ",
+   "B"
+  ],
+  [
+   "dumbravita",
+   316,
+   " Saturn 2 ",
+   "A"
+  ],
+  [
+   "dumbravita",
+   320,
+   " Semenicului ",
+   "B"
+  ],
+  [
+   "dumbravita",
+   322,
+   " Sevilia ",
+   "C"
+  ],
+  [
+   "dumbravita",
+   323,
+   " Sfântul Iosif ",
+   "D"
+  ],
+  [
+   "dumbravita",
+   333,
+   " Someșul Mic ",
+   "C"
+  ],
+  [
+   "dumbravita",
+   334,
+   " Speranței ",
+   "D"
+  ],
+  [
+   "dumbravita",
+   336,
+   " St. Petersburg ",
+   "C"
+  ],
+  [
+   "dumbravita",
+   338,
+   " Sunetului ",
+   "C"
+  ],
+  [
+   "dumbravita",
+   345,
+   " Teatrului ",
+   "C"
+  ],
+  [
+   "dumbravita",
+   346,
+   " Tehnicii ",
+   "C"
+  ],
+  [
+   "dumbravita",
+   351,
+   " Thomas Edison ",
+   "C"
+  ],
+  [
+   "dumbravita",
+   356,
+   " Torda ",
+   "B"
+  ],
+  [
+   "dumbravita",
+   373,
+   " Venus 2 ",
+   "A"
+  ],
+  [
+   "jimbolia",
+   13,
+   " Petre Jung ",
+   "A"
+  ],
+  [
+   "ghiroda",
+   1,
+   "Aleea Biruinţei ",
+   "A"
+  ],
+  [
+   "ghiroda",
+   3,
+   "Aleea Trestiei ",
+   "A"
+  ],
+  [
+   "ghiroda",
+   8,
+   "Str. Albăstrelelor ",
+   "A"
+  ],
+  [
+   "ghiroda",
+   9,
+   "Str. Albinelor ",
+   "B"
+  ],
+  [
+   "ghiroda",
+   10,
+   "Str. Aleea Ursului ",
+   "B"
+  ],
+  [
+   "ghiroda",
+   12,
+   "Str. Apuseni ",
+   "B"
+  ],
+  [
+   "ghiroda",
+   13,
+   "Str. Arieș ",
+   "B"
+  ],
+  [
+   "ghiroda",
+   14,
+   "Str. Arinului ",
+   "A"
+  ],
+  [
+   "ghiroda",
+   15,
+   "Str. Armoniei ",
+   "A"
+  ],
+  [
+   "ghiroda",
+   16,
+   "Str. Avrig ",
+   "B"
+  ],
+  [
+   "ghiroda",
+   17,
+   "Str. Azuga ",
+   "B"
+  ],
+  [
+   "ghiroda",
+   20,
+   "Str. Bicaz ",
+   "B"
+  ],
+  [
+   "ghiroda",
+   21,
+   "Str. Bistra ",
+   "B"
+  ],
+  [
+   "ghiroda",
+   29,
+   "Str. Carpaţi ",
+   "A"
+  ],
+  [
+   "ghiroda",
+   30,
+   "Str. Castanilor ",
+   "A"
+  ],
+  [
+   "ghiroda",
+   35,
+   "Str. Cerbului ",
+   "A"
+  ],
+  [
+   "ghiroda",
+   37,
+   "Str. Cintezei ",
+   "B"
+  ],
+  [
+   "ghiroda",
+   39,
+   "Str. Codrului ",
+   "A"
+  ],
+  [
+   "ghiroda",
+   40,
+   "Str. Comarnic ",
+   "B"
+  ],
+  [
+   "ghiroda",
+   41,
+   "Str. Corbului ",
+   "B"
+  ],
+  [
+   "ghiroda",
+   42,
+   "Str. Crizantemelor ",
+   "A"
+  ],
+  [
+   "ghiroda",
+   44,
+   "Str. Dorna ",
+   "B"
+  ],
+  [
+   "ghiroda",
+   45,
+   "Str. Dorului ",
+   "A"
+  ],
+  [
+   "ghiroda",
+   46,
+   "Str. Dropiei ",
+   "B"
+  ],
+  [
+   "ghiroda",
+   52,
+   "Str. Florilor ",
+   "A"
+  ],
+  [
+   "ghiroda",
+   59,
+   "Str. Ialomiţa ",
+   "A"
+  ],
+  [
+   "ghiroda",
+   60,
+   "Str. Iepurelui ",
+   "B"
+  ],
+  [
+   "ghiroda",
+   63,
+   "Str. Jiul ",
+   "A"
+  ],
+  [
+   "ghiroda",
+   65,
+   "Str. Lalelelor ",
+   "A"
+  ],
+  [
+   "ghiroda",
+   68,
+   "Str. Lișiței ",
+   "B"
+  ],
+  [
+   "ghiroda",
+   69,
+   "Str. Mesteacănului ",
+   "A"
+  ],
+  [
+   "ghiroda",
+   74,
+   "Str. Muntenia ",
+   "B"
+  ],
+  [
+   "ghiroda",
+   75,
+   "Str. Mureș ",
+   "B"
+  ],
+  [
+   "ghiroda",
+   77,
+   "Str. Nera ",
+   "B"
+  ],
+  [
+   "ghiroda",
+   78,
+   "Str. Nistru ",
+   "B"
+  ],
+  [
+   "ghiroda",
+   80,
+   "Str. Nufărul ",
+   "A"
+  ],
+  [
+   "ghiroda",
+   83,
+   "Str. Padiș ",
+   "B"
+  ],
+  [
+   "ghiroda",
+   88,
+   "Str. Păunului ",
+   "B"
+  ],
+  [
+   "ghiroda",
+   89,
+   "Str. Pelegrinului ",
+   "A"
+  ],
+  [
+   "ghiroda",
+   93,
+   "Str. Poiana Mărului ",
+   "B"
+  ],
+  [
+   "ghiroda",
+   94,
+   "Str. Poiana Ruscăi ",
+   "A"
+  ],
+  [
+   "ghiroda",
+   97,
+   "Str. Prepeliței ",
+   "B"
+  ],
+  [
+   "ghiroda",
+   99,
+   "Str. Rarău ",
+   "B"
+  ],
+  [
+   "ghiroda",
+   100,
+   "Str. Răchitei ",
+   "A"
+  ],
+  [
+   "ghiroda",
+   101,
+   "Str. Răsăritului ",
+   "B"
+  ],
+  [
+   "ghiroda",
+   102,
+   "Str. Retezat ",
+   "A"
+  ],
+  [
+   "ghiroda",
+   104,
+   "Str. Salciei ",
+   "A"
+  ],
+  [
+   "ghiroda",
+   107,
+   "Str. Sf. Ap. Petru şi Pavel ",
+   "A"
+  ],
+  [
+   "ghiroda",
+   109,
+   "Str. Sitarului ",
+   "B"
+  ],
+  [
+   "ghiroda",
+   111,
+   "Str. Șatra ",
+   "B"
+  ],
+  [
+   "ghiroda",
+   113,
+   "Str. Talian ",
+   "A"
+  ],
+  [
+   "ghiroda",
+   114,
+   "Str. Timiș ",
+   "B"
+  ],
+  [
+   "ghiroda",
+   119,
+   "Str. Vulpilor ",
+   "B"
+  ],
+  [
+   "ghiroda",
+   121,
+   "str. Zânelor ",
+   "A"
+  ],
+  [
+   "ghiroda",
+   122,
+   "Str. Zenit ",
+   "A"
+  ],
+  [
+   "giroc",
+   2,
+   " Alba Iulia ",
+   "C"
+  ],
+  [
+   "giroc",
+   4,
+   " Albinei ",
+   "C"
+  ],
+  [
+   "giroc",
+   8,
+   " Amurgului ",
+   "C"
+  ],
+  [
+   "giroc",
+   11,
+   " Apusului ",
+   "C"
+  ],
+  [
+   "giroc",
+   12,
+   " Arenei ",
+   "A"
+  ],
+  [
+   "giroc",
+   14,
+   " Arieșului ",
+   "B"
+  ],
+  [
+   "giroc",
+   17,
+   " Asociației ",
+   "A"
+  ],
+  [
+   "giroc",
+   19,
+   " Atomului ",
+   "C"
+  ],
+  [
+   "giroc",
+   22,
+   " Aviatorului ",
+   "C"
+  ],
+  [
+   "giroc",
+   23,
+   " Azaleea ",
+   "C"
+  ],
+  [
+   "giroc",
+   25,
+   " Begoniei ",
+   "A"
+  ],
+  [
+   "giroc",
+   29,
+   " Birzava ",
+   "A"
+  ],
+  [
+   "giroc",
+   31,
+   " Bistriței ",
+   "B"
+  ],
+  [
+   "giroc",
+   33,
+   " Brașov ",
+   "C"
+  ],
+  [
+   "giroc",
+   34,
+   " Brazilor ",
+   "C"
+  ],
+  [
+   "giroc",
+   36,
+   " Buburuzei ",
+   "C"
+  ],
+  [
+   "giroc",
+   37,
+   " București ",
+   "C"
+  ],
+  [
+   "giroc",
+   40,
+   "Calea Lactee ",
+   "C"
+  ],
+  [
+   "giroc",
+   43,
+   " Cameliei ",
+   "B"
+  ],
+  [
+   "giroc",
+   46,
+   " Cascadei ",
+   "B"
+  ],
+  [
+   "giroc",
+   47,
+   " Castanilor ",
+   "B"
+  ],
+  [
+   "giroc",
+   48,
+   " Căprioarei ",
+   "B"
+  ],
+  [
+   "giroc",
+   50,
+   " Cerbului ",
+   "B"
+  ],
+  [
+   "giroc",
+   51,
+   " Cerna ",
+   "A"
+  ],
+  [
+   "giroc",
+   53,
+   " Cicoarei ",
+   "B"
+  ],
+  [
+   "giroc",
+   55,
+   " Ciresului ",
+   "B"
+  ],
+  [
+   "giroc",
+   56,
+   " Clopotului ",
+   "B"
+  ],
+  [
+   "giroc",
+   57,
+   " Cluj ",
+   "C"
+  ],
+  [
+   "giroc",
+   60,
+   " Cosașului ",
+   "B"
+  ],
+  [
+   "giroc",
+   63,
+   " Crisului ",
+   "A"
+  ],
+  [
+   "giroc",
+   71,
+   " Dâmboviței ",
+   "B"
+  ],
+  [
+   "giroc",
+   73,
+   " Delfinului ",
+   "B"
+  ],
+  [
+   "giroc",
+   75,
+   " Deva ",
+   "C"
+  ],
+  [
+   "giroc",
+   78,
+   " Dudului ",
+   "A"
+  ],
+  [
+   "giroc",
+   87,
+   " Florenta ",
+   "B"
+  ],
+  [
+   "giroc",
+   88,
+   " Fluturelui ",
+   "C"
+  ],
+  [
+   "giroc",
+   102,
+   " Ghirlandei ",
+   "A"
+  ],
+  [
+   "giroc",
+   107,
+   " Holdelor ",
+   "C"
+  ],
+  [
+   "giroc",
+   108,
+   " Hortensiei ",
+   "B"
+  ],
+  [
+   "giroc",
+   110,
+   " Independentei ",
+   "B"
+  ],
+  [
+   "giroc",
+   111,
+   " Infinitului ",
+   "A"
+  ],
+  [
+   "giroc",
+   115,
+   " Inului ",
+   "A"
+  ],
+  [
+   "giroc",
+   121,
+   " Lacustei ",
+   "C"
+  ],
+  [
+   "giroc",
+   124,
+   " Lanului ",
+   "C"
+  ],
+  [
+   "giroc",
+   126,
+   " Lăcrămioarei ",
+   "B"
+  ],
+  [
+   "giroc",
+   132,
+   " Luceafărului ",
+   "A"
+  ],
+  [
+   "giroc",
+   133,
+   " Lunei ",
+   "C"
+  ],
+  [
+   "giroc",
+   135,
+   " Macilor între str. Daliei și str. Pepinierei) ",
+   "B"
+  ],
+  [
+   "giroc",
+   141,
+   " Measteacănului ",
+   "B"
+  ],
+  [
+   "giroc",
+   143,
+   " Meteoritului ",
+   "C"
+  ],
+  [
+   "giroc",
+   145,
+   " Miristei ",
+   "C"
+  ],
+  [
+   "giroc",
+   149,
+   " Muzicescu ",
+   "A"
+  ],
+  [
+   "giroc",
+   158,
+   " Nivelda ",
+   "B"
+  ],
+  [
+   "giroc",
+   159,
+   " Nuferilor ",
+   "B"
+  ],
+  [
+   "giroc",
+   163,
+   " Orion ",
+   "C"
+  ],
+  [
+   "giroc",
+   167,
+   " Pădureana ",
+   "D"
+  ],
+  [
+   "giroc",
+   168,
+   " Pepinierei ",
+   "C"
+  ],
+  [
+   "giroc",
+   169,
+   " Pescarilor ",
+   "D"
+  ],
+  [
+   "giroc",
+   171,
+   " Petuniei ",
+   "B"
+  ],
+  [
+   "giroc",
+   172,
+   " Pinului ",
+   "B"
+  ],
+  [
+   "giroc",
+   175,
+   " Planiste Bd. ",
+   "C"
+  ],
+  [
+   "giroc",
+   178,
+   " Poenitei ",
+   "C"
+  ],
+  [
+   "giroc",
+   180,
+   " Preot David Voniga ",
+   "A"
+  ],
+  [
+   "giroc",
+   183,
+   " Prutului ",
+   "B"
+  ],
+  [
+   "giroc",
+   185,
+   " Putna ",
+   "B"
+  ],
+  [
+   "giroc",
+   189,
+   " Rasaritului ",
+   "C"
+  ],
+  [
+   "giroc",
+   190,
+   " Recoltei ",
+   "C"
+  ],
+  [
+   "giroc",
+   199,
+   " Salcamului ",
+   "B"
+  ],
+  [
+   "giroc",
+   202,
+   " Satu Batran ",
+   "A"
+  ],
+  [
+   "giroc",
+   204,
+   " Sălaș ",
+   "D"
+  ],
+  [
+   "giroc",
+   205,
+   " Sânzienelor ",
+   "B"
+  ],
+  [
+   "giroc",
+   206,
+   " Sebeş ",
+   "C"
+  ],
+  [
+   "giroc",
+   209,
+   " Sirenei ",
+   "B"
+  ],
+  [
+   "giroc",
+   210,
+   " Siretului ",
+   "B"
+  ],
+  [
+   "giroc",
+   215,
+   " Sofia ",
+   "C"
+  ],
+  [
+   "giroc",
+   217,
+   " Somnului ",
+   "B"
+  ],
+  [
+   "giroc",
+   219,
+   " Spicului ",
+   "C"
+  ],
+  [
+   "giroc",
+   220,
+   " Stelei ",
+   "C"
+  ],
+  [
+   "giroc",
+   221,
+   " Stiintei ",
+   "B"
+  ],
+  [
+   "giroc",
+   227,
+   " Teiului ",
+   "B"
+  ],
+  [
+   "giroc",
+   230,
+   " Traian ",
+   "A"
+  ],
+  [
+   "giroc",
+   237,
+   " Universului ",
+   "A"
+  ],
+  [
+   "giroc",
+   239,
+   " Ursei ",
+   "C"
+  ],
+  [
+   "giroc",
+   240,
+   " Urzicii ",
+   "B"
+  ],
+  [
+   "giroc",
+   245,
+   " Vidrei ",
+   "D"
+  ],
+  [
+   "giroc",
+   246,
+   " Viilor ",
+   "B"
+  ],
+  [
+   "giroc",
+   248,
+   " Visinului ",
+   "C"
+  ],
+  [
+   "giroc",
+   253,
+   " Zarandului ",
+   "D"
+  ],
+  [
+   "giroc",
+   257,
+   " Zenitului ",
+   "C"
+  ],
+  [
+   "mosnita-noua",
+   1,
+   " Acvilei ",
+   "D"
+  ],
+  [
+   "mosnita-noua",
+   3,
+   " Adelina ",
+   "C"
+  ],
+  [
+   "mosnita-noua",
+   4,
+   " Adolescenței ",
+   "A"
+  ],
+  [
+   "mosnita-noua",
+   5,
+   " Adriana ",
+   "C"
+  ],
+  [
+   "mosnita-noua",
+   7,
+   " Agronomului ",
+   "D"
+  ],
+  [
+   "mosnita-noua",
+   8,
+   " Aida ",
+   "D"
+  ],
+  [
+   "mosnita-noua",
+   9,
+   " Albă ca Zăpada ",
+   "C"
+  ],
+  [
+   "mosnita-noua",
+   11,
+   "Aleea Aspirației ",
+   "C"
+  ],
+  [
+   "mosnita-noua",
+   12,
+   "Aleea Gândului ",
+   "C"
+  ],
+  [
+   "mosnita-noua",
+   13,
+   "Aleea Încrederii ",
+   "C"
+  ],
+  [
+   "mosnita-noua",
+   14,
+   "Aleea Năzuinței ",
+   "C"
+  ],
+  [
+   "mosnita-noua",
+   15,
+   "Aleea Vișinului ",
+   "C"
+  ],
+  [
+   "mosnita-noua",
+   16,
+   " Aleodor ",
+   "C"
+  ],
+  [
+   "mosnita-noua",
+   17,
+   " Alexandra ",
+   "C"
+  ],
+  [
+   "mosnita-noua",
+   18,
+   " Amalia ",
+   "A"
+  ],
+  [
+   "mosnita-noua",
+   20,
+   " Andrada ",
+   "D"
+  ],
+  [
+   "mosnita-noua",
+   21,
+   " Anisia ",
+   "B"
+  ],
+  [
+   "mosnita-noua",
+   23,
+   " Ariciului ",
+   "C"
+  ],
+  [
+   "mosnita-noua",
+   27,
+   " Babadag ",
+   "D"
+  ],
+  [
+   "mosnita-noua",
+   33,
+   " Berarilor ",
+   "A"
+  ],
+  [
+   "mosnita-noua",
+   36,
+   " Berzei ",
+   "B"
+  ],
+  [
+   "mosnita-noua",
+   39,
+   " Bocșa ",
+   "D"
+  ],
+  [
+   "mosnita-noua",
+   40,
+   " Bohotin ",
+   "D"
+  ],
+  [
+   "mosnita-noua",
+   43,
+   " Brândușa ",
+   "B"
+  ],
+  [
+   "mosnita-noua",
+   44,
+   " Brebu ",
+   "D"
+  ],
+  [
+   "mosnita-noua",
+   45,
+   " Briana ",
+   "C"
+  ],
+  [
+   "mosnita-noua",
+   47,
+   " Bucium ",
+   "D"
+  ],
+  [
+   "mosnita-noua",
+   50,
+   " Budureasca ",
+   "D"
+  ],
+  [
+   "mosnita-noua",
+   52,
+   " Bumbacului ",
+   "C"
+  ],
+  [
+   "mosnita-noua",
+   55,
+   " Carmen ",
+   "B"
+  ],
+  [
+   "mosnita-noua",
+   56,
+   " Carpați ",
+   "A"
+  ],
+  [
+   "mosnita-noua",
+   58,
+   " Călugăreni ",
+   "C"
+  ],
+  [
+   "mosnita-noua",
+   60,
+   " Cătălina ",
+   "C"
+  ],
+  [
+   "mosnita-noua",
+   61,
+   " Câlnic ",
+   "D"
+  ],
+  [
+   "mosnita-noua",
+   65,
+   " Cecilia ",
+   "C"
+  ],
+  [
+   "mosnita-noua",
+   66,
+   " Cenușăreasa ",
+   "C"
+  ],
+  [
+   "mosnita-noua",
+   67,
+   " Ceptura ",
+   "D"
+  ],
+  [
+   "mosnita-noua",
+   71,
+   " Ciutei ",
+   "B"
+  ],
+  [
+   "mosnita-noua",
+   73,
+   " Cocorului ",
+   "D"
+  ],
+  [
+   "mosnita-noua",
+   74,
+   " Codobaturii ",
+   "D"
+  ],
+  [
+   "mosnita-noua",
+   78,
+   " Corbului ",
+   "D"
+  ],
+  [
+   "mosnita-noua",
+   79,
+   " Corcova ",
+   "D"
+  ],
+  [
+   "mosnita-noua",
+   80,
+   " Cornelia ",
+   "C"
+  ],
+  [
+   "mosnita-noua",
+   81,
+   " Cosânzeana ",
+   "C"
+  ],
+  [
+   "mosnita-noua",
+   82,
+   " Cotești ",
+   "D"
+  ],
+  [
+   "mosnita-noua",
+   83,
+   " Cotnar ",
+   "D"
+  ],
+  [
+   "mosnita-noua",
+   84,
+   " Cotoșman ",
+   "C"
+  ],
+  [
+   "mosnita-noua",
+   85,
+   " Cramei ",
+   "D"
+  ],
+  [
+   "mosnita-noua",
+   86,
+   " Crăiasa Zăpezii ",
+   "C"
+  ],
+  [
+   "mosnita-noua",
+   87,
+   " Credinței ",
+   "C"
+  ],
+  [
+   "mosnita-noua",
+   89,
+   " Cristina ",
+   "B"
+  ],
+  [
+   "mosnita-noua",
+   93,
+   " Dealul Bujorului ",
+   "D"
+  ],
+  [
+   "mosnita-noua",
+   94,
+   " Dealul Codrului ",
+   "D"
+  ],
+  [
+   "mosnita-noua",
+   95,
+   " Dealurile Lipovei ",
+   "D"
+  ],
+  [
+   "mosnita-noua",
+   96,
+   " Dealul Prisnel ",
+   "D"
+  ],
+  [
+   "mosnita-noua",
+   97,
+   " Dealurile Buziașului ",
+   "D"
+  ],
+  [
+   "mosnita-noua",
+   98,
+   " Degețica ",
+   "C"
+  ],
+  [
+   "mosnita-noua",
+   103,
+   " Domașnea ",
+   "C"
+  ],
+  [
+   "mosnita-noua",
+   104,
+   " Dorina ",
+   "C"
+  ],
+  [
+   "mosnita-noua",
+   105,
+   " Dorinței ",
+   "C"
+  ],
+  [
+   "mosnita-noua",
+   112,
+   " Egretei ",
+   "B"
+  ],
+  [
+   "mosnita-noua",
+   115,
+   " Eugenia ",
+   "C"
+  ],
+  [
+   "mosnita-noua",
+   116,
+   " Fabricii ",
+   "D"
+  ],
+  [
+   "mosnita-noua",
+   118,
+   " Fântânilor ",
+   "A"
+  ],
+  [
+   "mosnita-noua",
+   119,
+   " Fazanului ",
+   "D"
+  ],
+  [
+   "mosnita-noua",
+   120,
+   " Fâriug ",
+   "D"
+  ],
+  [
+   "mosnita-noua",
+   122,
+   " Fermierului ",
+   "D"
+  ],
+  [
+   "mosnita-noua",
+   123,
+   " Flamingo ",
+   "A"
+  ],
+  [
+   "mosnita-noua",
+   124,
+   " Florarului ",
+   "D"
+  ],
+  [
+   "mosnita-noua",
+   125,
+   " Florenta ",
+   "A"
+  ],
+  [
+   "mosnita-noua",
+   133,
+   " Goarnei ",
+   "C"
+  ],
+  [
+   "mosnita-noua",
+   134,
+   " Graurelui ",
+   "D"
+  ],
+  [
+   "mosnita-noua",
+   137,
+   " Grâului ",
+   "C"
+  ],
+  [
+   "mosnita-noua",
+   138,
+   " Greuceanu ",
+   "C"
+  ],
+  [
+   "mosnita-noua",
+   140,
+   " Harap Alb ",
+   "C"
+  ],
+  [
+   "mosnita-noua",
+   141,
+   " Holdei ",
+   "D"
+  ],
+  [
+   "mosnita-noua",
+   144,
+   " Horticultorului ",
+   "D"
+  ],
+  [
+   "mosnita-noua",
+   145,
+   " Ialomicioara ",
+   "C"
+  ],
+  [
+   "mosnita-noua",
+   147,
+   " Idilei ",
+   "A"
+  ],
+  [
+   "mosnita-noua",
+   150,
+   " Industriei ",
+   "D"
+  ],
+  [
+   "mosnita-noua",
+   151,
+   " Intrare Nouă ",
+   "A"
+  ],
+  [
+   "mosnita-noua",
+   153,
+   "Intrarea Iatacului ",
+   "A"
+  ],
+  [
+   "mosnita-noua",
+   157,
+   " Istria ",
+   "D"
+  ],
+  [
+   "mosnita-noua",
+   158,
+   " Iutei ",
+   "C"
+  ],
+  [
+   "mosnita-noua",
+   159,
+   " Izvorului ",
+   "B"
+  ],
+  [
+   "mosnita-noua",
+   160,
+   " Jidvei ",
+   "D"
+  ],
+  [
+   "mosnita-noua",
+   164,
+   " Lanului ",
+   "C"
+  ],
+  [
+   "mosnita-noua",
+   166,
+   " Lechința ",
+   "D"
+  ],
+  [
+   "mosnita-noua",
+   167,
+   " Legumicultorului ",
+   "D"
+  ],
+  [
+   "mosnita-noua",
+   169,
+   " Lisabona ",
+   "A"
+  ],
+  [
+   "mosnita-noua",
+   170,
+   " Lișiței ",
+   "A"
+  ],
+  [
+   "mosnita-noua",
+   177,
+   " Magdalena ",
+   "B"
+  ],
+  [
+   "mosnita-noua",
+   179,
+   " Măcin ",
+   "D"
+  ],
+  [
+   "mosnita-noua",
+   180,
+   " Mărășeti ",
+   "C"
+  ],
+  [
+   "mosnita-noua",
+   184,
+   " Mehadia ",
+   "C"
+  ],
+  [
+   "mosnita-noua",
+   186,
+   " Mica Sirenă ",
+   "C"
+  ],
+  [
+   "mosnita-noua",
+   188,
+   " Milcov ",
+   "D"
+  ],
+  [
+   "mosnita-noua",
+   189,
+   " Miniș ",
+   "D"
+  ],
+  [
+   "mosnita-noua",
+   196,
+   " Movilei ",
+   "C"
+  ],
+  [
+   "mosnita-noua",
+   197,
+   " Municii ",
+   "D"
+  ],
+  [
+   "mosnita-noua",
+   198,
+   " Murfatlar ",
+   "D"
+  ],
+  [
+   "mosnita-noua",
+   200,
+   " Muzicuței ",
+   "C"
+  ],
+  [
+   "mosnita-noua",
+   202,
+   " Natalin ",
+   null
+  ],
+  [
+   "mosnita-noua",
+   204,
+   " Neghiniță ",
+   "C"
+  ],
+  [
+   "mosnita-noua",
+   205,
+   " Nicorești ",
+   "D"
+  ],
+  [
+   "mosnita-noua",
+   207,
+   " Niculițel ",
+   "D"
+  ],
+  [
+   "mosnita-noua",
+   209,
+   " Odobești ",
+   "D"
+  ],
+  [
+   "mosnita-noua",
+   216,
+   " Orzului ",
+   "C"
+  ],
+  [
+   "mosnita-noua",
+   218,
+   " Ostrov ",
+   "D"
+  ],
+  [
+   "mosnita-noua",
+   219,
+   " Ovăzului ",
+   "C"
+  ],
+  [
+   "mosnita-noua",
+   221,
+   " Panciu ",
+   "D"
+  ],
+  [
+   "mosnita-noua",
+   223,
+   " Paulina ",
+   "A"
+  ],
+  [
+   "mosnita-noua",
+   225,
+   " Păstorului ",
+   "D"
+  ],
+  [
+   "mosnita-noua",
+   226,
+   " Pâncota ",
+   "D"
+  ],
+  [
+   "mosnita-noua",
+   229,
+   " Petrovaselo ",
+   "D"
+  ],
+  [
+   "mosnita-noua",
+   230,
+   " Piatra Craiului ",
+   "A"
+  ],
+  [
+   "mosnita-noua",
+   232,
+   " Pietrarului ",
+   "D"
+  ],
+  [
+   "mosnita-noua",
+   233,
+   " Pipăruș ",
+   "C"
+  ],
+  [
+   "mosnita-noua",
+   235,
+   " Podgoriei ",
+   "D"
+  ],
+  [
+   "mosnita-noua",
+   236,
+   " Poeniței ",
+   "C"
+  ],
+  [
+   "mosnita-noua",
+   239,
+   " Porumbului ",
+   "C"
+  ],
+  [
+   "mosnita-noua",
+   243,
+   " Prâslea ",
+   "C"
+  ],
+  [
+   "mosnita-noua",
+   244,
+   " Prichindel ",
+   "D"
+  ],
+  [
+   "mosnita-noua",
+   248,
+   " Pupezei ",
+   "D"
+  ],
+  [
+   "mosnita-noua",
+   251,
+   " Rânca ",
+   "B"
+  ],
+  [
+   "mosnita-noua",
+   252,
+   " Recoltei ",
+   "D"
+  ],
+  [
+   "mosnita-noua",
+   258,
+   " Roxana ",
+   "B"
+  ],
+  [
+   "mosnita-noua",
+   260,
+   " Sadova ",
+   "D"
+  ],
+  [
+   "mosnita-noua",
+   262,
+   " Sâmburești ",
+   "D"
+  ],
+  [
+   "mosnita-noua",
+   264,
+   " Scărișoara ",
+   "C"
+  ],
+  [
+   "mosnita-noua",
+   265,
+   " Schevița ",
+   "C"
+  ],
+  [
+   "mosnita-noua",
+   266,
+   " Secarei ",
+   "C"
+  ],
+  [
+   "mosnita-noua",
+   267,
+   " Secerișului ",
+   "D"
+  ],
+  [
+   "mosnita-noua",
+   268,
+   " Segarcea ",
+   "D"
+  ],
+  [
+   "mosnita-noua",
+   270,
+   " Silagiu ",
+   "D"
+  ],
+  [
+   "mosnita-noua",
+   272,
+   " Skopje ",
+   "A"
+  ],
+  [
+   "mosnita-noua",
+   276,
+   " Sturzului ",
+   "D"
+  ],
+  [
+   "mosnita-noua",
+   277,
+   " Surduc ",
+   "B"
+  ],
+  [
+   "mosnita-noua",
+   279,
+   " Tbilisi ",
+   "B"
+  ],
+  [
+   "mosnita-noua",
+   283,
+   " Teremia ",
+   "D"
+  ],
+  [
+   "mosnita-noua",
+   286,
+   " Tirol ",
+   "D"
+  ],
+  [
+   "mosnita-noua",
+   288,
+   " Tohani ",
+   "D"
+  ],
+  [
+   "mosnita-noua",
+   289,
+   " Topolnița ",
+   "C"
+  ],
+  [
+   "mosnita-noua",
+   292,
+   " Tutova ",
+   "D"
+  ],
+  [
+   "mosnita-noua",
+   295,
+   " Țugulea ",
+   "C"
+  ],
+  [
+   "mosnita-noua",
+   298,
+   " Uzinei ",
+   "D"
+  ],
+  [
+   "mosnita-noua",
+   299,
+   " Valea Călugărească ",
+   "D"
+  ],
+  [
+   "mosnita-noua",
+   300,
+   " Valeria ",
+   "A"
+  ],
+  [
+   "mosnita-noua",
+   301,
+   " Valletta ",
+   "A"
+  ],
+  [
+   "mosnita-noua",
+   305,
+   " Vârtop ",
+   "C"
+  ],
+  [
+   "mosnita-noua",
+   307,
+   " Vermeș ",
+   "D"
+  ],
+  [
+   "mosnita-noua",
+   309,
+   " Veteranului ",
+   "D"
+  ],
+  [
+   "mosnita-noua",
+   312,
+   " Viitorului ",
+   "A"
+  ],
+  [
+   "mosnita-noua",
+   314,
+   " Viticultorului ",
+   "D"
+  ],
+  [
+   "mosnita-noua",
+   316,
+   " Vrancea ",
+   "D"
+  ],
+  [
+   "mosnita-noua",
+   317,
+   " Xenia ",
+   "A"
+  ],
+  [
+   "mosnita-noua",
+   320,
+   " Zaraza ",
+   "C"
+  ],
+  [
+   "mosnita-noua",
+   321,
+   " Zarzavagiului ",
+   "D"
+  ],
+  [
+   "mosnita-noua",
+   322,
+   " Zăgujeni ",
+   "D"
+  ],
+  [
+   "mosnita-noua",
+   324,
+   " Zeletin ",
+   "D"
+  ],
+  [
+   "mosnita-noua",
+   326,
+   " Zootehnistului ",
+   "D"
+  ],
+  [
+   "mosnita-veche",
+   1,
+   " Adam ",
+   "A"
+  ],
+  [
+   "mosnita-veche",
+   2,
+   " Afinului ",
+   "D"
+  ],
+  [
+   "mosnita-veche",
+   7,
+   " Alexandria ",
+   "D"
+  ],
+  [
+   "mosnita-veche",
+   8,
+   " Altringen ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   9,
+   " Alunului ",
+   "B"
+  ],
+  [
+   "mosnita-veche",
+   10,
+   " Alzira ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   14,
+   " Ardealul ",
+   "A"
+  ],
+  [
+   "mosnita-veche",
+   19,
+   " Aroldo ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   21,
+   " Attila ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   25,
+   " Baia Mare ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   27,
+   " Banloc ",
+   "B"
+  ],
+  [
+   "mosnita-veche",
+   29,
+   " Băgrinului ",
+   "A"
+  ],
+  [
+   "mosnita-veche",
+   30,
+   " Bărăteaz ",
+   "B"
+  ],
+  [
+   "mosnita-veche",
+   32,
+   " Bârzava ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   34,
+   " Becicherec ",
+   "B"
+  ],
+  [
+   "mosnita-veche",
+   36,
+   " Belinț ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   37,
+   " Bethausen ",
+   "B"
+  ],
+  [
+   "mosnita-veche",
+   43,
+   " Boema ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   45,
+   " Boldur ",
+   "B"
+  ],
+  [
+   "mosnita-veche",
+   47,
+   " Borșa ",
+   "B"
+  ],
+  [
+   "mosnita-veche",
+   48,
+   " Botești ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   49,
+   " Botoșani ",
+   "D"
+  ],
+  [
+   "mosnita-veche",
+   54,
+   " Brestovăț ",
+   "B"
+  ],
+  [
+   "mosnita-veche",
+   55,
+   " Bucovăț ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   57,
+   " Buhaiului ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   58,
+   " Bușteni ",
+   "A"
+  ],
+  [
+   "mosnita-veche",
+   60,
+   " Buziaș ",
+   "B"
+  ],
+  [
+   "mosnita-veche",
+   64,
+   " Calafindești ",
+   "D"
+  ],
+  [
+   "mosnita-veche",
+   65,
+   " Caransebeș ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   66,
+   " Caraș-Severin ",
+   "D"
+  ],
+  [
+   "mosnita-veche",
+   69,
+   " Călărași ",
+   "D"
+  ],
+  [
+   "mosnita-veche",
+   70,
+   " Cărpiniș ",
+   "B"
+  ],
+  [
+   "mosnita-veche",
+   72,
+   " Cenad ",
+   "B"
+  ],
+  [
+   "mosnita-veche",
+   73,
+   " Cenei ",
+   "B"
+  ],
+  [
+   "mosnita-veche",
+   74,
+   " Charlottenburg ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   75,
+   " Checea ",
+   "B"
+  ],
+  [
+   "mosnita-veche",
+   77,
+   " Chevereș ",
+   "B"
+  ],
+  [
+   "mosnita-veche",
+   81,
+   " Cireșului ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   83,
+   " Cluj ",
+   "D"
+  ],
+  [
+   "mosnita-veche",
+   84,
+   " Coacăzului ",
+   "B"
+  ],
+  [
+   "mosnita-veche",
+   85,
+   " Cobzei ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   86,
+   " Colombina ",
+   "A"
+  ],
+  [
+   "mosnita-veche",
+   87,
+   " Comloș ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   91,
+   " Contesa Maritza ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   93,
+   " Corcodușului ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   94,
+   " Coșteiu ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   95,
+   " Covasna ",
+   "D"
+  ],
+  [
+   "mosnita-veche",
+   96,
+   " Craiova ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   98,
+   " Criș ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   99,
+   " Crizantemei ",
+   "A"
+  ],
+  [
+   "mosnita-veche",
+   101,
+   " Darova ",
+   "B"
+  ],
+  [
+   "mosnita-veche",
+   102,
+   " Dâmbovița ",
+   "D"
+  ],
+  [
+   "mosnita-veche",
+   104,
+   " Deva ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   105,
+   " Dezdemona ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   107,
+   " Dolj ",
+   "D"
+  ],
+  [
+   "mosnita-veche",
+   109,
+   " Don Carlos ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   110,
+   " Don Giovani ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   113,
+   " Drobeta ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   114,
+   " Drumul Boilor ",
+   "A"
+  ],
+  [
+   "mosnita-veche",
+   118,
+   " Falstaff ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   119,
+   " Făget ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   120,
+   " Fârdea ",
+   "B"
+  ],
+  [
+   "mosnita-veche",
+   124,
+   " Focșani ",
+   "D"
+  ],
+  [
+   "mosnita-veche",
+   125,
+   " Foieni ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   130,
+   " Galați ",
+   "D"
+  ],
+  [
+   "mosnita-veche",
+   131,
+   " Garoafei ",
+   "A"
+  ],
+  [
+   "mosnita-veche",
+   133,
+   " Găvoșdia ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   134,
+   " Gelu ",
+   "B"
+  ],
+  [
+   "mosnita-veche",
+   136,
+   " Ghizela ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   137,
+   " Giarmata ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   138,
+   " Giera ",
+   "B"
+  ],
+  [
+   "mosnita-veche",
+   141,
+   " Gorj ",
+   "D"
+  ],
+  [
+   "mosnita-veche",
+   142,
+   " Gotlob ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   143,
+   " Gurghiu ",
+   "B"
+  ],
+  [
+   "mosnita-veche",
+   144,
+   " Gutuiului ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   145,
+   " Hamlet ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   146,
+   " Harghita ",
+   "D"
+  ],
+  [
+   "mosnita-veche",
+   147,
+   " Harlequin ",
+   "A"
+  ],
+  [
+   "mosnita-veche",
+   149,
+   " Hera ",
+   "D"
+  ],
+  [
+   "mosnita-veche",
+   150,
+   " Hunedoara ",
+   "D"
+  ],
+  [
+   "mosnita-veche",
+   151,
+   " Hezeriș ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   152,
+   " Ialomița ",
+   "D"
+  ],
+  [
+   "mosnita-veche",
+   153,
+   " Iași ",
+   "D"
+  ],
+  [
+   "mosnita-veche",
+   157,
+   " Ilfov ",
+   "D"
+  ],
+  [
+   "mosnita-veche",
+   158,
+   "Intrarea Manon Lescaut ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   159,
+   "Intrarea Edgar ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   161,
+   " Ioana d'Arc ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   162,
+   " Ioana Farchescu ",
+   "A"
+  ],
+  [
+   "mosnita-veche",
+   163,
+   " Jebel ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   165,
+   " Jiului ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   166,
+   " Jupani ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   167,
+   " Karina ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   170,
+   " Liliacul ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   172,
+   " Lucia di Lammermoor ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   174,
+   " Macbeth ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   176,
+   " Madane Butterfly ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   183,
+   " Măceșului ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   188,
+   " Mehedinți ",
+   "D"
+  ],
+  [
+   "mosnita-veche",
+   189,
+   " Merișorului ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   191,
+   " Miercurea Ciuc ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   195,
+   " Muntenia ",
+   "A"
+  ],
+  [
+   "mosnita-veche",
+   196,
+   " Mureș ",
+   "D"
+  ],
+  [
+   "mosnita-veche",
+   199,
+   " Mușcatei ",
+   "A"
+  ],
+  [
+   "mosnita-veche",
+   200,
+   " Nabucco ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   201,
+   " Nadăș ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   202,
+   " Napocca ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   204,
+   " Neamț ",
+   "D"
+  ],
+  [
+   "mosnita-veche",
+   205,
+   " Nera ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   206,
+   " Nițchidorf ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   208,
+   " Olt ",
+   "D"
+  ],
+  [
+   "mosnita-veche",
+   209,
+   " Operei ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   210,
+   " Oradea ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   211,
+   " Orăștie ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   214,
+   " Orțișoara ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   215,
+   " Otelec ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   216,
+   " Otello ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   219,
+   " Pașcani ",
+   "D"
+  ],
+  [
+   "mosnita-veche",
+   222,
+   " Păpădiei ",
+   "D"
+  ],
+  [
+   "mosnita-veche",
+   223,
+   " Păpușa ",
+   "B"
+  ],
+  [
+   "mosnita-veche",
+   224,
+   " Părului ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   225,
+   " Periam ",
+   "B"
+  ],
+  [
+   "mosnita-veche",
+   227,
+   " Petroșani ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   230,
+   " Piatra Neamț ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   231,
+   " Piersicului ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   232,
+   " Pigdetto ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   234,
+   " Pișchia ",
+   "B"
+  ],
+  [
+   "mosnita-veche",
+   237,
+   " Ploiești ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   239,
+   " Pogănești ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   240,
+   " Pogăniș ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   242,
+   " Prahova ",
+   "D"
+  ],
+  [
+   "mosnita-veche",
+   245,
+   " Prunului ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   246,
+   " Racovița ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   247,
+   " Răsăritului ",
+   "A"
+  ],
+  [
+   "mosnita-veche",
+   249,
+   " Reșița ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   250,
+   " Rigoletto ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   254,
+   " Saravale ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   256,
+   " Satu Mare ",
+   "D"
+  ],
+  [
+   "mosnita-veche",
+   257,
+   " Săceni ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   258,
+   " Sălaj ",
+   "D"
+  ],
+  [
+   "mosnita-veche",
+   262,
+   " Secaș ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   264,
+   " Semenic ",
+   "B"
+  ],
+  [
+   "mosnita-veche",
+   266,
+   " Sf. Gheorghe ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   268,
+   " Sibiu ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   271,
+   " Siret ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   273,
+   " Slobozia ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   274,
+   " Smochinului ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   276,
+   " Someș ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   278,
+   " Stiffelio ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   279,
+   " Straja ",
+   "B"
+  ],
+  [
+   "mosnita-veche",
+   280,
+   " Subuleasa ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   283,
+   " Tamburinei ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   284,
+   " Târgoviște ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   285,
+   " Târgu Jiu ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   286,
+   " Târgu Mureș ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   288,
+   " Tisei ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   290,
+   " Toporașilor ",
+   "D"
+  ],
+  [
+   "mosnita-veche",
+   291,
+   " Tormac ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   292,
+   " Tosca ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   294,
+   " Traviata ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   295,
+   " Trâmbiței ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   296,
+   " Trifoiului ",
+   "D"
+  ],
+  [
+   "mosnita-veche",
+   297,
+   " Trubadurului ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   298,
+   " Tulcea ",
+   "D"
+  ],
+  [
+   "mosnita-veche",
+   300,
+   " Turandot ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   302,
+   " Țibeș ",
+   "B"
+  ],
+  [
+   "mosnita-veche",
+   303,
+   " Uihei ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   305,
+   " Variaș ",
+   "B"
+  ],
+  [
+   "mosnita-veche",
+   306,
+   " Vasile Crâșmariu ",
+   "A"
+  ],
+  [
+   "mosnita-veche",
+   307,
+   " Vâlcani ",
+   "B"
+  ],
+  [
+   "mosnita-veche",
+   308,
+   " Vâlcea ",
+   "D"
+  ],
+  [
+   "mosnita-veche",
+   309,
+   " Vicențiu Babeș ",
+   "A"
+  ],
+  [
+   "mosnita-veche",
+   312,
+   " Viorelelor ",
+   "A"
+  ],
+  [
+   "mosnita-veche",
+   314,
+   " Vișinului ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   315,
+   " Voiteg ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   316,
+   " Xilofonului ",
+   "C"
+  ],
+  [
+   "mosnita-veche",
+   318,
+   " Zalău ",
+   "D"
+  ],
+  [
+   "mosnita-veche",
+   320,
+   " Zmeurului ",
+   "B"
+  ],
+  [
+   "urseni",
+   1,
+   " Acvilei ",
+   "C"
+  ],
+  [
+   "urseni",
+   3,
+   " Ahile ",
+   "B"
+  ],
+  [
+   "urseni",
+   5,
+   " Alexandra ",
+   "B"
+  ],
+  [
+   "urseni",
+   6,
+   " Andrada ",
+   "C"
+  ],
+  [
+   "urseni",
+   12,
+   " Bizamului ",
+   "C"
+  ],
+  [
+   "urseni",
+   15,
+   " Buburuzei ",
+   "C"
+  ],
+  [
+   "urseni",
+   17,
+   "Calea Timișoarei ",
+   "B"
+  ],
+  [
+   "urseni",
+   18,
+   "Calea Urseni ",
+   "A"
+  ],
+  [
+   "urseni",
+   19,
+   " Cap Aurora ",
+   "A"
+  ],
+  [
+   "urseni",
+   20,
+   " Castorului ",
+   "C"
+  ],
+  [
+   "urseni",
+   21,
+   " Cătălina ",
+   "B"
+  ],
+  [
+   "urseni",
+   23,
+   " Cecilia ",
+   "B"
+  ],
+  [
+   "urseni",
+   28,
+   " Chilia ",
+   "A"
+  ],
+  [
+   "urseni",
+   29,
+   " Christoleni ",
+   "B"
+  ],
+  [
+   "urseni",
+   30,
+   " Cintezei ",
+   "C"
+  ],
+  [
+   "urseni",
+   31,
+   " Ciocănitoarei ",
+   "C"
+  ],
+  [
+   "urseni",
+   32,
+   " Ciocârliei ",
+   "B"
+  ],
+  [
+   "urseni",
+   33,
+   " Cireșu ",
+   "B"
+  ],
+  [
+   "urseni",
+   35,
+   " Codalbului ",
+   "B"
+  ],
+  [
+   "urseni",
+   36,
+   " Codrușului ",
+   "C"
+  ],
+  [
+   "urseni",
+   38,
+   " Condorului ",
+   "C"
+  ],
+  [
+   "urseni",
+   39,
+   " Condrița ",
+   "B"
+  ],
+  [
+   "urseni",
+   40,
+   " Corbului ",
+   "C"
+  ],
+  [
+   "urseni",
+   41,
+   " Cormoranului ",
+   "B"
+  ],
+  [
+   "urseni",
+   42,
+   " Cornea ",
+   "B"
+  ],
+  [
+   "urseni",
+   44,
+   " Cornu ",
+   "B"
+  ],
+  [
+   "urseni",
+   47,
+   " Coțofanei ",
+   "C"
+  ],
+  [
+   "urseni",
+   48,
+   " Cucului ",
+   "C"
+  ],
+  [
+   "urseni",
+   49,
+   " Dobrești ",
+   "B"
+  ],
+  [
+   "urseni",
+   51,
+   " Dorina ",
+   "B"
+  ],
+  [
+   "urseni",
+   52,
+   " Dorului ",
+   "A"
+  ],
+  [
+   "urseni",
+   53,
+   " Dropiei ",
+   "C"
+  ],
+  [
+   "urseni",
+   55,
+   " Enotului ",
+   "C"
+  ],
+  [
+   "urseni",
+   56,
+   " Eretelui ",
+   "C"
+  ],
+  [
+   "urseni",
+   57,
+   " Eternității ",
+   "A"
+  ],
+  [
+   "urseni",
+   58,
+   " Eugenia ",
+   "B"
+  ],
+  [
+   "urseni",
+   59,
+   " Filomelei ",
+   "C"
+  ],
+  [
+   "urseni",
+   60,
+   " Gaiței ",
+   "C"
+  ],
+  [
+   "urseni",
+   61,
+   " Gherteniș ",
+   "C"
+  ],
+  [
+   "urseni",
+   62,
+   " Guguștiucului ",
+   "C"
+  ],
+  [
+   "urseni",
+   64,
+   " Huhurezului ",
+   "C"
+  ],
+  [
+   "urseni",
+   65,
+   " Humor ",
+   "B"
+  ],
+  [
+   "urseni",
+   66,
+   " Iepurelui ",
+   "C"
+  ],
+  [
+   "urseni",
+   71,
+   " Lăstunului ",
+   "C"
+  ],
+  [
+   "urseni",
+   73,
+   " Libelulei ",
+   "C"
+  ],
+  [
+   "urseni",
+   74,
+   " Licuriciului ",
+   "C"
+  ],
+  [
+   "urseni",
+   80,
+   " Marcela ",
+   "C"
+  ],
+  [
+   "urseni",
+   82,
+   " Mădălina ",
+   "C"
+  ],
+  [
+   "urseni",
+   83,
+   " Mătăsarului ",
+   "C"
+  ],
+  [
+   "urseni",
+   85,
+   " Mierlei ",
+   "B"
+  ],
+  [
+   "urseni",
+   87,
+   " Moldovița ",
+   "B"
+  ],
+  [
+   "urseni",
+   91,
+   " Mugurarului ",
+   "C"
+  ],
+  [
+   "urseni",
+   92,
+   " Nagâțului ",
+   "C"
+  ],
+  [
+   "urseni",
+   101,
+   " Partoș ",
+   "B"
+  ],
+  [
+   "urseni",
+   105,
+   " Pitulicii ",
+   "C"
+  ],
+  [
+   "urseni",
+   106,
+   " Pițigoiului ",
+   "C"
+  ],
+  [
+   "urseni",
+   108,
+   " Porumbelului ",
+   "C"
+  ],
+  [
+   "urseni",
+   110,
+   " Potârnichii ",
+   "C"
+  ],
+  [
+   "urseni",
+   111,
+   " Prepeliței ",
+   "C"
+  ],
+  [
+   "urseni",
+   112,
+   " Presurei ",
+   "C"
+  ],
+  [
+   "urseni",
+   113,
+   " Prigoriei ",
+   "B"
+  ],
+  [
+   "urseni",
+   115,
+   " Prundărișului ",
+   "C"
+  ],
+  [
+   "urseni",
+   116,
+   " Privighetorii ",
+   "B"
+  ],
+  [
+   "urseni",
+   117,
+   " Prometeu ",
+   "B"
+  ],
+  [
+   "urseni",
+   118,
+   " Putna ",
+   "B"
+  ],
+  [
+   "urseni",
+   120,
+   " Răciula ",
+   "B"
+  ],
+  [
+   "urseni",
+   122,
+   " Rândunicii ",
+   "C"
+  ],
+  [
+   "urseni",
+   125,
+   " Satul Nou ",
+   "A"
+  ],
+  [
+   "urseni",
+   129,
+   " Sfântul Gheorghe ",
+   "A"
+  ],
+  [
+   "urseni",
+   130,
+   " Sichvița ",
+   "B"
+  ],
+  [
+   "urseni",
+   131,
+   " Stăncuței ",
+   "C"
+  ],
+  [
+   "urseni",
+   132,
+   " Stârcului ",
+   "C"
+  ],
+  [
+   "urseni",
+   134,
+   " Sticletelui ",
+   "C"
+  ],
+  [
+   "urseni",
+   135,
+   " Șacalului ",
+   "C"
+  ],
+  [
+   "urseni",
+   137,
+   " Sucevița ",
+   "B"
+  ],
+  [
+   "urseni",
+   138,
+   " Sulina ",
+   "A"
+  ],
+  [
+   "urseni",
+   139,
+   " Tigrului ",
+   "C"
+  ],
+  [
+   "urseni",
+   140,
+   " Timea ",
+   "B"
+  ],
+  [
+   "urseni",
+   144,
+   " Turturicii ",
+   "C"
+  ],
+  [
+   "urseni",
+   147,
+   " Uliului ",
+   "C"
+  ],
+  [
+   "urseni",
+   151,
+   " Venus ",
+   "A"
+  ],
+  [
+   "urseni",
+   154,
+   " Viespar ",
+   "C"
+  ],
+  [
+   "urseni",
+   156,
+   " Voroneț ",
+   "B"
+  ],
+  [
+   "urseni",
+   157,
+   " Vrabiei ",
+   "B"
+  ],
+  [
+   "urseni",
+   161,
+   " Zimbrului ",
+   "C"
+  ],
+  [
+   "sag",
+   1,
+   " I ",
+   "A"
+  ],
+  [
+   "sag",
+   18,
+   " XVIII ",
+   "A"
+  ],
+  [
+   "sag",
+   19,
+   " XIX ",
+   "A"
+  ],
+  [
+   "sag",
+   31,
+   " XXXI ",
+   "B"
+  ],
+  [
+   "sag",
+   33,
+   " XXXIII ",
+   "B"
+  ],
+  [
+   "sag",
+   34,
+   " XXXIV ",
+   "B"
+  ],
+  [
+   "sag",
+   35,
+   " XXXV ",
+   "B"
+  ],
+  [
+   "sag",
+   36,
+   " XXXVI ",
+   "B"
+  ],
+  [
+   "sag",
+   41,
+   " XLI ",
+   "B"
+  ],
+  [
+   "sag",
+   42,
+   " XLII ",
+   "B"
+  ],
+  [
+   "sag",
+   43,
+   " XLIII ",
+   "B"
+  ],
+  [
+   "sag",
+   46,
+   " XLVI ",
+   "B"
+  ],
+  [
+   "sag",
+   51,
+   " LI ",
+   "B"
+  ],
+  [
+   "sag",
+   52,
+   " LII ",
+   "B"
+  ],
+  [
+   "sag",
+   53,
+   " LIII ",
+   "B"
+  ],
+  [
+   "sag",
+   54,
+   " LIV ",
+   "B"
+  ],
+  [
+   "sag",
+   55,
+   " LV ",
+   "B"
+  ],
+  [
+   "sag",
+   56,
+   " LVI ",
+   "B"
+  ],
+  [
+   "sag",
+   57,
+   " LVII ",
+   "B"
+  ],
+  [
+   "sag",
+   64,
+   " LXIV ",
+   "B"
+  ],
+  [
+   "sag",
+   73,
+   " LXXIII ",
+   "B"
+  ],
+  [
+   "sag",
+   82,
+   " LXXXII ",
+   "B"
+  ],
+  [
+   "sag",
+   93,
+   " XCIII ",
+   "B"
+  ],
+  [
+   "sag",
+   94,
+   " XCIV ",
+   "B"
+  ],
+  [
+   "sag",
+   95,
+   " XCV ",
+   "B"
+  ],
+  [
+   "sag",
+   96,
+   " XCVI ",
+   "B"
+  ],
+  [
+   "sag",
+   97,
+   " XCVII ",
+   "B"
+  ],
+  [
+   "sag",
+   98,
+   " XCVIII ",
+   "B"
+  ],
+  [
+   "sag",
+   99,
+   " XCIX ",
+   "B"
+  ],
+  [
+   "sag",
+   101,
+   " CI ",
+   "B"
+  ],
+  [
+   "sag",
+   108,
+   " CVIII ",
+   "A"
+  ],
+  [
+   "sag",
+   116,
+   " CXVI ",
+   "A"
+  ],
+  [
+   "sag",
+   117,
+   " CXVII ",
+   "A"
+  ],
+  [
+   "sag",
+   120,
+   " CXX ",
+   "B"
+  ],
+  [
+   "sacalaz",
+   1,
+   "str. 1-a ",
+   "A"
+  ],
+  [
+   "sacalaz",
+   2,
+   "str. 2-a ",
+   "A"
+  ],
+  [
+   "sacalaz",
+   3,
+   "str. 3-a ",
+   "A"
+  ],
+  [
+   "sacalaz",
+   4,
+   "str. 4-a ",
+   "A"
+  ],
+  [
+   "sacalaz",
+   5,
+   "str. 5-a ",
+   "A"
+  ],
+  [
+   "sacalaz",
+   6,
+   "str. 6-a ",
+   "A"
+  ],
+  [
+   "sacalaz",
+   7,
+   "str. 7-a ",
+   "A"
+  ],
+  [
+   "sacalaz",
+   8,
+   "str. 8-a ",
+   "B"
+  ],
+  [
+   "sacalaz",
+   10,
+   "str. Antenelor ",
+   "D"
+  ],
+  [
+   "sacalaz",
+   11,
+   "str. Argeș ",
+   "B"
+  ],
+  [
+   "sacalaz",
+   12,
+   "str. Ariel Miranda ",
+   "C"
+  ],
+  [
+   "sacalaz",
+   16,
+   "str. Bistra ",
+   "B"
+  ],
+  [
+   "sacalaz",
+   17,
+   "str. Brânduşei ",
+   "B"
+  ],
+  [
+   "sacalaz",
+   20,
+   "str. Câmpului ",
+   "C"
+  ],
+  [
+   "sacalaz",
+   23,
+   "str. Ceferiştilor ",
+   "B"
+  ],
+  [
+   "sacalaz",
+   24,
+   "str. Cerna ",
+   "B"
+  ],
+  [
+   "sacalaz",
+   26,
+   "str. Cireşului ",
+   "B"
+  ],
+  [
+   "sacalaz",
+   27,
+   "str. Complexului ",
+   "C"
+  ],
+  [
+   "sacalaz",
+   29,
+   "str. Constructorilor ",
+   "D"
+  ],
+  [
+   "sacalaz",
+   31,
+   "str. Crizantemelor ",
+   "B"
+  ],
+  [
+   "sacalaz",
+   32,
+   "str. Curcubeului ",
+   "A"
+  ],
+  [
+   "sacalaz",
+   34,
+   "str. Datinilor ",
+   "C"
+  ],
+  [
+   "sacalaz",
+   35,
+   "str. Deimos ",
+   "C"
+  ],
+  [
+   "sacalaz",
+   36,
+   "str. Dietrich - Honold ",
+   "A"
+  ],
+  [
+   "sacalaz",
+   37,
+   "str. Dione ",
+   "C"
+  ],
+  [
+   "sacalaz",
+   39,
+   "str. Dreptăţii ",
+   "B"
+  ],
+  [
+   "sacalaz",
+   41,
+   "str. Elba ",
+   "B"
+  ],
+  [
+   "sacalaz",
+   42,
+   "str. Ganimede ",
+   "C"
+  ],
+  [
+   "sacalaz",
+   47,
+   "str. Hortensiei ",
+   "B"
+  ],
+  [
+   "sacalaz",
+   48,
+   "str. Hyperion ",
+   "C/D"
+  ],
+  [
+   "sacalaz",
+   51,
+   "str. Învăţătorului ",
+   "C"
+  ],
+  [
+   "sacalaz",
+   53,
+   "str. Islaz ",
+   "C"
+  ],
+  [
+   "sacalaz",
+   54,
+   "str. Jupiter ",
+   "C"
+  ],
+  [
+   "sacalaz",
+   55,
+   "str. Labirint ",
+   "C"
+  ],
+  [
+   "sacalaz",
+   56,
+   "str. Lăcrămioarei ",
+   "B"
+  ],
+  [
+   "sacalaz",
+   58,
+   "str. Laurului ",
+   "C"
+  ],
+  [
+   "sacalaz",
+   59,
+   "str. Libelulei ",
+   "C"
+  ],
+  [
+   "sacalaz",
+   61,
+   "str. Liniştei ",
+   "B/C"
+  ],
+  [
+   "sacalaz",
+   63,
+   "str. Luceafărului ",
+   "A"
+  ],
+  [
+   "sacalaz",
+   68,
+   "str. Marte ",
+   "C"
+  ],
+  [
+   "sacalaz",
+   70,
+   "str. Mercur ",
+   "C"
+  ],
+  [
+   "sacalaz",
+   71,
+   "str. Morilor ",
+   "C"
+  ],
+  [
+   "sacalaz",
+   72,
+   "str. Mureș ",
+   "B"
+  ],
+  [
+   "sacalaz",
+   76,
+   "str. Neptun ",
+   "D"
+  ],
+  [
+   "sacalaz",
+   78,
+   "str. Nereida ",
+   "C"
+  ],
+  [
+   "sacalaz",
+   79,
+   "str. Nopţii ",
+   "C"
+  ],
+  [
+   "sacalaz",
+   80,
+   "str. Nordului ",
+   "C"
+  ],
+  [
+   "sacalaz",
+   81,
+   "str. Nufărului ",
+   "B"
+  ],
+  [
+   "sacalaz",
+   82,
+   "str. Oberon ",
+   "C"
+  ],
+  [
+   "sacalaz",
+   83,
+   "str. Oglinzilor ",
+   "C"
+  ],
+  [
+   "sacalaz",
+   86,
+   "str. Orizont ",
+   "C"
+  ],
+  [
+   "sacalaz",
+   87,
+   "str. Păcii ",
+   "B"
+  ],
+  [
+   "sacalaz",
+   92,
+   "str. Pluto ",
+   "D"
+  ],
+  [
+   "sacalaz",
+   93,
+   "str. Primăverii ",
+   "C"
+  ],
+  [
+   "sacalaz",
+   94,
+   "str. Principală ",
+   "A"
+  ],
+  [
+   "sacalaz",
+   95,
+   "str. Progresului ",
+   "C"
+  ],
+  [
+   "sacalaz",
+   99,
+   "str. Rin ",
+   "B"
+  ],
+  [
+   "sacalaz",
+   100,
+   "str. Rotonda 1 ",
+   "A"
+  ],
+  [
+   "sacalaz",
+   103,
+   "str. Rozelor ",
+   "C"
+  ],
+  [
+   "sacalaz",
+   105,
+   "str. Saturn ",
+   "C"
+  ],
+  [
+   "sacalaz",
+   106,
+   "str. Selena ",
+   "C/D"
+  ],
+  [
+   "sacalaz",
+   107,
+   "str. Semilunei ",
+   "C"
+  ],
+  [
+   "sacalaz",
+   108,
+   "str. Sena ",
+   "B"
+  ],
+  [
+   "sacalaz",
+   109,
+   "str. Sirenelor ",
+   "C"
+  ],
+  [
+   "sacalaz",
+   113,
+   "str. Spicului ",
+   "C"
+  ],
+  [
+   "sacalaz",
+   115,
+   "str. Sudului ",
+   "C"
+  ],
+  [
+   "sacalaz",
+   118,
+   "str. Terra ",
+   "C"
+  ],
+  [
+   "sacalaz",
+   119,
+   "str. Timiș ",
+   "B"
+  ],
+  [
+   "sacalaz",
+   121,
+   "str. Tisa ",
+   "B"
+  ],
+  [
+   "sacalaz",
+   123,
+   "str. Titania ",
+   "C"
+  ],
+  [
+   "sacalaz",
+   124,
+   "str. Toamnei ",
+   "C"
+  ],
+  [
+   "sacalaz",
+   130,
+   "str. Uranus ",
+   "D"
+  ],
+  [
+   "sacalaz",
+   132,
+   "str. Venus ",
+   "C"
+  ],
+  [
+   "sacalaz",
+   135,
+   "str. Volga ",
+   "B"
+  ],
+  [
+   "sacalaz",
+   136,
+   "str. Vulpii ",
+   "C"
+  ],
+  [
+   "sacalaz",
+   137,
+   "str. Vulturilor ",
+   "C"
+  ],
+  [
+   "sacalaz",
+   138,
+   "str. Wolfsberg ",
+   "D"
+  ],
+  [
+   "sacalaz",
+   140,
+   "str. Zăpezii ",
+   "C"
+  ],
+  [
+   "sacalaz",
+   142,
+   "str. Zidarilor ",
+   "D"
+  ]
+ ],
+ "approx": [
+  [
+   "timisoara",
+   2,
+   "1 Decembrie ",
+   "→",
+   "Strada 1 Decembrie 1918",
+   "aprox 0.67"
+  ],
+  [
+   "timisoara",
+   6,
+   "20 Decembrie ",
+   "→",
+   "Strada 20 Decembrie 1989",
+   "aprox 0.67"
+  ],
+  [
+   "timisoara",
+   21,
+   "Aldea-Teodorovici D.I",
+   "→",
+   "Strada Doina și Ion Aldea-Teodorovici",
+   "alias"
+  ],
+  [
+   "timisoara",
+   26,
+   "Alexandru Martha ",
+   "→",
+   "Strada Doctor Alexandru Marta",
+   "aprox 1.00"
+  ],
+  [
+   "timisoara",
+   74,
+   "Aslan Ana",
+   "→",
+   "Strada Ana Aslan",
+   "alias"
+  ],
+  [
+   "timisoara",
+   85,
+   "Avram Ioan V.",
+   "→",
+   "Aleea Martir Ioan Valea Avram",
+   "aprox 0.67"
+  ],
+  [
+   "timisoara",
+   135,
+   "Behela ",
+   "→",
+   "Strada Behelei",
+   "alias"
+  ],
+  [
+   "timisoara",
+   235,
+   "Carusso Enrico",
+   "→",
+   "Strada Enrico Caruso",
+   "aprox 1.00"
+  ],
+  [
+   "timisoara",
+   241,
+   "Celebi Evlia",
+   "→",
+   "Strada Evliya Celebi",
+   "aprox 1.00"
+  ],
+  [
+   "timisoara",
+   242,
+   "Centura ",
+   "→",
+   "Centura Timișoara Nord",
+   "alias"
+  ],
+  [
+   "timisoara",
+   269,
+   "Cirneanski Milos",
+   "→",
+   "Strada Miloš Crnjanski",
+   "aprox 1.00"
+  ],
+  [
+   "timisoara",
+   274,
+   "Clemenceanu George",
+   "→",
+   "Piața Georges Clemenceau",
+   "aprox 1.00"
+  ],
+  [
+   "timisoara",
+   349,
+   "Cuza Alexandru",
+   "→",
+   "Calea Alexandru Ioan Cuza",
+   "aprox 0.67"
+  ],
+  [
+   "timisoara",
+   350,
+   "D. Mendeleev ",
+   "→",
+   "Strada Dimitri Ivanovici Mendeleev",
+   "alias"
+  ],
+  [
+   "timisoara",
+   361,
+   "Delavrancea - Gibony Henriette",
+   "→",
+   "Strada Henrieta Delavrancea-Gibory",
+   "aprox 1.00"
+  ],
+  [
+   "timisoara",
+   372,
+   "Diamandi Constantin",
+   "→",
+   "Strada Constantin Diamandy",
+   "aprox 1.00"
+  ],
+  [
+   "timisoara",
+   401,
+   "Dramba Ionel",
+   "→",
+   "Intrarea Ionel Drîmbă",
+   "aprox 1.00"
+  ],
+  [
+   "timisoara",
+   411,
+   "Edison Thomas",
+   "→",
+   "Strada Alva Thomas Edison",
+   "aprox 0.67"
+  ],
+  [
+   "timisoara",
+   448,
+   "Flueraș Ion",
+   "→",
+   "Strada Ion Fluieraș",
+   "aprox 1.00"
+  ],
+  [
+   "timisoara",
+   489,
+   "Girjoaba Constantin",
+   "→",
+   "Strada Martir Constantin Gârjoabă",
+   "aprox 1.00"
+  ],
+  [
+   "timisoara",
+   510,
+   "Gropișan Ilie",
+   "→",
+   "Strada Ilie Gropșian",
+   "aprox 1.00"
+  ],
+  [
+   "timisoara",
+   513,
+   "Grozescu Iuliu",
+   "→",
+   "Strada Iulian Grozescu",
+   "alias"
+  ],
+  [
+   "timisoara",
+   553,
+   "Imbroane Sofia",
+   "→",
+   "Strada Sofia Imbroane",
+   "alias"
+  ],
+  [
+   "timisoara",
+   609,
+   "Konrad Rontgen Wiliam",
+   "→",
+   "Strada Wilhelm Conrad Röntgen",
+   "alias"
+  ],
+  [
+   "timisoara",
+   665,
+   "Lucaci Vasile",
+   "→",
+   "Strada Vasile Lucaciu",
+   "aprox 1.00"
+  ],
+  [
+   "timisoara",
+   680,
+   "Lungu Cristina",
+   "→",
+   "Strada Martin Cristina Lungu",
+   "aprox 0.67"
+  ],
+  [
+   "timisoara",
+   687,
+   "Macelariu Horia",
+   "→",
+   "Strada Horia Măcellariu",
+   "aprox 1.00"
+  ],
+  [
+   "timisoara",
+   731,
+   "Mercy Flormund",
+   "→",
+   "Strada Florimund Mercy",
+   "aprox 1.00"
+  ],
+  [
+   "timisoara",
+   737,
+   "Mickiewics Adam",
+   "→",
+   "Strada Adam Mickiewicz",
+   "aprox 1.00"
+  ],
+  [
+   "timisoara",
+   743,
+   "Mihaly Teodor",
+   "→",
+   "Aleea Theodor Mihali",
+   "aprox 1.00"
+  ],
+  [
+   "timisoara",
+   779,
+   "Muller Guttenbrum Adam",
+   "→",
+   "Strada Adam Müller Guttenbrunn",
+   "alias"
+  ],
+  [
+   "timisoara",
+   808,
+   "Nekrasov Alexandru Nicolai ",
+   "→",
+   "Strada Nikolai Nekrasov",
+   "alias"
+  ],
+  [
+   "timisoara",
+   812,
+   "Nepos Corneliu",
+   "→",
+   "Strada Cornelius Nepos",
+   "aprox 1.00"
+  ],
+  [
+   "timisoara",
+   815,
+   "Neumann Ernest",
+   "→",
+   "Strada Rabin Doctor Ernest Neumann",
+   "alias"
+  ],
+  [
+   "timisoara",
+   834,
+   "Obradovici Dositej",
+   "→",
+   "Strada Dositej Obradović",
+   "aprox 1.00"
+  ],
+  [
+   "timisoara",
+   859,
+   "Ostrogovich Gheorghe",
+   "→",
+   "Strada Giorgio Ostrogovich",
+   "alias"
+  ],
+  [
+   "timisoara",
+   862,
+   "Pacatean Teodor V.",
+   "→",
+   "Strada Teodor Valea Păcățian",
+   "aprox 0.67"
+  ],
+  [
+   "timisoara",
+   869,
+   "Paganini Nicola",
+   "→",
+   "Strada Niccolò Paganini",
+   "alias"
+  ],
+  [
+   "timisoara",
+   876,
+   "Pan Halipa ",
+   "→",
+   "Strada Pantelimon Halippa",
+   "alias"
+  ],
+  [
+   "timisoara",
+   879,
+   "Pantic Tirol",
+   "→",
+   "Strada Dimitrije Pantic-Tirol",
+   "alias"
+  ],
+  [
+   "timisoara",
+   880,
+   "Paraianu Teofin",
+   "→",
+   "Strada Arhimandrit Teofil Părăian",
+   "aprox 1.00"
+  ],
+  [
+   "timisoara",
+   894,
+   "Peianov Ioan",
+   "→",
+   "Strada Ioan Radin Peianov",
+   "alias"
+  ],
+  [
+   "timisoara",
+   903,
+   "Pestalozzi J. H.",
+   "→",
+   "Strada Johann Heinrich Pestalozzi",
+   "alias"
+  ],
+  [
+   "timisoara",
+   928,
+   "Poiana Ruscai ",
+   "→",
+   "Aleea Poiana Ruscă",
+   "aprox 1.00"
+  ],
+  [
+   "timisoara",
+   957,
+   "Preyer Ioszef",
+   "→",
+   "Strada Johann Nepomuk Preyer",
+   "alias"
+  ],
+  [
+   "timisoara",
+   1012,
+   "Robespierre Maximilian",
+   "→",
+   "Strada Maximilien de Robespierre",
+   "aprox 0.67"
+  ],
+  [
+   "timisoara",
+   1019,
+   "Rosetti C. A.",
+   "→",
+   "Strada Constantin A. Rosetti",
+   "aprox 0.50"
+  ],
+  [
+   "timisoara",
+   1050,
+   "Sarmisegetusa ",
+   "→",
+   "Piața Sarmizegetusa",
+   "aprox 1.00"
+  ],
+  [
+   "timisoara",
+   1056,
+   "Schmits Frantz",
+   "→",
+   "Strada Franz Schmitz",
+   "aprox 1.00"
+  ],
+  [
+   "timisoara",
+   1057,
+   "Schwicker Iohann",
+   "→",
+   "Strada Johann Schwicker",
+   "alias"
+  ],
+  [
+   "timisoara",
+   1062,
+   "Seiller Anton",
+   "→",
+   "Strada Anton Seiler",
+   "aprox 1.00"
+  ],
+  [
+   "timisoara",
+   1072,
+   "Sfanta Rozalia ",
+   "→",
+   "Strada Sfânta Rosalia",
+   "aprox 1.00"
+  ],
+  [
+   "timisoara",
+   1085,
+   "Simionescu Virgil",
+   "→",
+   "Intrarea Virgil Simonescu",
+   "aprox 1.00"
+  ],
+  [
+   "timisoara",
+   1090,
+   "Sirianu Rusu",
+   "→",
+   "Strada Russu Șirianu",
+   "alias"
+  ],
+  [
+   "timisoara",
+   1117,
+   "Sterja Popovici Iovan",
+   "→",
+   "Strada Jovan Sterija Popović",
+   "aprox 1.00"
+  ],
+  [
+   "timisoara",
+   1167,
+   "Tichindeal Dumitru",
+   "→",
+   "Strada Dimitrie Țichindeal",
+   "alias"
+  ],
+  [
+   "timisoara",
+   1184,
+   "Toparceanu George",
+   "→",
+   "Strada George Topîrceanu",
+   "aprox 1.00"
+  ],
+  [
+   "timisoara",
+   1202,
+   "Tuculescu Ion",
+   "→",
+   "Strada Ioan Țuculescu",
+   "alias"
+  ],
+  [
+   "timisoara",
+   1282,
+   "Vuc St. Karadjic ",
+   "→",
+   "Strada Vuk Stefanović Karadžić",
+   "alias"
+  ],
+  [
+   "timisoara",
+   1299,
+   "Zamfirescu Elisa Leonida",
+   "→",
+   "Strada Eliza Leonida Zamfirescu",
+   "aprox 1.00"
+  ],
+  [
+   "chisoda",
+   26,
+   "Izlaz ",
+   "→",
+   "Strada Islaz",
+   "aprox 1.00"
+  ],
+  [
+   "dumbravita",
+   52,
+   "Brasilia ",
+   "→",
+   "Strada Brazilia",
+   "aprox 1.00"
+  ],
+  [
+   "dumbravita",
+   151,
+   "Hans Cristian Andersen ",
+   "→",
+   "Strada Hans Christian Andersen",
+   "aprox 1.00"
+  ],
+  [
+   "dumbravita",
+   156,
+   "Horia/Horea ",
+   "→",
+   "Strada Horea",
+   "aprox 1.00"
+  ],
+  [
+   "dumbravita",
+   189,
+   "Kossth Lajos ",
+   "→",
+   "Strada Kossuth Lajos",
+   "aprox 1.00"
+  ],
+  [
+   "dumbravita",
+   369,
+   "Vasco Da Gamma ",
+   "→",
+   "Strada Vasco Da Gama",
+   "aprox 1.00"
+  ],
+  [
+   "dumbravita",
+   380,
+   "Zakopane ",
+   "→",
+   "Strada Zacopane",
+   "aprox 1.00"
+  ],
+  [
+   "mosnita-veche",
+   22,
+   "Aurel Cosma ",
+   "→",
+   "Strada Aurel Cozma",
+   "aprox 1.00"
+  ],
+  [
+   "mosnita-veche",
+   111,
+   "Don Pasquale ",
+   "→",
+   "Strada Don Pascualde",
+   "aprox 1.00"
+  ],
+  [
+   "mosnita-veche",
+   178,
+   "Madolinei ",
+   "→",
+   "Strada Mandolinei",
+   "aprox 1.00"
+  ],
+  [
+   "mosnita-veche",
+   193,
+   "Moravița ",
+   "→",
+   "Timișoara - Moravița",
+   "aprox 0.50"
+  ],
+  [
+   "urseni",
+   67,
+   "Izlaz ",
+   "→",
+   "Strada Islaz",
+   "aprox 1.00"
+  ],
+  [
+   "urseni",
+   121,
+   "Râmneț ",
+   "→",
+   "Strada Râmeț",
+   "aprox 1.00"
+  ],
+  [
+   "sacalaz",
+   101,
+   "Rotonda 2 ",
+   "→",
+   "Strada Rotundă 2",
+   "aprox 1.00"
+  ],
+  [
+   "sacalaz",
+   102,
+   "Rotonda 3 ",
+   "→",
+   "Strada Rotundă 3",
+   "aprox 1.00"
+  ]
+ ],
+ "segments": [
+  [
+   "timisoara",
+   366,
+   "Strada Aristide Demetriade",
+   "între C. AiI. Cuza și Bd. Antenei",
+   "o referință negăsită (a): jumătatea de stradă estimată"
+  ],
+  [
+   "timisoara",
+   425,
+   "Strada Eternității",
+   "până la 15 și 21",
+   "fără adrese OSM: tăiere proporțională (estimare)"
+  ],
+  [
+   "timisoara",
+   425,
+   "Strada Eternității",
+   "până la 15 și 21 · tronson estimat",
+   "fără adrese OSM: tăiere proporțională (estimare)"
+  ],
+  [
+   "timisoara",
+   426,
+   "Strada Eternității",
+   "de la 17 și 22",
+   "fără adrese OSM: tăiere proporțională (estimare)"
+  ],
+  [
+   "timisoara",
+   426,
+   "Strada Eternității",
+   "de la 17 și 22 · tronson estimat",
+   "fără adrese OSM: tăiere proporțională (estimare)"
+  ],
+  [
+   "timisoara",
+   487,
+   "Calea Ghirodei",
+   "de la nr. 2 la nr. 32",
+   "fără adrese OSM: tăiere proporțională (estimare)"
+  ],
+  [
+   "timisoara",
+   487,
+   "Calea Ghirodei",
+   "de la nr. 2 la nr. 32 · tronson estimat",
+   "fără adrese OSM: tăiere proporțională (estimare)"
+  ],
+  [
+   "timisoara",
+   488,
+   "Calea Ghirodei",
+   "de la nr. 1 și de la nr. 34",
+   "fără adrese OSM: tăiere proporțională (estimare)"
+  ],
+  [
+   "timisoara",
+   616,
+   "Strada Lalelelor",
+   "1-7a, respectiv 2-8",
+   "fără adrese OSM: tăiere proporțională (estimare)"
+  ],
+  [
+   "timisoara",
+   616,
+   "Strada Lalelelor",
+   "1-7a, respectiv 2-8 · tronson estimat",
+   "fără adrese OSM: tăiere proporțională (estimare)"
+  ],
+  [
+   "timisoara",
+   617,
+   "Strada Lalelelor",
+   "de la 9, respectiv 10",
+   "fără adrese OSM: tăiere proporțională (estimare)"
+  ],
+  [
+   "timisoara",
+   617,
+   "Strada Lalelelor",
+   "de la 9, respectiv 10 · tronson estimat",
+   "fără adrese OSM: tăiere proporțională (estimare)"
+  ],
+  [
+   "timisoara",
+   1108,
+   "Strada Steaua",
+   "până la 41 și 33",
+   "fără adrese OSM: tăiere proporțională (estimare)"
+  ],
+  [
+   "timisoara",
+   1108,
+   "Strada Steaua",
+   "până la 41 și 33 · tronson estimat",
+   "fără adrese OSM: tăiere proporțională (estimare)"
+  ],
+  [
+   "timisoara",
+   1109,
+   "Strada Steaua",
+   "de la 42 și 35",
+   "fără adrese OSM: tăiere proporțională (estimare)"
+  ],
+  [
+   "timisoara",
+   1109,
+   "Strada Steaua",
+   "de la 42 și 35 · tronson estimat",
+   "fără adrese OSM: tăiere proporțională (estimare)"
+  ],
+  [
+   "timisoara",
+   1192,
+   "Calea Torontalului",
+   "între str. George Ardelean și sens Metro 2",
+   "o referință negăsită (b): jumătatea de stradă estimată"
+  ],
+  [
+   "dumbravita",
+   140,
+   "Bulevardul Ghioceilor",
+   "după intersecția cu str. Migdalului",
+   "NU am găsit strada de referință"
+  ],
+  [
+   "dumbravita",
+   141,
+   "Bulevardul Ghioceilor",
+   "între str. Bela Bartok și str. Migdalului",
+   "o referință negăsită (b): jumătatea de stradă estimată"
+  ],
+  [
+   "dumbravita",
+   206,
+   "Bulevardul Liviu Rebreanu",
+   "între str. Pictorilor și str. Mureș",
+   "o referință negăsită (a): jumătatea de stradă estimată"
+  ],
+  [
+   "dumbravita",
+   207,
+   "Bulevardul Liviu Rebreanu",
+   "între str. Tristan Tzara și str. Pictorilor",
+   "referințe negăsite"
+  ],
+  [
+   "dumbravita",
+   258,
+   "Strada Nicolae Bălcescu",
+   "după intersecția cu str. Coral",
+   "NU am găsit strada de referință"
+  ],
+  [
+   "dumbravita",
+   259,
+   "Strada Nicolae Bălcescu",
+   "până la intersecția cu str. Coral",
+   "NU am găsit strada de referință"
+  ],
+  [
+   "dumbravita",
+   283,
+   "Bulevardul Petre Țuțea",
+   "între Calea Aradului și str. Mureș",
+   "o referință negăsită (a): jumătatea de stradă estimată"
+  ],
+  [
+   "ghiroda",
+   118,
+   "Strada Victoria",
+   "până la pod",
+   "pod: tronson aproximat la jumătate"
+  ],
+  [
+   "giroc",
+   27,
+   "Strada Bicaz",
+   "între str Bega și str. Satu Bătrân",
+   "o referință negăsită (b): jumătatea de stradă estimată"
+  ],
+  [
+   "giroc",
+   28,
+   "Strada Bicaz",
+   "de la str. Satu Bătrân spre vest",
+   "NU am găsit strada de referință"
+  ],
+  [
+   "giroc",
+   85,
+   "Strada Fântânii",
+   "Între str. Gloria bd. Sudului",
+   "o referință negăsită (b): jumătatea de stradă estimată"
+  ],
+  [
+   "giroc",
+   93,
+   "Strada Galaxiei",
+   "Între str .Teiului și bd. Sudului",
+   "o referință negăsită (a): jumătatea de stradă estimată"
+  ],
+  [
+   "giroc",
+   94,
+   "Strada Galaxiei",
+   "Între bd. Sudului și str. Brazilor",
+   "o referință negăsită (b): jumătatea de stradă estimată"
+  ],
+  [
+   "giroc",
+   96,
+   "Strada Gălbenelelor",
+   "între str. Măghiranului și Nalbei",
+   "o referință negăsită (b): jumătatea de stradă estimată"
+  ],
+  [
+   "giroc",
+   99,
+   "Strada Gării",
+   "Între str. Ecoului și bd. Sudului",
+   "o referință negăsită (b): jumătatea de stradă estimată"
+  ],
+  [
+   "giroc",
+   112,
+   "Strada Inocenței",
+   "Între str. Ecoului și bd. Sudului",
+   "o referință negăsită (b): jumătatea de stradă estimată"
+  ],
+  [
+   "giroc",
+   113,
+   "Strada Inocenței",
+   "Între bd. Sudului și str. Brazilor",
+   "referințe negăsite"
+  ],
+  [
+   "giroc",
+   119,
+   "Strada Jupiter",
+   "Între str. Ecoului și bd. Sudului",
+   "o referință negăsită (b): jumătatea de stradă estimată"
+  ],
+  [
+   "giroc",
+   120,
+   "Strada Jupiter",
+   "Între str. Brazilor și bd. Sudului",
+   "referințe negăsite"
+  ],
+  [
+   "giroc",
+   146,
+   "Strada Muncitorilor",
+   "între str. Apicultorilor și str. Satu Bătrân",
+   "o referință negăsită (b): jumătatea de stradă estimată"
+  ],
+  [
+   "giroc",
+   147,
+   "Strada Muncitorilor",
+   "de la str. Satu Bătrân spre vest",
+   "NU am găsit strada de referință"
+  ],
+  [
+   "giroc",
+   156,
+   "Strada Neptun",
+   "între str. Brazilor și bd. Sudului",
+   "o referință negăsită (a): jumătatea de stradă estimată"
+  ],
+  [
+   "giroc",
+   164,
+   "Strada Păpădiei",
+   "între str. Hortensiei și Calea Urseni",
+   "o referință negăsită (a): jumătatea de stradă estimată"
+  ],
+  [
+   "giroc",
+   165,
+   "Strada Păpădiei",
+   "între str. Brazilor și str. Hortensiei",
+   "referințe negăsite"
+  ],
+  [
+   "giroc",
+   207,
+   "Strada Semenic",
+   "între str. Apicultorilor și str Satu Bătrân",
+   "o referință negăsită (b): jumătatea de stradă estimată"
+  ],
+  [
+   "giroc",
+   208,
+   "Strada Semenic",
+   "de la str. Satu Bătrân spre vest",
+   "NU am găsit strada de referință"
+  ],
+  [
+   "giroc",
+   211,
+   "Bulevardul Soarelui",
+   "între Calea Timișoarei și str. Ecoului",
+   "o referință negăsită (a): jumătatea de stradă estimată"
+  ],
+  [
+   "giroc",
+   222,
+   "Bulevardul Sudului",
+   "între str. Muzicescu și str. Ecoului",
+   "referințe negăsite"
+  ],
+  [
+   "giroc",
+   223,
+   "Bulevardul Sudului",
+   "între str. Ecoului și str Apicultorilor",
+   "referințe negăsite"
+  ],
+  [
+   "giroc",
+   232,
+   "Strada Trandafirilor",
+   "de la Câmpului până la Bd. Sudului",
+   "o referință negăsită (b): jumătatea de stradă estimată"
+  ],
+  [
+   "giroc",
+   233,
+   "Strada Trandafirilor",
+   "de la Bd. Sudului spre sud",
+   "NU am găsit strada de referință"
+  ],
+  [
+   "giroc",
+   254,
+   "Strada Zborului",
+   "între str. Dunărea și bd. Sudului",
+   "o referință negăsită (b): jumătatea de stradă estimată"
+  ],
+  [
+   "giroc",
+   255,
+   "Strada Zborului",
+   "de la bd. Sudului spre est",
+   "NU am găsit strada de referință"
+  ],
+  [
+   "mosnita-noua",
+   99,
+   "Strada Diana",
+   "între str. Maria și str. Eugenia",
+   "o referință negăsită (b): jumătatea de stradă estimată"
+  ],
+  [
+   "mosnita-noua",
+   106,
+   "Strada Dumitru Cristea",
+   "între str. Surduc și str. Măruia Liviu Ioan",
+   "referințe negăsite"
+  ],
+  [
+   "mosnita-noua",
+   107,
+   "Strada Dumitru Cristea",
+   "între str. Verde și str. Surduc",
+   "o referință negăsită (b): jumătatea de stradă estimată"
+  ],
+  [
+   "mosnita-noua",
+   183,
+   "Calea Medveș",
+   "între str. Verde și Urseni",
+   "o referință negăsită (b): jumătatea de stradă estimată"
+  ],
+  [
+   "mosnita-noua",
+   194,
+   "Strada Monica",
+   "între str. Florentina și str. Valeria",
+   "o referință negăsită (b): jumătatea de stradă estimată"
+  ],
+  [
+   "mosnita-noua",
+   210,
+   "Strada Ogorului",
+   "între str. Câmpului și str. Grâului",
+   "o referință negăsită (b): jumătatea de stradă estimată"
+  ],
+  [
+   "mosnita-noua",
+   211,
+   "Strada Ogorului",
+   "de la str. Grâului spre est",
+   "NU am găsit strada de referință"
+  ],
+  [
+   "mosnita-noua",
+   214,
+   "Strada Olimpia",
+   "între str. Maria și str. Valeria",
+   "o referință negăsită (b): jumătatea de stradă estimată"
+  ],
+  [
+   "mosnita-veche",
+   61,
+   "Strada Caisului",
+   "de la str. Măceșului spre nord",
+   "NU am găsit strada de referință"
+  ],
+  [
+   "mosnita-veche",
+   62,
+   "Strada Caisului",
+   "între str. Fagului și str. Măceșului",
+   "o referință negăsită (b): jumătatea de stradă estimată"
+  ],
+  [
+   "mosnita-veche",
+   260,
+   "Strada Scorușului",
+   "între str. Fagului și str. Falstaf",
+   "o referință negăsită (b): jumătatea de stradă estimată"
+  ],
+  [
+   "mosnita-veche",
+   261,
+   "Strada Scorușului",
+   "între vatra satului și str. Fagului",
+   "o referință negăsită (a): jumătatea de stradă estimată"
+  ]
+ ],
+ "notes": [
+  [
+   "dumbravita",
+   96,
+   "Crinului",
+   "sunt 2 străzi cu aceeași denumire, se va solicita localizare"
+  ],
+  [
+   "dumbravita",
+   332,
+   "Someș",
+   "sunt 2 străzi cu aceeași denumire, se va solicita localizare"
+  ],
+  [
+   "sag",
+   74,
+   "LXXIV",
+   null
+  ],
+  [
+   "sag",
+   75,
+   "LXXV",
+   null
+  ],
+  [
+   "sag",
+   76,
+   "LXXVI",
+   null
+  ],
+  [
+   "sag",
+   77,
+   "LXXVII",
+   null
+  ],
+  [
+   "sag",
+   78,
+   "LXXVIII",
+   null
+  ],
+  [
+   "sag",
+   79,
+   "LXXIX",
+   null
+  ],
+  [
+   "sag",
+   80,
+   "LXXX",
+   null
+  ],
+  [
+   "sag",
+   81,
+   "LXXXI",
+   null
+  ],
+  [
+   "sag",
+   83,
+   "LXXXIII",
+   null
+  ],
+  [
+   "sag",
+   84,
+   "LXXXIV",
+   null
+  ],
+  [
+   "sag",
+   85,
+   "LXXXV",
+   null
+  ],
+  [
+   "sag",
+   86,
+   "LXXXVI",
+   null
+  ],
+  [
+   "sag",
+   87,
+   "LXXXVII",
+   null
+  ],
+  [
+   "sag",
+   88,
+   "LXXXVIII",
+   null
+  ],
+  [
+   "sag",
+   89,
+   "LXXXIX",
+   null
+  ],
+  [
+   "sag",
+   90,
+   "XC",
+   null
+  ],
+  [
+   "sag",
+   91,
+   "XCI",
+   null
+  ],
+  [
+   "sag",
+   92,
+   "XCII",
+   null
+  ],
+  [
+   "sag",
+   104,
+   "CIV",
+   null
+  ],
+  [
+   "sag",
+   105,
+   "CV",
+   null
+  ],
+  [
+   "sag",
+   115,
+   "CXV",
+   null
+  ],
+  [
+   "sag",
+   118,
+   "CXVIII",
+   null
+  ],
+  [
+   "sag",
+   119,
+   "CXIX",
+   null
+  ]
+ ],
+ "approx_refs": [
+  [
+   "dumbravita",
+   "serelor",
+   335
+  ],
+  [
+   "dumbravita",
+   "bruxelles",
+   236
+  ],
+  [
+   "dumbravita",
+   "serelor",
+   335
+  ],
+  [
+   "dumbravita",
+   "tudor vladimirescu",
+   156
+  ],
+  [
+   "dumbravita",
+   "centura",
+   375
+  ],
+  [
+   "giroc",
+   "ecoului",
+   306
+  ],
+  [
+   "giroc",
+   "ecoului",
+   306
+  ],
+  [
+   "giroc",
+   "soarelui",
+   261
+  ],
+  [
+   "giroc",
+   "sudului",
+   301
+  ],
+  [
+   "giroc",
+   "sudului",
+   301
+  ],
+  [
+   "giroc",
+   "maghiranului",
+   100
+  ],
+  [
+   "giroc",
+   "ecoului",
+   127
+  ],
+  [
+   "giroc",
+   "ecoului",
+   127
+  ],
+  [
+   "giroc",
+   "urseni",
+   317
+  ],
+  [
+   "giroc",
+   "papadiei",
+   95
+  ],
+  [
+   "giroc",
+   "sudului",
+   532
+  ],
+  [
+   "giroc",
+   "sudului",
+   532
+  ],
+  [
+   "giroc",
+   "mures",
+   235
+  ],
+  [
+   "giroc",
+   "mures",
+   235
+  ],
+  [
+   "giroc",
+   "ecoului",
+   176
+  ],
+  [
+   "giroc",
+   "ecoului",
+   176
+  ],
+  [
+   "giroc",
+   "gladiolei",
+   300
+  ],
+  [
+   "giroc",
+   "gladiolei",
+   300
+  ],
+  [
+   "giroc",
+   "dunarea",
+   163
+  ],
+  [
+   "mosnita-veche",
+   "fagului",
+   497
+  ],
+  [
+   "mosnita-veche",
+   "fagului",
+   497
+  ],
+  [
+   "mosnita-veche",
+   "fagului",
+   103
+  ],
+  [
+   "mosnita-veche",
+   "fagului",
+   103
+  ]
+ ]
+}

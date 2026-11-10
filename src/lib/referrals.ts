@@ -16,7 +16,7 @@ export async function recommend(db: D1Database, by: User, b: Record<string, unkn
   if (!validEmail(email)) return { error: "Adresa de email nu pare validă." };
   if (email === by.email) return { error: "Introdu adresa colegului, nu pe a ta." };
   const u = await findUser(db, email);
-  if (u && u.status !== "disabled") return { error: "Această adresă are deja cont în UVALO." };
+  if (u && u.status !== "disabled" && u.status !== "closed") return { error: "Această adresă are deja cont în UVALO." };
   const dayAgo = new Date(Date.now() - 86_400_000).toISOString();
   const [mine, again] = await Promise.all([
     db.prepare("SELECT COUNT(*) AS n FROM referrals WHERE by_user = ? AND created_at > ?").bind(by.id, dayAgo).first<{ n: number }>(),

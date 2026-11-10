@@ -1,11 +1,13 @@
 // Server-only: firms, members, invitations and usage statistics.
 import { now, uuid } from "./db";
 import { audit, invite, revokeSessions, type User } from "./auth";
-import { ORG_SQL, seatsUsed, type Org, type Role } from "./access";
+import { MEMBER_TOOLS, ORG_SQL, orgTools, seatsUsed, type Org, type Role } from "./access";
 import { validEmail } from "./crypto";
 
 export type Member = {
-  user_id: string; email: string; name: string; phone: string | null; status: string; role: Role; anevar_no: string | null;
+  user_id: string; email: string; name: string; phone: string | null; status: string; role: Role; anevar_no: string | null; has_avatar?: number;
+  /** the tools this member may use (comma list), null = everything of the plan; ignored for owners / administrators */
+  modules: string | null;
   last_seen_at: string | null; last_login_at: string | null; activated_at: string | null; events_30: number; searches_30: number; exports_30: number;
 };
 export type Invite = { id: string; email: string; role: string; created_at: string; expires_at: string; invited_by_name: string | null };
@@ -14,7 +16,7 @@ const since = (days: number) => new Date(Date.now() - days * 864e5).toISOString(
 
 export async function members(db: D1Database, orgId: string) {
   const { results } = await db
-    .prepare(`SELECT u.id AS user_id, u.email, u.name, u.phone, u.status, m.role, u.anevar_no, u.last_seen_at, u.last_login_at, u.activated_at,
+    .prepare(`SELECT u.id AS user_id, u.email, u.name, u.phone, u.status, m.role, m.modules, u.anevar_no, u.avatar IS NOT NULL AS has_avatar, u.last_seen_at, u.last_login_at, u.activated_at,
         (SELECT COUNT(*) FROM events e WHERE e.user_id = u.id AND e.org_id = m.org_id AND e.at > ?2) AS events_30,
         (SELECT COUNT(*) FROM events e WHERE e.user_id = u.id AND e.org_id = m.org_id AND e.at > ?2 AND e.action IN ('search', 'search_multi', 'address', 'gps_start')) AS searches_30,
         (SELECT COUNT(*) FROM events e WHERE e.user_id = u.id AND e.org_id = m.org_id AND e.at > ?2 AND e.action LIKE 'export%') AS exports_30
@@ -38,7 +40,7 @@ export const getOrg = (db: D1Database, id: string) => db.prepare(`${ORG_SQL} WHE
 
 const ROLES: Role[] = ["owner", "admin", "member"];
 
-/** Invites a person into a firm, within its seats. Only owners (and VALUEFY) give the owner role. */
+/** Invites a person into a firm, within its seats. Only owners (and UVALO administrators) give the owner role. */
 export async function inviteMember(db: D1Database, by: User, bySuper: boolean, byRole: Role | null, orgId: string, b: Record<string, unknown>) {
   const email = typeof b.email === "string" ? b.email.trim() : "";
   if (!validEmail(email)) return { ok: false as const, error: "Adresa de email nu pare validă." };
@@ -52,8 +54,39 @@ export async function inviteMember(db: D1Database, by: User, bySuper: boolean, b
     return { ok: false as const, error: `Toate cele ${org.seats} locuri ale abonamentului sunt ocupate. ${bySuper ? "Mărește numărul de locuri." : "Scrie-ne pentru locuri în plus."}` };
   }
   const r = await invite(db, by, orgId, email, role, typeof b.name === "string" ? b.name : undefined);
+  // the tools this member starts with (the invitation form's checkboxes); administrators get everything
+  const mods = role === "member" ? cleanModules(org, b.modules) : null;
+  if (mods !== undefined) await db.prepare("UPDATE memberships SET modules = ? WHERE org_id = ? AND user_id = ?").bind(mods, orgId, r.userId).run();
   return { ok: true as const, ...r };
 }
+
+/** `modules` from the UI (array of keys, or null = everything) → the stored list, limited to the firm's tools; undefined = not sent. */
+function cleanModules(org: Org, v: unknown): string | null | undefined {
+  if (v === undefined) return undefined;
+  if (v === null || v === "all") return null;
+  if (!Array.isArray(v)) return undefined;
+  const ok = orgTools(org).map((t) => t.key);
+  const keys = [...new Set(v.filter((k): k is string => typeof k === "string" && ok.includes(k)))];
+  return keys.join(",");
+}
+
+/** Firma mea → Utilizatori → „Acces”: which of the firm's tools a member may use (`null` = all of the plan). Only for members. */
+export async function setModules(db: D1Database, by: User, orgId: string, userId: string, v: unknown) {
+  const cur = await db.prepare("SELECT role FROM memberships WHERE org_id = ? AND user_id = ? AND status = 'active'").bind(orgId, userId).first<{ role: Role }>();
+  if (!cur) return "Persoana nu face parte din firmă.";
+  if (cur.role !== "member") return "Titularul și administratorii au acces la toate instrumentele firmei. Schimbă-i întâi rolul în Membru.";
+  if (userId === by.id) return "Nu îți poți restrânge singur accesul.";
+  const org = await getOrg(db, orgId);
+  if (!org) return "Firma nu există.";
+  const mods = cleanModules(org, v);
+  if (mods === undefined) return "Lista de instrumente nu este validă.";
+  await db.prepare("UPDATE memberships SET modules = ? WHERE org_id = ? AND user_id = ?").bind(mods, orgId, userId).run();
+  await audit(db, by.id, "member.modules", "org", orgId, `${userId} → ${mods === null ? "toate" : mods || "niciunul"}`);
+  return null;
+}
+
+/** The names of the tools in a stored list, for the audit log and the UI. */
+export const moduleNames = (keys: string[]) => keys.map((k) => MEMBER_TOOLS.find((t) => t.key === k)?.name ?? k);
 
 export async function setRole(db: D1Database, by: User, bySuper: boolean, byRole: Role | null, orgId: string, userId: string, role: Role) {
   if (!ROLES.includes(role)) return "Rol necunoscut.";
@@ -64,7 +97,8 @@ export async function setRole(db: D1Database, by: User, bySuper: boolean, byRole
     const owners = await db.prepare("SELECT COUNT(*) AS n FROM memberships WHERE org_id = ? AND role = 'owner' AND status = 'active'").bind(orgId).first<{ n: number }>();
     if ((owners?.n ?? 0) <= 1) return "Firma trebuie să aibă cel puțin un titular de cont.";
   }
-  await db.prepare("UPDATE memberships SET role = ? WHERE org_id = ? AND user_id = ?").bind(role, orgId, userId).run();
+  // an administrator / owner has everything: the per-member list is dropped when promoting
+  await db.prepare("UPDATE memberships SET role = ?, modules = CASE WHEN ? = 'member' THEN modules ELSE NULL END WHERE org_id = ? AND user_id = ?").bind(role, role, orgId, userId).run();
   await audit(db, by.id, "member.role", "org", orgId, `${userId} → ${role}`);
   return null;
 }
@@ -101,7 +135,7 @@ export async function cancelInvite(db: D1Database, by: User, orgId: string, invi
   return null;
 }
 
-// ---------- firms (VALUEFY administration) ----------
+// ---------- firms (UVALO administration) ----------
 
 export type OrgInput = { name: string; cui: string | null; city: string | null; plan_id: string; seats: number; valid_until: string | null; status: string; billing_email: string | null; notes: string | null };
 
@@ -141,9 +175,12 @@ export async function setUserStatus(db: D1Database, by: User, userId: string, ac
     await db.prepare("UPDATE users SET status = 'disabled', disabled_at = ? WHERE id = ?").bind(now(), userId).run();
     await revokeSessions(db, userId);
   } else if (action === "enable") {
-    await db.prepare("UPDATE users SET status = CASE WHEN activated_at IS NULL THEN 'invited' ELSE 'active' END, disabled_at = NULL WHERE id = ?").bind(userId).run();
+    await db.prepare("UPDATE users SET status = CASE WHEN activated_at IS NULL THEN 'invited' ELSE 'active' END, disabled_at = NULL, closed_at = NULL WHERE id = ?").bind(userId).run();
   } else if (action === "super_on" || action === "super_off") {
     await db.prepare("UPDATE users SET is_superadmin = ? WHERE id = ?").bind(action === "super_on" ? 1 : 0, userId).run();
+  } else if (action === "office_on" || action === "office_off") {
+    // "Birou de evaluare" (in test): the person may activate it from "Contul meu"; turning it off hides "Firma mea"
+    await db.prepare(`UPDATE users SET office_allowed = ?${action === "office_off" ? ", is_office = 0" : ""} WHERE id = ?`).bind(action === "office_on" ? 1 : 0, userId).run();
   } else if (action === "logout_all") {
     await revokeSessions(db, userId);
   } else return "Acțiune necunoscută.";
@@ -166,25 +203,76 @@ export async function activityByDay(db: D1Database, days: number, orgId?: string
   });
 }
 
-export async function topActions(db: D1Database, days: number, orgId?: string) {
-  const { results } = await db.prepare(`SELECT module, action, COUNT(*) AS n FROM events WHERE at > ? ${orgId ? "AND org_id = ?" : ""} GROUP BY module, action ORDER BY n DESC LIMIT 20`)
-    .bind(...(orgId ? [since(days), orgId] : [since(days)])).all<{ module: string; action: string; n: number }>();
+/** WHERE clause for the statistics: period, optional firm and person. */
+function scope(days: number, orgId?: string, userId?: string, alias = "") {
+  const w = [`${alias}at > ?`], p: unknown[] = [since(days)];
+  if (orgId) { w.push(`${alias}org_id = ?`); p.push(orgId); }
+  if (userId) { w.push(`${alias}user_id = ?`); p.push(userId); }
+  return { w, p };
+}
+
+export async function topActions(db: D1Database, days: number, orgId?: string, userId?: string) {
+  const { w, p } = scope(days, orgId, userId);
+  const { results } = await db.prepare(`SELECT module, action, COUNT(*) AS n FROM events WHERE ${w.join(" AND ")} GROUP BY module, action ORDER BY n DESC LIMIT 20`)
+    .bind(...p).all<{ module: string; action: string; n: number }>();
   return results;
 }
 
-export async function topTargets(db: D1Database, days: number, action: string, orgId?: string) {
-  const { results } = await db.prepare(`SELECT target, COUNT(*) AS n, COUNT(DISTINCT user_id) AS u FROM events WHERE at > ? AND action = ? AND target IS NOT NULL ${orgId ? "AND org_id = ?" : ""} GROUP BY target ORDER BY n DESC LIMIT 15`)
-    .bind(...(orgId ? [since(days), action, orgId] : [since(days), action])).all<{ target: string; n: number; u: number }>();
+export async function topTargets(db: D1Database, days: number, action: string, orgId?: string, userId?: string) {
+  const { w, p } = scope(days, orgId, userId);
+  const { results } = await db.prepare(`SELECT target, COUNT(*) AS n, COUNT(DISTINCT user_id) AS u FROM events WHERE ${w.join(" AND ")} AND action = ? AND target IS NOT NULL GROUP BY target ORDER BY n DESC LIMIT 15`)
+    .bind(...p, action).all<{ target: string; n: number; u: number }>();
   return results;
+}
+
+/** Modules that are not tools: the admin's own work is left out of the user statistics. */
+const NOT_USAGE = "'admin'";
+
+export type ToolUse = { module: string; n: number; u: number; days: number; last: string };
+/** Use of each module (actions, people, active days, last use), most used first. */
+export async function toolUsage(db: D1Database, days: number, orgId?: string, userId?: string) {
+  const { w, p } = scope(days, orgId, userId);
+  const { results } = await db.prepare(`SELECT module, COUNT(*) AS n, COUNT(DISTINCT user_id) AS u, COUNT(DISTINCT substr(at, 1, 10)) AS days, MAX(at) AS last
+      FROM events WHERE ${w.join(" AND ")} AND module NOT IN (${NOT_USAGE}) GROUP BY module ORDER BY n DESC`).bind(...p).all<ToolUse>();
+  return results;
+}
+
+export type TopUser = { id: string; name: string | null; email: string; org_name: string | null; n: number; days: number; last: string; top: string | null };
+/** The most active people (actions in the period, without admin work), with their most used module. */
+export async function topUsers(db: D1Database, days: number, limit = 5, orgId?: string) {
+  const { w, p } = scope(days, orgId, undefined, "e.");
+  const { results } = await db.prepare(`SELECT u.id, NULLIF(u.name, '') AS name, u.email, COUNT(*) AS n, COUNT(DISTINCT substr(e.at, 1, 10)) AS days, MAX(e.at) AS last,
+        (SELECT o.name FROM memberships m JOIN orgs o ON o.id = m.org_id WHERE m.user_id = u.id AND m.status = 'active' ORDER BY m.created_at LIMIT 1) AS org_name,
+        (SELECT x.module FROM events x WHERE x.user_id = u.id AND x.at > ? AND x.module NOT IN (${NOT_USAGE}) GROUP BY x.module ORDER BY COUNT(*) DESC LIMIT 1) AS top
+      FROM events e JOIN users u ON u.id = e.user_id WHERE ${w.join(" AND ")} AND e.module NOT IN (${NOT_USAGE})
+      GROUP BY u.id ORDER BY n DESC LIMIT ?`).bind(since(days), ...p, limit).all<TopUser>();
+  return results;
+}
+
+/** One person's totals: actions and active days in the period, first and last action ever, sessions, rank among users. */
+export async function userTotals(db: D1Database, userId: string, days: number) {
+  const s = since(days);
+  return db.prepare(`SELECT
+        (SELECT COUNT(*) FROM events WHERE user_id = ?1 AND at > ?2 AND module NOT IN (${NOT_USAGE})) AS n,
+        (SELECT COUNT(DISTINCT substr(at, 1, 10)) FROM events WHERE user_id = ?1 AND at > ?2) AS days,
+        (SELECT COUNT(*) FROM events WHERE user_id = ?1 AND module NOT IN (${NOT_USAGE})) AS total,
+        (SELECT MIN(at) FROM events WHERE user_id = ?1) AS first,
+        (SELECT MAX(at) FROM events WHERE user_id = ?1) AS last,
+        (SELECT COUNT(*) FROM sessions WHERE user_id = ?1 AND created_at > ?2) AS sessions,
+        (SELECT COUNT(*) + 1 FROM (SELECT user_id FROM events WHERE at > ?2 AND user_id IS NOT NULL AND module NOT IN (${NOT_USAGE}) GROUP BY user_id
+           HAVING COUNT(*) > (SELECT COUNT(*) FROM events WHERE user_id = ?1 AND at > ?2 AND module NOT IN (${NOT_USAGE})))) AS rank,
+        (SELECT COUNT(DISTINCT user_id) FROM events WHERE at > ?2 AND module NOT IN (${NOT_USAGE})) AS people`)
+    .bind(userId, s).first<{ n: number; days: number; total: number; first: string | null; last: string | null; sessions: number; rank: number; people: number }>();
 }
 
 export type EventRow = { id: number; at: string; module: string; action: string; target: string | null; meta: string | null; user_name: string | null; email: string | null; org_name: string | null };
 
-export async function recentEvents(db: D1Database, f: { orgId?: string; userId?: string; action?: string; limit?: number }) {
+export async function recentEvents(db: D1Database, f: { orgId?: string; userId?: string; action?: string; module?: string; limit?: number }) {
   const w: string[] = [], p: unknown[] = [];
   if (f.orgId) { w.push("e.org_id = ?"); p.push(f.orgId); }
   if (f.userId) { w.push("e.user_id = ?"); p.push(f.userId); }
   if (f.action) { w.push("e.action = ?"); p.push(f.action); }
+  if (f.module) { w.push("e.module = ?"); p.push(f.module); }
   const { results } = await db.prepare(`SELECT e.id, e.at, e.module, e.action, e.target, e.meta, NULLIF(u.name, '') AS user_name, u.email, o.name AS org_name
       FROM events e LEFT JOIN users u ON u.id = e.user_id LEFT JOIN orgs o ON o.id = e.org_id ${w.length ? `WHERE ${w.join(" AND ")}` : ""} ORDER BY e.id DESC LIMIT ?`)
     .bind(...p, f.limit ?? 200).all<EventRow>();
@@ -192,8 +280,13 @@ export async function recentEvents(db: D1Database, f: { orgId?: string; userId?:
 }
 
 export const ACTION_LABEL: Record<string, string> = {
-  login: "Autentificare", page: "Pagină deschisă", uat_open: "Plan UAT încărcat", search: "Căutare nr. cadastral / topo", search_multi: "Căutare multiplă",
+  login: "Autentificare", page: "Pagină deschisă", uat_open: "Plan UAT încărcat", locate: "Localizare efectuată", search: "Căutare nr. cadastral / topo", search_multi: "Căutare multiplă",
   parcel: "Parcelă deschisă", building: "Construcție deschisă", address: "Căutare adresă / coordonate", gps_start: "Locația mea (GPS)", compass: "Busolă",
   export_pdf: "Export PDF", export_word: "Export Word", export_png: "Export PNG", export_kml: "Export KML", export: "Export", link: "Link copiat",
+  analysis: "Analiză de amplasament", ai: "Text generat cu AI", ai_plan: "Plan de amplasament citit cu AI", copy: "Text copiat", notify: "„Anunță-mă” la un modul nou",
+  pane: "Panou deschis în Word", insert_photo: "Anexă foto inserată în Word", insert_pdf: "Anexă documente inserată în Word", insert_comps: "Comparabile inserate în Word",
+  open: "Extensie deschisă", send_word: "Comparabile trimise în Word (Chrome)", insert_chrome: "Comparabile din Chrome inserate în Word", chrome_open: "Trimitere din Chrome deschisă în Word", capture: "Anunț capturat (Chrome)",
+  profile: "Profil Colaborări salvat", post: "Anunț publicat (Colaborări)", request: "Detalii cerute la un anunț", open_chat: "Conversație începută (Colaborări)",
+  pick: "Coleg ales pentru lucrare", pick_open: "Hartă de alegere a parcelei deschisă", pick_parcel: "Parcelă aleasă pe hartă (amplasament)", no_plan: "Adresă fără plan cadastral (amplasament)", no_plan_county: "Județ fără planuri ales (localizator)", save: "Inspecție salvată", schedule: "Inspecție programată", simulate: "Inspecție simulată (test)", tpl_save: "Fișă de inspecție salvată", tpl_publish: "Fișă de inspecție publicată", tpl_duplicate: "Fișă de inspecție duplicată", pair_code: "Cod de conectare telefon", test_device: "Inspecții: mod test fără telefon", stereo_locate: "Localizare după Stereo 70 / CF (fără plan)", post_status: "Anunț arhivat / restaurat", collab_mode: "Mod Colaborări schimbat", collab_purge: "Date de test Colaborări șterse",
 };
 export const actionLabel = (a: string) => ACTION_LABEL[a] ?? a;

@@ -8,8 +8,8 @@ export async function GET(req: Request) {
   const f = Object.fromEntries(new URL(req.url).searchParams) as TablouFilter;
   const { rows } = await tablou(a.db, f, true);
   const q = (v: unknown) => `"${String(v ?? "").replace(/"/g, '""')}"`;
-  const lines = [["Legitimatie", "Nume", "Judet", "Specializari", "Cont", "Email", "Ultima autentificare", "Ultima activitate", "Actiuni 30 zile", "In tabloul curent"].join(";")];
-  for (const r of rows) lines.push([r.legit, r.name, r.county, r.specs, r.user_status ?? (r.request === "pending" ? "solicitare" : ""), r.email, r.last_login_at, r.last_seen_at, r.user_id ? r.events_30 : "", r.in_current ? "da" : "nu"].map(q).join(";"));
+  const lines = [["Legitimatie", "Nume", "Judet", "Specializari", "Cont", "Email", "Ultima autentificare", "Ultima activitate", "Actiuni 30 zile", "In tabloul curent", "Email public", "Telefon public", "Fax public", "Website public", "Adresa publica", "Sursa date publice", "Data preluarii"].join(";")];
+  for (const r of rows) lines.push([r.legit, r.name, r.county, r.specs, r.user_status ?? (r.request === "pending" ? "solicitare" : ""), r.email, r.last_login_at, r.last_seen_at, r.user_id ? r.events_30 : "", r.in_current ? "da" : "nu", r.pub_email, r.pub_phone, r.pub_fax, r.pub_website, r.pub_address, r.contact_source, r.contact_date].map(q).join(";"));
   return new Response("﻿" + lines.join("\r\n"), {
     headers: { "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": `attachment; filename="tablou-anevar-${new Date().toISOString().slice(0, 10)}.csv"` },
   });

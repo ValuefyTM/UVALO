@@ -11,7 +11,7 @@ export const appEnv = (): AppEnv => {
 };
 
 export const appName = () => process.env.APP_NAME?.trim() || "UVALO";
-export const supportEmail = () => process.env.SUPPORT_EMAIL?.trim() || "office@valuefy.ro";
+export const supportEmail = () => process.env.SUPPORT_EMAIL?.trim() || "office@uvalo.ro";
 
 /**
  * The public address of the app, for links in emails (login, invitations, recommendations). APP_URL when set (always in

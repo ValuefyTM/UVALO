@@ -1,6 +1,6 @@
 // Copies the production D1 (valuefy-tools-db) into the local database or into staging, with the personal data made
 // anonymous on the way (emails and phones of evaluators, requests and recommendations; sessions and login codes are
-// dropped). VALUEFY administrators (is_superadmin) keep their email, so they can sign in.
+// dropped). Super-admins (is_superadmin) keep their email, so they can sign in.
 //
 //   npm run db:pull                     production → local      (needs `npx wrangler login` or CLOUDFLARE_API_TOKEN)
 //   npm run db:pull:staging             production → staging
@@ -24,16 +24,26 @@ const tmp = mkdtempSync(join(tmpdir(), "tools-db-"));
 const wr = (...a) => execFileSync("npx", ["wrangler", ...a], { stdio: ["ignore", "pipe", "inherit"], encoding: "utf8", maxBuffer: 1 << 30 });
 const step = (m) => console.log(`\n▸ ${m}`);
 
-// Personal data of evaluators and of people who asked for an account, replaced with test values.
-const ANON = `
-DELETE FROM sessions; DELETE FROM auth_codes; DELETE FROM email_changes;
-UPDATE users SET email = 'user-' || substr(id, 1, 8) || '@test.invalid', phone = CASE WHEN phone IS NULL THEN NULL ELSE '0700 ' || printf('%03d %03d', abs(random()) % 1000, abs(random()) % 1000) END, avatar = NULL
-  WHERE is_superadmin = 0;
-UPDATE invites SET email = 'invite-' || substr(id, 1, 8) || '@test.invalid' WHERE email NOT IN (SELECT email FROM users WHERE is_superadmin = 1);
-UPDATE account_requests SET email = 'request-' || substr(id, 1, 8) || '@test.invalid', phone = CASE WHEN phone IS NULL THEN NULL ELSE '0700 000 000' END,
-  message = NULL, ip = NULL, user_agent = NULL;
-UPDATE referrals SET email = 'ref-' || substr(id, 1, 8) || '@test.invalid', note = NULL;
-`;
+// Personal data of evaluators and of people who asked for an account, replaced with test values. Everything that would
+// reach a real person or device from the copy is dropped: sessions, login codes, connected phones and push subscriptions,
+// API keys / OAuth tokens (they would work against the copy), the webhooks' log. Tables that do not exist yet in the
+// export are skipped (IF EXISTS is not available for DELETE, so each statement runs on its own).
+const ANON = [
+  "DELETE FROM sessions", "DELETE FROM auth_codes", "DELETE FROM auth_fails", "DELETE FROM email_changes",
+  "DELETE FROM insp_devices", "DELETE FROM insp_pair_codes", "DELETE FROM insp_push", "DELETE FROM insp_push_sent",
+  "DELETE FROM api_keys", "DELETE FROM api_hooks", "DELETE FROM oauth_tokens", "DELETE FROM oauth_codes", "DELETE FROM oauth_clients",
+  "DELETE FROM chrome_slices", "DELETE FROM chrome_batches", "DELETE FROM dev_mail",
+  "DELETE FROM app_settings WHERE key IN ('vapid', 'cron_key')",
+  `UPDATE users SET email = 'user-' || substr(id, 1, 8) || '@test.invalid', phone = CASE WHEN phone IS NULL THEN NULL ELSE '0700 ' || printf('%03d %03d', abs(random()) % 1000, abs(random()) % 1000) END, avatar = NULL, signature = NULL
+    WHERE is_superadmin = 0`,
+  "UPDATE invites SET email = 'invite-' || substr(id, 1, 8) || '@test.invalid' WHERE email NOT IN (SELECT email FROM users WHERE is_superadmin = 1)",
+  `UPDATE account_requests SET email = 'request-' || substr(id, 1, 8) || '@test.invalid', phone = CASE WHEN phone IS NULL THEN NULL ELSE '0700 000 000' END,
+    message = NULL, ip = NULL, user_agent = NULL`,
+  "UPDATE referrals SET email = 'ref-' || substr(id, 1, 8) || '@test.invalid', note = NULL",
+  "UPDATE anevar_members SET pub_phone = NULL, pub_email = NULL, pub_address = NULL",
+  // people met at inspections (third parties)
+  "UPDATE inspections SET contact_name = CASE WHEN contact_name IS NULL THEN NULL ELSE 'Persoană de contact' END, contact_phone = CASE WHEN contact_phone IS NULL THEN NULL ELSE '0700 000 000' END",
+];
 
 /**
  * D1 exports list tables in the order they were created; a table altered later to point to a newer one (account_requests
@@ -85,10 +95,12 @@ try {
     // its own configuration in the temporary folder, so this database lives there (.wrangler/ next to it)
     const conf = join(tmp, "wrangler.json");
     writeFileSync(conf, JSON.stringify({ name: "tools-anon", compatibility_date: "2026-09-25", d1_databases: [{ binding: "DB", database_name: "anon", database_id: "anon" }] }));
-    writeFileSync(join(tmp, "anon.sql"), ANON);
     out = join(tmp, "anon-export.sql");
     const cfg = ["--config", conf];
     wr("d1", "execute", "DB", "--local", ...cfg, "--file", dump, "--yes");
+    const have = JSON.parse(wr("d1", "execute", "DB", "--local", ...cfg, "--json", "--command", "SELECT name FROM sqlite_master WHERE type = 'table'"))[0].results.map((r) => r.name);
+    const stmts = ANON.filter((s) => have.includes(s.match(/^(?:DELETE FROM|UPDATE) (\w+)/)[1]));
+    writeFileSync(join(tmp, "anon.sql"), stmts.map((s) => `${s};`).join("\n") + "\n");
     wr("d1", "execute", "DB", "--local", ...cfg, "--file", join(tmp, "anon.sql"), "--yes");
     wr("d1", "export", "DB", "--local", ...cfg, "--output", out);
   }

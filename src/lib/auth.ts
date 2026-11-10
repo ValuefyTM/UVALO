@@ -2,7 +2,7 @@
 import { cookies, headers } from "next/headers";
 import { now, uuid } from "./db";
 import { normEmail, randomCode, randomToken, safeEqual, sha256 } from "./crypto";
-import { esc, layout, sendEmail } from "./email";
+import { esc, greetName, layout, sendEmail } from "./email";
 import { origin } from "./site";
 
 export const COOKIE = "vf_tools";
@@ -15,8 +15,8 @@ const MAX_CODES_PER_HOUR = 5;
 const inMinutes = (m: number) => new Date(Date.now() + m * 60_000).toISOString();
 
 export type User = {
-  id: string; email: string; name: string; phone: string | null; status: "invited" | "active" | "disabled"; is_superadmin: number;
-  anevar_no: string | null; county: string | null; specs: string | null; has_avatar: number; is_office: number; terms_at: string | null; created_at: string; activated_at: string | null; last_login_at: string | null; last_seen_at: string | null;
+  id: string; email: string; name: string; phone: string | null; status: "invited" | "active" | "disabled" | "closed"; is_superadmin: number;
+  anevar_no: string | null; county: string | null; specs: string | null; has_avatar: number; is_office: number; office_allowed: number; terms_at: string | null; created_at: string; activated_at: string | null; last_login_at: string | null; last_seen_at: string | null;
   notes: string | null;
 };
 
@@ -26,7 +26,7 @@ export async function audit(db: D1Database, actor: string | null, action: string
 }
 
 // The picture is not loaded with the account (it is served by /api/avatar/<id>).
-const USER_COLS = `id, email, name, phone, status, is_superadmin, anevar_no, county, specs, avatar IS NOT NULL AS has_avatar, is_office, terms_at, created_at, activated_at,
+const USER_COLS = `id, email, name, phone, status, is_superadmin, anevar_no, county, specs, avatar IS NOT NULL AS has_avatar, is_office, office_allowed, terms_at, created_at, activated_at,
   last_login_at, last_seen_at, notes`;
 export const getUser = (db: D1Database, id: string) => db.prepare(`SELECT ${USER_COLS} FROM users WHERE id = ?`).bind(id).first<User>();
 export const findUser = (db: D1Database, email: string) => db.prepare(`SELECT ${USER_COLS} FROM users WHERE email = ?`).bind(normEmail(email)).first<User>();
@@ -51,7 +51,21 @@ async function accountFor(db: D1Database, email: string) {
 /** Active accounts sign in; invited ones first accept the invitation (link in their email). */
 const canSignIn = (u: User) => u.status === "active";
 
-async function clientIp() {
+/* ---------- failed attempts (migration 0042): a limit across codes, accounts and addresses ---------- */
+/** Failed attempts for a key in the last `minutes`. */
+export async function failCount(db: D1Database, key: string, minutes: number) {
+  return (await db.prepare("SELECT COUNT(*) AS n FROM auth_fails WHERE key = ? AND at > ?").bind(key, inMinutes(-minutes)).first<{ n: number }>())?.n ?? 0;
+}
+/** Records a failed attempt under each key; now and then drops the ones older than two days. */
+export async function addFail(db: D1Database, ...keys: string[]) {
+  const t = now();
+  await db.batch([
+    ...keys.map((k) => db.prepare("INSERT INTO auth_fails (key, at) VALUES (?, ?)").bind(k, t)),
+    ...(Math.random() < 0.05 ? [db.prepare("DELETE FROM auth_fails WHERE at < ?").bind(inMinutes(-2 * 24 * 60))] : []),
+  ]);
+}
+
+export async function clientIp() {
   const h = await headers();
   return h.get("cf-connecting-ip") ?? h.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null;
 }
@@ -61,7 +75,7 @@ async function clientIp() {
 /** Sends a code + link when the email has an active account. Same answer either way (no account enumeration). */
 export async function requestSignIn(db: D1Database, rawEmail: string) {
   const email = normEmail(rawEmail);
-  const recent = await db.prepare("SELECT COUNT(*) AS n FROM auth_codes WHERE email = ? AND created_at > ?").bind(email, inMinutes(-60)).first<{ n: number }>();
+  const recent = await db.prepare("SELECT COUNT(*) AS n FROM auth_codes WHERE email = ? AND created_at > ? AND COALESCE(ip, '') <> 'notify'").bind(email, inMinutes(-60)).first<{ n: number }>();
   if ((recent?.n ?? 0) >= MAX_CODES_PER_HOUR) return;
   const u = await accountFor(db, email);
   if (!u) return;
@@ -93,20 +107,39 @@ export async function requestSignIn(db: D1Database, rawEmail: string) {
   });
 }
 
-export async function verifyCode(db: D1Database, rawEmail: string, code: string) {
-  const email = normEmail(rawEmail);
+/** Wrong email codes: at most 10 a day for an account (across all the codes asked for) and 30 an hour from one address. */
+const CODE_FAILS_DAY = 10, CODE_FAILS_IP_HOUR = 30;
+// the button „Intră în cont” of the email still works (a 256-bit link cannot be guessed): someone who types wrong codes on purpose cannot lock the owner out
+export const TOO_MANY = "Prea multe coduri greșite pentru acest cont: codul nu mai e acceptat până mâine. Intră cu butonul „Intră în cont” din emailul primit (merge în continuare) sau scrie-ne la office@uvalo.ro.";
+
+export async function verifyCode(db: D1Database, rawEmail: string, code: string): Promise<User | { error: string } | null> {
+  const email = normEmail(rawEmail), ip = (await clientIp()) ?? "-";
+  if ((await failCount(db, `code:${email}`, 24 * 60)) >= CODE_FAILS_DAY) return { error: TOO_MANY };
+  if ((await failCount(db, `codeip:${ip}`, 60)) >= CODE_FAILS_IP_HOUR) return { error: "Prea multe coduri greșite de la această conexiune. Încearcă din nou peste o oră." };
   const row = await db
     .prepare("SELECT id, code_hash, attempts FROM auth_codes WHERE email = ? AND used_at IS NULL AND expires_at > ? ORDER BY created_at DESC LIMIT 1")
     .bind(email, now())
     .first<{ id: string; code_hash: string; attempts: number }>();
-  if (!row || row.attempts >= MAX_ATTEMPTS) return null;
+  if (!row || row.attempts >= MAX_ATTEMPTS) return null; // nothing to guess: not counted
   if (!safeEqual(row.code_hash, await sha256(`${email}:${code.replace(/\D/g, "")}`))) {
     await db.prepare("UPDATE auth_codes SET attempts = attempts + 1 WHERE id = ?").bind(row.id).run();
+    await addFail(db, `code:${email}`, `codeip:${ip}`);
     return null;
   }
   await db.prepare("UPDATE auth_codes SET used_at = ? WHERE id = ?").bind(now(), row.id).run();
   const u = await findUser(db, email);
   return u && canSignIn(u) ? u : null;
+}
+
+/**
+ * After a correct code: a sign-in link valid 2 minutes, which the page opens right away. The session cookie is set again by that page load,
+ * like the button from the email: some phones (installed apps, strict browsers) do not keep a cookie set by a background request.
+ */
+export async function handoffLink(db: D1Database, email: string, next: string) {
+  const token = randomToken();
+  await db.prepare("INSERT INTO auth_codes (id, email, code_hash, token_hash, expires_at, ip) VALUES (?, ?, ?, ?, ?, 'notify')")
+    .bind(uuid(), normEmail(email), await sha256(randomToken()), await sha256(token), inMinutes(2)).run();
+  return `/login/link?token=${encodeURIComponent(token)}&next=${encodeURIComponent(next)}`;
 }
 
 export async function consumeLink(db: D1Database, token: string) {
@@ -115,6 +148,17 @@ export async function consumeLink(db: D1Database, token: string) {
   await db.prepare("UPDATE auth_codes SET used_at = ? WHERE id = ?").bind(now(), row.id).run();
   const u = await findUser(db, row.email);
   return u && canSignIn(u) ? u : null;
+}
+
+/**
+ * A one-time sign-in link for a notification email (e.g. a new post in Colaborări), valid a few days, that opens `next`.
+ * Already signed in → it just opens `next`. Stored like a sign-in code (ip = 'notify', not counted in the hourly limit).
+ */
+export async function magicLink(db: D1Database, rawEmail: string, next: string, days = 3) {
+  const email = normEmail(rawEmail), token = randomToken();
+  await db.prepare("INSERT INTO auth_codes (id, email, code_hash, token_hash, expires_at, ip) VALUES (?, ?, ?, ?, ?, 'notify')")
+    .bind(uuid(), email, await sha256(randomToken()), await sha256(token), inMinutes(days * 24 * 60)).run();
+  return `${await origin()}/login/link?token=${encodeURIComponent(token)}&next=${encodeURIComponent(next)}`;
 }
 
 // ---------- sessions ----------
@@ -169,8 +213,9 @@ export async function revokeSessions(db: D1Database, userId: string, exceptId?: 
 
 // ---------- invitations ----------
 
-/** Invites someone into a firm (or as a VALUEFY super-admin when orgId is null). Creates the account if needed. */
-export async function invite(db: D1Database, by: User, orgId: string | null, rawEmail: string, role: "owner" | "admin" | "member", name?: string) {
+/** Invites someone into a firm (or as a UVALO super-admin when orgId is null). Creates the account if needed. */
+/** `approved` = the account comes from an approved account request (the email says so, without the name of who approved it). */
+export async function invite(db: D1Database, by: User, orgId: string | null, rawEmail: string, role: "owner" | "admin" | "member", name?: string, approved = false) {
   const email = normEmail(rawEmail);
   let u = await findUser(db, email);
   if (!u) {
@@ -193,15 +238,34 @@ export async function invite(db: D1Database, by: User, orgId: string | null, raw
   await db.prepare("INSERT INTO invites (id, org_id, email, role, token_hash, invited_by, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?)")
     .bind(id, orgId, email, role, await sha256(token), by.id, inMinutes(INVITE_DAYS * 24 * 60)).run();
   await audit(db, by.id, "invite.create", orgId ? "org" : "platform", orgId ?? undefined, `${email} (${role})`);
-  const sent = await sendInviteEmail(db, u, orgId, token, by);
+  const sent = await sendInviteEmail(db, u, orgId, token, by, approved);
   return { userId: u.id, inviteId: id, sent, active: u.status === "active" };
 }
 
-async function sendInviteEmail(db: D1Database, u: User, orgId: string | null, token: string, by: User | null) {
+async function sendInviteEmail(db: D1Database, u: User, orgId: string | null, token: string, by: User | null, approved = false) {
   const org = orgId ? await db.prepare("SELECT name FROM orgs WHERE id = ?").bind(orgId).first<{ name: string }>() : null;
   const active = u.status === "active";
   const link = active ? `${await origin()}/login` : `${await origin()}/invitatie?token=${encodeURIComponent(token)}`;
-  const hello = u.name ? `Bună, ${u.name.split(" ")[0]}!` : "Bună!";
+  const hello = u.name?.trim() ? `Bună ziua, ${greetName(u.name)}!` : "Bună ziua!";
+  if (approved) {
+    // individual account: the firm is the person's own, so it is not named
+    const own = !org || (await db.prepare("SELECT 1 FROM memberships WHERE org_id = ? AND user_id <> ?").bind(orgId, u.id).first()) === null;
+    const firm = own ? "" : `, în contul firmei ${org!.name}`;
+    const p = (t: string) => `<p style="margin:0 0 10px;font-size:15px;line-height:1.65;color:#4A4A4A">${t}</p>`;
+    return sendEmail({
+      to: u.email,
+      subject: "Solicitarea ta de cont UVALO a fost aprobată",
+      text: `${hello}\nSolicitarea ta de cont în UVALO a fost acceptată${firm}.\nActivează contul ca să începi să folosești instrumentele pentru evaluatori: ${link}\nNu ai nevoie de parolă: te autentifici cu un cod primit pe email.${active ? "" : `\nLinkul de activare este valabil ${INVITE_DAYS} zile.`}`,
+      html: layout({
+        eyebrow: "Cont aprobat",
+        title: `${hello} Contul tău UVALO a fost aprobat.`,
+        body: p(`Solicitarea ta de cont în UVALO a fost acceptată${esc(firm)}. Activează contul ca să începi să folosești instrumentele pentru evaluatori: localizatorul cadastral, analiza amplasamentului, comparabilele și extensiile UVALO pentru Word și Chrome.`)
+          + `<p style="margin:0;font-size:15px;line-height:1.65;color:#4A4A4A">Nu ai nevoie de parolă: te autentifici cu un cod primit pe email.</p>`,
+        button: { label: active ? "Intră în UVALO →" : "Activează contul →", url: link },
+        foot: `${active ? "" : `Linkul de activare este valabil ${INVITE_DAYS} zile. `}Ai primit acest email pentru că ai solicitat un cont UVALO. Întrebări: office@uvalo.ro.`,
+      }),
+    });
+  }
   const where = org ? `în contul firmei <strong style="color:#111111">${esc(org.name)}</strong>` : "ca administrator UVALO";
   return sendEmail({
     to: u.email,
@@ -225,7 +289,8 @@ export async function resendInvite(db: D1Database, inviteId: string, by: User | 
   if (!u) return false;
   const token = randomToken();
   await db.prepare("UPDATE invites SET token_hash = ?, expires_at = ? WHERE id = ?").bind(await sha256(token), inMinutes(INVITE_DAYS * 24 * 60), inv.id).run();
-  return sendInviteEmail(db, u, inv.org_id, token, by);
+  const approved = !!(await db.prepare("SELECT 1 FROM account_requests WHERE user_id = ? AND status = 'approved'").bind(u.id).first());
+  return sendInviteEmail(db, u, inv.org_id, token, by, approved);
 }
 
 /** The invitation behind a link (for the acceptance page). */
@@ -238,7 +303,7 @@ export async function inviteByToken(db: D1Database, token: string) {
     .first<{ id: string; email: string; org_id: string | null; role: string; org_name: string | null; user_id: string; name: string; phone: string | null; status: string; anevar_no: string | null; county: string | null }>();
 }
 
-export async function acceptInvite(db: D1Database, token: string, name: string, phone: string | null, anevar: string | null) {
+export async function acceptInvite(db: D1Database, token: string, name: string, phone: string | null, anevar: string | null, newsletter = false) {
   const inv = await inviteByToken(db, token);
   if (!inv) return null;
   // Name, card, county and specializations come from the ANEVAR list and are not changed by the user.
@@ -247,8 +312,9 @@ export async function acceptInvite(db: D1Database, token: string, name: string, 
   const t = now();
   await db.batch([
     db.prepare(`UPDATE users SET name = ?, phone = ?, anevar_no = COALESCE(?, anevar_no), county = COALESCE(?, county), specs = COALESCE(?, specs),
-        status = CASE WHEN status = 'disabled' THEN status ELSE 'active' END, activated_at = COALESCE(activated_at, ?), terms_at = ? WHERE id = ?`)
-      .bind(m?.name ?? (inv.anevar_no ? inv.name : name), phone, m ? legit : null, m?.county ?? null, m?.specs ?? null, t, t, inv.user_id),
+        status = CASE WHEN status = 'disabled' THEN status ELSE 'active' END, closed_at = NULL, activated_at = COALESCE(activated_at, ?), terms_at = ?,
+        newsletter = ?, newsletter_at = ? WHERE id = ?`)
+      .bind(m?.name ?? (inv.anevar_no ? inv.name : name), phone, m ? legit : null, m?.county ?? null, m?.specs ?? null, t, t, newsletter ? 1 : 0, t, inv.user_id),
     db.prepare("UPDATE invites SET accepted_at = ? WHERE id = ?").bind(t, inv.id),
   ]);
   await audit(db, inv.user_id, "invite.accept", inv.org_id ? "org" : "platform", inv.org_id ?? undefined, inv.email);

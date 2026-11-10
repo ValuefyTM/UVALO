@@ -1,0 +1,115 @@
+import Anthropic from "@anthropic-ai/sdk";
+import { api, err } from "@/lib/api";
+import { track } from "@/lib/track";
+import { aiLimitError, prompts } from "@/lib/tools";
+import { placeDoc } from "@/lib/cadastre";
+
+// Site analysis (/amplasament) without a cadastral plan in the locator: the valuer uploads the "plan de amplasament și
+// delimitare" (PDF or photo) and Claude reads it into data: cadastral number, areas, the Stereo 70 coordinate inventory,
+// the buildings, the neighbours, the address. The page rebuilds the parcel from the coordinates and checks the area
+// against the one written on the plan. Nothing is stored: the file goes to the model and back.
+
+const MODEL = "claude-opus-5-5";
+const MAX = 15 * 1024 * 1024;
+const TYPES: Record<string, "application/pdf" | "image/jpeg" | "image/png" | "image/webp"> = {
+  "application/pdf": "application/pdf", "image/jpeg": "image/jpeg", "image/png": "image/png", "image/webp": "image/webp",
+};
+
+const str = { anyOf: [{ type: "string" }, { type: "null" }] };
+const num = { anyOf: [{ type: "number" }, { type: "null" }] };
+const point = { type: "object", additionalProperties: false, required: ["nr", "x", "y"], properties: { nr: { type: "string" }, x: { type: "number" }, y: { type: "number" } } };
+const SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  required: ["tip_document", "nr_cadastral", "nr_carte_funciara", "uat", "judet", "adresa", "suprafata_masurata_mp", "suprafata_din_acte_mp",
+    "categorie_folosinta", "intravilan", "puncte", "sursa_coordonate", "puncte_estimate", "laturi", "constructii", "vecini", "parcele_vecine", "observatii"],
+  properties: {
+    tip_document: { type: "string", description: "ce fel de document este, de ex. „plan de amplasament și delimitare a imobilului”" },
+    nr_cadastral: str, nr_carte_funciara: str,
+    uat: { ...str, description: "unitatea administrativ-teritorială (comuna / orașul / municipiul)" },
+    judet: str,
+    adresa: { ...str, description: "adresa imobilului așa cum e scrisă pe plan" },
+    suprafata_masurata_mp: { ...num, description: "suprafața măsurată a imobilului (terenului), în mp" },
+    suprafata_din_acte_mp: { ...num, description: "suprafața din acte, dacă e scrisă separat, în mp" },
+    categorie_folosinta: { ...str, description: "de ex. curți construcții, arabil" },
+    intravilan: { anyOf: [{ type: "boolean" }, { type: "null" }] },
+    puncte: { type: "array", description: "inventarul de coordonate al TERENULUI (parcelei), copiat dintr-un tabel de coordonate (plan de amplasament, extras de plan cadastral, extras CF), în ordinea din tabel, Stereo 70: x = nord, y = est, în metri cu zecimale. Gol dacă documentul nu are tabel de coordonate.", items: point },
+    sursa_coordonate: { type: "string", enum: ["inventar", "caroiaj", "lipsa"], description: "inventar = există tabel cu coordonatele punctelor; caroiaj = nu există tabel, dar desenul are caroiajul Stereo 70 (cruci cu valori X și Y) și scara; lipsa = niciuna" },
+    puncte_estimate: { type: "array", description: "DOAR când sursa_coordonate = caroiaj: coordonatele Stereo 70 ale colțurilor terenului, ESTIMATE din poziția lor în desen față de crucile caroiajului (interpolare liniară între valorile X și Y ale crucilor) și din scară, în ordinea numerelor punctelor din desen. Altfel listă goală.", items: point },
+    laturi: { type: "array", description: "lungimile laturilor terenului scrise pe desen (cotele), cu punctele între care sunt; listă goală dacă nu sunt", items: { type: "object", additionalProperties: false, required: ["de_la", "pana_la", "lungime_m"], properties: { de_la: { type: "string" }, pana_la: { type: "string" }, lungime_m: { type: "number" } } } },
+    constructii: {
+      type: "array",
+      items: {
+        type: "object", additionalProperties: false, required: ["cod", "destinatie", "suprafata_la_sol_mp", "puncte"],
+        properties: { cod: { type: "string", description: "de ex. C1" }, destinatie: str, suprafata_la_sol_mp: num, puncte: { type: "array", items: point } },
+      },
+    },
+    vecini: {
+      type: "array",
+      items: { type: "object", additionalProperties: false, required: ["latura", "descriere"], properties: { latura: { type: "string", description: "direcția sau punctele laturii, de ex. „N” sau „1-2”" }, descriere: { type: "string" } } },
+    },
+    parcele_vecine: {
+      type: "array",
+      description: "parcelele vecine DESENATE în document (în schița din extrasul CF sau pe planul de amplasament), fiecare cu numărul cadastral scris în ea. Colțurile: din inventar dacă există, altfel ESTIMATE din desen față de punctele parcelei (aceeași scară), în același sistem Stereo 70 și aceeași convenție x / y ca la „puncte”. Doar ce se vede în desen; listă goală dacă nu sunt.",
+      items: { type: "object", additionalProperties: false, required: ["nr_cadastral", "puncte"], properties: { nr_cadastral: str, puncte: { type: "array", items: point } } },
+    },
+    observatii: { ...str, description: "ce nu se citește clar sau orice neconcordanță din document" },
+  },
+};
+
+
+export async function POST(req: Request) {
+  const a = await api();
+  if ("res" in a) return a.res;
+  if (!a.c.super && !a.c.modules.includes("amplasament")) return err("Abonamentul firmei tale nu include analiza amplasamentului.", 403);
+  const key = process.env.ANTHROPIC_API_KEY?.trim();
+  if (!key) return err("Citirea cu AI nu este configurată încă (lipsește ANTHROPIC_API_KEY).", 503);
+
+  const form = await req.formData().catch(() => null);
+  const file = form?.get("file");
+  if (!(file instanceof File)) return err("Alege fișierul cu planul de amplasament.");
+  const type = TYPES[file.type];
+  if (!type) return err("Planul trebuie să fie PDF sau imagine (JPG, PNG).");
+  if (file.size > MAX) return err("Fișierul are peste 15 MB. Trimite doar pagina cu planul.");
+
+  const P = await prompts(a.db);
+  const limit = await aiLimitError(a.db, a.c, "plan");
+  if (limit) return err(limit, 429);
+
+  const data = Buffer.from(await file.arrayBuffer()).toString("base64");
+  const doc: Anthropic.Beta.BetaContentBlockParam = type === "application/pdf"
+    ? { type: "document", source: { type: "base64", media_type: type, data } }
+    : { type: "image", source: { type: "base64", media_type: type, data } };
+
+  const client = new Anthropic({ apiKey: key });
+  let msg: Anthropic.Beta.BetaMessage;
+  try {
+    msg = await client.beta.messages.create({
+      model: MODEL,
+      max_tokens: 16000,
+      betas: ["server-side-fallback-2026-07-01"],
+      fallbacks: "default",
+      output_config: { effort: "high", format: { type: "json_schema", schema: SCHEMA } },
+      system: P.plan,
+      messages: [{ role: "user", content: [doc, { type: "text", text: "Extrage datele imobilului din acest document." }] }],
+    });
+  } catch (e) {
+    console.error("[amplasament/plan]", e);
+    if (e instanceof Anthropic.BadRequestError) return err("Documentul nu a putut fi citit (fișier prea mare sau deteriorat). Încearcă o poză clară sau un PDF cu o singură pagină.", 422);
+    if (e instanceof Anthropic.RateLimitError) return err("Serviciul AI este ocupat. Încearcă din nou peste un minut.", 429);
+    if (e instanceof Anthropic.AuthenticationError) return err("Cheia ANTHROPIC_API_KEY nu este validă.", 503);
+    return err("Serviciul AI nu a răspuns. Încearcă din nou.", 502);
+  }
+  if (msg.stop_reason === "refusal") return err("Documentul nu a putut fi citit.", 422);
+  let out: Record<string, unknown>;
+  try {
+    out = JSON.parse(msg.content.map((c) => (c.type === "text" ? c.text : "")).join(""));
+  } catch {
+    return err("Răspunsul AI nu a putut fi citit. Încearcă din nou.", 502);
+  }
+  await track(a.db, a.c, "amplasament", "ai_plan", typeof out.nr_cadastral === "string" ? out.nr_cadastral : null,
+    { type, kb: Math.round(file.size / 1024), pts: Array.isArray(out.puncte) ? out.puncte.length : 0, in: msg.usage.input_tokens, out: msg.usage.output_tokens });
+  // where it lies (X/Y order, GPS, the locator UAT, the cadastral number in its plan), for the home page's drop zone
+  const place = await placeDoc(req, out as Parameters<typeof placeDoc>[1]).catch(() => null);
+  return Response.json({ ...out, _place: place });
+}
