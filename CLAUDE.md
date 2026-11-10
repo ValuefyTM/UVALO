@@ -612,7 +612,19 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   în lucru), **Proprietatea** ca grilă `.ixFacts` (tip, nr. cad. · UAT, CF, UAT · județ, suprafețe din acte, încăperile din releveu, client · utilizator,
   `facts`), **Fișa** cu progresul pe grupuri `.ixGrp` (bare, N / M; finisajele, fotografiile), **Fotografii** (primele 6 sau categoriile fișei ca
   placeholder-e `.ixPh.ghost`), **Instrucțiuni** `.ixInstr`; **Fișa** = documentul de până acum (`inDoc`: cuprinsul doar la finalizate, `inPaper` cu
-  rezumat, grupuri, încăperi, constatări, fotografii, acte, locația, semnături; „Descarcă PDF” = print, antetul = logo-ul firmei + nr. autorizație);
+  rezumat, grupuri, încăperi, constatări, fotografii, acte, locația, semnături; antetul = logo-ul firmei + nr. autorizație).
+  **„Descarcă PDF” = fișier PDF real** (10 nov 2026, nu print): `GET /api/inspectii/pdf/<id>` → `sheetPdf()` în `src/lib/insp-pdf.ts` (pdf-lib +
+  `@pdf-lib/fontkit`, în worker; font Plus Jakarta Sans static `public/fonts/pjs-400.ttf` / `pjs-700.ttf`, instanțe 400 / 700 făcute cu fontTools din
+  woff2-urile latin + latin-ext, citite prin bindingul `ASSETS`; caracterele fără glif se omit), după modelul fișei VALUEFY dat de utilizator: pag. 1 antet
+  (logo + nume + autorizație **doar la firmele cu funcția de birou**, `orgs.office_at` — altfel numele evaluatorului + legitimația; dreapta „FIȘĂ DE
+  INSPECȚIE”, nr., data, auriu), poza de copertă rotunjită, eyebrow auriu, titlu, adresa, 4 carduri 2×2 (suprafață utilă, teren, inspecția, „Făcută de”
+  pe negru), datele pe două coloane; pag. 2 harta (dale OpenStreetMap zoom 16 aduse în worker, decupate rotunjit, pin auriu + cercul de precizie + punctul
+  adresei; fără GPS = pinul adresei, „fișa nu are GPS”; dale inaccesibile = casetă „Harta nu a putut fi încărcată”) + coordonate / sursă; grupurile cu
+  eticheta la stânga și valoarea bold la dreapta; încăperile ca tabel; constatările; actele; semnăturile una sub alta (persoana prezentă = fișierul
+  `signature`, evaluatorul = `users.signature`, ambele doar la fișa finalizată); apoi „Documentar foto” (antet nou cu adresa + „N FOTOGRAFII”): o poză pe
+  rând, decupată rotunjit, bulina cu numărul, categoria + ora; subsol cu nr. fișei, firma / evaluatorul, pagina. Eveniment `inspectii`/`pdf`.
+  Fișa publică: `GET /api/fisa/<token>/pdf` (`pub: true`: fără contact, acte, locație, semnături și fără întrebările despre persoane). Numele
+  fișierului `sheetPdfName()` („Fisa-de-inspectie-Apartament-456705-C1-U16.pdf”). JPEG / PNG se includ; WebP nu (casetă „nu s-a putut include”);
   **Fotografii** / **Acte** (cu încărcare) / **Istoric** complete. **Coloana din dreapta** `.ixSide`: harta mică (`InspLocMap` cu GPS-ul de pe telefon sau
   adresa; „Vezi în localizator”, Google Maps, Waze, Analiză amplasament), Cine o face (avatar, legitimația, starea solicitării), Programarea
   („Reprogramează” → formular), Contact la fața locului (Sună / SMS), Acte (primele 4), Istoric (ultimele 4). La tipar rămâne doar fișa.
@@ -685,8 +697,8 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   poza de profil mare, firma (logo), datele bunului, răspunsurile (fără întrebările despre persoane — `PRIVATE_Q`), încăperile cu finisaje,
   constatările, fotografiile pe categorii. Fără contact, telefon, acte, semnătură, istoric. Compactă (stiluri `.fs*`, 13 px), bara de secțiuni
   lipicioasă (`.fsNav`), încăperile ca tabel, galeria pe tot ecranul (`FsGallery` în `src/components/FsGallery.tsx`: săgeți, taste, swipe),
-  „Vezi pe hartă” (Google Maps) și „Descarcă PDF” (print, cu stiluri de tipar). Pozele și logo-ul prin `/api/fisa/<token>/<fileId|logo>`
-  (doar `kind = photo` ale inspecției). `sharedInspection()` în `insp.ts`. Confidențialitatea (secțiunea 6) pomenește linkul.
+  „Vezi pe hartă” (Google Maps) și „Descarcă PDF” (`FsPrint` → `/api/fisa/<token>/pdf`, fișier PDF făcut pe server, vezi `insp-pdf.ts`). Pozele și
+  logo-ul prin `/api/fisa/<token>/<fileId|logo>` (doar `kind = photo` ale inspecției). `sharedInspection()` în `insp.ts`. Confidențialitatea (secțiunea 6) pomenește linkul.
 - Fișiere: bucket R2 privat **`uvalo-inspectii`**, binding `FILES` în `wrangler.jsonc` (`getFiles()` în `db.ts`). Încărcare `POST /api/inspectii/files`
   (multipart: id, kind cf|releveu|doc|photo|signature, file; ≤ 15 MB; cheie `insp/<inspecție>/<id>.<ext>`), servire `GET /api/inspectii/file/<id>`
   (doar proprietarul, cel care face inspecția, super-adminii), `DELETE` la fel. Formularul urcă CF-ul citit și releveul după salvare; fișa are

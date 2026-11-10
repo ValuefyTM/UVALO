@@ -9,7 +9,7 @@ async function post(body: Record<string, unknown>) {
   return j;
 }
 
-/** The inspection document's buttons: PDF (print), link, mark as delivered, and in test mode "simulate the phone". */
+/** The inspection document's buttons: the PDF file (/api/inspectii/pdf/<id>), link, mark as delivered, and in test mode "simulate the phone". */
 export function InspDocActions({ id, done, delivered, canSimulate, canReopen = false, assignee = null, signer = null, children }: {
   id: string; done: boolean; delivered: boolean; canSimulate: boolean; canReopen?: boolean; assignee?: string | null; signer?: string | null; children?: React.ReactNode;
 }) {
@@ -24,7 +24,7 @@ export function InspDocActions({ id, done, delivered, canSimulate, canReopen = f
   };
   return (
     <div className="inDocBtns">
-      {done && <button type="button" className="btn btnGold btnSm" onClick={() => window.print()}>Descarcă PDF</button>}
+      {done && <a className="btn btnGold btnSm" href={`/api/inspectii/pdf/${id}`} download title="Fișa ca fișier PDF: răspunsurile, încăperile, fotografiile, actele, locația și semnăturile">Descarcă PDF</a>}
       {done && <button type="button" className="btn btnGhost btnSm" onClick={() => { void navigator.clipboard?.writeText(location.href); setMsg("Linkul a fost copiat (doar pentru cine are acces la inspecție)."); }}>Copiază linkul</button>}
       {done && !delivered && <button type="button" className="btn btnGhost btnSm" disabled={busy} onClick={() => run({ action: "status", status: "pred" })}>Marchează predată</button>}
       {!done && <a className="btn btnGhost btnSm" href={`/inspectii/nou?id=${id}`}>Editează</a>}

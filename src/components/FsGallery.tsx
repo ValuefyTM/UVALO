@@ -51,6 +51,7 @@ export function FsGallery({ groups }: { groups: { r: string; ph: Ph[] }[] }) {
   );
 }
 
-export function FsPrint() {
-  return <button type="button" className="fsBtn" onClick={() => window.print()}>Descarcă PDF</button>;
+/** The public sheet as a PDF file (/api/fisa/<token>/pdf), built on the server with the photos embedded. */
+export function FsPrint({ token }: { token: string }) {
+  return <a className="fsBtn" href={`/api/fisa/${token}/pdf`} download>Descarcă PDF</a>;
 }

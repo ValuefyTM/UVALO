@@ -101,7 +101,7 @@ export default async function SharedSheet({ params }: { params: Promise<{ token:
           <h1>{x.address}</h1>
           <span className="fsHeroBtns">
             {map && <a className="fsBtn" href={map} target="_blank" rel="noopener">Vezi pe hartă ↗</a>}
-            <FsPrint />
+            <FsPrint token={token} />
           </span>
         </div>
       </section>
