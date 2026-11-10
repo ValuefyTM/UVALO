@@ -6,6 +6,7 @@ import { activityByDay, topTargets } from "@/lib/orgs";
 import { AdminShell } from "@/components/AdminShell";
 import { OrgForm } from "@/components/forms";
 import { DayBars, UatCountTable } from "@/components/Charts";
+import { ExtendExpired } from "@/components/ExtendExpired";
 
 export const metadata: Metadata = { title: "Firme | UVALO Admin" };
 export const dynamic = "force-dynamic";
@@ -29,6 +30,8 @@ export default async function AdminFirms() {
     db.prepare("SELECT id, name FROM plans WHERE active = 1 ORDER BY sort").all<{ id: string; name: string }>(),
   ]);
   const countyOf = await countyOfUats();
+  // the active firms whose access term has passed (their people see „Abonamentul firmei a expirat”): one button puts them back without a term
+  const expired = orgs.filter((o) => o.status === "active" && !!orgBlock(o)).length;
   return (
     <AdminShell c={c} active="firme" pending={pending} title="Firme și abonamente" subtitle="Conturile individuale aprobate și firmele cu mai mulți utilizatori">
       <div className="kpis">
@@ -39,7 +42,7 @@ export default async function AdminFirms() {
         <div className="kpi"><small>Folosesc · 30 zile</small><b>{kp?.active30 ?? 0}</b></div>
       </div>
       <section className="card flush">
-        <div className="cardHead"><h2>Firme</h2></div>
+        <div className="cardHead"><h2>Firme</h2><ExtendExpired n={expired} /></div>
         {orgs.length === 0 ? <p className="hint pad">Nicio firmă încă. Creează prima firmă mai jos și invită-i titularul.</p> : (
           <div className="tableWrap">
             <table className="table">

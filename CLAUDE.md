@@ -368,6 +368,13 @@ Timișoara (`COMPANY` în `src/components/LegalPage.tsx`). UVALO e un produs sep
   autentificări, prima/ultima acțiune), graficul ei, instrumentele, acțiunile, localitățile, parcelele și jurnalul doar al ei
   (`topActions`/`topTargets` primesc acum și `userId`).
 
+## Firme și abonamente (Admin → Firme)
+
+- Accesul unei persoane depinde de **firmă**: `orgBlock()` în `access.ts` → „Contul firmei este suspendat” (`status ≠ active`) sau „Abonamentul firmei a expirat
+  pe …” (`orgs.valid_until` < azi); cu blocaj, contul rămâne „Activ” în Utilizatori, dar fără module (mesajul galben pe Acasă). Aprobările noi se dau fără termen.
+- **„Prelungește toate firmele expirate · N”** (`ExtendExpired` în capul listei din `/admin/firme`, `POST /api/admin/orgs {action: "extend_expired"}`): firmele
+  active cu `valid_until` trecut primesc `valid_until = NULL` (fără termen), într-un `batch`, cu audit `org.extend` pe fiecare + `org.extend_all`.
+
 ## Filtre în admin (Utilizatori, Tablou ANEVAR)
 
 - `/admin/utilizatori`: filtre GET (caută, județ, stare, tip cont, firmă, activitate, ordonare) și „Grupează pe județe” (`grup=judet`,
