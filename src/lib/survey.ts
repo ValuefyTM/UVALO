@@ -20,7 +20,7 @@ export async function surveySettings(db: D1Database): Promise<SurveySettings> {
   const v: SurveySettings = {
     id: typeof d.id === "string" && d.id ? d.id : "2026-11",
     on: !!d.on,
-    min_actions: Number.isFinite(d.min_actions) ? Math.max(0, Math.floor(d.min_actions!)) : 30,
+    min_actions: Number.isFinite(d.min_actions) ? Math.max(0, Math.floor(d.min_actions!)) : 60,
     stop_n: Number.isFinite(d.stop_n) ? Math.max(0, Math.floor(d.stop_n!)) : 0,
     stop_at: typeof d.stop_at === "string" ? d.stop_at.slice(0, 10) : "",
     wants: Array.isArray(d.wants) && d.wants.length ? d.wants.filter((x): x is string => typeof x === "string" && !!x.trim()).slice(0, 12) : DEFAULT_WANTS,
